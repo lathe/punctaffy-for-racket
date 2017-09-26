@@ -106,6 +106,6 @@ When users need it, they also have the option of choosing a degree and writing a
 
 If we don't require separate reader-like and backend-like macroexpansion steps, we can write reader-like macros only, letting them take care of the whole loop. Instead of returning a structure of matched brackets, they return a result that only contains the closing brackets and some code that will macroexpand the matched brackets itself.
 
-This is what Lexmeta currently implements. (TODO: Actually, this implementation only exists in [Lathe](https://github.com/rocketnia/lathe/tree/master/racket/lathe-lib/lathe/private/hoqq) right now. Bring it here.)
+This is what Lexmeta currently implements.
 
 Unfortunately it doesn't let users reuse the reader phase of the macroexpander for their own custom languages, nor doe it let them ignore the reader phase when they write their macros, because the reader really isn't distinguishable from the backend. It may be possible for users to implement their own reader/backend phase-separated macro system, but probably not much more easily than the way we'll implement that kind of system here in Lexmeta.

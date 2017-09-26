@@ -2,4 +2,4 @@
 
 (define collection 'multi)
 
-(define deps (list "base"))
+(define deps (list "base" "lathe"))

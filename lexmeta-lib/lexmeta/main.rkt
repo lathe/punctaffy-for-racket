@@ -1,3 +1,3 @@
 #lang racket/base
 
-; TODO: Put Lexmeta's implementation here.
+; TODO: Put Lexmeta's public API here.
