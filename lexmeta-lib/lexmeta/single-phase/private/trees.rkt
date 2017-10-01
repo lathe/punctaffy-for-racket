@@ -22,12 +22,12 @@
 
 ; ===== Fake nodes for printing things with higher-order holes =======
 
-(struct-easy example "an example" (val))
+(struct-easy "an example" (example val))
 
 
 ; ===== Low-order building block for higher qq spans and hatches =====
 
-(struct-easy hoqq-tower-key-derived "a hoqq-tower-key-derived" (a b)
+(struct-easy "a hoqq-tower-key-derived" (hoqq-tower-key-derived a b)
   #:equal)
 
 (define (careful-hoqq-tower-key-derived a b)
@@ -40,7 +40,7 @@
 (define (hoqq-tower-key? x)
   (or (symbol? x) (hoqq-tower-key-derived? x)))
 
-(struct-easy hoqq-tower "a hoqq-tower" (tables) #:equal #:write
+(struct-easy "a hoqq-tower" (hoqq-tower tables) #:equal #:write
 #/lambda (this port mode)
   (hoqq-tower-print port mode this #/lambda (v)
     (write-string " " port)
@@ -331,7 +331,7 @@
 
 ; ===== Suspended computations over higher quasiquotation spans ======
 
-(struct-easy hoqq-span-step "a hoqq-span-step" (sig func) #:write
+(struct-easy "a hoqq-span-step" (hoqq-span-step sig func) #:write
 #/lambda (this port mode)
   (hoqq-sig-print port mode sig)
   (print-all-for-custom port mode #/list #/func
@@ -696,8 +696,8 @@
 ; resembles the original bracro calls. The `escapable-expression`
 ; struct carries that alternative along with the regular result.
 ;
-(struct-easy escapable-expression "an escapable-expression"
-  (literal expr))
+(struct-easy "an escapable-expression"
+  (escapable-expression literal expr))
 
 
 ; A `hoqq-closing-hatch` represents a partial, inside-out portion of a
@@ -735,8 +735,9 @@
 ; The sigs of the `lower-spansig` and `closing-brackets` put together
 ; must match the sig of `partial-span-step`.
 ;
-(struct-easy hoqq-closing-hatch "a hoqq-closing-hatch"
-  (lower-spansig closing-brackets partial-span-step))
+(struct-easy "a hoqq-closing-hatch"
+  (hoqq-closing-hatch
+    lower-spansig closing-brackets partial-span-step))
 
 (define
   (careful-hoqq-closing-hatch
@@ -801,8 +802,8 @@
 ;     content that could be part of this closing bracket's enclosed
 ;     region if not for this closing bracket being where it is.
 ;
-(struct-easy hoqq-closing-bracket "a hoqq-closing-bracket"
-  (data liner closing-hatch))
+(struct-easy "a hoqq-closing-bracket"
+  (hoqq-closing-bracket data liner closing-hatch))
 
 (define (careful-hoqq-closing-bracket data liner closing-hatch)
   (expect closing-hatch

@@ -15,6 +15,7 @@
 (require racket/list)
 (require racket/match)
 
+(require #/for-meta 1 #/only-in lathe next nextlet w-)
 (require #/only-in lathe dissect dissectfn expect next nextlet w-)
 
 (provide #/all-defined-out)
@@ -136,62 +137,57 @@
     (write-string " " port)
     (print-for-custom port mode value)))
 
-; TODO: There's a lot of code duplication in here. Refactor it a
-; little to make it shorter.
-(define-syntax struct-easy #/lambda (stx)
-  (syntax-case stx ()
-    [ (_ name phrase (slot ...) #:equal #:write writefn)
-      #`(struct name (slot ...)
-        #:methods gen:equal+hash
-        [
-          (define (equal-proc a b recursive-equal?)
-            (expect a (name slot ...)
-              (error #/string-append "Expected a to be " phrase)
-            #/w- a-slots (list slot ...)
-            #/expect b (name slot ...)
-              (error #/string-append "Expected b to be " phrase)
-            #/w- b-slots (list slot ...)
-            #/list-all (map list a-slots b-slots)
-            #/dissectfn (list a-slot b-slot)
-              (recursive-equal? a-slot b-slot)))
-          (define (hash-proc this recursive-equal-hash-code)
-            (expect this (name slot ...)
-              (error #/string-append "Expected this to be " phrase)
-            #/recursive-equal-hash-code #/list slot ...))
-          (define (hash2-proc this recursive-equal-secondary-hash-code)
-            (expect this (name slot ...)
-              (error #/string-append "Expected this to be " phrase)
-            #/recursive-equal-secondary-hash-code #/list slot ...))]
-        #:methods gen:custom-write
-        [
-          (define (write-proc this port mode)
-            (expect this (name slot ...)
-              (error #/string-append "Expected this to be " phrase)
-              
-              (write-string "#<" port)
-              (write-string (symbol->string 'name) port)
-              (writefn this port mode)
-              (write-string ">" port)))])]
-    [ (_ name phrase (slot ...) #:equal)
-      #`(struct-easy name phrase (slot ...) #:equal #:write
-      #/lambda (this port mode)
-        (print-all-for-custom port mode #/list slot ...))]
-    [ (_ name phrase (slot ...) #:write writefn)
-      #`(struct name (slot ...)
-        #:methods gen:custom-write
-        [
-          (define (write-proc this port mode)
-            (expect this (name slot ...)
-              (error #/string-append "Expected this to be " phrase)
-              
-              (write-string "#<" port)
-              (write-string (symbol->string 'name) port)
-              (writefn this port mode)
-              (write-string ">" port)))])]
-    [ (_ name phrase (slot ...))
-      #`(struct-easy name phrase (slot ...) #:write
-      #/lambda (this port mode)
-        (print-all-for-custom port mode #/list slot ...))]))
+(define-syntax (struct-easy stx)
+  (syntax-case stx () #/ (_ phrase (name slot ...) rest ...)
+  #/nextlet rest #'(rest ...) has-write (list) options #'()
+    (w- next
+      (lambda (rest has-write-now options-suffix)
+        (next rest (or has-write has-write-now)
+        #`#/#,@options #,@options-suffix))
+    #/syntax-case rest ()
+      
+      [()
+      #/if has-write
+        #`(struct name (slot ...) #,@options)
+        (next
+          #'(#:write #/lambda (this port mode)
+            (print-all-for-custom port mode #/list slot ...))
+          #f
+          #'())]
+      
+      [(#:other rest ...) #/next #'() #f #'#/rest ...]
+      
+      [(#:write writefn rest ...)
+      #/next #'(rest ...) #t #'#/#:methods gen:custom-write #/
+        (define write-proc #/lambda (this port mode)
+          (expect this (name slot ...)
+            (error #/string-append "Expected this to be " phrase)
+            
+            (write-string "#<" port)
+            (write-string (symbol->string 'name) port)
+            (writefn this port mode)
+            (write-string ">" port)))]
+      
+      [(#:equal rest ...)
+      #/next #'(rest ...) #f #'#/#:methods gen:equal+hash #/
+        (define (equal-proc a b recursive-equal?)
+          (expect a (name slot ...)
+            (error #/string-append "Expected a to be " phrase)
+          #/w- a-slots (list slot ...)
+          #/expect b (name slot ...)
+            (error #/string-append "Expected b to be " phrase)
+          #/w- b-slots (list slot ...)
+          #/list-all (map list a-slots b-slots)
+          #/dissectfn (list a-slot b-slot)
+            (recursive-equal? a-slot b-slot)))
+        (define (hash-proc this recursive-equal-hash-code)
+          (expect this (name slot ...)
+            (error #/string-append "Expected this to be " phrase)
+          #/recursive-equal-hash-code #/list slot ...))
+        (define (hash2-proc this recursive-equal-secondary-hash-code)
+          (expect this (name slot ...)
+            (error #/string-append "Expected this to be " phrase)
+          #/recursive-equal-secondary-hash-code #/list slot ...))])))
 
 
 (define (syntax-local-maybe identifier)

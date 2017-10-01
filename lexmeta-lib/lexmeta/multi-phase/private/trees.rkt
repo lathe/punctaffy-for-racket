@@ -60,7 +60,7 @@
 ; This is a medium where the degree N is `degree`. The edge is another
 ; `null-medium` of degree N-1. The readable values and content values
 ; are empty lists.
-(struct-easy null-medium "a null-medium" (degree) #:equal)
+(struct-easy "a null-medium" (null-medium degree) #:equal)
 
 ; The degree N is the natural number `degree`.
 ;
@@ -69,7 +69,7 @@
 ; A readable value is a cons cell consisting of the readable values of
 ; the components, and likewise for content values.
 ;
-(struct-easy cons-medium "a cons-medium" (degree a b) #:equal)
+(struct-easy "a cons-medium" (cons-medium degree a b) #:equal)
 
 ; This is a medium that acts just like the medium `main-medium` in
 ; most cases, while allowing certain highest-degree content values
@@ -93,15 +93,16 @@
 ; given ones. The `island-medium` and `lake-medium` of the tower must
 ; be the given `subtower-island-medium` and `subtower-lake-medium`.
 ;
-(struct-easy subtower-medium "a subtower-medium"
-  (degree main-medium subtower-island-medium subtower-lake-medium)
+(struct-easy "a subtower-medium"
+  (subtower-medium
+    degree main-medium subtower-island-medium subtower-lake-medium)
   #:equal)
 
 ; This has degree 0 and no island free variables or lake free
 ; variables. The `readable` must be a valid readable value for
 ; `island-medium`.
-(struct-easy hoqq-tower-readable "a hoqq-tower-readable"
-  (island-medium lake-medium island-readable)
+(struct-easy "a hoqq-tower-readable"
+  (hoqq-tower-readable island-medium lake-medium island-readable)
   #:equal)
 
 ; Let N be the degree of the tower `tower-of-subtowers`.
@@ -148,8 +149,10 @@
 ; free variables of the subtowers. This is computed each time, not
 ; summarized anywhere.
 ;
-(struct-easy hoqq-tower-content "a hoqq-tower-content"
-  (island-medium lake-medium lake-sig root-content tower-of-subtowers)
+(struct-easy "a hoqq-tower-content"
+  (hoqq-tower-content
+    island-medium lake-medium lake-sig root-content
+    tower-of-subtowers)
   #:equal)
 
 
@@ -209,8 +212,8 @@
 ; given ones. The `island-medium` and `lake-medium` of the tower must
 ; be the given `fill-island-medium` and `fill-lake-medium`.
 ;
-(struct-easy fill-medium "a fill-medium"
-  (degree main-medium fill-island-medium fill-lake-medium)
+(struct-easy "a fill-medium"
+  (fill-medium degree main-medium fill-island-medium fill-lake-medium)
   #:equal)
 
 ; This is a medium that acts just like the medium `main-medium` in
@@ -235,8 +238,8 @@
 ; given ones. The `island-medium` and `lake-medium` of the tower must
 ; be the given `tail-island-medium` and `tail-lake-medium`.
 ;
-(struct-easy tail-medium "a tail-medium"
-  (degree main-medium tail-island-medium tail-lake-medium)
+(struct-easy "a tail-medium"
+  (tail-medium degree main-medium tail-island-medium tail-lake-medium)
   #:equal)
 
 
@@ -252,6 +255,5 @@
 ; A content value is also like a `readable-medium` readable value (not
 ; a content value), ignoring the tower edge altogether.
 ;
-(struct-easy const-medium "a const-medium"
-  (degree readable-medium)
+(struct-easy "a const-medium" (const-medium degree readable-medium)
   #:equal)
