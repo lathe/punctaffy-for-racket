@@ -137,6 +137,14 @@
     (write-string " " port)
     (print-for-custom port mode value)))
 
+(define (guard-easy guard)
+  (lambda slots-and-name
+    (expect (reverse slots-and-name) (cons name rev-slots)
+      (error "Expected a guard procedure to be called with at least a struct name argument")
+    #/w- slots (reverse rev-slots)
+      (apply guard slots)
+      (apply values slots))))
+
 (define-syntax (struct-easy stx)
   (syntax-case stx () #/ (_ phrase (name slot ...) rest ...)
   #/nextlet rest #'(rest ...) has-write (list) options #'()
@@ -187,8 +195,11 @@
         (define (hash2-proc this recursive-equal-secondary-hash-code)
           (expect this (name slot ...)
             (error #/string-append "Expected this to be " phrase)
-          #/recursive-equal-secondary-hash-code #/list slot ...))])))
-
+          #/recursive-equal-secondary-hash-code #/list slot ...))]
+      
+      [((#:guard-easy body ...) rest ...)
+      #/next #'(rest ...) #f #'#/#:guard
+      #/guard-easy #/lambda (slot ...) body ...])))
 
 (define (syntax-local-maybe identifier)
   (if (identifier? identifier)
