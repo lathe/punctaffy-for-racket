@@ -63,7 +63,12 @@
 (struct-easy "a medium-unpacked-zero"
   (medium-unpacked-zero verify-readable))
 (struct-easy "a medium-unpacked-succ"
-  (medium-unpacked-succ degree edge-island-medium verify-content))
+  (medium-unpacked-succ degree edge-island-medium verify-content)
+  (#:guard-easy
+    (unless (and (exact-nonnegative-integer? degree) #/<= 1 degree)
+      (error "Expected degreee to be an integer greater than or equal to one"))
+    (unless (medium? edge-island-medium)
+      (error "Expected edge-island-medium to be a medium"))))
 
 (define-generics medium
   (medium-unpack medium))
@@ -76,32 +81,44 @@
     degree
   #/error "Expected the result of medium-unpack to be a medium-unpacked-zero or a medium-unpacked-succ"))
 
-(define (medium-edge medium)
-  (expect (medium-unpack medium)
+(define (medium-edge-maybe medium)
+  (w- unpacked (medium-unpack medium)
+  #/mat unpacked (medium-unpacked-zero verify-readable) (list)
+  #/mat unpacked
     (medium-unpacked-succ degree edge-island-medium verify-content)
-    (error "Expected medium to have degree greater than zero")
-    edge-island-medium))
+    (list edge-island-medium)
+  #/error "Expected the result of medium-unpack to be a medium-unpacked-zero or a medium-unpacked-succ"))
 
 
 
-; This is a medium where the degree N is `degree`. The edge is another
-; `null-medium` of degree N-1. The readable values and content values
-; are empty lists.
-(struct-easy "a null-medium" (null-medium degree) #:equal
+; This is a medium where the degree N is `degree` and the edge (if N
+; is nonzero) is `maybe-edge-medium`. The readable values and content
+; values are empty lists.
+(struct-easy "a null-medium" (null-medium degree maybe-edge-medium)
+  #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
-      (error "Expected degree to be an exact nonnegative integer")))
+      (error "Expected degree to be an exact nonnegative integer"))
+    (expect (nat-pred-maybe degree) (list lower-degree)
+      (expect maybe-edge-medium (list)
+        (error "Expected maybe-edge-medium to be an empty list for degree zero"))
+    #/expect maybe-edge-medium (list edge-medium)
+      (error "Expected maybe-edge-medium to be a singleton list for degree nonzero")
+      (unless (medium? edge-medium)
+        (error "Expected edge-medium to be a medium"))
+      (unless (= lower-degree #/medium-degree edge-medium)
+        (error "Expected degree to be one greater than the degree of edge-medium"))))
   #:other
   
   #:methods gen:medium
   [#/define (medium-unpack this)
-    (expect this (null-medium degree)
+    (expect this (null-medium degree maybe-edge-medium)
       (error "Expected this to be a null-medium")
-    #/expect (nat-pred-maybe degree) (list lower-degree)
+    #/expect maybe-edge-medium (list edge-medium)
       (medium-unpacked-zero #/lambda (readable)
         (expect readable (list)
           (error "Expected readable to be an empty list")))
-      (medium-unpacked-succ degree (null-medium lower-degree)
+      (medium-unpacked-succ degree edge-medium
       #/lambda (content-edge content)
         (expect content (list)
           (error "Expected content to be an empty list"))))]
@@ -109,7 +126,8 @@
 
 ; The degree N is the natural number `degree`.
 ;
-; The edge is a `cons-medium` of the edges of the components.
+; The edge of each of the components must be the same. This medium's
+; edge is that edge.
 ;
 ; A readable value is a cons cell consisting of the readable values of
 ; the components, and likewise for content values.
@@ -125,7 +143,9 @@
     (unless (eq? degree #/medium-degree a)
       (error "Expected degree and the degree of a to match"))
     (unless (eq? degree #/medium-degree b)
-      (error "Expected degree and the degree of b to match")))
+      (error "Expected degree and the degree of b to match"))
+    (unless (equal? (medium-edge-maybe a) (medium-edge-maybe b))
+      (error "Expected a and b to have equal adges")))
   #:other
   
   #:methods gen:medium
@@ -154,8 +174,7 @@
         (error "Expected degree to match the degree of a")
       #/expect (= degree degree-b) #t
         (error "Expected degree to match the degree of b")
-      #/medium-unpacked-succ degree
-        (cons-medium lower-degree medium-edge-a medium-edge-b)
+      #/medium-unpacked-succ degree medium-edge-a
       #/lambda (content-edge content)
         (expect content (cons content-a content-b)
           (error "Expected content to be a cons cell")
@@ -219,15 +238,15 @@
     (error "Expected tower and new-island-medium to have the same degree"))
   (unless
     (equal?
-      (medium-edge #/tower-island-medium tower)
-      (medium-edge new-island-medium))
+      (medium-edge-maybe #/tower-island-medium tower)
+      (medium-edge-maybe new-island-medium))
     (error "Expected new-island-medium to have the same edge as the old one"))
   (unless (= (tower-degree tower) (medium-degree new-lake-medium))
     (error "Expected tower and new-lake-medium to have the same degree"))
   (unless
     (equal?
-      (medium-edge #/tower-lake-medium tower)
-      (medium-edge new-lake-medium))
+      (medium-edge-maybe #/tower-lake-medium tower)
+      (medium-edge-maybe new-lake-medium))
     (error "Expected new-lake-medium to have the same edge as the old one"))
   (match tower
     [(hoqq-tower-readable island-medium lake-medium island-readable)
@@ -263,6 +282,16 @@
 (define (tower-cons-highest a b)
   (unless (= (tower-degree a) (tower-degree b))
     (error "Expected towers a and b to have equal degrees"))
+  (unless
+    (equal?
+      (medium-edge-maybe #/tower-island-medium a)
+      (medium-edge-maybe #/tower-island-medium b))
+    (error "Expected towers a and b to have island mediums with the same edge"))
+  (unless
+    (equal?
+      (medium-edge-maybe #/tower-lake-medium a)
+      (medium-edge-maybe #/tower-lake-medium b))
+    (error "Expected towers a and b to have lake mediums with the same edge"))
   (match a
     [
       (hoqq-tower-readable
@@ -325,12 +354,12 @@
     ; TODO: Finish implementing this from here.
     
     [(hoqq-tower-readable island-medium lake-medium island-readable)
-    #/hoqq-tower-readable (null-medium 0) lake-medium #/list]
+    #/hoqq-tower-readable (null-medium 0 #/list) lake-medium #/list]
     [
       (hoqq-tower-content
         degree island-medium lake-medium lake-sig root-content
         tower-of-subtowers)
-    #/hoqq-tower-content degree (null-medium degree) lake-medium
+    #/hoqq-tower-content degree (null-medium degree 'TODO) lake-medium
       ; TODO: Update the lake-sig appropriately.
 
       lake-sig
@@ -447,7 +476,8 @@
 ;
 ; The `root-content` must be a valid `island-medium` content value for
 ; the redaction of `tower-of-subtowers` after all the degree-N lakes
-; are replaced with a `null-medium` of degree N.
+; are replaced with a `null-medium` of degree N, with an edge equal to
+; original lake medium's edge.
 ;
 ; Because of the fact that the lakes are `subtower-medium` trees, some
 ; of the degree-N-1 lakes are towers of degree N+1. We'll call those
@@ -688,19 +718,29 @@
 ;
 ; The degree N is the natural number `degree`.
 ;
-; The edge is another `const-medium` with degree N-1 but the same
-; `readable-medium`.
+; The edge (if N is nonzero) is the given `maybe-edge-medium`, which
+; must have degree N-1.
 ;
 ; A readable value is just like a `readable-medium` readable value.
 ;
 ; A content value is also like a `readable-medium` readable value (not
 ; a content value), ignoring the tower edge altogether.
 ;
-(struct-easy "a const-medium" (const-medium degree readable-medium)
+(struct-easy "a const-medium"
+  (const-medium degree maybe-edge-medium readable-medium)
   #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
       (error "Expected degree to be an exact nonnegative integer"))
+    (expect (nat-pred-maybe degree) (list lower-degree)
+      (expect maybe-edge-medium (list)
+        (error "Expected maybe-edge-medium to be an empty list for degree zero"))
+    #/expect maybe-edge-medium (list edge-medium)
+      (error "Expected maybe-edge-medium to be a singleton list for degree nonzero")
+      (unless (medium? edge-medium)
+        (error "Expected edge-medium to be a medium"))
+      (unless (= lower-degree #/medium-degree edge-medium)
+        (error "Expected degree to be one greater than the degree of edge-medium")))
     (unless (medium? readable-medium)
       (error "Expected readable-medium to be a medium"))
     (unless (= 0 #/medium-degree readable-medium)
@@ -709,16 +749,16 @@
   
   #:methods gen:medium
   [#/define (medium-unpack this)
-    (expect this (const-medium degree readable-medium)
+    (expect this
+      (const-medium degree maybe-edge-medium readable-medium)
       (error "Expected this to be a const-medium")
     #/expect (medium-unpack readable-medium)
       (medium-unpacked-zero verify-readable)
       (error "Expected the result of unpacking readable-medium to be a medium-unpacked-zero")
-    #/expect (nat-pred-maybe degree) (list lower-degree)
+    #/expect maybe-edge-medium (list edge-medium)
       (medium-unpacked-zero #/lambda (readable)
         (verify-readable readable))
-      (medium-unpacked-succ degree
-        (const-medium lower-degree readable-medium)
+      (medium-unpacked-succ degree edge-medium
       #/lambda (content-edge content)
         (verify-readable content)))]
 )
