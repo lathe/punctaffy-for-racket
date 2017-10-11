@@ -6,8 +6,9 @@
 ; occurs in higher quasiquotation.
 
 (require #/only-in racket/generic define-generics)
+(require #/only-in racket/match match)
 
-(require #/only-in lathe expect mat w-)
+(require #/only-in lathe dissect expect mat nextlet w-)
 
 (require "../../private/util.rkt")
 
@@ -74,6 +75,12 @@
     (medium-unpacked-succ degree edge-island-medium verify-content)
     degree
   #/error "Expected the result of medium-unpack to be a medium-unpacked-zero or a medium-unpacked-succ"))
+
+(define (medium-edge medium)
+  (expect (medium-unpack medium)
+    (medium-unpacked-succ degree edge-island-medium verify-content)
+    (error "Expected medium to have degree greater than zero")
+    edge-island-medium))
 
 
 
@@ -156,6 +163,180 @@
           (verify-content-b content-edge content-b))))]
 )
 
+(define (tower-degree tower)
+  (match tower
+    [ (hoqq-tower-readable island-medium lake-medium island-readable)
+      0]
+    [
+      (hoqq-tower-content
+        degree island-medium lake-medium lake-sig root-content
+        tower-of-subtowers)
+      degree]
+    [_ #/error "Expected tower to be a hoqq-tower"]))
+
+(define (tower-island-medium tower)
+  (match tower
+    [ (hoqq-tower-readable island-medium lake-medium island-readable)
+      island-medium]
+    [
+      (hoqq-tower-content
+        degree island-medium lake-medium lake-sig root-content
+        tower-of-subtowers)
+      island-medium]
+    [_ #/error "Expected tower to be a hoqq-tower"]))
+
+(define (tower-lake-medium tower)
+  (match tower
+    [ (hoqq-tower-readable island-medium lake-medium island-readable)
+      lake-medium]
+    [
+      (hoqq-tower-content
+        degree island-medium lake-medium lake-sig root-content
+        tower-of-subtowers)
+      lake-medium]
+    [_ #/error "Expected tower to be a hoqq-tower"]))
+
+(define
+  (tower-verify-degree-and-mediums
+    tower expected-degree expected-island-medium expected-lake-medium)
+  (unless (exact-nonnegative-integer? expected-degree)
+    (error "Expected expected-degree to be an exact nonnegative integer"))
+  (unless (medium? expected-island-medium)
+    (error "Expected expected-island-medium to be a medium"))
+  (unless (medium? expected-lake-medium)
+    (error "Expected expected-lake-medium to be a medium"))
+  (unless (= expected-degree #/tower-degree tower)
+    (error "Expected tower to have degree expected-degree"))
+  (unless (equal? expected-island-medium #/tower-island-medium tower)
+    (error "Expected tower to have island medium expected-island-medium"))
+  (unless (equal? expected-lake-medium #/tower-lake-medium tower)
+    (error "Expected tower to have lake medium expected-lake-medium")))
+
+(define
+  (tower-map-highest tower new-island-medium new-lake-medium
+    island-func lake-func)
+  (unless (= (tower-degree tower) (medium-degree new-island-medium))
+    (error "Expected tower and new-island-medium to have the same degree"))
+  (unless
+    (equal?
+      (medium-edge #/tower-island-medium tower)
+      (medium-edge new-island-medium))
+    (error "Expected new-island-medium to have the same edge as the old one"))
+  (unless (= (tower-degree tower) (medium-degree new-lake-medium))
+    (error "Expected tower and new-lake-medium to have the same degree"))
+  (unless
+    (equal?
+      (medium-edge #/tower-lake-medium tower)
+      (medium-edge new-lake-medium))
+    (error "Expected new-lake-medium to have the same edge as the old one"))
+  (match tower
+    [(hoqq-tower-readable island-medium lake-medium island-readable)
+    #/hoqq-tower-readable new-island-medium new-lake-medium
+    #/island-func island-readable]
+    [
+      (hoqq-tower-content
+        degree island-medium lake-medium lake-sig root-content
+        tower-of-subtowers)
+    #/hoqq-tower-content degree new-island-medium new-lake-medium
+      lake-sig
+      (island-func root-content)
+    #/dissect (tower-island-medium tower-of-subtowers)
+      (subtower-medium
+        degree main-medium subtower-island-medium
+        subtower-lake-medium)
+    #/tower-map-highest tower-of-subtowers
+      (tower-island-medium tower-of-subtowers)
+      (subtower-medium
+        degree main-medium new-lake-medium new-island-medium)
+      (lambda (edge-island)
+        edge-island)
+      (lambda (edge-lake)
+        (match edge-lake
+          [(subtower-medium-continue edge-content)
+          #/subtower-medium-continue edge-content]
+          [(subtower-medium-subtower tower)
+          #/subtower-medium-subtower
+          #/tower-map-highest tower new-lake-medium new-island-medium
+            lake-func island-func ]
+          [_ #/error "Internal error"]))]))
+
+(define (tower-cons-highest a b)
+  (unless (= (tower-degree a) (tower-degree b))
+    (error "Expected towers a and b to have equal degrees"))
+  (match a
+    [
+      (hoqq-tower-readable
+        island-medium-a lake-medium-a island-readable-a)
+    #/dissect b
+      (hoqq-tower-readable
+        island-medium-b lake-medium-b island-readable-b)
+    #/hoqq-tower-readable
+      (cons-medium island-medium-a island-medium-b)
+      (cons-medium lake-medium-a lake-medium-b)
+    #/cons island-readable-a island-readable-b]
+    [
+      (hoqq-tower-content
+        degree-a island-medium-a lake-medium-a lake-sig-a
+        root-content-a tower-of-subtowers-a)
+    #/dissect b
+      (hoqq-tower-content
+        degree-b island-medium-b lake-medium-b lake-sig-b
+        root-content-b tower-of-subtowers-b)
+    #/hoqq-tower-content
+      degree-a
+      (cons-medium island-medium-a island-medium-b)
+      (cons-medium lake-medium-a lake-medium-b)
+      ; TODO: Update the lake sig accordingly.
+      lake-sig-a
+      (cons root-content-a root-content-b)
+    #/tower-map-highest
+      (tower-cons-highest tower-of-subtowers-a tower-of-subtowers-b)
+      ; TODO: Finish implementing this from here.
+      'TODO
+      'TODO
+      'TODO
+      'TODO]))
+
+(define (tower-compatible? a b)
+  (mat a
+    (hoqq-tower-readable
+      island-medium-a lake-medium-a island-readable-a)
+    (hoqq-tower-readable? b)
+  #/expect a
+    (hoqq-tower-content
+      degree-a island-medium-a lake-medium-a lake-sig-a root-content-a
+      tower-of-subtowers-a)
+    (error "Expected a to be a hoqq-tower-readable or a hoqq-tower-content")
+  #/expect b
+    (hoqq-tower-content
+      degree-b island-medium-b lake-medium-b lake-sig-b root-content-b
+      tower-of-subtowers-b)
+    #f
+  ; TODO: Implement the rest of this.
+  #t))
+
+(define (tower-edge tower)
+  (expect tower
+    (hoqq-tower-content
+      degree island-medium lake-medium lake-sig root-content
+      tower-of-subtowers)
+    (error "Expected tower to be a hoqq-tower-content")
+  #/match tower-of-subtowers
+    ; TODO: Finish implementing this from here.
+    
+    [(hoqq-tower-readable island-medium lake-medium island-readable)
+    #/hoqq-tower-readable (null-medium 0) lake-medium #/list]
+    [
+      (hoqq-tower-content
+        degree island-medium lake-medium lake-sig root-content
+        tower-of-subtowers)
+    #/hoqq-tower-content degree (null-medium degree) lake-medium
+      ; TODO: Update the lake-sig appropriately.
+
+      lake-sig
+    #/nextlet tower-of-subtowers tower-of-subtowers
+      (list)]))
+
 ; This is a medium that acts just like the medium `main-medium` in
 ; most cases, while allowing certain highest-degree content values
 ; to contain towers whose mediums are of degree one higher than this
@@ -230,12 +411,18 @@
         (mat content (subtower-medium-continue content)
           (verify-content-main content-edge content)
         #/mat content (subtower-medium-subtower tower)
-          ; TODO: Where N is `degree`, verify that `tower` is a tower
-          ; of degree N+1 where the degree-N-2-or-less free variables
+          ; Where N is `degree`, we verify that `tower` is a tower of
+          ; degree N+1 where the degree-N-2-or-less free variables
           ; match the given `content-edge`. The `island-medium` and
           ; `lake-medium` of the tower must be the given
           ; `subtower-island-medium` and `subtower-lake-medium`.
-          (void)
+          (begin
+            (tower-verify-degree-and-mediums tower (add1 degree)
+              subtower-island-medium subtower-lake-medium)
+            (unless
+              (tower-compatible? content-edge
+              #/tower-edge #/tower-edge tower)
+              (error "Expected the edge of the edge of tower to be compatible with content-edge")))
         #/error "Expected content to be a subtower-medium-continue or a subtower-medium-subtower")))]
 )
 
@@ -248,7 +435,7 @@
 
 ; Let N be the degree of the tower `tower-of-subtowers`.
 ;
-; The degree of this tower is N+1.
+; The degree of this tower is N+1. The value of `degree` must match.
 ;
 ; The tower `tower-of-subtowers` must have an island medium that's the
 ; edge of this `island-medium`, and it must have a lake medium that's
@@ -292,7 +479,7 @@
 ;
 (struct-easy "a hoqq-tower-content"
   (hoqq-tower-content
-    island-medium lake-medium lake-sig root-content
+    degree island-medium lake-medium lake-sig root-content
     tower-of-subtowers)
   #:equal)
 
@@ -396,12 +583,17 @@
         (mat content (fill-medium-continue content)
           (verify-content-main content-edge content)
         #/mat content (fill-medium-fill tower)
-          ; TODO: Where N is `degree`, verify that `tower` is a tower
-          ; of degree N where the degree-N-2-or-less free variables
-          ; match the given `content-edge`. The `island-medium` and
+          ; Where N is `degree`, we verify that `tower` is a tower of
+          ; degree N where the degree-N-2-or-less free variables match
+          ; the given `content-edge`. The `island-medium` and
           ; `lake-medium` of the tower must be the overall
           ; `fill-medium` and the given `fill-lake-medium`.
-          (void)
+          (begin
+            (tower-verify-degree-and-mediums tower degree
+              this fill-lake-medium)
+            (unless
+              (tower-compatible? content-edge #/tower-edge tower)
+              (error "Expected the edge of tower to be compatible with content-edge")))
         #/error "Expected content to be a fill-medium-continue or a fill-medium-fill")))]
 )
 
@@ -471,12 +663,17 @@
         (mat content (tail-medium-continue content)
           (verify-content-main content-edge content)
         #/mat content (tail-medium-tail tower)
-          ; TODO: Where N is `degree`, verify that `tower` is a tower
-          ; of degree N where the degree-N-2-or-less free variables
-          ; match the given `content-edge`. The `island-medium` and
+          ; Where N is `degree`, we verify that `tower` is a tower of
+          ; degree N where the degree-N-2-or-less free variables match
+          ; the given `content-edge`. The `island-medium` and
           ; `lake-medium` of the tower must be the given
           ; `tail-island-medium` and `tail-lake-medium`.
-          (void)
+          (begin
+            (tower-verify-degree-and-mediums tower degree
+              tail-island-medium tail-lake-medium)
+            (unless
+              (tower-compatible? content-edge #/tower-edge tower)
+              (error "Expected the edge of tower to be compatible with content-edge")))
         #/error "Expected content to be a tail-medium-continue or a tail-medium-tail")))]
 )
 
