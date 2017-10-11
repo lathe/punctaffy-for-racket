@@ -279,6 +279,15 @@
             lake-func island-func ]
           [_ #/error "Internal error"]))]))
 
+; TODO: See if we'll use this.
+(define (merge-unasserted a b)
+  a)
+
+(define (merge-asserted compare? a b)
+  (unless (compare? a b)
+    (error "Internal error"))
+  a)
+
 (define (tower-cons-highest a b)
   (unless (= (tower-degree a) (tower-degree b))
     (error "Expected towers a and b to have equal degrees"))
@@ -299,9 +308,10 @@
     #/dissect b
       (hoqq-tower-readable
         island-medium-b lake-medium-b island-readable-b)
-    #/hoqq-tower-readable
+    #/w- lake-medium-consed (cons-medium lake-medium-a lake-medium-b)
+    #/w- island-medium-consed
       (cons-medium island-medium-a island-medium-b)
-      (cons-medium lake-medium-a lake-medium-b)
+    #/hoqq-tower-readable island-medium-consed lake-medium-consed
     #/cons island-readable-a island-readable-b]
     [
       (hoqq-tower-content
@@ -311,25 +321,84 @@
       (hoqq-tower-content
         degree-b island-medium-b lake-medium-b lake-sig-b
         root-content-b tower-of-subtowers-b)
+    ; NOTE: The `sta` and `stb` stand for "subtowers a" and
+    ; "subtowers b."
+    #/dissect (tower-lake-medium tower-of-subtowers-a)
+      (subtower-medium
+        sta-degree sta-main-medium sta-subtower-island-medium
+        sta-subtower-lake-medium)
+    #/dissect (tower-lake-medium tower-of-subtowers-b)
+      (subtower-medium
+        stb-degree stb-main-medium stb-subtower-island-medium
+        stb-subtower-lake-medium)
     #/hoqq-tower-content
-      degree-a
-      (cons-medium island-medium-a island-medium-b)
-      (cons-medium lake-medium-a lake-medium-b)
-      ; TODO: Update the lake sig accordingly.
-      lake-sig-a
+      (merge-asserted = degree-a degree-b)
+      island-medium-consed
+      lake-medium-consed
+      (merge-asserted equal? lake-sig-a lake-sig-b)
       (cons root-content-a root-content-b)
     #/tower-map-highest
       (tower-cons-highest tower-of-subtowers-a tower-of-subtowers-b)
-      ; TODO: Finish implementing this from here.
-      'TODO
-      'TODO
-      'TODO
-      'TODO]))
+      (merge-asserted equal?
+        (tower-island-medium tower-of-subtowers-a)
+        (tower-island-medium tower-of-subtowers-b))
+      (subtower-medium
+        (merge-asserted = sta-degree stb-degree)
+        (merge-asserted equal? (medium-edge lake-medium-consed)
+        #/merge-asserted equal? sta-main-medium stb-main-medium)
+        ; Yes, we switch lakes and islands for the subtowers.
+        lake-medium-consed
+        island-medium-consed)
+      (lambda (island-content)
+        (dissect island-content (cons a b)
+          ; TODO: See how we should merge `a` and `b`. Should we
+          ; require them to be equal, and if so, what kind of equality
+          ; check should we make here? Should we combine them using a
+          ; cons cell or a custom merge function, and if so, what
+          ; ramifications should that have for the final tower's
+          ; edge mediums (or even the design of `cons-medium` itself)?
+          a))
+      (lambda (lake-content)
+        (mat lake-content
+          (cons
+            (subtower-medium-continue a)
+            (subtower-medium-continue b))
+          (subtower-medium-continue #/cons a b)
+        #/mat lake-content
+          (cons
+            (subtower-medium-subtower a)
+            (subtower-medium-subtower b))
+          (subtower-medium-subtower #/tower-cons-highest a b)
+        #/error "Expected towers a and b to be compatible"))]))
+
+(define (tower-all? tower island? lake?)
+  (mat tower (hoqq-tower-readable island-medium lake-medium readable)
+    (island? (list) readable)
+  #/expect tower
+    (hoqq-tower-content degree island-medium lake-medium lake-sig
+      root-content tower-of-subtowers)
+    (error "Expected tower to be a hoqq-tower-readable or a hoqq-tower-content")
+  #/w- root-content-edge
+    (tower-map-highest tower-of-subtowers
+      (tower-island-medium tower-of-subtowers)
+      (null-medium (tower-degree tower-of-subtowers)
+      #/medium-edge #/tower-lake-medium tower-of-subtowers)
+      (lambda (island-content) island-content)
+      (lambda (lake-content) #/list))
+  #/and (island? root-content-edge root-content)
+  #/tower-all-lakes? tower-of-subtowers
+  #/lambda (maybe-content-edge content)
+    (expect content (subtower-medium-subtower tower) #t
+    ; Yes, we flip the lakes and islands for the subtowers.
+    #/tower-all? tower lake? island?)))
+
+(define (tower-all-lakes? tower lake?)
+  (tower-all? tower
+    (lambda (maybe-content-edge island-content) #t)
+    lake?))
 
 (define (tower-compatible? a b)
-  (mat a
-    (hoqq-tower-readable
-      island-medium-a lake-medium-a island-readable-a)
+  (if (hoqq-tower-readable? a)
     (hoqq-tower-readable? b)
   #/expect a
     (hoqq-tower-content
@@ -341,8 +410,18 @@
       degree-b island-medium-b lake-medium-b lake-sig-b root-content-b
       tower-of-subtowers-b)
     #f
-  ; TODO: Implement the rest of this.
-  #t))
+  #/and (tower-compatible? tower-of-subtowers-a tower-of-subtowers-b)
+  #/tower-all-lakes?
+    (tower-cons tower-of-subtowers-a tower-of-subtowers-b)
+  #/lambda (maybe-content-edge content)
+    (dissect content (cons content-a content-b)
+      (if (subtower-medium-continue? content-a)
+        (subtower-medium-continue? content-b)
+      #/expect content-a (subtower-medium-subtower content-tower-a)
+        (error "Expected content-a to be a subtower-medium-continue or a subtower-medium-subtower")
+      #/expect content-b (subtower-medium-subtower content-tower-b)
+        #f
+      #/tower-compatible? content-tower-a content-tower-b))))
 
 (define (tower-edge tower)
   (expect tower
