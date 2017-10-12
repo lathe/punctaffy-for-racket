@@ -8,7 +8,7 @@
 (require #/only-in racket/generic define-generics)
 (require #/only-in racket/match match)
 
-(require #/only-in lathe dissect expect mat nextlet w-)
+(require #/only-in lathe dissect expect mat w-)
 
 (require "../../private/util.rkt")
 
@@ -88,6 +88,11 @@
     (medium-unpacked-succ degree edge-island-medium verify-content)
     (list edge-island-medium)
   #/error "Expected the result of medium-unpack to be a medium-unpacked-zero or a medium-unpacked-succ"))
+
+(define (medium-edge medium)
+  (expect (medium-edge-maybe medium) edge
+    (error "Expected medium to have degree at least one")
+    edge))
 
 
 
@@ -308,10 +313,9 @@
     #/dissect b
       (hoqq-tower-readable
         island-medium-b lake-medium-b island-readable-b)
-    #/w- lake-medium-consed (cons-medium lake-medium-a lake-medium-b)
-    #/w- island-medium-consed
+    #/hoqq-tower-readable
       (cons-medium island-medium-a island-medium-b)
-    #/hoqq-tower-readable island-medium-consed lake-medium-consed
+      (cons-medium lake-medium-a lake-medium-b)
     #/cons island-readable-a island-readable-b]
     [
       (hoqq-tower-content
@@ -321,6 +325,9 @@
       (hoqq-tower-content
         degree-b island-medium-b lake-medium-b lake-sig-b
         root-content-b tower-of-subtowers-b)
+    #/w- island-medium-consed
+      (cons-medium island-medium-a island-medium-b)
+    #/w- lake-medium-consed (cons-medium lake-medium-a lake-medium-b)
     ; NOTE: The `sta` and `stb` stand for "subtowers a" and
     ; "subtowers b."
     #/dissect (tower-lake-medium tower-of-subtowers-a)
@@ -344,6 +351,8 @@
         (tower-island-medium tower-of-subtowers-b))
       (subtower-medium
         (merge-asserted = sta-degree stb-degree)
+        ; TODO: Make sure this `medium-edge` doesn't need to be a
+        ; `medium-edge-maybe`.
         (merge-asserted equal? (medium-edge lake-medium-consed)
         #/merge-asserted equal? sta-main-medium stb-main-medium)
         ; Yes, we switch lakes and islands for the subtowers.
@@ -355,8 +364,8 @@
           ; require them to be equal, and if so, what kind of equality
           ; check should we make here? Should we combine them using a
           ; cons cell or a custom merge function, and if so, what
-          ; ramifications should that have for the final tower's
-          ; edge mediums (or even the design of `cons-medium` itself)?
+          ; ramifications should that have for the final tower's edge
+          ; mediums (or even the design of `cons-medium` itself)?
           a))
       (lambda (lake-content)
         (mat lake-content
@@ -382,6 +391,8 @@
     (tower-map-highest tower-of-subtowers
       (tower-island-medium tower-of-subtowers)
       (null-medium (tower-degree tower-of-subtowers)
+      ; TODO: Make sure this `medium-edge` doesn't need to be a
+      ; `medium-edge-maybe`.
       #/medium-edge #/tower-lake-medium tower-of-subtowers)
       (lambda (island-content) island-content)
       (lambda (lake-content) #/list))
@@ -412,7 +423,7 @@
     #f
   #/and (tower-compatible? tower-of-subtowers-a tower-of-subtowers-b)
   #/tower-all-lakes?
-    (tower-cons tower-of-subtowers-a tower-of-subtowers-b)
+    (tower-cons-highest tower-of-subtowers-a tower-of-subtowers-b)
   #/lambda (maybe-content-edge content)
     (dissect content (cons content-a content-b)
       (if (subtower-medium-continue? content-a)
@@ -423,27 +434,46 @@
         #f
       #/tower-compatible? content-tower-a content-tower-b))))
 
-(define (tower-edge tower)
-  (expect tower
+(define (tower-maybe-edge tower)
+  (if (hoqq-tower-readable? tower) (list)
+  #/list
+  #/expect tower
     (hoqq-tower-content
       degree island-medium lake-medium lake-sig root-content
       tower-of-subtowers)
-    (error "Expected tower to be a hoqq-tower-content")
-  #/match tower-of-subtowers
-    ; TODO: Finish implementing this from here.
-    
-    [(hoqq-tower-readable island-medium lake-medium island-readable)
-    #/hoqq-tower-readable (null-medium 0 #/list) lake-medium #/list]
-    [
-      (hoqq-tower-content
-        degree island-medium lake-medium lake-sig root-content
-        tower-of-subtowers)
-    #/hoqq-tower-content degree (null-medium degree 'TODO) lake-medium
-      ; TODO: Update the lake-sig appropriately.
+    (error "Expected tower to be a hoqq-tower-readable or a hoqq-tower-content")
+  #/mat tower-of-subtowers
+    (hoqq-tower-readable island-medium lake-medium island-readable)
+    (hoqq-tower-readable (null-medium 0 #/list) lake-medium
+    ; TODO: Incorporate the original `island-readable` into this value
+    ; somehow.
+    #/list)
+  #/expect tower-of-subtowers
+    (hoqq-tower-content
+      degree island-medium lake-medium lake-sig root-content
+      tower-of-subtowers)
+    (error "Expected tower-of-subtowers to be a hoqq-tower-readable or a hoqq-tower-content")
+  #/dissect lake-medium
+    (subtower-medium
+      degree main-medium subtower-island-medium subtower-lake-medium)
+  ; TODO: Finish implementing this from here.
+  #/hoqq-tower-content degree
+    ; TODO: Make sure this `medium-edge` doesn't need to be a
+    ; `medium-edge-maybe`.
+    (null-medium degree #/medium-edge island-medium)
+    lake-medium
+    ; TODO: Update the lake-sig appropriately.
+    lake-sig
+    ; TODO: Incorporate the original `root-content` into this value
+    ; somehow.
+    (list)
+    ; TODO: Compute the tower-of-subtowers appropriately.
+    'TODO))
 
-      lake-sig
-    #/nextlet tower-of-subtowers tower-of-subtowers
-      (list)]))
+(define (tower-edge tower)
+  (expect (tower-maybe-edge tower) (list edge)
+    (error "Expected tower to be of degree at least one")
+    edge))
 
 ; This is a medium that acts just like the medium `main-medium` in
 ; most cases, while allowing certain highest-degree content values
