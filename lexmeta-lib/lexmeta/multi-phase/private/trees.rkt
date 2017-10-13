@@ -382,7 +382,7 @@
       #/medium-edge #/tower-lake-medium tower-of-subtowers)
       (lambda (island-content) island-content)
       (lambda (lake-content) #/list))
-  #/and (island? root-content-edge root-content)
+  #/and (island? (list root-content-edge) root-content)
   #/tower-all-lakes? tower-of-subtowers
   #/lambda (maybe-content-edge content)
     (expect content (subtower-medium-subtower tower) #t
