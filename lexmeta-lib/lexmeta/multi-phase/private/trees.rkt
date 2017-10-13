@@ -547,6 +547,31 @@
         #/error "Expected content to be a subtower-medium-continue or a subtower-medium-subtower"))]
 )
 
+; TODO: Refactor `hoqq-tower-readable` and `hoqq-tower-content` like
+; so: Give `hoqq-tower-readable` a slot for a degree and a slot for
+; the edge of the content. Remove `lake-sig`.
+;
+; TODO: Finish implementing `tower-edge-maybe`. To find the edge of
+; `(A `(B ,(C ,(...D) ,(...E) F) ,(G ,(...H) I) J) K ,(...L) M), which
+; is the same as the edge of
+; `(A C ,(...D) ,(...E) F G ,(...H) I K ,(...L) M), we need to do some
+; specific things. We need to concatenate the lower-degree data
+; (C ,(...D) ,(...E) F) and (G ,(...H) I), and this concatenation is
+; just what would come in handy a higher degree do do edge-finding, so
+; we should probably be trying to do concatenation in the first place,
+; making this a recursive call. Furthermore, we need to concatenate
+; that data onto the tail "K ,(...L) M", which means we need to pass
+; tails of various degrees throughout the recursive concatenation.
+; Finally, since in higher degrees the things being concatenated are
+; not simply in a list (but in a tree or even higher-degree
+; structure), we need to distribute this tail information across all
+; the branches that use it, so we'll likely want each concatenation
+; call to return an output tail representing the unused portion of the
+; input tail. (Note that the tail has two dimensions of "tail" at play
+; here; the concatenation operation consumes the tail from side to
+; side, allowing each encountered branch to consume its own slice of
+; the tail from base to tip.)
+
 ; This has degree 0 and no island free variables or lake free
 ; variables. The given `island-medium` and `lake-medium` must be
 ; mediums of degree 0, and the given `island-readable` must be a valid
