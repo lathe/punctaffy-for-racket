@@ -24,13 +24,15 @@
 ; "mediums."
 ;
 ; A medium represents something that has a certain innate degree to
-; it; a certain kind of "readable" value it can validate if it's
-; degree 0; a certain kind of "content" value it can validate for a
-; given tower of degree N (the content's edge) if it's of degree N+1;
-; and finally a certain "edge" medium it has, of degree 1 less. When
-; validating a content value with a medium, the content edge tower
-; provided to the validator must be of that diminished degree and must
-; use that edge medium, or the validation request is not valid.
+; it; a certain "edge" medium of degree N if it's of degree N+1; and a
+; certain kind of "content" value it can validate for a given tower of
+; degree N (the content's edge) if it's of degree N+1 or no tower if
+; it's of degree 0. (Content values with no tower at the edge are
+; nicknamed "readable values" because they're syntax with no end.)
+; When validating a content value with a medium, the content edge
+; tower provided to the validator must be of that diminished degree
+; and must use that edge medium, or the validation request is not
+; valid.
 ;
 ; A tower actually uses two mediums: An "island" medium and a "lake"
 ; medium, both of the same degree as the tower itself. The lake medium
@@ -60,34 +62,35 @@
 ; of that content along various degrees of nested syntax, which is
 ; what we use the rest of the tower data to represent.
 
-(struct-easy "a medium-unpacked-zero"
-  (medium-unpacked-zero verify-readable))
-(struct-easy "a medium-unpacked-succ"
-  (medium-unpacked-succ degree edge-island-medium verify-content)
+(struct-easy "a medium-unpacked"
+  (medium-unpacked degree maybe-edge-medium verify-content)
   (#:guard-easy
-    (unless (and (exact-nonnegative-integer? degree) #/<= 1 degree)
-      (error "Expected degreee to be an integer greater than or equal to one"))
-    (unless (medium? edge-island-medium)
-      (error "Expected edge-island-medium to be a medium"))))
+    (unless (exact-nonnegative-integer? degree)
+      (error "Expected degreee to be an exact nonnegative integer"))
+    (expect (nat-pred-maybe degree) (list lower-degree)
+      (expect maybe-edge-medium (list)
+        (error "Expected maybe-edge-medium to be an empty list for degree zero"))
+    #/expect maybe-edge-medium (list edge-medium)
+      (error "Expected maybe-edge-medium to be a singleton list for degree nonzero")
+      (unless (medium? edge-medium)
+        (error "Expected edge-medium to be a medium"))
+      (unless (= lower-degree #/medium-degree edge-medium)
+        (error "Expected degree to be one greater than the degree of edge-medium")))))
 
 (define-generics medium
   (medium-unpack medium))
 
 (define (medium-degree medium)
-  (w- unpacked (medium-unpack medium)
-  #/mat unpacked (medium-unpacked-zero verify-readable) 0
-  #/mat unpacked
-    (medium-unpacked-succ degree edge-island-medium verify-content)
-    degree
-  #/error "Expected the result of medium-unpack to be a medium-unpacked-zero or a medium-unpacked-succ"))
+  (expect (medium-unpack medium)
+    (medium-unpacked degree maybe-edge-medium verify-content)
+    (error "Expected the result of medium-unpack to be a medium-unpacked")
+    degree))
 
 (define (medium-edge-maybe medium)
-  (w- unpacked (medium-unpack medium)
-  #/mat unpacked (medium-unpacked-zero verify-readable) (list)
-  #/mat unpacked
-    (medium-unpacked-succ degree edge-island-medium verify-content)
-    (list edge-island-medium)
-  #/error "Expected the result of medium-unpack to be a medium-unpacked-zero or a medium-unpacked-succ"))
+  (expect (medium-unpack medium)
+    (medium-unpacked degree maybe-edge-medium verify-content)
+    (error "Expected the result of medium-unpack to be a medium-unpacked")
+    maybe-edge-medium))
 
 (define (medium-edge medium)
   (expect (medium-edge-maybe medium) edge
@@ -97,8 +100,8 @@
 
 
 ; This is a medium where the degree N is `degree` and the edge (if N
-; is nonzero) is `maybe-edge-medium`. The readable values and content
-; values are empty lists.
+; is nonzero) is `maybe-edge-medium`. The content values are empty
+; lists.
 (struct-easy "a null-medium" (null-medium degree maybe-edge-medium)
   #:equal
   (#:guard-easy
@@ -119,14 +122,10 @@
   [#/define (medium-unpack this)
     (expect this (null-medium degree maybe-edge-medium)
       (error "Expected this to be a null-medium")
-    #/expect maybe-edge-medium (list edge-medium)
-      (medium-unpacked-zero #/lambda (readable)
-        (expect readable (list)
-          (error "Expected readable to be an empty list")))
-      (medium-unpacked-succ degree edge-medium
-      #/lambda (content-edge content)
-        (expect content (list)
-          (error "Expected content to be an empty list"))))]
+    #/medium-unpacked degree maybe-edge-medium
+    #/lambda (maybe-content-edge content)
+      (expect content (list)
+        (error "Expected content to be an empty list")))]
 )
 
 ; The degree N is the natural number `degree`.
@@ -134,8 +133,8 @@
 ; The edge of each of the components must be the same. This medium's
 ; edge is that edge.
 ;
-; A readable value is a cons cell consisting of the readable values of
-; the components, and likewise for content values.
+; A content value is a cons cell consisting of the content values of
+; the components.
 ;
 (struct-easy "a cons-medium" (cons-medium degree a b) #:equal
   (#:guard-easy
@@ -157,34 +156,21 @@
   [#/define (medium-unpack this)
     (expect this (cons-medium degree a b)
       (error "Expected this to be a cons-medium")
-    #/expect (nat-pred-maybe degree) (list lower-degree)
-      (expect (medium-unpack a)
-        (medium-unpacked-zero verify-readable-a)
-        (error "Expected the unpacked a to be a medium-unpacked-zero")
-      #/expect (medium-unpack b)
-        (medium-unpacked-zero verify-readable-b)
-        (error "Expected the unpacked b to be a medium-unpacked-zero")
-      #/medium-unpacked-zero #/lambda (readable)
-        (expect readable (cons readable-a readable-b)
-          (error "Expected readable to be a cons cell")
-          (verify-readable-a readable-a)
-          (verify-readable-b readable-b)))
-      (expect (medium-unpack a)
-        (medium-unpacked-succ degree-a medium-edge-a verify-content-a)
-        (error "Expected the unpacked a to be a medium-unpacked-succ")
-      #/expect (medium-unpack b)
-        (medium-unpacked-succ degree-b medium-edge-b verify-content-b)
-        (error "Expected the unpacked b to be a medium-unpacked-succ")
-      #/expect (= degree degree-a) #t
-        (error "Expected degree to match the degree of a")
-      #/expect (= degree degree-b) #t
-        (error "Expected degree to match the degree of b")
-      #/medium-unpacked-succ degree medium-edge-a
-      #/lambda (content-edge content)
-        (expect content (cons content-a content-b)
-          (error "Expected content to be a cons cell")
-          (verify-content-a content-edge content-a)
-          (verify-content-b content-edge content-b))))]
+    #/expect (medium-unpack a)
+      (medium-unpacked degree-a maybe-edge-a verify-content-a)
+      (error "Expected the unpacked a to be a medium-unpacked")
+    #/expect (medium-unpack b)
+      (medium-unpacked degree-b maybe-edge-b verify-content-b)
+      (error "Expected the unpacked b to be a medium-unpacked")
+    #/medium-unpacked
+      (merge-asserted = degree
+      #/merge-asserted = degree-a degree-b)
+      (merge-asserted equal? maybe-edge-a maybe-edge-b)
+    #/lambda (maybe-content-edge content)
+      (expect content (cons content-a content-b)
+        (error "Expected content to be a cons cell")
+        (verify-content-a maybe-content-edge content-a)
+        (verify-content-b maybe-content-edge content-b)))]
 )
 
 (define (tower-degree tower)
@@ -434,7 +420,7 @@
         #f
       #/tower-compatible? content-tower-a content-tower-b))))
 
-(define (tower-maybe-edge tower)
+(define (tower-edge-maybe tower)
   (if (hoqq-tower-readable? tower) (list)
   #/list
   #/expect tower
@@ -471,7 +457,7 @@
     'TODO))
 
 (define (tower-edge tower)
-  (expect (tower-maybe-edge tower) (list edge)
+  (expect (tower-edge-maybe tower) (list edge)
     (error "Expected tower to be of degree at least one")
     edge))
 
@@ -490,8 +476,6 @@
 ; The degree N is the natural number `degree`.
 ;
 ; The edge is the edge of `main-medium`.
-;
-; A readable value is just like a `main-medium` readable value.
 ;
 ; A content value for some degree-N-1 content edge is expected to be
 ; a sum type of either (`subtower-medium-continue`) a `main-medium`
@@ -532,41 +516,41 @@
         degree main-medium subtower-island-medium
         subtower-lake-medium)
       (error "Expected this to be a subtower-medium")
-    #/expect (nat-pred-maybe degree) (list lower-degree)
-      (expect (medium-unpack main-medium)
-        (medium-unpacked-zero verify-readable-main)
-        (error "Expected the result of unpacking main-medium to be a medium-unpacked-zero")
-      #/medium-unpacked-zero #/lambda (readable)
-        (verify-readable-main readable))
-      (expect (medium-unpack main-medium)
-        (medium-unpacked-succ
-          degree-main medium-edge-main verify-content-main)
-        (error "Expected the result of unpacking main-medium to be a medium-unpacked-zero")
-      #/expect (= degree degree-main) #t
-        (error "Expected degree to match the degree of main-medium")
-      #/medium-unpacked-succ degree medium-edge-main
-      #/lambda (content-edge content)
-        (mat content (subtower-medium-continue content)
-          (verify-content-main content-edge content)
-        #/mat content (subtower-medium-subtower tower)
-          ; Where N is `degree`, we verify that `tower` is a tower of
-          ; degree N+1 where the degree-N-2-or-less free variables
-          ; match the given `content-edge`. The `island-medium` and
-          ; `lake-medium` of the tower must be the given
-          ; `subtower-island-medium` and `subtower-lake-medium`.
-          (begin
-            (tower-verify-degree-and-mediums tower (add1 degree)
-              subtower-island-medium subtower-lake-medium)
-            (unless
-              (tower-compatible? content-edge
-              #/tower-edge #/tower-edge tower)
-              (error "Expected the edge of the edge of tower to be compatible with content-edge")))
-        #/error "Expected content to be a subtower-medium-continue or a subtower-medium-subtower")))]
+    #/expect (medium-unpack main-medium)
+      (medium-unpacked
+        degree-main maybe-medium-edge-main verify-content-main)
+      (error "Expected the result of unpacking main-medium to be a medium-unpacked")
+    #/medium-unpacked (merge-asserted = degree degree-main)
+      maybe-medium-edge-main
+    #/lambda (maybe-content-edge content)
+      (mat content (subtower-medium-continue content)
+        (verify-content-main maybe-content-edge content)
+      #/mat content (subtower-medium-subtower tower)
+        ; Where N is `degree`, we verify that `tower` is a tower of
+        ; degree N+1 where the degree-N-2-or-less free variables match
+        ; the given `content-edge`. The `island-medium` and
+        ; `lake-medium` of the tower must be the given
+        ; `subtower-island-medium` and `subtower-lake-medium`.
+        (begin
+          (tower-verify-degree-and-mediums tower (add1 degree)
+            subtower-island-medium subtower-lake-medium)
+        #/expect maybe-content-edge (list content-edge)
+          ; If there is no content edge (or in other words there would
+          ; be a content edge of degree -1), then there's nothing to
+          ; verify the tower's degree-N-2-or-less free variables
+          ; against, so anything goes.
+          (void)
+        #/unless
+          (tower-compatible? content-edge
+          #/tower-edge #/tower-edge tower)
+          (error "Expected the edge of the edge of tower to be compatible with content-edge"))
+        #/error "Expected content to be a subtower-medium-continue or a subtower-medium-subtower"))]
 )
 
 ; This has degree 0 and no island free variables or lake free
-; variables. The `readable` must be a valid readable value for
-; `island-medium`.
+; variables. The given `island-medium` and `lake-medium` must be
+; mediums of degree 0, and the given `island-readable` must be a valid
+; content value for `island-medium`.
 (struct-easy "a hoqq-tower-readable"
   (hoqq-tower-readable island-medium lake-medium island-readable)
   #:equal)
@@ -674,8 +658,6 @@
 ;
 ; The edge is the edge of `main-medium`.
 ;
-; A readable value is just like a `main-medium` readable value.
-;
 ; A content value of degree N-1 for some free variables is expected to
 ; be a sum type of either (`fill-medium-continue`) a `main-medium`
 ; content value or (`fill-medium-fill`) a tower of degree N where the
@@ -705,35 +687,33 @@
   [#/define (medium-unpack this)
     (expect this (fill-medium degree main-medium fill-lake-medium)
       (error "Expected this to be a fill-medium")
-    #/expect (nat-pred-maybe degree) (list lower-degree)
-      (expect (medium-unpack main-medium)
-        (medium-unpacked-zero verify-readable-main)
-        (error "Expected the result of unpacking main-medium to be a medium-unpacked-zero")
-      #/medium-unpacked-zero #/lambda (readable)
-        (verify-readable-main readable))
-      (expect (medium-unpack main-medium)
-        (medium-unpacked-succ
-          degree-main medium-edge-main verify-content-main)
-        (error "Expected the result of unpacking main-medium to be a medium-unpacked-zero")
-      #/expect (= degree degree-main) #t
-        (error "Expected degree to match the degree of main-medium")
-      #/medium-unpacked-succ degree medium-edge-main
-      #/lambda (content-edge content)
-        (mat content (fill-medium-continue content)
-          (verify-content-main content-edge content)
-        #/mat content (fill-medium-fill tower)
-          ; Where N is `degree`, we verify that `tower` is a tower of
-          ; degree N where the degree-N-2-or-less free variables match
-          ; the given `content-edge`. The `island-medium` and
-          ; `lake-medium` of the tower must be the overall
-          ; `fill-medium` and the given `fill-lake-medium`.
-          (begin
-            (tower-verify-degree-and-mediums tower degree
-              this fill-lake-medium)
-            (unless
-              (tower-compatible? content-edge #/tower-edge tower)
-              (error "Expected the edge of tower to be compatible with content-edge")))
-        #/error "Expected content to be a fill-medium-continue or a fill-medium-fill")))]
+    #/expect (medium-unpack main-medium)
+      (medium-unpacked
+        degree-main maybe-medium-edge-main verify-content-main)
+      (error "Expected the result of unpacking main-medium to be a medium-unpacked")
+    #/medium-unpacked (merge-asserted = degree degree-main)
+      maybe-medium-edge-main
+    #/lambda (maybe-content-edge content)
+      (mat content (fill-medium-continue content)
+        (verify-content-main maybe-content-edge content)
+      #/mat content (fill-medium-fill tower)
+        ; Where N is `degree`, we verify that `tower` is a tower of
+        ; degree N where the degree-N-2-or-less free variables match
+        ; the given `content-edge`. The `island-medium` and
+        ; `lake-medium` of the tower must be the overall `fill-medium`
+        ; and the given `fill-lake-medium`.
+        (begin
+          (tower-verify-degree-and-mediums tower degree
+            this fill-lake-medium)
+        #/expect maybe-content-edge (list content-edge)
+          ; If there is no content edge (or in other words there would
+          ; be a content edge of degree -1), then there's nothing to
+          ; verify the tower's degree-N-2-or-less free variables
+          ; against, so anything goes.
+          (void)
+        #/unless (tower-compatible? content-edge #/tower-edge tower)
+          (error "Expected the edge of tower to be compatible with content-edge"))
+        #/error "Expected content to be a fill-medium-continue or a fill-medium-fill"))]
 )
 
 ; This is a medium that acts just like the medium `main-medium` in
@@ -748,8 +728,6 @@
 ; The degree N is the natural number `degree`.
 ;
 ; The edge is the edge of `main-medium`.
-;
-; A readable value is just like a `main-medium` readable value.
 ;
 ; A content value of degree N-1 for some free variables is expected to
 ; be a sum type of either an `island-medium` content value or a tower
@@ -785,35 +763,33 @@
       (tail-medium
         degree main-medium tail-island-medium tail-lake-medium)
       (error "Expected this to be a tail-medium")
-    #/expect (nat-pred-maybe degree) (list lower-degree)
-      (expect (medium-unpack main-medium)
-        (medium-unpacked-zero verify-readable-main)
-        (error "Expected the result of unpacking main-medium to be a medium-unpacked-zero")
-      #/medium-unpacked-zero #/lambda (readable)
-        (verify-readable-main readable))
-      (expect (medium-unpack main-medium)
-        (medium-unpacked-succ
-          degree-main medium-edge-main verify-content-main)
-        (error "Expected the result of unpacking main-medium to be a medium-unpacked-zero")
-      #/expect (= degree degree-main) #t
-        (error "Expected degree to match the degree of main-medium")
-      #/medium-unpacked-succ degree medium-edge-main
-      #/lambda (content-edge content)
-        (mat content (tail-medium-continue content)
-          (verify-content-main content-edge content)
-        #/mat content (tail-medium-tail tower)
-          ; Where N is `degree`, we verify that `tower` is a tower of
-          ; degree N where the degree-N-2-or-less free variables match
-          ; the given `content-edge`. The `island-medium` and
-          ; `lake-medium` of the tower must be the given
-          ; `tail-island-medium` and `tail-lake-medium`.
-          (begin
-            (tower-verify-degree-and-mediums tower degree
-              tail-island-medium tail-lake-medium)
-            (unless
-              (tower-compatible? content-edge #/tower-edge tower)
-              (error "Expected the edge of tower to be compatible with content-edge")))
-        #/error "Expected content to be a tail-medium-continue or a tail-medium-tail")))]
+    #/expect (medium-unpack main-medium)
+      (medium-unpacked
+        degree-main maybe-medium-edge-main verify-content-main)
+      (error "Expected the result of unpacking main-medium to be a medium-unpacked")
+    #/medium-unpacked (merge-asserted = degree degree-main)
+      maybe-medium-edge-main
+    #/lambda (maybe-content-edge content)
+      (mat content (tail-medium-continue content)
+        (verify-content-main maybe-content-edge content)
+      #/mat content (tail-medium-tail tower)
+        ; Where N is `degree`, we verify that `tower` is a tower of
+        ; degree N where the degree-N-2-or-less free variables match
+        ; the given `content-edge`. The `island-medium` and
+        ; `lake-medium` of the tower must be the given
+        ; `tail-island-medium` and `tail-lake-medium`.
+        (begin
+          (tower-verify-degree-and-mediums tower degree
+            tail-island-medium tail-lake-medium)
+        #/expect maybe-content-edge (list content-edge)
+          ; If there is no content edge (or in other words there would
+          ; be a content edge of degree -1), then there's nothing to
+          ; verify the tower's degree-N-2-or-less free variables
+          ; against, so anything goes.
+          (void)
+        #/unless (tower-compatible? content-edge #/tower-edge tower)
+          (error "Expected the edge of tower to be compatible with content-edge"))
+        #/error "Expected content to be a tail-medium-continue or a tail-medium-tail"))]
 )
 
 ; TODO: See if we can represent something like `tail-medium` as a
@@ -830,10 +806,8 @@
 ; The edge (if N is nonzero) is the given `maybe-edge-medium`, which
 ; must have degree N-1.
 ;
-; A readable value is just like a `readable-medium` readable value.
-;
-; A content value is also like a `readable-medium` readable value (not
-; a content value), ignoring the tower edge altogether.
+; A content value is also like a `readable-medium` content value,
+; ignoring the tower edge altogether.
 ;
 (struct-easy "a const-medium"
   (const-medium degree maybe-edge-medium readable-medium)
@@ -862,12 +836,9 @@
       (const-medium degree maybe-edge-medium readable-medium)
       (error "Expected this to be a const-medium")
     #/expect (medium-unpack readable-medium)
-      (medium-unpacked-zero verify-readable)
-      (error "Expected the result of unpacking readable-medium to be a medium-unpacked-zero")
-    #/expect maybe-edge-medium (list edge-medium)
-      (medium-unpacked-zero #/lambda (readable)
-        (verify-readable readable))
-      (medium-unpacked-succ degree edge-medium
-      #/lambda (content-edge content)
-        (verify-readable content)))]
+      (medium-unpacked 0 (list) verify-readable)
+      (error "Expected the result of unpacking readable-medium to be a medium-unpacked of degree zero")
+    #/medium-unpacked degree maybe-edge-medium
+    #/lambda (maybe-content-edge content)
+      (verify-readable (list) content))]
 )
