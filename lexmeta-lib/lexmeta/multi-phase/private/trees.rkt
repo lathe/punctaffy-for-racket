@@ -572,6 +572,117 @@
 ; side, allowing each encountered branch to consume its own slice of
 ; the tail from base to tip.)
 
+(struct-easy "a carry" (extra val))
+
+(define (tower? x)
+  (or (hoqq-tower-readable? x) (hoqq-tower-content? x)))
+
+#|
+(define (tower-squash towers-and-extra)
+  (expect towers-and-extra (carry extra tower-of-towers)
+    (error "Expected towers-and-extra to be a carry")
+  #/expect (tower? extra) #t
+    (error "Expected extra to be a tower")
+  #/expect (tower? tower-of-towers) #t
+    (error "Expected tower-of-towers to be a tower")
+  #/expect (tower-lake-medium tower-of-towers)
+    ; NOTE: The "v" stands for "val."
+    (subtower-medium
+      degree-v main-medium-v subtower-island-medium-v
+      subtower-lake-medium-v)
+    (error "Expected the lake medium of tower-of-towers to be a subtower-medium")
+  #/expect
+    ; TODO: This seems sloppy. There's probably something we have to
+    ; do to finesse these to be equal.
+    (equal?
+      ; The `tower-of-towers` tower represents a bunch of lakes and
+      ; the areas beyond, just like `hoqq-tower-content`. Thus, once
+      ; we squash all the lakes out of it, we're left with only the
+      ; islands, which correspond with the lakes of the subtowers. But
+      ; we don't get those lakes at the same degree they were
+      ; originally in the subtowers; we get their edges. (TODO: Do we
+      ; really get their *edges* or something else?)
+      (medium-edge subtower-lake-medium-v)
+      ; The `extra` tower represents a collection of already-squashed
+      ; pieces. The elements of this collection exist at the tower's
+      ; lakes.
+      (tower-lake-medium extra))
+    #t
+    (error "Expected tower-of-towers and extra to have compatible mediums")
+  #/mat tower-of-towers
+    (hoqq-tower-readable island-medium lake-medium island-readable)
+    ; TODO: Verify that `extra` is empty (i.e. just a
+    ; `hoqq-tower-readable` itself), and return a
+    ; `hoqq-tower-readable` with an edge that's squashed from this
+    ; one's edge.
+    'TODO
+  #/expect tower-of-towers
+    (hoqq-tower-content
+      degree island-medium lake-medium lake-sig root-content
+      tower-of-subtowers)
+    (error "Expected tower-of-towers to be a hoqq-tower-readable or a hoqq-tower-content")
+  
+  ; NOTE: This `root-content` is a content value for
+  ; `(tower-island-medium tower-of-towers)`.
+  
+  ; NOTE: We don't want to recur on `tower-of-subtowers` because we
+  ; would squash out all the islands if we did that, rather than
+  ; squashing out all the lakes. So we match on it again.
+  ;
+  ; If we were to recur on `tower-of-subtowers` here anyway, what kind
+  ; of `extra` would we need to pass in? Well, the lake medium of this
+  ; `tower-of-subtowers` is a `subtower-medium` whose
+  ; `subtower-lake-medium` is `(tower-island-medium tower-of-towers)`,
+  ; so we would need the lake medium of our new `extra` to match the
+  ; edge of that.
+  
+  #/mat tower-of-subtowers
+    (hoqq-tower-readable island-medium lake-medium island-readable)
+    ; TODO: If the `root-content` is a `subtower-medum-continue`,
+    ; consume exactly one lake of `extra`, and return the value
+    ; from there.
+    'TODO
+  #/expect tower-of-subtowers
+    (hoqq-tower-content
+      degree island-medium lake-medium lake-sig root-content
+      tower-of-subtowers)
+    (error "Expected tower-of-subtowers to be a hoqq-tower-readable or a hoqq-tower-content")
+  
+  ; NOTE: This `root-content` is a content value for the edge of the
+  ; lake medium for `tower-of-towers`. That lake medium was what we
+  ; deconstructed above, so `root-content` is a content value for
+  ; `(medium-edge main-medium-v)`.
+  
+  ; NOTE: If we were to recur on `tower-of-subtowers` here, what kind
+  ; of `extra` would we need to pass in? Well, the lake medium of this
+  ; `tower-of-subtowers` is a `subtower-medium` whose
+  ; `subtower-lake-medium` is the island medium of the previous
+  ; `tower-of-towers`, which was the edge of
+  ; `(tower-island-medium tower-of-towers)`, so we would need the lake
+  ; medium of our new `extra` to match the edge of that, namely
+  ; `(medium-edge #/medium-edge
+  ; #/tower-island-medium tower-of-towers)`.
+  ;
+  ; TODO: That seems rather difficult to satisfy. Perhaps we do need squashing that removes islands.
+  
+  #/expect (tower-lake-medium extra)
+    ; NOTE: The "e" stands for "extra."
+    (subtower-medium
+      degree-e main-medium-e subtower-island-medium-e
+      subtower-lake-medium-e)
+    (error "Expected the lake medium of extra to be a subtower-medium")
+  
+  #/mat tower
+    (hoqq-tower-readable island-medium lake-medium island-readable)
+    (carry extra
+    #/hoqq-tower-readable (null-medium 0 #/list) lake-medium #/list)
+  #/expect tower
+    (hoqq-tower-content
+      degree island-medium lake-medium lake-sig root-content
+      tower-of-subtowers)
+    (error "Expected tower to be a hoqq-tower-readable or a hoqq-tower-content")
+|#
+
 ; This has degree 0 and no island free variables or lake free
 ; variables. The given `island-medium` and `lake-medium` must be
 ; mediums of degree 0, and the given `island-readable` must be a valid
