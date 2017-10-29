@@ -101,14 +101,12 @@ exprInfoType degree = case degree of
     (balanceStateType : Type) *
     let bl = List balanceStateType in
     (bl -> () -> Type) *
-    (bl -> () -> Type) *
-    ()
+    (bl -> () -> Type)
   1 + degree' =>
     (balanceStateType : Type) *
     let bl = List balanceStateType in
     (bl -> exprOf degree' bl -> Type) *
-    (bl -> exprOf degree' bl -> Type) *
-    exprInfoType degree'
+    (bl -> exprOf degree' bl -> Type)
 
 type List (a : Type) where
   nil : (a : Type) -> List a
@@ -124,19 +122,26 @@ exprInfo degree balanceStateType0 i0 l0 = case degree of
   0 =>
     balanceStateType0 *
     (\currentBalance () -> i0 currentBalance) *
-    (\currentBalance () -> l0 currentBalance) *
-    ()
+    (\currentBalance () -> l0 currentBalance)
   1 + degree' =>
     let
-      balanceStateTypeN * iN * lN * infoN =
+      balanceStateTypeN * iN * lN =
         exprInfo degree' balanceStateType0 i0 l0
     in
     List balanceStateTypeN *
     (\currentBalance edge ->
-      Expr degree' (balanceStateTypeN * iN * lN)
+      Expr degree'
+        (balanceStateTypeN * iN *
+          (\currentBalance edge ->
+            (case currentBalance of
+              nil subBalanceType => Bot
+              cons subBalanceType subBalance subBalances =>
+                exprOf degree'
+                  ( (E) +
+                    ())) +
+            ())
         (nil balanceStateTypeN)) *
-    (\currentBalance edge -> ()) *
-    (balanceStateTypeN * iN * lN * infoN)
+    (\currentBalance edge -> ())
     
 
 island : Nat -> (balanceStateType : Type) -> balanceStateType -> Type
