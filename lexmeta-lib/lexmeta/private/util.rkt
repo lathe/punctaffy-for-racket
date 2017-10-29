@@ -29,6 +29,9 @@
     (list #/sub1 n)))
 
 
+(define (list-foldl state lst func)
+  (foldl (lambda (elem state) #/func state elem) state lst))
+
 (define (list-kv-map lst func)
   (map func (range #/length lst) lst))
 
