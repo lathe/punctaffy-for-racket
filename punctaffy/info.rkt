@@ -2,5 +2,5 @@
 
 (define collection 'multi)
 
-(define implies (list "lexmeta-lib"))
+(define implies (list "punctaffy-lib"))
 (define deps implies)

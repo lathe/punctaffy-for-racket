@@ -1,6 +1,6 @@
-# Lexmeta
+# Punctaffy
 
-Lexmeta is a library for dealing with structured data with a higher-degree concept of "nesting" than usual. Its main use is for programming languages' syntax, where we structure lexical regions according to the intervals that mark their beginnings and ends. Higher degrees correspond to making degree-N+1 intervals that begin at one degree-N interval and end at another degree-N interval inside it.
+Punctaffy is a library for dealing with structured data with a higher-degree concept of "nesting" than usual. Its main use is for programming languages' syntax, where we structure lexical regions according to the intervals that mark their beginnings and ends. Higher degrees correspond to making degree-N+1 intervals that begin at one degree-N interval and end at another degree-N interval inside it.
 
 ```
 Statement terminators:       ;   ;
@@ -41,7 +41,7 @@ Few languages have quasiquotation at all, and none that I know of have facilitie
 
 If a language *did* support this, how could we be confident the support was adequate? It's easy to see how parentheses nest with each other, but the support for nesting quasiquotations differs even between Common Lisp and Scheme.
 
-We pursue this confidence in Lexmeta by extending the analogy further.
+We pursue this confidence in Punctaffy by extending the analogy further.
 
 Where there's an ordering, there's an interval. Where there's an interval, we can order them by containment. By iterating this, we can find lexical regions of higher and higher degrees, which have higher and higher degrees of holes carved out of them. Quasiquotation-shaped regions with quasiquotation-shaped holes... and then whatever comes after that.
 
@@ -56,7 +56,7 @@ But if you want my opinion, I think the most compelling application of this is t
 
 When we put high-degree syntax on the table, it may start to call into question the Lisp tradition of using s-expressions for the post-reader, pre-macroexpander syntax. What about using higher degrees in between? Or what about unifying the reader and the macroexpander into one stage?
 
-This project, Lexmeta, has explored the second option first. (It's still been difficult to get to this point, because allowing users to define closing bracket operators like `unquote` takes special attention.) Lexmeta will also pursue the more phase-separated approach as well, so that users have the option of implementing either kind of macroexpander for their purposes.
+This project, Punctaffy, has explored the second option first. (It's still been difficult to get to this point, because allowing users to define closing bracket operators like `unquote` takes special attention.) Punctaffy will also pursue the more phase-separated approach as well, so that users have the option of implementing either kind of macroexpander for their purposes.
 
 
 ## High-degree syntaxes in Racket
@@ -65,14 +65,14 @@ Racket has a lot invested in its representations of syntax. Between syntax prope
 
 Racket also has a particular implementation of readtables already. Readtable mappings have little in common with variable lookups and have very little hygiene or extensibility.
 
-To work together with Racket's hygiene systems, Lexmeta will focus on taking Racket syntax objects as input and producing Racket syntax objects as output, trying to play nicely with source locations, taints, etc. along the way.
+To work together with Racket's hygiene systems, Punctaffy will focus on taking Racket syntax objects as input and producing Racket syntax objects as output, trying to play nicely with source locations, taints, etc. along the way.
 
-The readtable, on the other hand, almost seems better to rebuild from scratch, using custom implementations of every reader macro. This is a steep undertaking, and yet 100% parity with Racket's existing (unhygienic) reader syntaxes is probably undesirable, so it's not a priority of the Lexmeta project yet.
+The readtable, on the other hand, almost seems better to rebuild from scratch, using custom implementations of every reader macro. This is a steep undertaking, and yet 100% parity with Racket's existing (unhygienic) reader syntaxes is probably undesirable, so it's not a priority of the Punctaffy project yet.
 
 
-## Using Lexmeta
+## Using Punctaffy
 
-Lexmeta is still in a highly experimental phase. If there's even an API to speak of, it's more an accident of `(provide (all-defined-out))` rather than something that's actually well-defined, stable, or supported. Consider Lexmeta to be a proof of concept, and implement your own systems similar to it if you like what you see. Let me know if you do! :)
+Punctaffy is still in a highly experimental phase. If there's even an API to speak of, it's more an accident of `(provide (all-defined-out))` rather than something that's actually well-defined, stable, or supported. Consider Punctaffy to be a proof of concept, and implement your own systems similar to it if you like what you see. Let me know if you do! :)
 
 
 
@@ -106,6 +106,6 @@ When users need it, they also have the option of choosing a degree and writing a
 
 If we don't require separate reader-like and backend-like macroexpansion steps, we can write reader-like macros only, letting them take care of the whole loop. Instead of returning a structure of matched brackets, they return a result that only contains the closing brackets and some code that will macroexpand the matched brackets itself.
 
-This is what Lexmeta currently implements.
+This is what Punctaffy currently implements.
 
-Unfortunately it doesn't let users reuse the reader phase of the macroexpander for their own custom languages, nor doe it let them ignore the reader phase when they write their macros, because the reader really isn't distinguishable from the backend. It may be possible for users to implement their own reader/backend phase-separated macro system, but probably not much more easily than the way we'll implement that kind of system here in Lexmeta.
+Unfortunately it doesn't let users reuse the reader phase of the macroexpander for their own custom languages, nor doe it let them ignore the reader phase when they write their macros, because the reader really isn't distinguishable from the backend. It may be possible for users to implement their own reader/backend phase-separated macro system, but probably not much more easily than the way we'll implement that kind of system here in Punctaffy.

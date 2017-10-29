@@ -9,7 +9,7 @@
 
 (require rackunit)
 
-(require lexmeta/single-phase/private/qq)
+(require punctaffy/single-phase/private/qq)
 
 ; (We provide nothing from this module.)
 
