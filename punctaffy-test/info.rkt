@@ -3,4 +3,5 @@
 (define collection 'multi)
 
 (define deps (list))
-(define build-deps (list "base" "punctaffy-lib" "rackunit-lib"))
+(define build-deps
+  (list "base" "parendown" "punctaffy-lib" "rackunit-lib"))
