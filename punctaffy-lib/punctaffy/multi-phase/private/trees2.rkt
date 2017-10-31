@@ -284,21 +284,15 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (error "Expected each interpolation of a hypersnippet-join to be the right shape for its interpolation context")))
     (while
       (dissect hist (history-info maybe-interpolation-i histories)
-      #/begin (displayln "blah beginning the loop")
       #/mat maybe-interpolation-i (list interpolation-i)
+        
+        ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
           (list #/list d data)
           (error "Expected each interpolation of a hypersnippet-join to be the right shape for its interpolation context")
-        #/begin (displayln "blah currently processing an interpolation")
-        #/begin (display "blah got interpolation bracket ") (writeln d)
         #/expect (< d #/length histories) #t
           ; TODO: Figure out when this error occurs.
-          (begin
-            (displayln "blah Error 1")
-            (writeln d)
-            (writeln #/length histories)
-            (writeln histories)
-            (error "Error 1"))
+          (error "Error")
         #/dissect (list-ref histories d)
           (history-info maybe-interpolation-i histories)
         #/begin
@@ -311,40 +305,39 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               (if (< i d)
                 hist
                 subsubhist)))
-          (display "blah4 setting hist ")
-          (writeln hist)
           #t)
-      #/begin (displayln "blah currently processing the root")
+      
+      ; We read from the root's closing bracket stream.
       #/expect (pop-bracket!) (list #/list d data)
         (expect histories (list)
           ; TODO: Figure out when this error occurs.
-          (error "Error 2")
-          (displayln "blah finished the root")
+          (error "Error")
+          ; The root has no more closing brackets, and we're in a
+          ; region of degree 0, so we end the loop.
           #f)
-      #/begin (display "blah got root bracket ") (writeln d)
       #/expect (< d #/length histories) #t
         ; TODO: Figure out when this error occurs.
-        (begin
-          (displayln "blah3")
-          (writeln d)
-          (writeln #/length histories)
-          (writeln hist)
-          (writeln rev-result)
-          (error "Error 3"))
+        (error "Error")
       #/dissect (list-ref histories d)
         (history-info maybe-interpolation-i histories)
       #/begin
         (set! hist
           (if (= d #/sub1 overall-degree)
+            
+            ; We begin an interpolation.
+            ;
+            ; TODO: Actually, we should expect the result of `data-to
+            ; interpolated-hsnip to be an either. The other
+            ; alternative is that this is a highest-degree hole in the
+            ; root.
+            ;
             (expect (data-to-interpolated-hsnip data)
               (hypersnippet
                 data-d data-opening-data data-closing-brackets)
               (error "Expected the result of data-to-interpolated-hsnip to be a hypersnippet")
             #/expect (= data-d overall-degree) #t
               (error "Expected the result of data-to-interpolated-hsnip to be a hypersnippet of the same degree as hsnip")
-            #/begin
-              (displayln "blah setting up for an interpolation")
-              (hash-set! interpolations i data-closing-brackets)
+            #/begin (hash-set! interpolations i data-closing-brackets)
             #/history-info (list i)
             #/list-kv-map
               (append histories #/list #/history-info (list i)
@@ -356,8 +349,11 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               (if (< i d)
                 hist
                 subsubhist))
+            
+            ; We begin a hole in the root, which will either pass
+            ; through to a hole in the result or return us to an
+            ; interpolation already in progress.
             (begin
-              (displayln "blah escaping, probably into an interpolation")
               (mat maybe-interpolation-i (list i)
                 (verify-bracket-degree d
                   (pop-interpolation-bracket! i)))
@@ -367,13 +363,9 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               (if (< i d)
                 hist
                 subsubhist))))
-        (display "blah5 setting hist ")
-        (writeln hist)
-        (displayln d)
         (set! i (add1 i))
         #t)
       (void))
-  #/begin (display "blah finishing ") (write overall-degree) (display " ") (writeln #/reverse rev-result)
   #/hypersnippet overall-degree 'TODO #/reverse rev-result))
 
 
