@@ -7,7 +7,7 @@
 
 (require #/only-in racket/list make-list)
 
-(require #/only-in lathe expect w-)
+(require #/only-in lathe dissect dissectfn expect expectfn mat w-)
 
 (require "../../private/util.rkt")
 
@@ -69,6 +69,126 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
 |#
 
 
+; TODO: See if we'll use these "striped list" utilities. We introduced
+; them here in case we needed to change the layout of "data" pieces in
+; the `hypersnippet` struct, but this was probably not the right
+; direction.
+;
+; We likely want to represent data just the way we're doing, by
+; associating segments of data content with their preceding closing
+; bracket, since associating it with its succeeding closing brackets
+; would make it ambiguous where to put it.
+;
+; That said, we must be aware of some complexity beyond just "carry
+; data on the bracket":
+;
+;   - Data of different conceptual degrees will have different
+;     intuitive "preceding closing brackets," so in the `hypersnippet`
+;     struct, a single closing bracket entry of degree N may have N
+;     separate kinds of data following it.
+;
+;   - We may want some complexity to track parts of the data that are
+;     meant to be associated with each other as part of striped
+;     explosions.
+;
+; Every hypersnippet shape of degree 1 or greater has a "striped
+; explosion," made up of shapes of degree 1 less, and here are some
+; examples:
+;
+;
+;   ^2( ,( ) )
+;   explodes into an island, a lake, and an island:
+;     (  )
+;        ( )
+;          ( )
+;
+;   ^3( ~2(  ,( ,( ) ) ) )
+;   explodes into an island, a lake, and an island:
+;   ^2(  ,(            ) )
+;       ^2(  ,(      ) )
+;           ^2( ,( ) )
+;
+;   ^3( ~2( ) )
+;   explodes into an island and a lake:
+;   ^2(  ,( ) )
+;       ^2( )
+;
+;   ( )
+;   explodes into an island and a lake:
+;   ;
+;     ;
+;
+; Notice that the first example's third "( )" is of degree 1, and it
+; corresponds to the complete region of syntax where the "preceding
+; closing bracket" is the first ")". If we represent information
+; related to this degree-1 region, we'll be associating it with that
+; degree-0 closing bracket, which means now our brackets of degree N
+; are associated with degree-N+1-or-less information, not just
+; degreee-N-or-less information.
+;
+; For a complete and very concrete example, if we want to represent
+; the interpolated string "foo${...}bar" as a hypersnippet of
+; structure "^2( ,( ) )", we'll want to associate the degree-1-shaped
+; data "foo" and "bar" with the "^2(" bracket and the first ")"
+; bracket respectively, and we'll want to manipulate these pieces of
+; data together (e.g. omitting both when we're only processing the
+; hole in between).
+
+(define (striped-list? x)
+  (or (striped-nil? x) (striped-cons? x)))
+
+(struct-easy "a striped-nil" (striped-nil isle) #:equal)
+(struct-easy "a striped-cons" (striped-cons isle lake rest) #:equal
+  (#:guard-easy
+    (unless (striped-list? rest)
+      (error "Expected rest to be a striped list"))))
+
+(define (striped-list-foldl state lst combine-cons combine-nil)
+  (mat lst (striped-cons isle lake rest)
+    (striped-list-foldl (combine-cons state isle lake) rest
+      combine-cons combine-nil)
+  #/mat lst (striped-nil isle)
+    (combine-nil state isle)
+  #/error "Expected lst to be a striped list"))
+
+(define (striped-list-isles lst)
+  (reverse #/striped-list-foldl (list) lst
+    (lambda (state isle lake) #/cons isle state)
+    (lambda (state isle) #/cons isle state)))
+
+(define (striped-list-lakes lst)
+  (reverse #/striped-list-foldl (list) lst
+    (lambda (state isle lake) #/cons lake state)
+    (lambda (state isle) state)))
+
+
+(define (assert-valid-hsnip-brackets opening-degree closing-degrees)
+  (unless (exact-nonnegative-integer? opening-degree)
+    (error "Expected opening-degree to be an exact nonnegative integer"))
+  (unless (list? closing-degrees)
+    (error "Expected closing-degrees to be a list"))
+  (expect
+    (list-foldl
+      (build-list opening-degree #/lambda (i)
+        ; Whatever sub-histories we put here don't actually matter
+        ; because they'll be overwritten whenever this history is
+        ; used, so we just make them empty lists.
+        (make-list i #/list))
+      closing-degrees
+    #/lambda (histories closing-degree)
+      (expect (exact-nonnegative-integer? closing-degree) #t
+        (error "Expected the degree of a closing bracket to be an exact nonnegative integer")
+      #/expect (< closing-degree #/length histories) #t
+        (error "Encountered a closing bracket of degree higher than the current region's degree")
+      #/list-kv-map (list-ref histories closing-degree)
+      #/lambda (i subsubhistories)
+        (if (< i closing-degree)
+          histories
+          subsubhistories)))
+    (list)
+    (error "Expected more closing brackets")))
+
+
 (struct-easy "a hypersnippet"
   (hypersnippet degree initial-data closing-brackets)
   (#:guard-easy
@@ -77,42 +197,214 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
     ; NOTE: We don't validate `initial-data`.
     (unless (list? closing-brackets)
       (error "Expected closing-brackets to be a list"))
-    (expect
-      (list-foldl
-        (build-list degree #/lambda (i)
-          ; Whatever sub-histories we put here don't actually matter
-          ; because they'll be overwritten whenever this history is
-          ; used, so we just make them empty lists.
-          (make-list i #/list))
-        closing-brackets
-      #/lambda (histories bracket-info)
-        (w- degree (length histories)
-        #/expect bracket-info (list bracket-degree data)
-          (error "Expected each element of closing-brackets to be a two-element list")
-        ; NOTE: We don't validate `data`.
-        #/expect (exact-nonnegative-integer? bracket-degree) #t
-          (error "Expected the degree of a closing bracket to be an exact nonnegative integer")
-        #/expect (< bracket-degree degree) #t
-          (error "Encountered a closing bracket of degree higher than the current region's degree")
-        #/list-kv-map (list-ref histories bracket-degree)
-        #/lambda (i subsubhistories)
-          (if (< i bracket-degree)
-            histories
-            subsubhistories)))
-      (list)
-      (error "Expected closing-brackets to match up"))))
+    (assert-valid-hsnip-brackets degree #/list-fmap closing-brackets
+    #/expectfn (list bracket-degree data)
+      (error "Expected each element of closing-brackets to be a two-element list")
+      ; NOTE: We don't validate `data`.
+      bracket-degree)))
 
-(define (dataless-brackets . degrees)
-  (list-fmap degrees #/lambda (degree) (list degree #f)))
+; TODO: Put these tests in the punctaffy-test package instead of here.
+(assert-valid-hsnip-brackets 0 #/list)
+(assert-valid-hsnip-brackets 1 #/list 0)
+(assert-valid-hsnip-brackets 2 #/list 1 0 0)
+(assert-valid-hsnip-brackets 3 #/list 2 1 1 0 0 0 0)
+(assert-valid-hsnip-brackets 4 #/list 3 2 2 1 1 1 1 0 0 0 0 0 0 0 0)
+(assert-valid-hsnip-brackets 5
+  (list
+    4 3 3 2 2 2 2 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
 
-(define (dataless-hypersnippet degree . closing-bracket-degrees)
-  (hypersnippet degree #f
-  #/apply dataless-brackets closing-bracket-degrees))
+; Takes a hypersnippet of any degree N and upgrades it to any degree
+; N or greater, while leaving its holes the way they are.
+(define (hypersnippet-promote hsnip new-degree)
+  (unless (exact-nonnegative-integer? new-degree)
+    (error "Expected new-degree to be an exact nonnegative integer"))
+  (expect hsnip (hypersnippet d data closing-brackets)
+    (error "Expected hsnip to be a hypersnippet")
+  #/expect (<= d new-degree) #t
+    (error "Expected hsnip to be a hypersnippet of degree no greater than new-degree")
+  #/hypersnippet new-degree 'TODO
+  #/list-fmap closing-brackets #/dissectfn (list d data)
+    (list d 'TODO)))
 
-(dataless-hypersnippet 0)
-(dataless-hypersnippet 1 0)
-(dataless-hypersnippet 2 1 0 0)
-(dataless-hypersnippet 3 2 1 1 0 0 0 0)
-(dataless-hypersnippet 4 3 2 2 1 1 1 1 0 0 0 0 0 0 0 0)
-(dataless-hypersnippet
-  5 4 3 3 2 2 2 2 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+; Takes a hypersnippet of any degree N and returns a hypersnippet of
+; degree N+1 with all the same degree-less-than-N holes as well as a
+; single N-degree hole in the shape of the hypersnippet. This should
+; be useful as something like a monadic return.
+(define (hypersnippet-contour hsnip)
+  (expect hsnip (hypersnippet d data closing-brackets)
+    (error "Expected hsnip to be a hypersnippet")
+  #/hypersnippet (add1 d) 'TODO
+  #/cons (list d 'TODO)
+  #/list-bind closing-brackets #/dissectfn (list d data)
+    (list (list d 'TODO) (list d 'TODO))))
+
+; Takes a hypersnippet of any degree N and returns a hypersnippet of
+; degree N+1 where each hole has been replaced with a
+; one-degree-greater hole.
+(define (hypersnippet-tunnel hsnip)
+  (expect hsnip (hypersnippet d data closing-brackets)
+    (error "Expected hsnip to be a hypersnippet")
+  #/hypersnippet (add1 d) 'TODO
+  #/append
+    (list-fmap closing-brackets #/dissectfn (list d data)
+      (list (add1 d) 'TODO))
+    (list-fmap (reverse closing-brackets) #/dissectfn (list d data)
+      (list 0 'TODO))
+    (list #/list 0 'TODO)))
+
+(define (hypersnippet-join hsnip data-to-interpolated-hsnip)
+  (struct-easy "a history-info"
+    (history-info maybe-interpolation-i histories))
+  (expect hsnip (hypersnippet overall-degree data closing-brackets)
+    (error "Expected hsnip to be a hypersnippet")
+  #/w-
+    rev-result (list)
+    brackets closing-brackets
+    interpolations (make-hasheq)
+    hist
+      (history-info (list) #/build-list overall-degree #/lambda (i)
+        (history-info (list) #/make-list i
+        #/history-info (list) #/list))
+    i 0
+    (define (pop-bracket!)
+      (expect brackets (cons bracket rest)
+        (list)
+      #/begin
+        (set! brackets rest)
+        (list bracket)))
+    (define (pop-interpolation-bracket! i)
+      (expect (hash-ref interpolations i) (cons bracket rest)
+        (list)
+      #/begin
+        (hash-set! interpolations i rest)
+        (list bracket)))
+    (define (verify-bracket-degree d bracket)
+      (dissect bracket (list #/list actual-d data)
+      #/unless (= d actual-d)
+        (error "Expected each interpolation of a hypersnippet-join to be the right shape for its interpolation context")))
+    (while
+      (dissect hist (history-info maybe-interpolation-i histories)
+      #/begin (displayln "blah beginning the loop")
+      #/mat maybe-interpolation-i (list interpolation-i)
+        (expect (pop-interpolation-bracket! interpolation-i)
+          (list #/list d data)
+          (error "Expected each interpolation of a hypersnippet-join to be the right shape for its interpolation context")
+        #/begin (displayln "blah currently processing an interpolation")
+        #/begin (display "blah got interpolation bracket ") (writeln d)
+        #/expect (< d #/length histories) #t
+          ; TODO: Figure out when this error occurs.
+          (begin
+            (displayln "blah Error 1")
+            (writeln d)
+            (writeln #/length histories)
+            (writeln histories)
+            (error "Error 1"))
+        #/dissect (list-ref histories d)
+          (history-info maybe-interpolation-i histories)
+        #/begin
+          (mat maybe-interpolation-i (list)
+            (verify-bracket-degree d #/pop-bracket!)
+            (set! rev-result (cons (list d 'TODO) rev-result)))
+          (set! hist
+            (history-info maybe-interpolation-i
+            #/list-kv-map histories #/lambda (i subsubhist)
+              (if (< i d)
+                hist
+                subsubhist)))
+          (display "blah4 setting hist ")
+          (writeln hist)
+          #t)
+      #/begin (displayln "blah currently processing the root")
+      #/expect (pop-bracket!) (list #/list d data)
+        (expect histories (list)
+          ; TODO: Figure out when this error occurs.
+          (error "Error 2")
+          (displayln "blah finished the root")
+          #f)
+      #/begin (display "blah got root bracket ") (writeln d)
+      #/expect (< d #/length histories) #t
+        ; TODO: Figure out when this error occurs.
+        (begin
+          (displayln "blah3")
+          (writeln d)
+          (writeln #/length histories)
+          (writeln hist)
+          (writeln rev-result)
+          (error "Error 3"))
+      #/dissect (list-ref histories d)
+        (history-info maybe-interpolation-i histories)
+      #/begin
+        (set! hist
+          (if (= d #/sub1 overall-degree)
+            (expect (data-to-interpolated-hsnip data)
+              (hypersnippet
+                data-d data-opening-data data-closing-brackets)
+              (error "Expected the result of data-to-interpolated-hsnip to be a hypersnippet")
+            #/expect (= data-d overall-degree) #t
+              (error "Expected the result of data-to-interpolated-hsnip to be a hypersnippet of the same degree as hsnip")
+            #/begin
+              (displayln "blah setting up for an interpolation")
+              (hash-set! interpolations i data-closing-brackets)
+            #/history-info (list i)
+            #/list-kv-map
+              (append histories #/list #/history-info (list i)
+              #/list-kv-map histories #/lambda (i subsubhist)
+                (if (< i d)
+                  hist
+                  subsubhist))
+            #/lambda (i subsubhist)
+              (if (< i d)
+                hist
+                subsubhist))
+            (begin
+              (displayln "blah escaping, probably into an interpolation")
+              (mat maybe-interpolation-i (list i)
+                (verify-bracket-degree d
+                  (pop-interpolation-bracket! i)))
+              (set! rev-result (cons (list d 'TODO) rev-result))
+            #/history-info maybe-interpolation-i
+            #/list-kv-map histories #/lambda (i subsubhist)
+              (if (< i d)
+                hist
+                subsubhist))))
+        (display "blah5 setting hist ")
+        (writeln hist)
+        (displayln d)
+        (set! i (add1 i))
+        #t)
+      (void))
+  #/begin (display "blah finishing ") (write overall-degree) (display " ") (writeln #/reverse rev-result)
+  #/hypersnippet overall-degree 'TODO #/reverse rev-result))
+
+
+; TODO: Put these tests in the punctaffy-test package instead of here.
+
+(hypersnippet-join
+  (hypersnippet 2 'a #/list
+    (list 1 #/hypersnippet 2 'a #/list #/list 0 'a)
+    (list 0 'a)
+    (list 1 #/hypersnippet 2 'a #/list #/list 0 'a)
+    (list 0 'a)
+    (list 0 'a))
+  (lambda (interpolation) interpolation))
+
+(hypersnippet-join
+  (hypersnippet 2 'a #/list
+    (list 1
+      (hypersnippet 2 'a #/list
+        (list 1 'a)
+        (list 0 'a)
+        (list 1 'a)
+        (list 0 'a)
+        (list 0 'a)))
+    (list 0 'a)
+    (list 1
+      (hypersnippet 2 'a #/list
+        (list 1 'a)
+        (list 0 'a)
+        (list 1 'a)
+        (list 0 'a)
+        (list 0 'a)))
+    (list 0 'a)
+    (list 0 'a))
+  (lambda (interpolation) interpolation))

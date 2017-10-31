@@ -150,7 +150,7 @@
 
 (define-syntax (struct-easy stx)
   (syntax-case stx () #/ (_ phrase (name slot ...) rest ...)
-  #/nextlet rest #'(rest ...) has-write (list) options #'()
+  #/nextlet rest #'(rest ...) has-write #f options #'()
     (w- next
       (lambda (rest has-write-now options-suffix)
         (next rest (or has-write has-write-now)
@@ -219,3 +219,9 @@
   (displayln label)
   (writeln result)
   result)
+
+
+(define-syntax-rule (while condition body ...)
+  (let next () #/when condition
+    body ...
+    (next)))
