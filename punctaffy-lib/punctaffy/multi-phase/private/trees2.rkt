@@ -252,7 +252,14 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       (list 0 'TODO))
     (list #/list 0 'TODO)))
 
-(define (hypersnippet-join hsnip data-to-interpolated-hsnip)
+(struct-easy "a hypersnippet-join-interpolation"
+  (hypersnippet-join-interpolation hsnip)
+  (#:guard-easy
+    (unless (hypersnippet? hsnip)
+      (error "Expected hsnip to be a hypersnippet"))))
+(struct-easy "a hypersnippet-join-hole" (hypersnippet-join-hole data))
+
+(define (hypersnippet-join hsnip data-to-fill-or-hole)
   (struct-easy "a history-info"
     (history-info maybe-interpolation-i histories))
   (expect hsnip (hypersnippet overall-degree data closing-brackets)
@@ -320,23 +327,19 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (error "Error")
       #/dissect (list-ref histories d)
         (history-info maybe-interpolation-i histories)
+      #/w- fill-or-hole
+        (if (= d #/sub1 overall-degree)
+          (data-to-fill-or-hole data)
+          (hypersnippet-join-hole data))
       #/begin
         (set! hist
-          (if (= d #/sub1 overall-degree)
+          (mat fill-or-hole
+            (hypersnippet-join-interpolation #/hypersnippet
+              data-d data-opening-data data-closing-brackets)
             
             ; We begin an interpolation.
-            ;
-            ; TODO: Actually, we should expect the result of `data-to
-            ; interpolated-hsnip to be an either. The other
-            ; alternative is that this is a highest-degree hole in the
-            ; root.
-            ;
-            (expect (data-to-interpolated-hsnip data)
-              (hypersnippet
-                data-d data-opening-data data-closing-brackets)
-              (error "Expected the result of data-to-interpolated-hsnip to be a hypersnippet")
-            #/expect (= data-d overall-degree) #t
-              (error "Expected the result of data-to-interpolated-hsnip to be a hypersnippet of the same degree as hsnip")
+            (expect (= data-d overall-degree) #t
+              (error "Expected interpolations from data-to-fill-or-hole to be of the same degree as hsnip")
             #/begin (hash-set! interpolations i data-closing-brackets)
             #/history-info (list i)
             #/list-kv-map
@@ -350,6 +353,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
                 hist
                 subsubhist))
             
+          #/mat fill-or-hole (hypersnippet-join-hole data)
             ; We begin a hole in the root, which will either pass
             ; through to a hole in the result or return us to an
             ; interpolation already in progress.
@@ -362,7 +366,8 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
             #/list-kv-map histories #/lambda (i subsubhist)
               (if (< i d)
                 hist
-                subsubhist))))
+                subsubhist))
+            (error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole")))
         (set! i (add1 i))
         #t)
       (void))
@@ -373,17 +378,21 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
 
 (hypersnippet-join
   (hypersnippet 2 'a #/list
-    (list 1 #/hypersnippet 2 'a #/list #/list 0 'a)
+    (list 1
+      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
+        (list 0 'a)))
     (list 0 'a)
-    (list 1 #/hypersnippet 2 'a #/list #/list 0 'a)
+    (list 1
+      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
+        (list 0 'a)))
     (list 0 'a)
     (list 0 'a))
-  (lambda (interpolation) interpolation))
+  (lambda (fill-or-hole) fill-or-hole))
 
 (hypersnippet-join
   (hypersnippet 2 'a #/list
     (list 1
-      (hypersnippet 2 'a #/list
+      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
         (list 1 'a)
         (list 0 'a)
         (list 1 'a)
@@ -391,7 +400,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (list 0 'a)))
     (list 0 'a)
     (list 1
-      (hypersnippet 2 'a #/list
+      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
         (list 1 'a)
         (list 0 'a)
         (list 1 'a)
@@ -399,4 +408,23 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (list 0 'a)))
     (list 0 'a)
     (list 0 'a))
-  (lambda (interpolation) interpolation))
+  (lambda (fill-or-hole) fill-or-hole))
+
+(hypersnippet-join
+  (hypersnippet 2 'a #/list
+    (list 1 #/hypersnippet-join-hole 'a)
+    (list 0 'a)
+    (list 1
+      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
+        (list 1 'a)
+        (list 0 'a)
+        (list 0 'a)))
+    (list 0 'a)
+    (list 1
+      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
+        (list 1 'a)
+        (list 0 'a)
+        (list 0 'a)))
+    (list 0 'a)
+    (list 0 'a))
+  (lambda (fill-or-hole) fill-or-hole))
