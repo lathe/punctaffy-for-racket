@@ -417,3 +417,67 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
     (list 0 'a)
     (list 0 'a))
   (lambda (fill-or-hole) fill-or-hole))
+
+
+(define (hypersnippet-map-all-degrees hsnip func)
+  ; TODO: Implement this.
+  'TODO)
+
+(define (hypersnippet-map-one-degree hsnip degree func)
+  (hypersnippet-map-all-degrees hsnip #/lambda (hole)
+    (if (= degree #/hypersnippet-degree hole)
+      (func hole)
+      hole)))
+
+(define (hypersnippet-map-pred-degree hsnip degree func)
+  (expect (nat-pred-maybe degree) (list pred-degree) hsnip
+  #/hypersnippet-map-one-degree hsnip pred-degree func))
+
+(define (hypersnippet-map-highest-degree hsnip func)
+  (hypersnippet-map-pred-degree
+    hsnip (hypersnippet-degree hsnip) func))
+
+; TODO: Implement `hypersnippet-join-all-degrees` by making the
+; current implementation of `hypersnippet-join` operate on
+; lower-degree holes as well as the highest-degree holes. Lower-degree
+; holes would still carry hypersnippets of the same degree as the
+; result, but they would have fewer degrees of holes to match up to,
+; so some additional high degrees of holes in those holes' values
+; would pass through to the result.
+(define (hypersnippet-join-all-degrees hsnip)
+  'TODO)
+
+(define (hypersnippet-bind-all-degrees hsnip hole-to-hsnip)
+  (hypersnippet-join-all-degrees
+  #/hypersnippet-map-all-degrees hsnip hole-to-hsnip))
+
+(define (hypersnippet-bind-one-degree hsnip degree func)
+  (hypersnippet-bind-all-degrees hsnip #/lambda (hole)
+    (if (= degree #/hypersnippet-degree hole)
+      (func hole)
+      (hypersnippet-promote (hypersnippet-contour hole)
+      #/hypersnippet-degree hsnip))))
+
+(define (hypersnippet-bind-pred-degree hsnip degree func)
+  (expect (nat-pred-maybe degree) (list pred-degree) hsnip
+  #/hypersnippet-bind-one-degree hsnip pred-degree func))
+
+(define (hypersnippet-bind-highest-degree hsnip func)
+  (hypersnippet-bind-pred-degree
+    hsnip (hypersnippet-degree hsnip) func))
+
+; This takes a nested structure of same-degree island and lake
+; stripes, and it returns a single hypersnippet of one higher degree.
+(define (hypersnippet-destripe stripes)
+  (hypersnippet-bind-highest-degree stripes #/lambda (rest)
+  #/w- d (hypersnippet-degree rest)
+  #/hypersnippet-bind-pred-degree
+    (hypersnippet-contour rest)
+    (hypersnippet-degree rest)
+    hypersnippet-destripe))
+
+; TODO: Implement this. It should implement the inverse of
+; `hypersnippet-destripe`, taking a hypersnippet and returning a
+; nested structure of one-lower-degree island and lake stripes.
+(define (hypersnippet-stripe hsnip)
+  'TODO)
