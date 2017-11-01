@@ -162,6 +162,10 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
     (lambda (state isle) state)))
 
 
+(define (list-overwrite-first-n n val lst)
+  (list-kv-map lst #/lambda (i elem)
+    (if (< i n) val elem)))
+
 (define (assert-valid-hsnip-brackets opening-degree closing-degrees)
   (unless (exact-nonnegative-integer? opening-degree)
     (error "Expected opening-degree to be an exact nonnegative integer"))
@@ -180,11 +184,8 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (error "Expected the degree of a closing bracket to be an exact nonnegative integer")
       #/expect (< closing-degree #/length histories) #t
         (error "Encountered a closing bracket of degree higher than the current region's degree")
-      #/list-kv-map (list-ref histories closing-degree)
-      #/lambda (i subsubhistories)
-        (if (< i closing-degree)
-          histories
-          subsubhistories)))
+      #/list-overwrite-first-n closing-degree histories
+      #/list-ref histories closing-degree))
     (list)
     (error "Expected more closing brackets")))
 
@@ -308,10 +309,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
             (set! rev-result (cons (list d 'TODO) rev-result)))
           (set! hist
             (history-info maybe-interpolation-i
-            #/list-kv-map histories #/lambda (i subsubhist)
-              (if (< i d)
-                hist
-                subsubhist)))
+            #/list-overwrite-first-n d hist histories))
           #t)
       
       ; We read from the root's closing bracket stream.
@@ -342,17 +340,10 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               (error "Expected interpolations from data-to-fill-or-hole to be of the same degree as hsnip")
             #/begin (hash-set! interpolations i data-closing-brackets)
             #/history-info (list i)
-            #/list-kv-map
-              (append histories #/list #/history-info (list i)
-              #/list-kv-map histories #/lambda (i subsubhist)
-                (if (< i d)
-                  hist
-                  subsubhist))
-            #/lambda (i subsubhist)
-              (if (< i d)
-                hist
-                subsubhist))
-            
+            #/list-overwrite-first-n d hist
+            #/append histories #/list #/history-info (list i)
+            #/list-overwrite-first-n d hist histories)
+          
           #/mat fill-or-hole (hypersnippet-join-hole data)
             ; We begin a hole in the root, which will either pass
             ; through to a hole in the result or return us to an
@@ -363,11 +354,9 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
                   (pop-interpolation-bracket! i)))
               (set! rev-result (cons (list d 'TODO) rev-result))
             #/history-info maybe-interpolation-i
-            #/list-kv-map histories #/lambda (i subsubhist)
-              (if (< i d)
-                hist
-                subsubhist))
-            (error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole")))
+            #/list-overwrite-first-n d hist histories)
+          
+          #/error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole"))
         (set! i (add1 i))
         #t)
       (void))
