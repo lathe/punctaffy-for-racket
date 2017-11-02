@@ -327,34 +327,35 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
           (data-to-fill-or-hole data)
           (hypersnippet-join-hole data))
       #/begin
-        (set! hist
-          (mat fill-or-hole
-            (hypersnippet-join-interpolation #/hypersnippet
-              data-d data-opening-data data-closing-brackets)
-            
-            ; We begin an interpolation.
-            (expect (= data-d overall-degree) #t
-              (error "Expected interpolations from data-to-fill-or-hole to be of the same degree as hsnip")
-            #/begin (hash-set! interpolations i data-closing-brackets)
-            #/history-info (list i)
-            #/list-overwrite-first-n d hist
-            #/append histories #/list #/history-info (list i)
-            #/list-overwrite-first-n d hist histories)
+        (mat fill-or-hole
+          (hypersnippet-join-interpolation #/hypersnippet
+            data-d data-opening-data data-closing-brackets)
           
-          #/mat fill-or-hole (hypersnippet-join-hole data)
-            
-            ; We begin a hole in the root, which will either pass
-            ; through to a hole in the result or return us to an
-            ; interpolation already in progress.
-            (begin
-              (mat maybe-interpolation-i (list i)
-                (verify-bracket-degree d
-                  (pop-interpolation-bracket! i))
-                (set! rev-result (cons (list d 'TODO) rev-result)))
-            #/history-info maybe-interpolation-i
-            #/list-overwrite-first-n d hist histories)
+          ; We begin an interpolation.
+          (expect (= data-d overall-degree) #t
+            (error "Expected interpolations from data-to-fill-or-hole to be of the same degree as hsnip")
+          #/begin
+            (hash-set! interpolations i data-closing-brackets)
+            (set! hist
+              (history-info (list i)
+              #/list-overwrite-first-n d hist
+              #/append histories #/list #/history-info (list i)
+              #/list-overwrite-first-n d hist histories)))
+        
+        #/mat fill-or-hole (hypersnippet-join-hole data)
           
-          #/error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole"))
+          ; We begin a hole in the root, which will either pass
+          ; through to a hole in the result or return us to an
+          ; interpolation already in progress.
+          (begin
+            (mat maybe-interpolation-i (list i)
+              (verify-bracket-degree d #/pop-interpolation-bracket! i)
+              (set! rev-result (cons (list d 'TODO) rev-result)))
+            (set! hist
+              (history-info maybe-interpolation-i
+              #/list-overwrite-first-n d hist histories)))
+        
+        #/error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole")
         (set! i (add1 i))
         #t)
       
