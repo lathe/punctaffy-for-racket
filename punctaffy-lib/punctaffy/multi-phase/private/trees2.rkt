@@ -114,7 +114,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
 ;       ^2( )
 ;
 ;   ( )
-;   explodes into an island and a lake:
+;   explodes into an island and a lake (TODO: Is this right?):
 ;   ;
 ;     ;
 ;
@@ -498,7 +498,61 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
 
 
 (define (hypersnippet-map-all-degrees hsnip func)
-  ; TODO: Implement this.
+  ; TODO: Implement this. Since this doesn't change the shape of the
+  ; hypersnippet, we'll really need to think about how the data
+  ; annotations are transformed to do this properly.
+  ;
+  ; For a hole shaped like so:
+  ;
+  ;    ~2( ,( ) )
+  ;
+  ; We want to transform all the scattered degree-2 content of the
+  ; "~2(" bracket, which consists of its local degree-2 content, its
+  ; scattered degree-1 content, and the scattered degree-1 content of
+  ; the first ")" bracket. The scattered degree-1 content of a bracket
+  ; consists of its local degree-1 content, its scattered degree-0
+  ; content, and since a degree-1 region can't be disconnected into
+  ; multiple islands, nothing else. The scattered degree-0 content of
+  ; a bracket consists of its local degree-0 content and nothing else.
+  ; (TODO: Or should we say there is no local degree-0 content
+  ; either?) So all in all, we're keeping track of five values:
+  ;
+  ;   ~2( ,( ) )
+  ;     | three values, one each for degrees 2, 1, and 0
+  ;          | two values, one each for degrees 1 and 0
+  ;
+  ; Working through some more examples...
+  ;
+  ;   ,( )
+  ;    | 1 0
+  ;
+  ;   ~3( ~2( ,( ,( ) ) ) )
+  ;     | 3 2 1 0
+  ;            | 2 1 0
+  ;                 | 1 0
+  ;                     | 1 0
+  ;
+  ; Hm... What this means is that for the case of this algorithm, we
+  ; don't need to track separate values for each degree after all.
+  ; Some brackets have values we process and some have values we
+  ; don't. And, conveniently, it's always split by odds and evens:
+  ;
+  ;   ,( )
+  ;    |
+  ;
+  ;   ~2( ,( ) )
+  ;     |    |
+  ;
+  ;   ~3( ~2( ,( ,( ) ) ) )
+  ;     |      |    |   |
+  ;
+  ; So, perhaps the only data-transformation-related parameter we'll
+  ; need to add is something that generates proper "no content" values
+  ; to redact data before it's passed into `func`. It would be a
+  ; function that takes a bracket's degree and the multidimensional
+  ; histories before it, or something like that, and returns a data
+  ; value.
+  
   'TODO)
 
 (define (hypersnippet-map-one-degree hsnip degree func)
