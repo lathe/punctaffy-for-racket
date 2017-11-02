@@ -260,7 +260,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       (error "Expected hsnip to be a hypersnippet"))))
 (struct-easy "a hypersnippet-join-hole" (hypersnippet-join-hole data))
 
-(define (hypersnippet-join hsnip data-to-fill-or-hole)
+(define (hypersnippet-join-all-degrees hsnip data-to-fill-or-hole)
   (struct-easy "a history-info"
     (history-info maybe-interpolation-i histories))
   (expect hsnip (hypersnippet overall-degree data closing-brackets)
@@ -289,7 +289,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
     (define (verify-bracket-degree d bracket)
       (dissect bracket (list #/list actual-d data)
       #/unless (= d actual-d)
-        (error "Expected each interpolation of a hypersnippet-join to be the right shape for its interpolation context")))
+        (error "Expected each interpolation of a hypersnippet join to be the right shape for its interpolation context")))
     (while
       (dissect hist (history-info maybe-interpolation-i histories)
       #/mat maybe-interpolation-i (list interpolation-i)
@@ -297,9 +297,9 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
           (list #/list d data)
-          (error "Internal error: A hypersnippet-join interpolation ran out of brackets")
+          (error "Internal error: A hypersnippet join interpolation ran out of brackets")
         #/expect (< d #/length histories) #t
-          (error "Internal error: A hypersnippet-join interpolation had a closing bracket of degree not less than the current region's degree")
+          (error "Internal error: A hypersnippet join interpolation had a closing bracket of degree not less than the current region's degree")
         #/dissect (list-ref histories d)
           (history-info maybe-interpolation-i histories)
         #/begin
@@ -314,33 +314,51 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       ; We read from the root's closing bracket stream.
       #/expect (pop-bracket!) (list #/list d data)
         (expect histories (list)
-          (error "Internal error: A hypersnippet-join root ran out of brackets before reaching a region of degree 0")
+          (error "Internal error: A hypersnippet join root ran out of brackets before reaching a region of degree 0")
           ; The root has no more closing brackets, and we're in a
           ; region of degree 0, so we end the loop.
           #f)
       #/expect (< d #/length histories) #t
-        (error "Internal error: A hypersnippet-join root had a closing bracket of degree not less than the current region's degree")
+        (error "Internal error: A hypersnippet join root had a closing bracket of degree not less than the current region's degree")
       #/dissect (list-ref histories d)
         (history-info maybe-interpolation-i histories)
-      #/w- fill-or-hole
-        (if (= d #/sub1 overall-degree)
-          (data-to-fill-or-hole data)
-          (hypersnippet-join-hole data))
       #/begin
-        (mat fill-or-hole
+        (w- fill-or-hole (data-to-fill-or-hole data)
+        #/mat fill-or-hole
           (hypersnippet-join-interpolation #/hypersnippet
             data-d data-opening-data data-closing-brackets)
           
           ; We begin an interpolation.
-          (expect (= data-d overall-degree) #t
-            (error "Expected interpolations from data-to-fill-or-hole to be of the same degree as hsnip")
+          (w-
+            overwritten-histories
+              (list-overwrite-first-n d hist histories)
+            histories-len (length overwritten-histories)
           #/begin
             (hash-set! interpolations i data-closing-brackets)
             (set! hist
               (history-info (list i)
-              #/list-overwrite-first-n d hist
-              #/append histories #/list #/history-info (list i)
-              #/list-overwrite-first-n d hist histories)))
+              
+              ; We build a list of histories of length
+              ; `overall-degree`, since the hypersnippet we're
+              ; we're interpolating into the root must be of that
+              ; degree.
+              
+              ; The lowest-degree holes correspond to the structure of
+              ; the hole this interpolation is being spliced into, so
+              ; they return us to the root's histories.
+              #/append overwritten-histories
+              
+              ; The highest-degree holes are propagated through to the
+              ; result. They don't cause us to return to the root.
+              #/build-list (- overall-degree histories-len)
+              #/lambda (j)
+                (history-info (list i)
+                #/make-list (+ histories-len j)
+                
+                ; The values we use here don't matter since they'll be
+                ; overwritten whenever this part of the history is
+                ; restored.
+                #/history-info (list i) #/list))))
         
         #/mat fill-or-hole (hypersnippet-join-hole data)
           
@@ -364,13 +382,13 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       (void))
     (hash-kv-each interpolations #/lambda (i brackets)
       (expect brackets (list)
-        (error "Internal error: Encountered the end of a hypersnippet-join root before getting to the end of its interpolations.")))
+        (error "Internal error: Encountered the end of a hypersnippet join root before getting to the end of its interpolations.")))
     (hypersnippet overall-degree 'TODO #/reverse rev-result)))
 
 
 ; TODO: Put these tests in the punctaffy-test package instead of here.
 
-(hypersnippet-join
+(hypersnippet-join-all-degrees
   (hypersnippet 2 'a #/list
     (list 1
       (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
@@ -381,9 +399,12 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (list 0 'a)))
     (list 0 'a)
     (list 0 'a))
-  (lambda (fill-or-hole) fill-or-hole))
+  (lambda (fill-or-hole)
+    (if (eq? 'a fill-or-hole)
+      (hypersnippet-join-hole 'a)
+      fill-or-hole)))
 
-(hypersnippet-join
+(hypersnippet-join-all-degrees
   (hypersnippet 2 'a #/list
     (list 1
       (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
@@ -402,9 +423,12 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (list 0 'a)))
     (list 0 'a)
     (list 0 'a))
-  (lambda (fill-or-hole) fill-or-hole))
+  (lambda (fill-or-hole)
+    (if (eq? 'a fill-or-hole)
+      (hypersnippet-join-hole 'a)
+      fill-or-hole)))
 
-(hypersnippet-join
+(hypersnippet-join-all-degrees
   (hypersnippet 2 'a #/list
     (list 1 #/hypersnippet-join-hole 'a)
     (list 0 'a)
@@ -421,9 +445,12 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (list 0 'a)))
     (list 0 'a)
     (list 0 'a))
-  (lambda (fill-or-hole) fill-or-hole))
+  (lambda (fill-or-hole)
+    (if (eq? 'a fill-or-hole)
+      (hypersnippet-join-hole 'a)
+      fill-or-hole)))
 
-(hypersnippet-join
+(hypersnippet-join-all-degrees
   (hypersnippet 3 'a #/list
     
     ; This is propagated to the result.
@@ -462,7 +489,10 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
     (list 0 'a)
     
     (list 0 'a))
-  (lambda (fill-or-hole) fill-or-hole))
+  (lambda (fill-or-hole)
+    (if (eq? 'a fill-or-hole)
+      (hypersnippet-join-hole 'a)
+      fill-or-hole)))
 
 
 (define (hypersnippet-map-all-degrees hsnip func)
@@ -482,16 +512,6 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
 (define (hypersnippet-map-highest-degree hsnip func)
   (hypersnippet-map-pred-degree
     hsnip (hypersnippet-degree hsnip) func))
-
-; TODO: Implement `hypersnippet-join-all-degrees` by making the
-; current implementation of `hypersnippet-join` operate on
-; lower-degree holes as well as the highest-degree holes. Lower-degree
-; holes would still carry hypersnippets of the same degree as the
-; result, but they would have fewer degrees of holes to match up to,
-; so some additional high degrees of holes in those holes' values
-; would pass through to the result.
-(define (hypersnippet-join-all-degrees hsnip)
-  'TODO)
 
 (define (hypersnippet-bind-all-degrees hsnip hole-to-hsnip)
   (hypersnippet-join-all-degrees
