@@ -273,12 +273,13 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       (history-info (list) #/build-list overall-degree #/lambda (i)
         (history-info (list) #/make-list i
         #/history-info (list) #/list))
-    i 0
-    (define (pop-bracket!)
+    root-bracket-i 0
+    (define (pop-root-bracket!)
       (expect brackets (cons bracket rest)
         (list)
       #/begin
         (set! brackets rest)
+        (set! root-bracket-i (add1 root-bracket-i))
         (list bracket)))
     (define (pop-interpolation-bracket! i)
       (expect (hash-ref interpolations i) (cons bracket rest)
@@ -304,7 +305,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
           (history-info maybe-interpolation-i histories)
         #/begin
           (mat maybe-interpolation-i (list)
-            (verify-bracket-degree d #/pop-bracket!)
+            (verify-bracket-degree d #/pop-root-bracket!)
             (set! rev-result (cons (list d 'TODO) rev-result)))
           (set! hist
             (history-info maybe-interpolation-i
@@ -312,7 +313,8 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
           #t)
       
       ; We read from the root's closing bracket stream.
-      #/expect (pop-bracket!) (list #/list d data)
+      #/w- this-root-bracket-i root-bracket-i
+      #/expect (pop-root-bracket!) (list #/list d data)
         (expect histories (list)
           (error "Internal error: A hypersnippet join root ran out of brackets before reaching a region of degree 0")
           ; The root has no more closing brackets, and we're in a
@@ -334,9 +336,10 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               (list-overwrite-first-n d hist histories)
             histories-len (length overwritten-histories)
           #/begin
-            (hash-set! interpolations i data-closing-brackets)
+            (hash-set! interpolations this-root-bracket-i
+              data-closing-brackets)
             (set! hist
-              (history-info (list i)
+              (history-info (list this-root-bracket-i)
               
               ; We build a list of histories of length
               ; `overall-degree`, since the hypersnippet we're
@@ -352,13 +355,13 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               ; result. They don't cause us to return to the root.
               #/build-list (- overall-degree histories-len)
               #/lambda (j)
-                (history-info (list i)
+                (history-info (list this-root-bracket-i)
                 #/make-list (+ histories-len j)
                 
                 ; The values we use here don't matter since they'll be
                 ; overwritten whenever this part of the history is
                 ; restored.
-                #/history-info (list i) #/list))))
+                #/history-info (list this-root-bracket-i) #/list))))
         
         #/mat fill-or-hole (hypersnippet-join-hole data)
           
@@ -374,7 +377,6 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               #/list-overwrite-first-n d hist histories)))
         
         #/error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole")
-        (set! i (add1 i))
         #t)
       
       ; This while loop's body is intentionally left blank. Everything
