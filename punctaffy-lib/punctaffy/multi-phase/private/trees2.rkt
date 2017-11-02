@@ -349,16 +349,22 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
             (begin
               (mat maybe-interpolation-i (list i)
                 (verify-bracket-degree d
-                  (pop-interpolation-bracket! i)))
-              (set! rev-result (cons (list d 'TODO) rev-result))
+                  (pop-interpolation-bracket! i))
+                (set! rev-result (cons (list d 'TODO) rev-result)))
             #/history-info maybe-interpolation-i
             #/list-overwrite-first-n d hist histories)
           
           #/error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole"))
         (set! i (add1 i))
         #t)
+      
+      ; This while loop's body is intentionally left blank. Everything
+      ; was done in the condition.
       (void))
-  #/hypersnippet overall-degree 'TODO #/reverse rev-result))
+    (hash-kv-each interpolations #/lambda (i brackets)
+      (expect brackets (list)
+        (error "Internal error: Encountered the end of a hypersnippet-join root before getting to the end of its interpolations.")))
+    (hypersnippet overall-degree 'TODO #/reverse rev-result)))
 
 
 ; TODO: Put these tests in the punctaffy-test package instead of here.
@@ -413,6 +419,47 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         (list 0 'a)
         (list 0 'a)))
     (list 0 'a)
+    (list 0 'a))
+  (lambda (fill-or-hole) fill-or-hole))
+
+(hypersnippet-join
+  (hypersnippet 3 'a #/list
+    
+    ; This is propagated to the result.
+    (list 1 'a)
+    (list 0 'a)
+    
+    
+    (list 2
+      (hypersnippet-join-interpolation #/hypersnippet 3 'a #/list
+        
+        ; This is propagated to the result.
+        (list 2 'a)
+        (list 0 'a)
+        
+        ; This is matched up with one of the root's degree-1 sections
+        ; and cancelled out.
+        (list 1 'a)
+        (list 0 'a)
+        
+        ; This is propagated to the result.
+        (list 2 'a)
+        (list 0 'a)
+        
+        (list 0 'a)))
+    
+    ; This is matched up with the interpolation's corresponding
+    ; degree-1 section and cancelled out.
+    (list 1 'a)
+    (list 0 'a)
+    
+    (list 0 'a)
+    
+    
+    ; This is propagated to the result.
+    (list 1 'a)
+    (list 0 'a)
+    
     (list 0 'a))
   (lambda (fill-or-hole) fill-or-hole))
 
