@@ -297,10 +297,9 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
           (list #/list d data)
-          (error "Expected each interpolation of a hypersnippet-join to be the right shape for its interpolation context")
+          (error "Internal error: A hypersnippet-join interpolation ran out of brackets")
         #/expect (< d #/length histories) #t
-          ; TODO: Figure out when this error occurs.
-          (error "Error")
+          (error "Internal error: A hypersnippet-join interpolation had a closing bracket of degree not less than the current region's degree")
         #/dissect (list-ref histories d)
           (history-info maybe-interpolation-i histories)
         #/begin
@@ -315,14 +314,12 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       ; We read from the root's closing bracket stream.
       #/expect (pop-bracket!) (list #/list d data)
         (expect histories (list)
-          ; TODO: Figure out when this error occurs.
-          (error "Error")
+          (error "Internal error: A hypersnippet-join root ran out of brackets before reaching a region of degree 0")
           ; The root has no more closing brackets, and we're in a
           ; region of degree 0, so we end the loop.
           #f)
       #/expect (< d #/length histories) #t
-        ; TODO: Figure out when this error occurs.
-        (error "Error")
+        (error "Internal error: A hypersnippet-join root had a closing bracket of degree not less than the current region's degree")
       #/dissect (list-ref histories d)
         (history-info maybe-interpolation-i histories)
       #/w- fill-or-hole
@@ -345,6 +342,7 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
             #/list-overwrite-first-n d hist histories)
           
           #/mat fill-or-hole (hypersnippet-join-hole data)
+            
             ; We begin a hole in the root, which will either pass
             ; through to a hole in the result or return us to an
             ; interpolation already in progress.
