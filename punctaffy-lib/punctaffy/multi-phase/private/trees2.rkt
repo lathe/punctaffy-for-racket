@@ -69,6 +69,39 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
 |#
 
 
+; TODO: Rewrite all this hypersnippet stuff into a much leaner data
+; structure we might call a "hypertee," which has a hypersnippet shape
+; but only one data value per hole (of any degree), and no data values
+; for the holes' holes. These can be zipped, can hsve their holes
+; populated with their holes' shapes (to discriminate between holes by
+; degree when mapping or flatmapping), and so on.
+;
+; Most appealingly, they can be flatmapped without supplying a way to
+; concatenate islands of content, since the islands have no data.
+; That's important because the definition of such a concatenation
+; operation would have to concatenate arguments that were arranged in
+; a high-degree shape, so it will probably need something like the
+; hypertee representation in order to deal with that collection of
+; arguments.
+;
+; When we want to represent high-degree island data (the content of a
+; hypersnippet), we can do so as another abstraction built on top of
+; hypertees. We can pair up a hypertee with a main content value and
+; an alternating tree of island and lake hypertees where the islands
+; represent the next-lower-degree aspect of the content (and those
+; islands may carry their own striped trees of hypertees for the next
+; lower degree, and so on). Each striped tree, if recursively
+; flattened the way `hypersnippet-destripe` currently works so that
+; the lakes become holes of one big hypertee, should match the shape
+; of the hypertee that was annotated with this content.
+;
+; The name "hypertee" refers to the way it's like a T-shaped coupling
+; which can be used as a building block for other data. It's not
+; exactly a symmetrical branch like the nodes of a monadic tree,
+; because some of the holes shoot off in a different dimension from
+; all the others.
+
+
 ; TODO: See if we'll use these "striped list" utilities. We introduced
 ; them here in case we needed to change the layout of "data" pieces in
 ; the `hypersnippet` struct, but this was probably not the right
