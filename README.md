@@ -93,7 +93,7 @@ This can be done with two families of macroexpanders:
 
   - For each degree N, we'll want to have a reader-like macroexpander that starts with syntax of degree N, matches up the degree-N bracket sets it contains, and finally returns a structure of those matched-up brackets and any unmatched closing brackets that remain.
 
-  - For each degree N, we'll want to have a backend-like macroexpander that takes that structure of degree-N bracketed regions and closing brackets and either turns it into either a Racket syntax object or a reader-like macro call of degree N+1. This would typically expect the input to consist of nothing but a single set of matched brackets. It would look up a macro based on the data attached to those brackets, and then it would pass the brackets' degree-N+1 contents to the macro.
+  - For each degree N, we'll want to have a backend-like macroexpander that takes that structure of degree-N bracketed regions and closing brackets and turns it into either a Racket syntax object or a reader-like macro call of degree N+1. This would typically expect the input to consist of nothing but a single set of matched brackets. It would look up a macro based on the data attached to those brackets, and then it would pass the brackets' degree-N+1 contents to the macro.
 
 Full macroexpansion from low-degree surface syntax to low-degree Racket syntax objects proceeds by running a reader-like macroexpander followed by a backend-like macroexpander in a loop until the backend-like macroexpander doesn't generate a reader-like macro call.
 
