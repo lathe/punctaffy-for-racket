@@ -7,203 +7,303 @@
 
 (require #/only-in racket/list make-list)
 
-(require #/only-in lathe dissect dissectfn expect expectfn mat w-)
+(require #/only-in lathe dissect expect mat w-)
 
 (require "../../private/util.rkt")
 
 (provide #/all-defined-out)
 
 
-#|
+; ===== Hypertees ====================================================
 
-Here's an example of a degree-4 hypersnippet along with variations where its high-degree holes are removed so that it's easier to see its matching structure at a glance:
-
-  ;
-  (                                       )
-^2(                      ,( )             )
-^3(         ~2( ,(       ,( )     ) )     )
-^4( ~3( ~2( ~2( ,( ,( ,( ,( ) ) ) ) ) ) ) )
-
-And here's an example of running an algorithm from left to right across the sequence of brackets to verify that it's properly balanced:
-
-   | 4
-       | 3 (4, 4, 4)
-           | 4 (3 (4, 4, *), 3 (4, 4, 4))
-               | 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))
-                  | 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))
-                     | 3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))))
-                        | 4 (3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))))
-                           | 1 (4 (3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))))))
-                             | 4 (3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))))
-                               | 3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))))
-                                 | 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))
-                                   | 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))
-                                     | 4 (3 (4, 4, *), 3 (4, 4, 4))
-                                       | 3 (4, 4, 4)
-                                         | 4
-                                           | 0
-
-In that example, the notation "|" represents the cursor as it runs through the brackets shown above. The notation "*" represents parts of the state that are unnecessary to keep track of. The notation "4" by itself is shorthand for "4 ()", which shows a 0-element list as shorthand for the lowest-degree parts of a full 4-element list "4 (3 (*, *, *), 2 (*, *), 1 (*, *), 0 ())". Once fully expanded, the numbers are superfluous; they just represent the length of the list that follows, which corresponds with the degree of the current region in the syntax.
-
-The algorithm proceeds by consuming a bracket, restoring the corresponding element of the history (counting from the right to the left in this example), and finally replacing each element of the looked-up state with the previous state if it's a slot of lower degree than the bracket is. (That's why so many parts of the history are "*"; if they're ever used, those parts will necessarily be overwritten anyway.)
-
-If we introduce a shorthand ">" that means "this element is a duplicate of the element to the right," we can represent things more economically:
-
-   | 4
-       | 3 (>, >, 4)
-           | 4 (>, 3 (>, >, 4))
-               | 2 (>, 4 (>, 3 (>, >, 4)))
-                  | 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))
-                     | 3 (>, 4, 4 (3 (4, 4, *), 2 (>, 4 (>, 3 (>, >, 4)))))
-                        | 4 (3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))))
-                           | 1 (4 (3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4)))))))
-                             | 4 (3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))))
-                               | 3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4)))))
-                                 | 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))
-                                   | 2 (>, 4 (>, 3 (>, >, 4)))
-                                     | 4 (>, 3 (>, >, 4))
-                                       | 3 (>, >, 4)
-                                         | 4
-                                           | 0
-
-|#
-
-
-; TODO: Rewrite all this hypersnippet stuff into a much leaner data
-; structure we might call a "hypertee," which has a hypersnippet shape
-; but only one data value per hole (of any degree), and no data values
-; for the holes' holes. These can be zipped, can hsve their holes
-; populated with their holes' shapes (to discriminate between holes by
-; degree when mapping or flatmapping), and so on.
+; Intuitively, what we want to represent are higher-order snippets of
+; data. A degree-1 snippet is everything after one point in the data,
+; except for everything after another point. A degree-2 snippet is
+; everything inside one degree-1 snippet, except for everything inside
+; some other degree-1 snippets inside it, and so on. Extrapolating
+; backwards, a degree-0 snippet is "everything after one point."
+; Collectively, we'll call these hypersnippets.
 ;
-; Most appealingly, they can be flatmapped without supplying a way to
-; concatenate islands of content, since the islands have no data.
-; That's important because the definition of such a concatenation
-; operation would have to concatenate arguments that were arranged in
-; a high-degree shape, so it will probably need something like the
-; hypertee representation in order to deal with that collection of
-; arguments.
+; Here's an example of a degree-4 hypersnippet shape -- just the
+; shape, omitting whatever data is contained inside:
 ;
-; When we want to represent high-degree island data (the content of a
-; hypersnippet), we can do so as another abstraction built on top of
-; hypertees. We can pair up a hypertee with a main content value and
-; an alternating tree of island and lake hypertees where the islands
-; represent the next-lower-degree aspect of the content (and those
-; islands may carry their own striped trees of hypertees for the next
-; lower degree, and so on). Each striped tree, if recursively
-; flattened the way `hypersnippet-destripe` currently works so that
-; the lakes become holes of one big hypertee, should match the shape
-; of the hypertee that was annotated with this content.
+;    ^4( ~3( ~2( ~2( ,( ,( ,( ,( ) ) ) ) ) ) ) )
 ;
-; The name "hypertee" refers to the way it's like a T-shaped coupling
-; which can be used as a building block for other data. It's not
-; exactly a symmetrical branch like the nodes of a monadic tree,
-; because some of the holes shoot off in a different dimension from
-; all the others.
-
-
-; TODO: See if we'll use these "striped list" utilities. We introduced
-; them here in case we needed to change the layout of "data" pieces in
-; the `hypersnippet` struct, but this was probably not the right
-; direction.
+; This has one degree-3 hole, one degree-2 hole, one degree-1 hole,
+; and one degree-0 hole. If we remove the solitary degree-3 hole, we
+; end up with a degree-4 hypersnippet that simply has no degree-3
+; holes, but that kind of hypersnippet *could* be demoted to degree 3:
 ;
-; We likely want to represent data just the way we're doing, by
-; associating segments of data content with their preceding closing
-; bracket, since associating it with its succeeding closing brackets
-; would make it ambiguous where to put it.
+;    ^3(         ~2( ,(       ,( )     ) )     )
 ;
-; That said, we must be aware of some complexity beyond just "carry
-; data on the bracket":
+; And so on, we can eliminate high-degree holes and demote until we
+; have to stop at a degree-0 snippet:
 ;
-;   - Data of different conceptual degrees will have different
-;     intuitive "preceding closing brackets," so in the `hypersnippet`
-;     struct, a single closing bracket entry of degree N may have N
-;     separate kinds of data following it.
+;    ^2(                      ,( )             )
+;      (                                       )
+;      ;
 ;
-;   - We may want some complexity to track parts of the data that are
-;     meant to be associated with each other as part of striped
-;     explosions.
+; Most discussions of "expressions with holes" refer to degree-1
+; holes for our purposes, because standard lambda calculus notation
+; represents an expression using data that fits snugly in a degree-1
+; hypersnippet of text.
 ;
-; Every hypersnippet shape of degree 1 or greater has a "striped
-; explosion," made up of shapes of degree 1 less, and here are some
-; examples:
+; To represent hypersnippet-shaped data, we'll use a simpler building
+; block we call a "hypertee." A hypertee has the shape of a
+; hypersnippet, but it contains precisely one first-class value per
+; hole. So if a hypertee had the shape "^2( ,( ) )" it would have two
+; values, one for the ",( )" hole and another for the ")" hole at the
+; end. And if a hypertee is degree 1, then it's always of the shape
+; "( )", so it always has a single value corresponding to the ")".
+;
+; The name "hypertee" refers to the way it's like a T-shaped coupling.
+; It's not exactly a symmetrical branch like the nodes of an everyday
+; tree, because some of the holes shoot off in a different dimension
+; from all the others.
+;
+; The values of a hypertee's holes represent information about what's
+; on the other side of that hole, rather than telling us something
+; about the *inside* of the hypersnippet region of that shape. If we
+; want to represent simple data inside that shape, we can simply pair
+; the hypertee with a second value representing that data.
+;
+; Sometimes, the data of a hypersnippet isn't so simple that it can
+; be represented using a single first-class value. For instance,
+; consider the data in an interpolated string:
+;
+;     "Hello, ${name}! It's ${weather} today."
+;
+; The string content of this interpolated string is a degree-1
+; hypersnippet with two degree-1 holes (and a degree-0 hole). Here's
+; that hypersnippet's shape:
+;
+;   ^2(       ,(    )       ,(       )       )
+;
+; On the other side of the degree-1 holes are the expressions `name`
+; and `weather`. We can use a hypertee to carry those two expressions
+; in a way that keeps track of which hole they each belong to, but
+; that doesn't help us carry the strings "Hello, " and "! It's " and
+; " today.". We can carry those by moving to a more sophisticated
+; representation built out of hypertees.
+;
+; Above, we were taking a hypersnippet shape, removing its high-degree
+; holes, and demoting it to successively lower degrees to visualize
+; its structure better. We'll use another way we can demote a
+; hypersnippet shape to lower-degree shapes, and this one doesn't lose
+; any information.
+;
+; We'll divide it into stripes, where every other stripe (a "lake")
+; represents a hole in the original, and the others ("islands")
+; represent pieces of the hypersnippet in between those holes:
+;
+;   ^2(       ,(    )       ,(       )       )
+;
+;     (        )
+;              (    )
+;                   (        )
+;                            (       )
+;                                    (       )
+;
+; This can be extrapolated to other degrees. Here's a degree-3
+; hypersnippet shape divided into degree-2 stripes:
+;
+;   ^3( ,( ) ~2(  ,( ,( ) )     ,( ,( ) ) ) )
+;
+;   ^2( ,( )  ,(                          ) )
+;            ^2(  ,(      )     ,(      ) )
+;                ^2( ,( ) )    ^2( ,( ) )
+;
+; Note that in an island, some of the highest-degree holes are
+; standing in for holes of the next degree, so they contain lakes,
+; but others just represent holes of their own degree. Lower-degree
+; holes always represent themselves, never lakes. These rules
+; characterize the structure of our stripe-divided data.
+;
+; Once divide a hypersnippet shape up this way, we can represent each
+; island as a pair of a data value and the hypertee of lakes and
+; non-lake hole contents beyond, while we represent each lake as a
+; pair of its hole contents and the hypertee of islands beyond.
+;
+; So in particular, for our interpolated string example, we represent
+; the data like this, placing each string segment in a different
+; island's data:
+;
+;  An island representing "Hello, ${name}! It's ${weather} today."
+;   |
+;   |-- First part: The string "Hello, "
+;   |
+;   `-- Rest: Hypertee of shape "( )"
+;        |
+;        `-- Hole of shape ")": A lake representing "${name}! It's ${weather} today."
+;             |
+;             |-- Hole content: The expression `name`
+;             |
+;             `-- Rest: Hypertee of shape "( )"
+;                  |
+;                  `-- Hole of shape ")": An island representing "! It's ${weather} today."
+;                       |
+;                       |-- First part: The string "! It's "
+;                       |
+;                       `-- Rest: Hypertee of shape "( )"
+;                            |
+;                            `-- Hole of shape ")": A lake representing "${weather} today."
+;                                 |
+;                                 |-- Hole content: The expression `weather`
+;                                 |
+;                                 `-- Rest: Hypertee of shape "( )"
+;                                      |
+;                                      `-- Hole of shape ")": Interpolated string expression " today."
+;                                           |
+;                                           |-- First part: The string " today."
+;                                           |
+;                                           `-- Rest: Hypertee of shape "( )"
+;                                                |
+;                                                `-- Hole of shape ")": A non-lake
+;                                                     |
+;                                                     `-- An ignored trivial value
+;
+; For circumstances where we're willing to discard the string
+; information, we can use the operation `hypertee-destripe` to get
+; back a simpler hypertee:
+;
+;   Hypertee of shape "^2( ,( ) ,( ) )"
+;    |
+;    |-- First hole of shape ",( )": The expression `name`
+;    |
+;    |-- Second hole of shape ",( )": The expression `weather`
+;    |
+;    `-- Hole of shape ")": An ignored trivial value
+;
+; Striped data should be able to be striped *again* for higher-degree
+; data representation by replacing the notion of "hypertee of shape S"
+; with "stripes that collapse to a hypertee of shape S", which would
+; give us a general data representation for all kinds of
+; hypersnippet-shaped data. However, we haven't explored this iterated
+; striping yet (TODO).
+;
+; Note that it would not be so easy to represent hypersnippet data
+; without building it out of hypertees. If we have hypertees, we can
+; do something like a "flatmap" operation whee we process the holes
+; to generate more hypertees and then join them all together into one
+; combined hypertee. If we were to write an operation like that for
+; interpolated strings, we would have to pass in (or assume) a string
+; concatenation operation so that "foo${"bar"}baz" could properly
+; turn into "foobarbaz". Higher degrees of hypersnippets will likely
+; need to use higher-degree notions of concatenation in order to be
+; flatmapped, and we haven't explored these yet (TODO).
 ;
 ;
-;   ^2( ,( ) )
-;   explodes into an island, a lake, and an island:
-;     (  )
-;        ( )
-;          ( )
+; == Verifying hypersnippet shapes ==
 ;
-;   ^3( ~2(  ,( ,( ) ) ) )
-;   explodes into an island, a lake, and an island:
-;   ^2(  ,(            ) )
-;       ^2(  ,(      ) )
-;           ^2( ,( ) )
+; So now that we know how to represent hypersnippet-shaped information
+; using hypertees, the trickiest part of the implementation of
+; hypertees is how to represent the shape itself.
 ;
-;   ^3( ~2( ) )
-;   explodes into an island and a lake:
-;   ^2(  ,( ) )
-;       ^2( )
+; As above, here's an example of a degree-4 hypersnippet shape along
+; with variations where its high-degree holes are removed so that it's
+; easier to see its matching structure at a glance:
 ;
-;   ( )
-;   explodes into an island and a lake (TODO: Is this right?):
-;   ;
 ;     ;
+;     (                                       )
+;   ^2(                      ,( )             )
+;   ^3(         ~2( ,(       ,( )     ) )     )
+;   ^4( ~3( ~2( ~2( ,( ,( ,( ,( ) ) ) ) ) ) ) )
 ;
-; Notice that the first example's third "( )" is of degree 1, and it
-; corresponds to the complete region of syntax where the "preceding
-; closing bracket" is the first ")". If we represent information
-; related to this degree-1 region, we'll be associating it with that
-; degree-0 closing bracket, which means now our brackets of degree N
-; are associated with degree-N+1-or-less information, not just
-; degreee-N-or-less information.
+; And here's an example of running an algorithm from left to right across the sequence of brackets to verify that it's properly balanced:
 ;
-; For a complete and very concrete example, if we want to represent
-; the interpolated string "foo${...}bar" as a hypersnippet of
-; structure "^2( ,( ) )", we'll want to associate the degree-1-shaped
-; data "foo" and "bar" with the "^2(" bracket and the first ")"
-; bracket respectively, and we'll want to manipulate these pieces of
-; data together (e.g. omitting both when we're only processing the
-; hole in between).
+;      | 4
+;          | 3 (4, 4, 4)
+;              | 4 (3 (4, 4, *), 3 (4, 4, 4))
+;                  | 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))
+;                     | 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))
+;                        | 3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))))
+;                           | 4 (3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))))
+;                              | 1 (4 (3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))))))
+;                                | 4 (3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))))
+;                                  | 3 (4, 4, 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))))
+;                                    | 4 (3 (4, 4, *), 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4))))
+;                                      | 2 (4 (3 (4, 4, *), *), 4 (3 (4, 4, *), 3 (4, 4, 4)))
+;                                        | 4 (3 (4, 4, *), 3 (4, 4, 4))
+;                                          | 3 (4, 4, 4)
+;                                            | 4
+;                                              | 0
+;
+; We needed a bunch of specialized notation just for this
+; demonstration. The notation "|" represents the cursor as it runs
+; through the brackets shown above. The notation "*" represents parts
+; of the state that are unnecessary to keep track of. The notation "4"
+; by itself is shorthand for "4 ()". A notation like "4 ()" which has
+; a shorter list than the number declared is also shorthand; its list
+; represents only the lowest-degree parts of a full 4-element list,
+; which could be written as
+; "4 (3 (*, *, *), 2 (*, *), 1 (*, *), 0 ())". The implicit
+; higher-degree slots are filled in with lists of the same length as
+; their degree. Once fully expanded, the numbers are superfluous; they
+; just represent the length of the list that follows, which
+; corresponds with the degree of the current region in the syntax.
+;
+; In general, these lists in the history represent what history states
+; will be "restored" (perhaps for the first time) when a closing
+; bracket of that degree is encountered.
+;
+; The algorithm proceeds by consuming a bracket, restoring the
+; corresponding element of the history (counting from the right to the
+; left in this example), and finally replacing each element of the
+; looked-up state with the previous state if it's a slot of lower
+; degree than the bracket is. (That's why so many parts of the history
+; are "*"; if they're ever used, those parts will necessarily be
+; overwritten anyway.)
+;
+; If we introduce a shorthand ">" that means "this element is a
+; duplicate of the element to the right," we can display that example
+; more economically:
+;
+;   ^4( ~3( ~2( ~2( ,( ,( ,( ,( ) ) ) ) ) ) ) )
+;
+;      | 4
+;          | 3 (>, >, 4)
+;              | 4 (>, 3 (>, >, 4))
+;                  | 2 (>, 4 (>, 3 (>, >, 4)))
+;                     | 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))
+;                        | 3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4)))))
+;                           | 4 (3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))))
+;                              | 1 (4 (3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4)))))))
+;                                | 4 (3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))))
+;                                  | 3 (>, 4, 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4)))))
+;                                    | 4 (3 (>, 4, *), 2 (>, 4 (>, 3 (>, >, 4))))
+;                                      | 2 (>, 4 (>, 3 (>, >, 4)))
+;                                        | 4 (>, 3 (>, >, 4))
+;                                          | 3 (>, >, 4)
+;                                            | 4
+;                                             | 0
+;
+; In fact, the actual implementation in
+; `assert-valid-hypertee-brackets` represents the history lists in
+; reverse order. Here, the slots are displayed from highest to lowest
+; degree so that history tends to be appended to and removed from the
+; left side (where the cursor is).
 
-(define (striped-list? x)
-  (or (striped-nil? x) (striped-cons? x)))
-
-(struct-easy "a striped-nil" (striped-nil isle) #:equal)
-(struct-easy "a striped-cons" (striped-cons isle lake rest) #:equal
-  (#:guard-easy
-    (unless (striped-list? rest)
-      (error "Expected rest to be a striped list"))))
-
-(define (striped-list-foldl state lst combine-cons combine-nil)
-  (mat lst (striped-cons isle lake rest)
-    (striped-list-foldl (combine-cons state isle lake) rest
-      combine-cons combine-nil)
-  #/mat lst (striped-nil isle)
-    (combine-nil state isle)
-  #/error "Expected lst to be a striped list"))
-
-(define (striped-list-isles lst)
-  (reverse #/striped-list-foldl (list) lst
-    (lambda (state isle lake) #/cons isle state)
-    (lambda (state isle) #/cons isle state)))
-
-(define (striped-list-lakes lst)
-  (reverse #/striped-list-foldl (list) lst
-    (lambda (state isle lake) #/cons lake state)
-    (lambda (state isle) state)))
 
 
 (define (list-overwrite-first-n n val lst)
   (list-kv-map lst #/lambda (i elem)
     (if (< i n) val elem)))
 
-(define (assert-valid-hsnip-brackets opening-degree closing-degrees)
+(define (hypertee-closing-bracket-degree closing-bracket)
+  (w- d
+    (mat closing-bracket (list d data)
+      d
+      closing-bracket)
+  #/expect (exact-nonnegative-integer? d) #t
+    (error "Expected the degree of a hypertee closing bracket to be an exact nonnegative integer")
+    d))
+
+(define
+  (assert-valid-hypertee-brackets opening-degree closing-brackets)
   (unless (exact-nonnegative-integer? opening-degree)
     (error "Expected opening-degree to be an exact nonnegative integer"))
-  (unless (list? closing-degrees)
-    (error "Expected closing-degrees to be a list"))
+  (unless (list? closing-brackets)
+    (error "Expected closing-brackets to be a list"))
   (expect
     (list-foldl
       (build-list opening-degree #/lambda (i)
@@ -211,93 +311,103 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
         ; because they'll be overwritten whenever this history is
         ; used, so we just make them empty lists.
         (make-list i #/list))
-      closing-degrees
-    #/lambda (histories closing-degree)
-      (expect (exact-nonnegative-integer? closing-degree) #t
-        (error "Expected the degree of a closing bracket to be an exact nonnegative integer")
+      closing-brackets
+    #/lambda (histories closing-bracket)
+      (w- closing-degree
+        (hypertee-closing-bracket-degree closing-bracket)
       #/expect (< closing-degree #/length histories) #t
         (error "Encountered a closing bracket of degree higher than the current region's degree")
-      #/list-overwrite-first-n closing-degree histories
-      #/list-ref histories closing-degree))
+      #/w- restored-history (list-ref histories closing-degree)
+      #/begin
+        (when (= closing-degree #/length restored-history)
+          ; NOTE: We don't validate `hole-value`.
+          (expect closing-bracket (list closing-degree hole-value)
+            (error "Expected a closing bracket that began a hole to be annotated with a data value")))
+      #/list-overwrite-first-n
+        closing-degree histories restored-history))
     (list)
     (error "Expected more closing brackets")))
 
 
-(struct-easy "a hypersnippet"
-  (hypersnippet degree initial-data closing-brackets)
+(struct-easy "a hypertee" (hypertee degree closing-brackets)
   (#:guard-easy
-    (unless (exact-nonnegative-integer? degree)
-      (error "Expected degree to be an exact nonnegative integer"))
-    ; NOTE: We don't validate `initial-data`.
-    (unless (list? closing-brackets)
-      (error "Expected closing-brackets to be a list"))
-    (assert-valid-hsnip-brackets degree #/list-fmap closing-brackets
-    #/expectfn (list bracket-degree data)
-      (error "Expected each element of closing-brackets to be a two-element list")
-      ; NOTE: We don't validate `data`.
-      bracket-degree)))
+    (assert-valid-hypertee-brackets degree closing-brackets)))
 
 ; TODO: Put these tests in the punctaffy-test package instead of here.
-(assert-valid-hsnip-brackets 0 #/list)
-(assert-valid-hsnip-brackets 1 #/list 0)
-(assert-valid-hsnip-brackets 2 #/list 1 0 0)
-(assert-valid-hsnip-brackets 3 #/list 2 1 1 0 0 0 0)
-(assert-valid-hsnip-brackets 4 #/list 3 2 2 1 1 1 1 0 0 0 0 0 0 0 0)
-(assert-valid-hsnip-brackets 5
-  (list
-    4 3 3 2 2 2 2 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
+(assert-valid-hypertee-brackets 0 #/list)
+(assert-valid-hypertee-brackets 1 #/list (list 0 'a))
+(assert-valid-hypertee-brackets 2 #/list (list 1 'a) 0 (list 0 'a))
+(assert-valid-hypertee-brackets 3 #/list
+  (list 2 'a)
+  1 (list 1 'a) 0 0 0 (list 0 'a))
+(assert-valid-hypertee-brackets 4 #/list
+  (list 3 'a)
+  2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a))
+(assert-valid-hypertee-brackets 5 #/list
+  (list 4 'a)
+  3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a))
 
-; Takes a hypersnippet of any degree N and upgrades it to any degree
-; N or greater, while leaving its holes the way they are.
-(define (hypersnippet-promote hsnip new-degree)
+; Takes a hypertee of any degree N and upgrades it to any degree N or
+; greater, while leaving its holes the way they are.
+(define (hypertee-promote new-degree ht)
   (unless (exact-nonnegative-integer? new-degree)
     (error "Expected new-degree to be an exact nonnegative integer"))
-  (expect hsnip (hypersnippet d data closing-brackets)
-    (error "Expected hsnip to be a hypersnippet")
+  (expect ht (hypertee d closing-brackets)
+    (error "Expected ht to be a hypertee")
   #/expect (<= d new-degree) #t
-    (error "Expected hsnip to be a hypersnippet of degree no greater than new-degree")
-  #/hypersnippet new-degree 'TODO
-  #/list-fmap closing-brackets #/dissectfn (list d data)
-    (list d 'TODO)))
+    (error "Expected ht to be a hypertee of degree no greater than new-degree")
+  #/hypertee new-degree closing-brackets))
 
-; Takes a hypersnippet of any degree N and returns a hypersnippet of
-; degree N+1 with all the same degree-less-than-N holes as well as a
-; single N-degree hole in the shape of the hypersnippet. This should
+; Takes a hypertee of any degree N and returns a hypertee of degree
+; N+1 with all the same degree-less-than-N holes as well as a single
+; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
-(define (hypersnippet-contour hsnip)
-  (expect hsnip (hypersnippet d data closing-brackets)
-    (error "Expected hsnip to be a hypersnippet")
-  #/hypersnippet (add1 d) 'TODO
-  #/cons (list d 'TODO)
-  #/list-bind closing-brackets #/dissectfn (list d data)
-    (list (list d 'TODO) (list d 'TODO))))
+(define (hypertee-contour hole-value ht)
+  (expect ht (hypertee d closing-brackets)
+    (error "Expected ht to be a hypertee")
+  #/hypertee (add1 d)
+  #/cons (list d hole-value)
+  #/list-bind closing-brackets #/lambda (closing-bracket)
+    (list (hypertee-closing-bracket-degree closing-bracket)
+      closing-bracket)))
 
-; Takes a hypersnippet of any degree N and returns a hypersnippet of
-; degree N+1 where each hole has been replaced with a
-; one-degree-greater hole.
-(define (hypersnippet-tunnel hsnip)
-  (expect hsnip (hypersnippet d data closing-brackets)
-    (error "Expected hsnip to be a hypersnippet")
-  #/hypersnippet (add1 d) 'TODO
+; Takes a hypertee of any degree N and returns a hypertee of degree
+; N+1 where each hole has been replaced with a one-degree-greater
+; hole. This creates one new hole of degree 0.
+(define (hypertee-tunnel hole-value ht)
+  (expect ht (hypertee d closing-brackets)
+    (error "Expected ht to be a hypertee")
+  #/hypertee (add1 d)
   #/append
-    (list-fmap closing-brackets #/dissectfn (list d data)
-      (list (add1 d) 'TODO))
-    (list-fmap (reverse closing-brackets) #/dissectfn (list d data)
-      (list 0 'TODO))
-    (list #/list 0 'TODO)))
+    (list-fmap closing-brackets #/lambda (closing-bracket)
+      (mat closing-bracket (list d data)
+        (list (add1 d) data)
+        (add1 closing-bracket)))
+    (make-list (length closing-brackets) 0)
+    (list #/list 0 hole-value)))
 
-(struct-easy "a hypersnippet-join-interpolation"
-  (hypersnippet-join-interpolation hsnip)
+(struct-easy "a hypertee-join-interpolation"
+  (hypertee-join-interpolation ht)
   (#:guard-easy
-    (unless (hypersnippet? hsnip)
-      (error "Expected hsnip to be a hypersnippet"))))
-(struct-easy "a hypersnippet-join-hole" (hypersnippet-join-hole data))
+    (unless (hypertee? ht)
+      (error "Expected ht to be a hypertee"))))
+(struct-easy "a hypertee-join-hole" (hypertee-join-hole data))
 
-(define (hypersnippet-join-all-degrees hsnip data-to-fill-or-hole)
+; This takes a hypertee where each hole value of each degree N is
+; either a `hypertee-join-hole` or a `hypertee-join-interpolation`
+; and where each `hypertee-join-interpolation` contains another
+; hypertee of the same degree, but where the values of holes of degree
+; less than N are empty lists. It returns a single hypertee of the
+; same degree, which has holes for all the high-degree holes of the
+; interpolations, as well as all the holes which had
+; `hypertee-join-hole` values. The values of the latter holes are the
+; values obtained by unwrapping the `hypertee-join-hole` values.
+(define (hypertee-join-all-degrees ht)
   (struct-easy "a history-info"
     (history-info maybe-interpolation-i histories))
-  (expect hsnip (hypersnippet overall-degree data closing-brackets)
-    (error "Expected hsnip to be a hypersnippet")
+  (expect ht (hypertee overall-degree closing-brackets)
+    (error "Expected ht to be a hypertee")
   #/w-
     rev-result (list)
     brackets closing-brackets
@@ -320,26 +430,31 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       #/begin
         (hash-set! interpolations i rest)
         (list bracket)))
-    (define (verify-bracket-degree d bracket)
-      (dissect bracket (list #/list actual-d data)
-      #/unless (= d actual-d)
-        (error "Expected each interpolation of a hypersnippet join to be the right shape for its interpolation context")))
+    (define (verify-bracket-degree d maybe-closing-bracket)
+      (dissect maybe-closing-bracket (list closing-bracket)
+      #/unless (= d #/hypertee-closing-bracket-degree closing-bracket)
+        (error "Expected each interpolation of a hypertee join to be the right shape for its interpolation context")))
     (while
       (dissect hist (history-info maybe-interpolation-i histories)
       #/mat maybe-interpolation-i (list interpolation-i)
         
         ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
-          (list #/list d data)
-          (error "Internal error: A hypersnippet join interpolation ran out of brackets")
+          (list closing-bracket)
+          (error "Internal error: A hypertee join interpolation ran out of brackets")
+        #/w- d (hypertee-closing-bracket-degree closing-bracket)
         #/expect (< d #/length histories) #t
-          (error "Internal error: A hypersnippet join interpolation had a closing bracket of degree not less than the current region's degree")
+          (error "Internal error: A hypertee join interpolation had a closing bracket of degree not less than the current region's degree")
         #/dissect (list-ref histories d)
           (history-info maybe-interpolation-i histories)
         #/begin
           (mat maybe-interpolation-i (list)
-            (verify-bracket-degree d #/pop-root-bracket!)
-            (set! rev-result (cons (list d 'TODO) rev-result)))
+            (begin
+              (verify-bracket-degree d #/pop-root-bracket!)
+              (mat closing-bracket (list d data)
+                (expect data (list)
+                  (error "A hypertee join interpolation had a hole of low degree where the value wasn't an empty list"))))
+            (set! rev-result (cons closing-bracket rev-result)))
           (set! hist
             (history-info maybe-interpolation-i
             #/list-overwrite-first-n d hist histories))
@@ -347,24 +462,34 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       
       ; We read from the root's closing bracket stream.
       #/w- this-root-bracket-i root-bracket-i
-      #/expect (pop-root-bracket!) (list #/list d data)
+      #/expect (pop-root-bracket!) (list closing-bracket)
         (expect histories (list)
-          (error "Internal error: A hypersnippet join root ran out of brackets before reaching a region of degree 0")
+          (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
           ; The root has no more closing brackets, and we're in a
           ; region of degree 0, so we end the loop.
           #f)
+      #/w- d (hypertee-closing-bracket-degree closing-bracket)
       #/expect (< d #/length histories) #t
-        (error "Internal error: A hypersnippet join root had a closing bracket of degree not less than the current region's degree")
+        (error "Internal error: A hypertee join root had a closing bracket of degree not less than the current region's degree")
       #/dissect (list-ref histories d)
         (history-info maybe-interpolation-i histories)
       #/begin
-        (w- fill-or-hole (data-to-fill-or-hole data)
+        (w- fill-or-hole
+          (mat closing-bracket (list d data)
+            data
+            ; NOTE: We use an empty list as a dummy value here, just
+            ; so we can end up in the `hypertee-join-hole` branch
+            ; below. We don't use this empty list again, so it could
+            ; be any other value if we wanted it to be.
+            (hypertee-join-hole #/list))
         #/mat fill-or-hole
-          (hypersnippet-join-interpolation #/hypersnippet
-            data-d data-opening-data data-closing-brackets)
+          (hypertee-join-interpolation #/hypertee
+            data-d data-closing-brackets)
           
           ; We begin an interpolation.
-          (w-
+          (expect (= data-d overall-degree) #t
+            (error "Expected each hypertee join interpolation to have the same degree as the root")
+          #/w-
             overwritten-histories
               (list-overwrite-first-n d hist histories)
             histories-len (length overwritten-histories)
@@ -375,9 +500,8 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
               (history-info (list this-root-bracket-i)
               
               ; We build a list of histories of length
-              ; `overall-degree`, since the hypersnippet we're
-              ; we're interpolating into the root must be of that
-              ; degree.
+              ; `overall-degree`, since the hypertee we're
+              ; interpolating into the root must be of that degree.
               
               ; The lowest-degree holes correspond to the structure of
               ; the hole this interpolation is being spliced into, so
@@ -396,20 +520,34 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
                 ; restored.
                 #/history-info (list this-root-bracket-i) #/list))))
         
-        #/mat fill-or-hole (hypersnippet-join-hole data)
+        #/mat fill-or-hole (hypertee-join-hole data)
           
-          ; We begin a hole in the root, which will either pass
-          ; through to a hole in the result or return us to an
-          ; interpolation already in progress.
+          ; We begin or resume a hole in the root, which will either
+          ; pass through to doing the same thing in the result or
+          ; resume an interpolation.
           (begin
             (mat maybe-interpolation-i (list i)
-              (verify-bracket-degree d #/pop-interpolation-bracket! i)
-              (set! rev-result (cons (list d 'TODO) rev-result)))
+              (begin
+                (verify-bracket-degree d
+                  (pop-interpolation-bracket! i))
+                (mat closing-bracket (list d data)
+                  (error "Internal error: A hypertee join root had a closing bracket that both began a hole and returned to an interpolation in progress")))
+              (set! rev-result
+                (cons
+                  (if (list? closing-bracket)
+                    (list d data)
+                    ; We got to this branch by constructing a
+                    ; `hypertee-join-hole` with dummy data. The
+                    ; bracket returned to a hole in progress in the
+                    ; the root, so here we return to a hole in
+                    ; progress in the result.
+                    d)
+                  rev-result)))
             (set! hist
               (history-info maybe-interpolation-i
               #/list-overwrite-first-n d hist histories)))
         
-        #/error "Expected the result of data-to-fill-or-hole to be a hypersnippet-join-interpolation or a hypersnippet-join-hole")
+        #/error "Expected the content of a hole in a hypertee join root to be a hypertee-join-interpolation or a hypertee-join-hole")
         #t)
       
       ; This while loop's body is intentionally left blank. Everything
@@ -417,222 +555,142 @@ If we introduce a shorthand ">" that means "this element is a duplicate of the e
       (void))
     (hash-kv-each interpolations #/lambda (i brackets)
       (expect brackets (list)
-        (error "Internal error: Encountered the end of a hypersnippet join root before getting to the end of its interpolations.")))
-    (hypersnippet overall-degree 'TODO #/reverse rev-result)))
+        (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations.")))
+    (hypertee overall-degree #/reverse rev-result)))
 
 
 ; TODO: Put these tests in the punctaffy-test package instead of here.
 
-(hypersnippet-join-all-degrees
-  (hypersnippet 2 'a #/list
-    (list 1
-      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
-        (list 0 'a)))
-    (list 0 'a)
-    (list 1
-      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
-        (list 0 'a)))
-    (list 0 'a)
-    (list 0 'a))
-  (lambda (fill-or-hole)
-    (if (eq? 'a fill-or-hole)
-      (hypersnippet-join-hole 'a)
-      fill-or-hole)))
+(hypertee-join-all-degrees #/hypertee 2 #/list
+  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
+    (list 0 #/list))
+  0
+  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
+    (list 0 #/list))
+  0
+  (list 0 #/hypertee-join-hole 'a))
 
-(hypersnippet-join-all-degrees
-  (hypersnippet 2 'a #/list
-    (list 1
-      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
-        (list 1 'a)
-        (list 0 'a)
-        (list 1 'a)
-        (list 0 'a)
-        (list 0 'a)))
-    (list 0 'a)
-    (list 1
-      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
-        (list 1 'a)
-        (list 0 'a)
-        (list 1 'a)
-        (list 0 'a)
-        (list 0 'a)))
-    (list 0 'a)
-    (list 0 'a))
-  (lambda (fill-or-hole)
-    (if (eq? 'a fill-or-hole)
-      (hypersnippet-join-hole 'a)
-      fill-or-hole)))
-
-(hypersnippet-join-all-degrees
-  (hypersnippet 2 'a #/list
-    (list 1 #/hypersnippet-join-hole 'a)
-    (list 0 'a)
-    (list 1
-      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
-        (list 1 'a)
-        (list 0 'a)
-        (list 0 'a)))
-    (list 0 'a)
-    (list 1
-      (hypersnippet-join-interpolation #/hypersnippet 2 'a #/list
-        (list 1 'a)
-        (list 0 'a)
-        (list 0 'a)))
-    (list 0 'a)
-    (list 0 'a))
-  (lambda (fill-or-hole)
-    (if (eq? 'a fill-or-hole)
-      (hypersnippet-join-hole 'a)
-      fill-or-hole)))
-
-(hypersnippet-join-all-degrees
-  (hypersnippet 3 'a #/list
-    
-    ; This is propagated to the result.
+(hypertee-join-all-degrees #/hypertee 2 #/list
+  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
     (list 1 'a)
-    (list 0 'a)
-    
-    
-    (list 2
-      (hypersnippet-join-interpolation #/hypersnippet 3 'a #/list
-        
-        ; This is propagated to the result.
-        (list 2 'a)
-        (list 0 'a)
-        
-        ; This is matched up with one of the root's degree-1 sections
-        ; and cancelled out.
-        (list 1 'a)
-        (list 0 'a)
-        
-        ; This is propagated to the result.
-        (list 2 'a)
-        (list 0 'a)
-        
-        (list 0 'a)))
-    
-    ; This is matched up with the interpolation's corresponding
-    ; degree-1 section and cancelled out.
+    0
     (list 1 'a)
-    (list 0 'a)
-    
-    (list 0 'a)
-    
-    
-    ; This is propagated to the result.
+    0
+    (list 0 #/list))
+  0
+  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
     (list 1 'a)
-    (list 0 'a)
-    
-    (list 0 'a))
-  (lambda (fill-or-hole)
-    (if (eq? 'a fill-or-hole)
-      (hypersnippet-join-hole 'a)
-      fill-or-hole)))
+    0
+    (list 1 'a)
+    0
+    (list 0 #/list))
+  0
+  (list 0 #/hypertee-join-hole 'a))
 
+(hypertee-join-all-degrees #/hypertee 2 #/list
+  (list 1 #/hypertee-join-hole 'a)
+  0
+  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
+    (list 1 'a)
+    0
+    (list 0 #/list))
+  0
+  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
+    (list 1 'a)
+    0
+    (list 0 #/list))
+  0
+  (list 0 #/hypertee-join-hole 'a))
 
-(define (hypersnippet-map-all-degrees hsnip func)
-  ; TODO: Implement this. Since this doesn't change the shape of the
-  ; hypersnippet, we'll really need to think about how the data
-  ; annotations are transformed to do this properly.
-  ;
-  ; For a hole shaped like so:
-  ;
-  ;    ~2( ,( ) )
-  ;
-  ; We want to transform all the scattered degree-2 content of the
-  ; "~2(" bracket, which consists of its local degree-2 content, its
-  ; scattered degree-1 content, and the scattered degree-1 content of
-  ; the first ")" bracket. The scattered degree-1 content of a bracket
-  ; consists of its local degree-1 content, its scattered degree-0
-  ; content, and since a degree-1 region can't be disconnected into
-  ; multiple islands, nothing else. The scattered degree-0 content of
-  ; a bracket consists of its local degree-0 content and nothing else.
-  ; (TODO: Or should we say there is no local degree-0 content
-  ; either?) So all in all, we're keeping track of five values:
-  ;
-  ;   ~2( ,( ) )
-  ;     | three values, one each for degrees 2, 1, and 0
-  ;          | two values, one each for degrees 1 and 0
-  ;
-  ; Working through some more examples...
-  ;
-  ;   ,( )
-  ;    | 1 0
-  ;
-  ;   ~3( ~2( ,( ,( ) ) ) )
-  ;     | 3 2 1 0
-  ;            | 2 1 0
-  ;                 | 1 0
-  ;                     | 1 0
-  ;
-  ; Hm... What this means is that for the case of this algorithm, we
-  ; don't need to track separate values for each degree after all.
-  ; Some brackets have values we process and some have values we
-  ; don't. And, conveniently, it's always split by odds and evens:
-  ;
-  ;   ,( )
-  ;    |
-  ;
-  ;   ~2( ,( ) )
-  ;     |    |
-  ;
-  ;   ~3( ~2( ,( ,( ) ) ) )
-  ;     |      |    |   |
-  ;
-  ; So, perhaps the only data-transformation-related parameter we'll
-  ; need to add is something that generates proper "no content" values
-  ; to redact data before it's passed into `func`. It would be a
-  ; function that takes a bracket's degree and the multidimensional
-  ; histories before it, or something like that, and returns a data
-  ; value.
+(hypertee-join-all-degrees #/hypertee 3 #/list
   
+  ; This is propagated to the result.
+  (list 1 #/hypertee-join-hole 'a)
+  0
+  
+  (list 2 #/hypertee-join-interpolation #/hypertee 3 #/list
+    
+    ; This is propagated to the result.
+    (list 2 'a)
+    0
+    
+    ; This is matched up with one of the root's degree-1 sections and
+    ; cancelled out.
+    (list 1 #/list)
+    0
+    
+    ; This is propagated to the result.
+    (list 2 'a)
+    0
+    
+    (list 0 #/list))
+  
+  ; This is matched up with the interpolation's corresponding degree-1
+  ; section and cancelled out.
+  1
+  0
+  
+  0
+  
+  ; This is propagated to the result.
+  (list 1 #/hypertee-join-hole 'a)
+  0
+  
+  (list 0 #/hypertee-join-hole 'a))
+
+
+(define (hypertee-map-all-degrees ht func)
   'TODO)
 
-(define (hypersnippet-map-one-degree hsnip degree func)
-  (hypersnippet-map-all-degrees hsnip #/lambda (hole)
-    (if (= degree #/hypersnippet-degree hole)
+(define (hypertee-map-one-degree ht degree func)
+  (hypertee-map-all-degrees ht #/lambda (hole data)
+    (if (= degree #/hypertee-degree hole)
       (func hole)
       hole)))
 
-(define (hypersnippet-map-pred-degree hsnip degree func)
-  (expect (nat-pred-maybe degree) (list pred-degree) hsnip
-  #/hypersnippet-map-one-degree hsnip pred-degree func))
+(define (hypertee-map-pred-degree ht degree func)
+  (expect (nat-pred-maybe degree) (list pred-degree) ht
+  #/hypertee-map-one-degree ht pred-degree func))
 
-(define (hypersnippet-map-highest-degree hsnip func)
-  (hypersnippet-map-pred-degree
-    hsnip (hypersnippet-degree hsnip) func))
+(define (hypertee-map-highest-degree ht func)
+  (hypertee-map-pred-degree ht (hypertee-degree ht) func))
 
-(define (hypersnippet-bind-all-degrees hsnip hole-to-hsnip)
-  (hypersnippet-join-all-degrees
-  #/hypersnippet-map-all-degrees hsnip hole-to-hsnip))
+(define (hypertee-bind-all-degrees ht hole-to-ht)
+  (hypertee-join-all-degrees
+  #/hypertee-map-all-degrees ht hole-to-ht))
 
-(define (hypersnippet-bind-one-degree hsnip degree func)
-  (hypersnippet-bind-all-degrees hsnip #/lambda (hole)
-    (if (= degree #/hypersnippet-degree hole)
+(define (hypertee-bind-one-degree ht degree func)
+  (hypertee-bind-all-degrees ht #/lambda (hole data)
+    (if (= degree #/hypertee-degree hole)
       (func hole)
-      (hypersnippet-promote (hypersnippet-contour hole)
-      #/hypersnippet-degree hsnip))))
+      (hypertee-promote (hypertee-degree ht)
+      #/hypertee-contour data hole))))
 
-(define (hypersnippet-bind-pred-degree hsnip degree func)
-  (expect (nat-pred-maybe degree) (list pred-degree) hsnip
-  #/hypersnippet-bind-one-degree hsnip pred-degree func))
+(define (hypertee-bind-pred-degree ht degree func)
+  (expect (nat-pred-maybe degree) (list pred-degree) ht
+  #/hypertee-bind-one-degree ht pred-degree func))
 
-(define (hypersnippet-bind-highest-degree hsnip func)
-  (hypersnippet-bind-pred-degree
-    hsnip (hypersnippet-degree hsnip) func))
+(define (hypertee-bind-highest-degree ht func)
+  (hypertee-bind-pred-degree ht (hypertee-degree ht) func))
 
 ; This takes a nested structure of same-degree island and lake
-; stripes, and it returns a single hypersnippet of one higher degree.
-(define (hypersnippet-destripe stripes)
-  (hypersnippet-bind-highest-degree stripes #/lambda (rest)
-  #/w- d (hypersnippet-degree rest)
-  #/hypersnippet-bind-pred-degree
-    (hypersnippet-contour rest)
-    (hypersnippet-degree rest)
-    hypersnippet-destripe))
+; stripes, and it returns a single hypertee of one higher degree.
+;
+; TODO: This is wrong. Reimplement it with awareness that some
+; highest-degree holes contain non-lakes. Make it preserve data values
+; paired up with the lakes, while discarding data values paired up
+; with the islands.
+;
+(define (hypertee-destripe stripes)
+  (hypertee-bind-highest-degree stripes #/lambda (rest)
+  #/hypertee-bind-pred-degree
+    (hypertee-contour 'TODO rest)
+    (hypertee-degree rest)
+    hypertee-destripe))
 
 ; TODO: Implement this. It should implement the inverse of
-; `hypersnippet-destripe`, taking a hypersnippet and returning a
-; nested structure of one-lower-degree island and lake stripes.
-(define (hypersnippet-stripe hsnip)
+; `hypertee-destripe`, taking a hypertee and returning a nested
+; structure of one-lower-degree island and lake stripes. But we should
+; wait until `hypertee-destripe` has been updated.
+(define (hypertee-stripe ht)
   'TODO)
