@@ -162,9 +162,17 @@
 ;                                                     |
 ;                                                     `-- An ignored trivial value
 ;
+; We call this representation a "hyprid" ("hyper" + "hybrid") since it
+; stores both hypersnippet information and the hypertee information
+; beyond the holes. Hyprids allow this striping to be iterated to any
+; number of degrees up to the degree of the hypersnippet shape. Each
+; iteration works the same way, but the concept of "hypertee of
+; shape S" is replaced with "stripes that collapse to a hypertee of
+; shape S."
+;
 ; For circumstances where we're willing to discard the string
-; information, we can use the operation `hypertee-destripe` to get
-; back a simpler hypertee:
+; information of our interpolated string, we can use the operation
+; `hyprid-destripe-maybe` to get back a simpler hypertee:
 ;
 ;   Hypertee of shape "^2( ,( ) ,( ) )"
 ;    |
@@ -174,16 +182,15 @@
 ;    |
 ;    `-- Hole of shape ")": An ignored trivial value
 ;
-; Striped data should be able to be striped *again* for higher-degree
-; data representation by replacing the notion of "hypertee of shape S"
-; with "stripes that collapse to a hypertee of shape S", which would
-; give us a general data representation for all kinds of
-; hypersnippet-shaped data. However, we haven't explored this iterated
-; striping yet (TODO).
+; Technically, `hyprid-destripe-maybe` returns a hyprid of one less
+; stripe iteration (or will even return nothing if the original hyprid
+; had zero stripe iterations). While this collapses one level of
+; stripes, the operation `hyprid-fully-destripe` repeatedly collapses
+; stripes and always results in a hypertee value.
 ;
 ; Note that it would not be so easy to represent hypersnippet data
 ; without building it out of hypertees. If we have hypertees, we can
-; do something like a "flatmap" operation whee we process the holes
+; do something like a "flatmap" operation where we process the holes
 ; to generate more hypertees and then join them all together into one
 ; combined hypertee. If we were to write an operation like that for
 ; interpolated strings, we would have to pass in (or assume) a string
@@ -673,24 +680,173 @@
 (define (hypertee-bind-highest-degree ht func)
   (hypertee-bind-pred-degree ht (hypertee-degree ht) func))
 
-; This takes a nested structure of same-degree island and lake
-; stripes, and it returns a single hypertee of one higher degree.
+(define (hypertee-each-all-degrees ht body)
+  ; TODO: See if this can be more efficient.
+  (hypertee-map-all-degrees ht body)
+  (void))
+
+; A hyprid is a hypertee that *also* contains hypersnippet data.
 ;
-; TODO: This is wrong. Reimplement it with awareness that some
-; highest-degree holes contain non-lakes. Make it preserve data values
-; paired up with the lakes, while discarding data values paired up
-; with the islands.
+; TODO: Come up with a better name than "hyprid."
 ;
-(define (hypertee-destripe stripes)
-  (hypertee-bind-highest-degree stripes #/lambda (rest)
-  #/hypertee-bind-pred-degree
-    (hypertee-contour 'TODO rest)
-    (hypertee-degree rest)
-    hypertee-destripe))
+(struct-easy "a hyprid"
+  (hyprid striped-degrees unstriped-degrees striped-hypertee)
+  (#:guard-easy
+    (unless (exact-nonnegative-integer? striped-degrees)
+      (error "Expected striped-degrees to be an exact nonnegative integer"))
+    (unless (exact-nonnegative-integer? unstriped-degrees)
+      (error "Expected unstriped-degrees to be an exact nonnegative integer"))
+    (expect (nat-pred-maybe striped-degrees)
+      (list pred-striped-degrees)
+      (expect striped-hypertee (hypertee degree closing-brackets)
+        (error "Expected striped-hypertee to be a hypertee since striped-degrees was zero")
+      #/unless (= unstriped-degrees degree)
+        (error "Expected striped-hypertee to be a hypertee of degree unstriped-degrees"))
+      (expect striped-hypertee
+        (island-cane data
+        #/hyprid striped-degrees-2 unstriped-degrees-2 striped-hypertee-2)
+        (error "Expected striped-hypertee to be an island-cane since striped-degrees was nonzero")
+      #/expect (= pred-striped-degrees striped-degrees-2) #t
+        (error "Expected striped-hypertee to be an island-cane of striped-degrees one less")
+      #/unless (= unstriped-degrees unstriped-degrees-2)
+        (error "Expected striped-hypertee to be an island-cane of the same unstriped-degrees")))))
+
+(define (hyprid-degree h)
+  (expect h
+    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (error "Expected h to be a hyprid")
+  #/+ striped-degrees unstriped-degrees))
+
+(struct-easy "an island-cane" (island-cane data rest)
+  (#:guard-easy
+    (unless (hyprid? rest)
+      (error "Expected rest to be a hyprid"))
+    (w- d (hyprid-degree rest)
+    #/hyprid-each-lake-all-degrees rest #/lambda (hole-hypertee data)
+      (when (= d #/add1 #/hypertee-degree hole-hypertee)
+        (mat data (lake-cane data rest)
+          (unless (= d #/hypertee-degree rest)
+            (error "Expected data to be of the same degree as the island-cane if it was a lake-cane"))
+        #/mat data (non-lake-cane data)
+          (void)
+        #/error "Expected data to be a lake-cane or a non-lake-cane")))))
+
+(struct-easy "a lake-cane" (lake-cane data rest)
+  (#:guard-easy
+    (unless (hypertee? rest)
+      (error "Expected rest to be a hypertee"))
+    (w- d (hypertee-degree rest)
+    #/hypertee-each-all-degrees rest #/lambda (hole data)
+      (when (= d #/add1 #/hypertee-degree hole)
+        (expect data (island-cane data rest)
+          (error "Expected data to be an island-cane")
+        #/unless (= d #/hyprid-degree rest)
+          (error "Expected data to be an island-cane of the same degree"))
+        (expect data (list)
+          (error "Expected data to be an empty list"))))))
+
+(struct-easy "a non-lake-cane" (non-lake-cane data))
+
+(define (hyprid-map-lakes-highest-degree h func)
+  (expect h
+    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (error "Expected h to be a hyprid")
+  #/hyprid striped-degrees unstriped-degrees
+  #/expect (nat-pred-maybe striped-degrees)
+    (list pred-striped-degrees)
+    (hypertee-map-highest-degree striped-hypertee func)
+  #/dissect striped-hypertee (island-cane data rest)
+  #/island-cane data
+  #/hyprid-map-lakes-highest-degree rest #/lambda (hole-hypertee rest)
+    (mat rest (lake-cane data rest)
+      (lake-cane
+        (func
+          (hypertee-map-highest-degree rest #/lambda (hole rest)
+            (list))
+          data)
+      #/hypertee-map-highest-degree rest #/lambda (hole rest)
+        (dissect
+          (hyprid-map-lakes-highest-degree
+          #/hyprid striped-degrees unstriped-degrees rest)
+          (hyprid striped-degrees-2 unstriped-degrees-2 rest)
+          rest))
+    #/mat rest (non-lake-cane data) (non-lake-cane data)
+    #/error "Internal error")))
+
+(define (hyprid-destripe-maybe h)
+  (expect h
+    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (error "Expected h to be a hyprid")
+  #/expect (nat-pred-maybe striped-degrees)
+    (list pred-striped-degrees)
+    (list)
+  #/list #/hyprid pred-striped-degrees (add1 unstriped-degrees)
+  #/dissect striped-hypertee
+    (island-cane data
+    #/hyprid pred-striped-degrees-2 unstriped-degrees-2 rest)
+  #/expect (nat-pred-maybe pred-striped-degrees)
+    (list pred-pred-striped-degrees)
+    (hypertee-bind-highest-degree rest #/lambda (hole rest)
+      (mat rest (lake-cane data rest)
+        (hypertee-bind-pred-degree (hypertee-contour data rest)
+          unstriped-degrees
+        #/lambda (hole rest)
+          (dissect
+            (hyprid-destripe-maybe
+            #/hyprid striped-degrees unstriped-degrees rest)
+            (list
+            #/hyprid pred-striped-degrees succ-unstriped-degrees
+              destriped-rest)
+            destriped-rest))
+      #/mat rest (non-lake-cane data)
+        (hypertee-promote unstriped-degrees
+        #/hypertee-contour data hole)
+      #/error "Internal error"))
+  #/island-cane data
+  #/dissect (hyprid-destripe-maybe rest) (list destriped-rest)
+  #/hyprid-map-lakes-highest-degree destriped-rest
+  #/lambda (hole-hypertee rest)
+    (mat rest (lake-cane data rest)
+      (lake-cane data
+      #/hypertee-map-highest-degree rest #/lambda (hole rest)
+        (dissect
+          (hyprid-destripe-maybe
+          #/hyprid striped-degrees unstriped-degrees rest)
+          (list
+          #/hyprid pred-striped-degrees succ-unstriped-degrees
+            destriped-rest)
+          destriped-rest))
+    #/mat rest (non-lake-cane data) (non-lake-cane data)
+    #/error "Internal error")))
+
+(define (hyprid-fully-destripe h)
+  (expect h
+    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (error "Expected h to be a hyprid")
+  #/mat (hyprid-destripe-maybe h) (list destriped-once)
+    (hyprid-fully-destripe destriped-once)
+    striped-hypertee))
+
+(define (hyprid-each-lake-all-degrees h body)
+  (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
+
+; TODO: Uncomment this test once we've implemented
+; `hypertee-map-all-degrees`.
+;
+; TODO: Put this test in the punctaffy-test package instead of here.
+;
+#;(hyprid-fully-destripe
+  (hyprid 1 1
+  #/island-cane "Hello, " #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+  #/lake-cane 'name #/hypertee 1 #/list #/list 0
+  #/island-cane "! It's " #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+  #/lake-cane 'weather #/hypertee 1 #/list #/list 0
+  #/island-cane " today." #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+  #/non-lake-cane #/list))
 
 ; TODO: Implement this. It should implement the inverse of
-; `hypertee-destripe`, taking a hypertee and returning a nested
-; structure of one-lower-degree island and lake stripes. But we should
-; wait until `hypertee-destripe` has been updated.
-(define (hypertee-stripe ht)
+; `hyprid-destripe-maybe`, taking a hyprid and returning a hyprid with
+; one more striped degree and one fewer unstriped degree. The new
+; stripe data values should be empty lists.
+(define (hyprid-stripe-maybe h)
   'TODO)
