@@ -422,6 +422,9 @@
     hist
       (history-info (list) #/build-list overall-degree #/lambda (i)
         (history-info (list) #/make-list i
+        ; These `history-info` values with empty lists are just dummy
+        ; values, since they'll be replaced whenever this part of the
+        ; history is used.
         #/history-info (list) #/list))
     root-bracket-i 0
     (define (pop-root-bracket!)
@@ -647,7 +650,86 @@
 
 
 (define (hypertee-map-all-degrees ht func)
-  'TODO)
+  (struct-easy "a history-info"
+    (history-info maybe-current-hole histories))
+  (expect ht (hypertee overall-degree closing-brackets)
+    (error "Expected ht to be a hypertee")
+  #/w- result
+    (list-fmap closing-brackets #/lambda (closing-bracket)
+      (mat closing-bracket (list d data)
+        (w- rev-brackets (list)
+        #/w- hist
+          (build-list d #/lambda (i)
+            (make-list i
+            ; These empty lists are just dummy values, since they'll
+            ; be replaced whenever this part of the history is used.
+            #/list))
+        #/list d #/list data #/box #/list rev-brackets hist)
+        closing-bracket))
+  #/w- hist
+    (history-info (list) #/build-list overall-degree #/lambda (i)
+      (history-info (list) #/make-list i
+      ; These `history-info` values with empty lists are just dummy
+      ; values, since they'll be replaced whenever this part of the
+      ; history is used.
+      #/history-info (list) #/list))
+  #/begin
+    (list-each result #/lambda (closing-bracket)
+      (dissect hist (history-info maybe-current-hole histories)
+      #/w- d (hypertee-closing-bracket-degree closing-bracket)
+      #/expect (< d #/length histories) #t
+        (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
+      #/dissect (list-ref histories d)
+        (history-info maybe-restored-hole histories)
+      #/w- histories (list-overwrite-first-n d hist histories)
+      #/w- update-hole-state!
+        (lambda (state)
+          (dissect (unbox state) (list rev-brackets hist)
+          #/expect (< d #/length hist) #t
+            (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
+          #/w- hist (list-overwrite-first-n d hist #/list-ref hist d)
+          #/set-box! state
+            (list
+              (cons
+                (if (= d #/length hist)
+                  (list d #/list)
+                  d)
+                rev-brackets)
+              hist)))
+      #/mat maybe-current-hole (list state)
+        (mat maybe-restored-hole (list state)
+          (error "Internal error: Went directly from one hole to another in progress")
+        #/mat closing-bracket (list d #/list data state)
+          (error "Internal error: Went directly from one hole to another's beginning")
+        #/begin
+          (set! hist (history-info (list) histories))
+          (update-hole-state! state))
+      #/mat maybe-restored-hole (list state)
+        (mat closing-bracket (list d #/list data state)
+          (error "Internal error: Went into two holes at once")
+        #/begin
+          (set! hist (history-info (list state) histories))
+          (update-hole-state! state))
+      #/mat closing-bracket (list d #/list data state)
+        ; NOTE: We don't need to `update-hole-state!` here because as
+        ; far as this hole's state is concerned, this bracket is the
+        ; opening bracket of the hole, not a closing bracket.
+        (set! hist (history-info (list state) histories))
+      #/error "Internal error: Went directly from the root to the root without passing through a hole"))
+  #/dissect hist (history-info maybe-current-hole histories)
+  #/expect histories (list)
+    (error "Internal error: Ended hypertee-map-all-degrees without being in a zero-degree region")
+  #/expect maybe-current-hole (list state)
+    (error "Internal error: Ended hypertee-map-all-degrees without being in a hole")
+  #/expect (unbox state) (list (list) (list))
+    (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
+  #/hypertee overall-degree
+  #/list-fmap result #/lambda (closing-bracket)
+    (expect closing-bracket (list d #/list data state) closing-bracket
+    #/dissect (unbox state) (list rev-brackets hist)
+    #/expect hist (list)
+      (error "Internal error: Failed to exhaust the history of a hole while doing hypertee-map-all-degrees")
+    #/list d (func (hypertee d #/reverse rev-brackets) data))))
 
 (define (hypertee-map-one-degree ht degree func)
   (hypertee-map-all-degrees ht #/lambda (hole data)
@@ -830,7 +912,9 @@
 (define (hyprid-each-lake-all-degrees h body)
   (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
 
-; TODO: Uncomment this test once we've implemented
+; TODO: Uncomment this test once we get it working. Now that we've
+; implemented `hypertee-map-all-degrees`, there's another error here
+; somewhere. We may want to write tests for
 ; `hypertee-map-all-degrees`.
 ;
 ; TODO: Put this test in the punctaffy-test package instead of here.
