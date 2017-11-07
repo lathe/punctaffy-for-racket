@@ -1,9 +1,9 @@
 #lang parendown racket/base
 
-; main.rkt
+; single-phase.rkt
 ;
-; Unit tests of the higher quasiquotation system, particularly the
-; `-quasiquote` macro.
+; Unit tests of the single-phase higher quasiquotation macro system,
+; particularly the `-quasiquote` macro.
 
 (require #/for-meta 1 racket/base)
 
