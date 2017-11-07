@@ -336,24 +336,9 @@
     (error "Expected more closing brackets")))
 
 
-(struct-easy "a hypertee" (hypertee degree closing-brackets)
+(struct-easy "a hypertee" (hypertee degree closing-brackets) #:equal
   (#:guard-easy
     (assert-valid-hypertee-brackets degree closing-brackets)))
-
-; TODO: Put these tests in the punctaffy-test package instead of here.
-(assert-valid-hypertee-brackets 0 #/list)
-(assert-valid-hypertee-brackets 1 #/list (list 0 'a))
-(assert-valid-hypertee-brackets 2 #/list (list 1 'a) 0 (list 0 'a))
-(assert-valid-hypertee-brackets 3 #/list
-  (list 2 'a)
-  1 (list 1 'a) 0 0 0 (list 0 'a))
-(assert-valid-hypertee-brackets 4 #/list
-  (list 3 'a)
-  2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a))
-(assert-valid-hypertee-brackets 5 #/list
-  (list 4 'a)
-  3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
-  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a))
 
 ; Takes a hypertee of any degree N and upgrades it to any degree N or
 ; greater, while leaving its holes the way they are.
@@ -567,86 +552,6 @@
       (expect brackets (list)
         (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations.")))
     (hypertee overall-degree #/reverse rev-result)))
-
-
-; TODO: Put these tests in the punctaffy-test package instead of here.
-
-(hypertee-join-all-degrees #/hypertee 2 #/list
-  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
-    (list 0 #/list))
-  0
-  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
-    (list 0 #/list))
-  0
-  (list 0 #/hypertee-join-hole 'a))
-
-(hypertee-join-all-degrees #/hypertee 2 #/list
-  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
-    (list 1 'a)
-    0
-    (list 1 'a)
-    0
-    (list 0 #/list))
-  0
-  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
-    (list 1 'a)
-    0
-    (list 1 'a)
-    0
-    (list 0 #/list))
-  0
-  (list 0 #/hypertee-join-hole 'a))
-
-(hypertee-join-all-degrees #/hypertee 2 #/list
-  (list 1 #/hypertee-join-hole 'a)
-  0
-  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
-    (list 1 'a)
-    0
-    (list 0 #/list))
-  0
-  (list 1 #/hypertee-join-interpolation #/hypertee 2 #/list
-    (list 1 'a)
-    0
-    (list 0 #/list))
-  0
-  (list 0 #/hypertee-join-hole 'a))
-
-(hypertee-join-all-degrees #/hypertee 3 #/list
-  
-  ; This is propagated to the result.
-  (list 1 #/hypertee-join-hole 'a)
-  0
-  
-  (list 2 #/hypertee-join-interpolation #/hypertee 3 #/list
-    
-    ; This is propagated to the result.
-    (list 2 'a)
-    0
-    
-    ; This is matched up with one of the root's degree-1 sections and
-    ; cancelled out.
-    (list 1 #/list)
-    0
-    
-    ; This is propagated to the result.
-    (list 2 'a)
-    0
-    
-    (list 0 #/list))
-  
-  ; This is matched up with the interpolation's corresponding degree-1
-  ; section and cancelled out.
-  1
-  0
-  
-  0
-  
-  ; This is propagated to the result.
-  (list 1 #/hypertee-join-hole 'a)
-  0
-  
-  (list 0 #/hypertee-join-hole 'a))
 
 
 (define (hypertee-map-all-degrees ht func)
@@ -911,22 +816,6 @@
 
 (define (hyprid-each-lake-all-degrees h body)
   (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
-
-; TODO: Uncomment this test once we get it working. Now that we've
-; implemented `hypertee-map-all-degrees`, there's another error here
-; somewhere. We may want to write tests for
-; `hypertee-map-all-degrees`.
-;
-; TODO: Put this test in the punctaffy-test package instead of here.
-;
-#;(hyprid-fully-destripe
-  (hyprid 1 1
-  #/island-cane "Hello, " #/hyprid 0 1 #/hypertee 1 #/list #/list 0
-  #/lake-cane 'name #/hypertee 1 #/list #/list 0
-  #/island-cane "! It's " #/hyprid 0 1 #/hypertee 1 #/list #/list 0
-  #/lake-cane 'weather #/hypertee 1 #/list #/list 0
-  #/island-cane " today." #/hyprid 0 1 #/hypertee 1 #/list #/list 0
-  #/non-lake-cane #/list))
 
 ; TODO: Implement this. It should implement the inverse of
 ; `hyprid-destripe-maybe`, taking a hyprid and returning a hyprid with
