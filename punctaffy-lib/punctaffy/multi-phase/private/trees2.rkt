@@ -336,7 +336,8 @@
     (error "Expected more closing brackets")))
 
 
-(struct-easy "a hypertee" (hypertee degree closing-brackets) #:equal
+(struct-easy "a hypertee" (hypertee degree closing-brackets)
+  #:equal
   (#:guard-easy
     (assert-valid-hypertee-brackets degree closing-brackets)))
 
@@ -379,22 +380,12 @@
     (make-list (length closing-brackets) 0)
     (list #/list 0 hole-value)))
 
-(struct-easy "a hypertee-join-interpolation"
-  (hypertee-join-interpolation ht)
-  (#:guard-easy
-    (unless (hypertee? ht)
-      (error "Expected ht to be a hypertee"))))
-(struct-easy "a hypertee-join-hole" (hypertee-join-hole data))
-
-; This takes a hypertee where each hole value of each degree N is
-; either a `hypertee-join-hole` or a `hypertee-join-interpolation`
-; and where each `hypertee-join-interpolation` contains another
-; hypertee of the same degree, but where the values of holes of degree
-; less than N are empty lists. It returns a single hypertee of the
-; same degree, which has holes for all the high-degree holes of the
-; interpolations, as well as all the holes which had
-; `hypertee-join-hole` values. The values of the latter holes are the
-; values obtained by unwrapping the `hypertee-join-hole` values.
+; This takes a hypertee of degree N where each hole value of each
+; degree M is another degree-N hypertee to be interpolated. In those
+; interpolated hypertees, the values of holes of degree less than M
+; must be empty lists. This returns a single degree-N hypertee
+; which has holes for all the degree-M-or-greater holes of the
+; interpolations of each degree M.
 (define (hypertee-join-all-degrees ht)
   (struct-easy "a history-info"
     (history-info maybe-interpolation-i histories))
@@ -436,13 +427,17 @@
         ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
           (list closing-bracket)
-          (error "Internal error: A hypertee join interpolation ran out of brackets")
+          (expect histories (list)
+            (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
+            ; The interpolation has no more closing brackets, and
+            ; we're in a region of degree 0, so we end the loop.
+            #f)
         #/w- d (hypertee-closing-bracket-degree closing-bracket)
         #/expect (< d #/length histories) #t
           (error "Internal error: A hypertee join interpolation had a closing bracket of degree not less than the current region's degree")
         #/dissect (list-ref histories d)
           (history-info maybe-interpolation-i histories)
-        #/begin
+        #/begin0 #t
           (mat maybe-interpolation-i (list)
             (begin
               (verify-bracket-degree d #/pop-root-bracket!)
@@ -452,8 +447,7 @@
             (set! rev-result (cons closing-bracket rev-result)))
           (set! hist
             (history-info maybe-interpolation-i
-            #/list-overwrite-first-n d hist histories))
-          #t)
+            #/list-overwrite-first-n d hist histories)))
       
       ; We read from the root's closing bracket stream.
       #/w- this-root-bracket-i root-bracket-i
@@ -468,89 +462,59 @@
         (error "Internal error: A hypertee join root had a closing bracket of degree not less than the current region's degree")
       #/dissect (list-ref histories d)
         (history-info maybe-interpolation-i histories)
+      #/begin0 #t
+      #/expect closing-bracket (list d data)
+        ; We resume an interpolation.
+        (expect maybe-interpolation-i (list i)
+          (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
+        #/begin
+          (verify-bracket-degree d (pop-interpolation-bracket! i))
+          (set! hist
+            (history-info maybe-interpolation-i
+            #/list-overwrite-first-n d hist histories)))
+      ; We begin an interpolation.
+      #/expect data (hypertee data-d data-closing-brackets)
+        (error "Expected each hypertee join interpolation to be a hypertee")
+      #/expect (= data-d overall-degree) #t
+        (error "Expected each hypertee join interpolation to have the same degree as the root")
+      #/w- overwritten-histories
+        (list-overwrite-first-n d hist histories)
+      #/w- histories-len (length overwritten-histories)
       #/begin
-        (w- fill-or-hole
-          (mat closing-bracket (list d data)
-            data
-            ; NOTE: We use an empty list as a dummy value here, just
-            ; so we can end up in the `hypertee-join-hole` branch
-            ; below. We don't use this empty list again, so it could
-            ; be any other value if we wanted it to be.
-            (hypertee-join-hole #/list))
-        #/mat fill-or-hole
-          (hypertee-join-interpolation #/hypertee
-            data-d data-closing-brackets)
+        (hash-set! interpolations this-root-bracket-i
+          data-closing-brackets)
+        (set! hist
+          (history-info (list this-root-bracket-i)
           
-          ; We begin an interpolation.
-          (expect (= data-d overall-degree) #t
-            (error "Expected each hypertee join interpolation to have the same degree as the root")
-          #/w-
-            overwritten-histories
-              (list-overwrite-first-n d hist histories)
-            histories-len (length overwritten-histories)
-          #/begin
-            (hash-set! interpolations this-root-bracket-i
-              data-closing-brackets)
-            (set! hist
-              (history-info (list this-root-bracket-i)
-              
-              ; We build a list of histories of length
-              ; `overall-degree`, since the hypertee we're
-              ; interpolating into the root must be of that degree.
-              
-              ; The lowest-degree holes correspond to the structure of
-              ; the hole this interpolation is being spliced into, so
-              ; they return us to the root's histories.
-              #/append overwritten-histories
-              
-              ; The highest-degree holes are propagated through to the
-              ; result. They don't cause us to return to the root.
-              #/build-list (- overall-degree histories-len)
-              #/lambda (j)
-                (history-info (list this-root-bracket-i)
-                #/make-list (+ histories-len j)
-                
-                ; The values we use here don't matter since they'll be
-                ; overwritten whenever this part of the history is
-                ; restored.
-                #/history-info (list this-root-bracket-i) #/list))))
-        
-        #/mat fill-or-hole (hypertee-join-hole data)
+          ; We build a list of histories of length `overall-degree`,
+          ; since the hypertee we're interpolating into the root must
+          ; be of that degree.
           
-          ; We begin or resume a hole in the root, which will either
-          ; pass through to doing the same thing in the result or
-          ; resume an interpolation.
-          (begin
-            (mat maybe-interpolation-i (list i)
-              (begin
-                (verify-bracket-degree d
-                  (pop-interpolation-bracket! i))
-                (mat closing-bracket (list d data)
-                  (error "Internal error: A hypertee join root had a closing bracket that both began a hole and returned to an interpolation in progress")))
-              (set! rev-result
-                (cons
-                  (if (list? closing-bracket)
-                    (list d data)
-                    ; We got to this branch by constructing a
-                    ; `hypertee-join-hole` with dummy data. The
-                    ; bracket returned to a hole in progress in the
-                    ; the root, so here we return to a hole in
-                    ; progress in the result.
-                    d)
-                  rev-result)))
-            (set! hist
-              (history-info maybe-interpolation-i
-              #/list-overwrite-first-n d hist histories)))
-        
-        #/error "Expected the content of a hole in a hypertee join root to be a hypertee-join-interpolation or a hypertee-join-hole")
-        #t)
+          ; The lowest-degree holes correspond to the structure of the
+          ; hole this interpolation is being spliced into, so they
+          ; return us to the root's histories.
+          #/append overwritten-histories
+          
+          ; The highest-degree holes are propagated through to the
+          ; result. They don't cause us to return to the root.
+          #/build-list (- overall-degree histories-len)
+          #/lambda (j)
+            (history-info (list this-root-bracket-i)
+            #/make-list (+ histories-len j)
+            
+            ; The values we use here don't matter since they'll be
+            ; overwritten whenever this part of the history is
+            ; restored.
+            #/history-info (list this-root-bracket-i) #/list))))
       
       ; This while loop's body is intentionally left blank. Everything
       ; was done in the condition.
       (void))
+    (expect brackets (list)
+      (error "Internal error: Encountered the end of a hypertee join interpolation in a region of degree 0 before getting to the end of the root"))
     (hash-kv-each interpolations #/lambda (i brackets)
       (expect brackets (list)
-        (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations.")))
+        (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")))
     (hypertee overall-degree #/reverse rev-result)))
 
 
@@ -649,6 +613,9 @@
 (define (hypertee-map-highest-degree ht func)
   (hypertee-map-pred-degree ht (hypertee-degree ht) func))
 
+(define (hypertee-pure degree data hole)
+  (hypertee-promote degree #/hypertee-contour data hole))
+
 (define (hypertee-bind-all-degrees ht hole-to-ht)
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
@@ -656,9 +623,8 @@
 (define (hypertee-bind-one-degree ht degree func)
   (hypertee-bind-all-degrees ht #/lambda (hole data)
     (if (= degree #/hypertee-degree hole)
-      (func hole)
-      (hypertee-promote (hypertee-degree ht)
-      #/hypertee-contour data hole))))
+      (func hole data)
+      (hypertee-pure (hypertee-degree ht) data hole))))
 
 (define (hypertee-bind-pred-degree ht degree func)
   (expect (nat-pred-maybe degree) (list pred-degree) ht
@@ -678,6 +644,7 @@
 ;
 (struct-easy "a hyprid"
   (hyprid striped-degrees unstriped-degrees striped-hypertee)
+  #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? striped-degrees)
       (error "Expected striped-degrees to be an exact nonnegative integer"))
@@ -705,6 +672,7 @@
   #/+ striped-degrees unstriped-degrees))
 
 (struct-easy "an island-cane" (island-cane data rest)
+  #:equal
   (#:guard-easy
     (unless (hyprid? rest)
       (error "Expected rest to be a hyprid"))
@@ -719,12 +687,13 @@
         #/error "Expected data to be a lake-cane or a non-lake-cane")))))
 
 (struct-easy "a lake-cane" (lake-cane data rest)
+  #:equal
   (#:guard-easy
     (unless (hypertee? rest)
       (error "Expected rest to be a hypertee"))
     (w- d (hypertee-degree rest)
     #/hypertee-each-all-degrees rest #/lambda (hole data)
-      (when (= d #/add1 #/hypertee-degree hole)
+      (if (= d #/add1 #/hypertee-degree hole)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
         #/unless (= d #/hyprid-degree rest)
@@ -732,7 +701,7 @@
         (expect data (list)
           (error "Expected data to be an empty list"))))))
 
-(struct-easy "a non-lake-cane" (non-lake-cane data))
+(struct-easy "a non-lake-cane" (non-lake-cane data) #:equal)
 
 (define (hyprid-map-lakes-highest-degree h func)
   (expect h
@@ -767,13 +736,17 @@
   #/expect (nat-pred-maybe striped-degrees)
     (list pred-striped-degrees)
     (list)
-  #/list #/hyprid pred-striped-degrees (add1 unstriped-degrees)
+  #/w- succ-unstriped-degrees (add1 unstriped-degrees)
+  #/list #/hyprid pred-striped-degrees succ-unstriped-degrees
   #/dissect striped-hypertee
     (island-cane data
     #/hyprid pred-striped-degrees-2 unstriped-degrees-2 rest)
   #/expect (nat-pred-maybe pred-striped-degrees)
     (list pred-pred-striped-degrees)
-    (hypertee-bind-highest-degree rest #/lambda (hole rest)
+    (hypertee-bind-pred-degree
+      (hypertee-promote succ-unstriped-degrees rest)
+      unstriped-degrees
+    #/lambda (hole rest)
       (mat rest (lake-cane data rest)
         (hypertee-bind-pred-degree (hypertee-contour data rest)
           unstriped-degrees
@@ -786,8 +759,7 @@
               destriped-rest)
             destriped-rest))
       #/mat rest (non-lake-cane data)
-        (hypertee-promote unstriped-degrees
-        #/hypertee-contour data hole)
+        (hypertee-pure succ-unstriped-degrees data hole)
       #/error "Internal error"))
   #/island-cane data
   #/dissect (hyprid-destripe-maybe rest) (list destriped-rest)
