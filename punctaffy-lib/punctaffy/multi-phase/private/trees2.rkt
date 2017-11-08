@@ -794,4 +794,39 @@
 ; one more striped degree and one fewer unstriped degree. The new
 ; stripe data values should be empty lists.
 (define (hyprid-stripe-maybe h)
-  'TODO)
+  (expect h
+    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (error "Expected h to be a hyprid")
+  #/expect (nat-pred-maybe unstriped-degrees)
+    (list pred-unstriped-degrees)
+    (list)
+  #/w- succ-striped-degrees (add1 striped-degrees)
+  #/list #/hyprid succ-striped-degrees pred-unstriped-degrees
+  #/expect striped-degrees 0
+    (dissect (hyprid-stripe-maybe striped-hypertee)
+      (list striped-striped-hypertee)
+    #/hyprid-map-lakes-highest-degree striped-striped-hypertee
+    #/lambda (hole-hypertee rest)
+      (mat rest (lake-cane data rest)
+        (lake-cane data
+        #/hypertee-map-highest-degree rest #/lambda (hole rest)
+          (dissect
+            (hyprid-stripe-maybe
+            #/hyprid striped-degrees unstriped-degrees rest)
+            (list
+            #/hyprid succ-striped-degrees pred-unstriped-degrees
+              striped-rest)
+            striped-rest))
+      #/mat rest (non-lake-cane data) (non-lake-cane data)
+      #/error "Internal error"))
+  #/dissect striped-hypertee (hypertee d closing-brackets)
+  #/expect (= d unstriped-degrees) #t
+    (error "Internal error")
+    ; TODO: Begin a mutable state to place the island's brackets in
+    ; and a mutable state for the overall history. As we encounter
+    ; lakes, begin mutable states to keep their histories in, and so
+    ; on for every island and lake at every depth. In the end, build
+    ; the root island by accessing its state to get the brackets,
+    ; arranging the brackets in the correct order, and recursively
+    ; assembling lakes and islands using their states the same way.
+    'TODO))
