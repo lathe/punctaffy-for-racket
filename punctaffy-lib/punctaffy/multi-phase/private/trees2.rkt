@@ -289,6 +289,42 @@
 ; reverse order. Here, the slots are displayed from highest to lowest
 ; degree so that history tends to be appended to and removed from the
 ; left side (where the cursor is).
+;
+; If we tried to enforce all of the bracket-balancing in a more
+; incremental, structured way, it would be rather difficult. Here's a
+; sketch of what the hypertee type itself would look like if we were
+; to define it as a correct-by-construction algebraic data type:
+;
+;   data Hypertee :
+;     (n : Nat) ->
+;     ( (i : Fin n) ->
+;       Hypertee (finToNat i) (\i iEdge -> ()) ->
+;       Type) ->
+;     Type
+;   where
+;     HyperteeZ : Hypertee 0 finAbsurd
+;     HyperteeS :
+;       {n : Nat} ->
+;       {m : Fin n} ->
+;       {v :
+;         (i : Fin n) ->
+;         Hypertee (finToNat i) (\i iEdge -> ()) ->
+;         Type} ->
+;       (edge :
+;         Hypertee finToNat m \i iEdge ->
+;           (fill : Hypertee n \j jEdge ->
+;             if finToNat j < finToNat i
+;               then ()
+;               else v j) *
+;           (hyperteeTruncate (finToNat i) fill = iEdge)) ->
+;       v m (hyperteeMapAllDegrees edge \i iEdge val -> ()) ->
+;       Hypertee v
+;
+; This type must be defined as part of an induction-recursion with the
+; functions `hyperteeTruncate` (which should remove the highest-degree
+; holes from a hypertee and lower its degree) and
+; `hyperteeMapAllDegrees`, which seem to end up depending on quite a
+; lot of other constructions.
 
 
 
@@ -830,3 +866,57 @@
     ; arranging the brackets in the correct order, and recursively
     ; assembling lakes and islands using their states the same way.
     'TODO))
+
+; TODO: Judging by the mutable state used in the above algorithms, if
+; we ever want to use purer implementations, or even to generalize the
+; data to start with trees as the underlying syntax rather than lists,
+; we'll want to be able to accumulate information in reverse. In fact,
+; it seems like there may be an interesting higher-order notion of
+; "reverse" where the shape
+;
+;   A ~2( B ,( C D ) E ,( F G ) H ) I
+;
+; degree-0-reverses to
+;
+;   I ~2( H ,( G F ) E ,( D C ) B ) A
+;
+; and degree-1-reverses to the client's choice of:
+;
+;   C ~2( B ,( A I ) H ,( G F ) E ) D
+;   D ~2( E ,( F G ) H ,( I A ) B ) C
+;   F ~2( E ,( D C ) B ,( A I ) H ) G
+;   G ~2( H ,( I A ) B ,( C D ) E ) F
+;
+; A possible structure-respecting implementation strategy is splitting
+; into degree-N stripes, choosing a lake, optionally
+; degree-N-minus-1-reversing the parts before and after that lake
+; (through some hole of the lake), and degree-N-minus-1-concatenating
+; them (using a degree-N-minus-1-reverse-onto operation).
+;
+; But... sometimes the lake has more than one island beyond it:
+;
+;   A ~3( ~2( ,( B C ) ,( D E ) ) ) F
+;
+; When we reverse that, should we get three roots back?  Or are only
+; lakes that have one neighboring island (i.e. no islands beyond)
+; valid targets? Or should we instead target an arbitrary place in an
+; *island*, punching a hole so we can treat that hole as the root?
+; Perhaps there isn't a really elegant higher-degree reversal
+; operation after all.
+;
+; Besides, even if we accumulated data on one path through a tree,
+; we'd have to go back down partway to accumulate more data on another
+; branch. At that point, what our traversal accumulates looks just
+; like a sequence of brackets anyway. Or we could branch our
+; accumulation into multiple deteriministically concurrent uses of
+; monotonic states, but then the code will resemble the mutable boxes
+; we're using in these algorithms as it is. Maybe it doesn't get a
+; whole lot more elegant than what we're doing now.
+
+; TODO: Implement the ability to zip a degree-N hypertee with a
+; higher-degree hypertee if the hypertees have the same shape when
+; truncated to degree N.
+
+; TODO: Implement a truncation operation, which takes a hypertee and
+; removes all holes of degree equal to or greater than a given degree
+; and demotes the hypertee to that degree.
