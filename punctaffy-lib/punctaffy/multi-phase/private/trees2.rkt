@@ -730,18 +730,27 @@
     (w- d (hypertee-degree rest)
     #/hypertee-each-all-degrees rest #/lambda (hole data)
       (if (= d #/add1 #/hypertee-degree hole)
-        ; TODO: In this case, also verify that the island's
-        ; non-highest-degree holes contain empty lists. The *root*
-        ; island of a hyprid can contain data in its low-degree holes,
-        ; but the other islands' low-degree holes just represent
-        ; passing the baton back to the previous lake. (Note that any
-        ; island can have a nontrivial `non-lake-cane` in a highest
-        ; degree hole. It's only the degrees below that that should be
-        ; restricted.)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
         #/unless (= d #/hyprid-degree rest)
-          (error "Expected data to be an island-cane of the same degree"))
+          (error "Expected data to be an island-cane of the same degree")
+        #/hyprid-each-lake-all-degrees rest
+        #/lambda (hole-hypertee data)
+          (unless (= d #/add1 #/hypertee-degree hole-hypertee)
+          
+          ; A root island is allowed to contain arbitrary values in
+          ; its low-degree holes, but the low-degree holes of an
+          ; island beyond a lake just represent boundaries that
+          ; transition back to the lake, so we require them to be
+          ; trivial values, namely empty lists.
+          ;
+          ; Note that this does not prohibit nontrivial data in holes
+          ; of the highest degree an island can have (which are the
+          ; same as the holes we wrap in `non-lake-cane`), since those
+          ; holes don't represent transitions back to the lake.
+          
+          #/expect data (list)
+            (error "Expected data to be an island-cane where the low-degree holes contained empty lists")))
         (expect data (list)
           (error "Expected data to be an empty list"))))))
 
