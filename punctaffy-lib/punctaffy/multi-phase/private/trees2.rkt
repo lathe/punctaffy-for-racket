@@ -321,10 +321,10 @@
 ;       Hypertee v
 ;
 ; This type must be defined as part of an induction-recursion with the
-; functions `hyperteeTruncate` (which should remove the highest-degree
-; holes from a hypertee and lower its degree) and
-; `hyperteeMapAllDegrees`, which seem to end up depending on quite a
-; lot of other constructions.
+; functions `hyperteeTruncate` (which would remove the highest-degree
+; holes from a hypertee and lower its degree, as we provide here under
+; the name `hypertee-truncate`) and `hyperteeMapAllDegrees`, which
+; seem to end up depending on quite a lot of other constructions.
 
 
 
@@ -854,6 +854,8 @@
     (not #/memq location #/list 'non-lake 'lake))
   (define (location-is-island? location)
     (not #/not #/memq location #/list 'root-island 'inner-island))
+  ; NOTE: The only reason we have a `location` slot here at all (and
+  ; the makeshift enum that goes in it) is for sanity checks.
   (struct-easy "a history-info"
     (history-info location maybe-state histories)
     (#:guard-easy
@@ -1107,10 +1109,77 @@
 ; we're using in these algorithms as it is. Maybe it doesn't get a
 ; whole lot more elegant than what we're doing now.
 
-; TODO: Implement the ability to zip a degree-N hypertee with a
-; higher-degree hypertee if the hypertees have the same shape when
-; truncated to degree N.
+; This takes a hypertee, removes all holes of degree equal to or
+; greater than a given degree, and demotes the hypertee to that
+; degree. The given degree must not be greater than the hypertee's
+; existing degree.
+(define (hypertee-truncate new-degree ht)
+  (unless (exact-nonnegative-integer? new-degree)
+    (error "Expected new-degree to be an exact nonnegative integer"))
+  (expect ht (hypertee d closing-brackets)
+    (error "Expected ht to be a hypertee")
+  #/expect (<= new-degree d) #t
+    (error "Expected ht to be a hypertee of degree no less than new-degree")
+  #/dissect
+    (hypertee-bind-all-degrees ht #/lambda (hole data)
+      (if (<= new-degree #/hypertee-degree hole)
+        (hypertee-promote d hole)
+        (hypertee-pure d data hole)))
+    (hypertee d closing-brackets)
+  #/hypertee new-degree closing-brackets))
 
-; TODO: Implement a truncation operation, which takes a hypertee and
-; removes all holes of degree equal to or greater than a given degree
-; and demotes the hypertee to that degree.
+(define (hypertee-zip a b func)
+  (expect a (hypertee d-a closing-brackets-a)
+    (error "Expected a to be a hypertee")
+  #/expect b (hypertee d-b closing-brackets-b)
+    (error "Expected b to be a hypertee")
+  #/expect (= d-a d-b) #t
+    (error "Expected hypertees a and b to have the same degree")
+  #/expect (= (length closing-brackets-a) (length closing-brackets-b))
+    #t
+    (error "Expected hypertees a and b to have the same shape")
+  #/hypertee-map-all-degrees
+    (hypertee d-a #/map
+      (lambda (a b)
+        (mat a (list d-a data-a)
+          (mat b (list d-b data-b)
+            (expect (= d-a d-b) #t
+              (error "Expected hypertees a and b to have the same shape")
+            #/list d-a #/list data-a data-b)
+            (error "Expected hypertees a and b to have the same shape"))
+          (mat b (list d-b data-b)
+            (error "Expected hypertees a and b to have the same shape")
+            (expect (= a b) #t
+              (error "Expected hypertees a and b to have the same shape")
+              a))))
+      closing-brackets-a
+      closing-brackets-b)
+  #/lambda (hole data)
+    (dissect data (list a b)
+    #/func hole a b)))
+
+; This zips a degree-N hypertee with a higher-degree hypertee if the
+; hypertees have the same shape when truncated to degree N.
+(define (hypertee-zip-low-degrees smaller bigger func)
+  (expect smaller (hypertee d-smaller closing-brackets-smaller)
+    (error "Expected smaller to be a hypertee")
+  #/expect bigger (hypertee d-bigger closing-brackets-bigger)
+    (error "Expected smaller to be a hypertee")
+  #/expect (<= d-smaller d-bigger) #t
+    (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
+  #/expect
+    (equal?
+      (hypertee-map-all-degrees smaller #/lambda (hole data) #/list)
+      (hypertee-map-all-degrees (hypertee-truncate d-smaller bigger)
+      #/lambda (hole data) #/list))
+    #t
+    (error "Expected hypertees smaller and bigger to have the same low-degree shape")
+  #/w- mutable
+    (hypertee-map-all-degrees bigger #/lambda (hole data)
+      (box data))
+  #/begin
+    (hypertee-zip smaller (hypertee-truncate d-smaller mutable)
+    #/lambda (hole smaller mutable)
+      (set-box! mutable (func hole smaller #/unbox mutable)))
+  #/hypertee-map-all-degrees mutable #/lambda (hole data)
+    (unbox data)))
