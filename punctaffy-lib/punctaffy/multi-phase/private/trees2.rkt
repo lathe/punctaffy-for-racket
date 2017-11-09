@@ -830,6 +830,20 @@
 ; one more striped degree and one fewer unstriped degree. The new
 ; stripe data values should be empty lists.
 (define (hyprid-stripe-maybe h)
+  (struct-easy "a history-info"
+    (history-info location maybe-state histories)
+    (#:guard-easy
+      (unless
+        (memq location #/list 'root-island 'lake 'inner-island 'hole)
+        (error "Internal error"))
+      (if (eq? 'hole location)
+        (expect maybe-state (list)
+          (error "Internal error"))
+        (expect maybe-state (list state)
+          (error "Internal error")))))
+  (struct-easy "an unfinished-lake-cane"
+    (unfinished-lake-cane data rest-state))
+  (struct-easy "a stripe-state" (stripe-state rev-brackets hist))
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
@@ -858,14 +872,50 @@
   #/dissect striped-hypertee (hypertee d closing-brackets)
   #/expect (= d unstriped-degrees) #t
     (error "Internal error")
-    ; TODO: Begin a mutable state to place the island's brackets in
-    ; and a mutable state for the overall history. As we encounter
-    ; lakes, begin mutable states to keep their histories in, and so
-    ; on for every island and lake at every depth. In the end, build
-    ; the root island by accessing its state to get the brackets,
-    ; arranging the brackets in the correct order, and recursively
-    ; assembling lakes and islands using their states the same way.
-    'TODO))
+  ; We begin a mutable state to place the root island's brackets in
+  ; and a mutable state for the overall history.
+  #/w- stripe-starting-state
+    (w- rev-brackets (list)
+    #/stripe-state rev-brackets
+    #/build-list pred-unstriped-degrees #/lambda (i)
+      ; These empty lists are just dummy values, since they'll be
+      ; replaced whenever this part of the history is used.
+      (make-list i #/list))
+  #/w- root-island-state (box stripe-starting-state)
+  #/w- hist
+    (history-info 'root-island (list root-island-state)
+    #/build-list d #/lambda (i)
+      (history-info 'hole (list) #/make-list i
+      ; These `history-info` values with empty lists are just dummy
+      ; values, since they'll be replaced whenever this part of the
+      ; history is used.
+      #/history-info 'hole (list) #/list))
+  #/begin
+    (list-each closing-brackets #/lambda (closing-bracket)
+      ; TODO: As we encounter lakes, build mutable states to keep
+      ; their histories in, and so on for every island and lake at
+      ; every depth.
+      'TODO)
+  ; In the end, we build the root island by accessing its state to get
+  ; the brackets, arranging the brackets in the correct order, and
+  ; recursively assembling lakes and islands using their states the
+  ; same way.
+  #/let assemble-island-from-state ([state root-island-state])
+    (dissect (unbox state) (stripe-state rev-brackets #/list)
+    #/island-cane (list) #/hypertee pred-unstriped-degrees
+    #/list-fmap (reverse rev-brackets) #/lambda (closing-bracket)
+      (expect closing-bracket (list d data) closing-bracket
+      #/expect (= d pred-unstriped-degrees) #t closing-bracket
+      #/mat data (non-lake-cane data) closing-bracket
+      #/mat data (unfinished-lake-cane data rest-state)
+        (dissect (unbox rest-state)
+          (stripe-state rev-brackets #/list)
+        #/list d #/lake-cane data #/hypertee pred-unstriped-degrees
+        #/list-fmap rev-brackets #/lambda (closing-bracket)
+          (expect closing-bracket (list d data) closing-bracket
+          #/expect (= d pred-unstriped-degrees) #t closing-bracket
+          #/list d #/assemble-island-from-state data))
+      #/error "Internal error"))))
 
 ; TODO: Judging by the mutable state used in the above algorithms, if
 ; we ever want to use purer implementations, or even to generalize the
