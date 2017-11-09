@@ -282,7 +282,7 @@
 ;                                        | 4 (>, 3 (>, >, 4))
 ;                                          | 3 (>, >, 4)
 ;                                            | 4
-;                                             | 0
+;                                              | 0
 ;
 ; In fact, the actual implementation in
 ; `assert-valid-hypertee-brackets` represents the history lists in
@@ -1108,6 +1108,16 @@
 ; monotonic states, but then the code will resemble the mutable boxes
 ; we're using in these algorithms as it is. Maybe it doesn't get a
 ; whole lot more elegant than what we're doing now.
+;
+; Wait... Degree-2-reversing into a degree-2 target should be
+; well-defined if we also pick one degree-1 sub-target beyond each of
+; its holes. That way, the shape of the target corresponds with the
+; low-degree shape of the result. Then degree-2-reversing consists
+; only of striping, removing the lake we're targeting, destriping each
+; part we just disconnected, degree-1-reversing each of them, striping
+; them again, and reconnecting them using the same lake shape in the
+; middle. (TODO: Rewrite this comment to incorporate this insight
+; earlier, and reconsider the implications on our algorithms.)
 
 ; This takes a hypertee, removes all holes of degree equal to or
 ; greater than a given degree, and demotes the hypertee to that
