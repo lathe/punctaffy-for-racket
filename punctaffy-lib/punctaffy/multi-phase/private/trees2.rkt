@@ -730,6 +730,14 @@
     (w- d (hypertee-degree rest)
     #/hypertee-each-all-degrees rest #/lambda (hole data)
       (if (= d #/add1 #/hypertee-degree hole)
+        ; TODO: In this case, also verify that the island's
+        ; non-highest-degree holes contain empty lists. The *root*
+        ; island of a hyprid can contain data in its low-degree holes,
+        ; but the other islands' low-degree holes just represent
+        ; passing the baton back to the previous lake. (Note that any
+        ; island can have a nontrivial `non-lake-cane` in a highest
+        ; degree hole. It's only the degrees below that that should be
+        ; restricted.)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
         #/unless (= d #/hyprid-degree rest)
@@ -825,25 +833,39 @@
 (define (hyprid-each-lake-all-degrees h body)
   (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
 
-; TODO: Implement this. It should implement the inverse of
-; `hyprid-destripe-maybe`, taking a hyprid and returning a hyprid with
-; one more striped degree and one fewer unstriped degree. The new
-; stripe data values should be empty lists.
+; This is the inverse of `hyprid-destripe-maybe`, taking a hyprid and
+; returning a hyprid with one more striped degree and one fewer
+; unstriped degree. The new stripe's data values are empty lists, as
+; implemented at the comment labeled "EMPTY LIST NOTE".
+;
+; TODO: Test this.
+;
 (define (hyprid-stripe-maybe h)
+  (define (location-needs-state? location)
+    (not #/memq location #/list 'non-lake 'lake))
+  (define (location-is-island? location)
+    (not #/not #/memq location #/list 'root-island 'inner-island))
   (struct-easy "a history-info"
     (history-info location maybe-state histories)
     (#:guard-easy
       (unless
-        (memq location #/list 'root-island 'lake 'inner-island 'hole)
+        (memq location
+        #/list 'root-island 'non-lake 'lake 'inner-island 'hole)
         (error "Internal error"))
-      (if (eq? 'hole location)
-        (expect maybe-state (list)
-          (error "Internal error"))
+      (if (location-needs-state? location)
         (expect maybe-state (list state)
+          (error "Internal error"))
+        (expect maybe-state (list)
           (error "Internal error")))))
   (struct-easy "an unfinished-lake-cane"
     (unfinished-lake-cane data rest-state))
   (struct-easy "a stripe-state" (stripe-state rev-brackets hist))
+  (define (update-simple-history closing-degree hist)
+    (expect (< closing-degree #/length hist) #t
+      (error "Internal error")
+    #/list-overwrite-first-n closing-degree hist
+    #/list-ref hist closing-degree))
+  
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
@@ -892,17 +914,130 @@
       #/history-info 'hole (list) #/list))
   #/begin
     (list-each closing-brackets #/lambda (closing-bracket)
-      ; TODO: As we encounter lakes, build mutable states to keep
-      ; their histories in, and so on for every island and lake at
-      ; every depth.
-      'TODO)
+      
+      ; As we encounter lakes, we build mutable states to keep their
+      ; histories in, and so on for every island and lake at every
+      ; depth.
+      
+      (dissect hist
+        (history-info
+          location-before maybe-state-before histories-before)
+      #/w- d (hypertee-closing-bracket-degree closing-bracket)
+      #/expect (< d #/length histories-before) #t
+        (error "Internal error")
+      #/dissect (list-ref histories-before d)
+        (history-info
+          location-after maybe-state-after histories-after)
+      #/w- histories-after
+        (list-overwrite-first-n d hist histories-after)
+      #/if (= pred-unstriped-degrees d)
+        
+        ; If we've encountered a closing bracket of the highest degree
+        ; the original hypertee can support, we're definitely starting
+        ; a lake.
+        (expect (location-is-island? location-before) #t
+          (error "Internal error")
+        #/expect (eq? 'hole location-after) #t
+          (error "Internal error")
+        #/expect closing-bracket (list d data)
+          (error "Internal error")
+        #/w- rest-state (box stripe-starting-state)
+        #/begin
+          (set! hist
+            (history-info 'lake (list rest-state) histories-after))
+        #/dissect maybe-state-before (list state)
+        #/dissect (unbox state) (stripe-state rev-brackets hist)
+        #/set-box! state
+          (stripe-state
+            (cons (list d #/unfinished-lake-cane data rest-state)
+              rev-brackets)
+            (update-simple-history d hist)))
+      
+      #/if (= pred-unstriped-degrees #/add1 d)
+        
+        ; If we've encountered a closing bracket of the highest degree
+        ; that a stripe in the result can support, we may be starting
+        ; an island or a non-lake.
+        (mat closing-bracket (list d data)
+          
+          ; This bracket is closing the original hypertee, so it must
+          ; be closing an island, so we're starting a non-lake.
+          (expect (location-is-island? location-before) #t
+            (error "Internal error")
+          #/expect (eq? 'hole location-before) #t
+            (error "Internal error")
+          #/begin
+            (set! hist
+              (history-info 'non-lake (list) histories-after))
+          #/dissect maybe-state-before (list state)
+          #/dissect (unbox state) (stripe-state rev-brackets hist)
+          #/set-box! state
+            (stripe-state
+              (cons (list d #/non-lake-cane data) rev-brackets)
+              (update-simple-history d hist)))
+          
+          ; This bracket is closing an even higher-degree bracket,
+          ; which must have started a lake, so we're starting an
+          ; island.
+          (expect (eq? 'lake location-before) #t
+            (error "Internal error")
+          #/expect (eq? 'root-island location-after) #t
+            (error "Internal error")
+          #/w- new-state (box stripe-starting-state)
+          #/begin
+            (set! hist
+              (history-info
+                'inner-island (list new-state) histories-after))
+          #/dissect maybe-state-after (list state)
+          #/dissect (unbox state) (stripe-state rev-brackets hist)
+          #/set-box! state
+            (stripe-state
+              (cons closing-bracket rev-brackets)
+              (update-simple-history d hist))))
+      
+      ; If we've encountered a closing bracket of low degree, we pass
+      ; it through to whatever island or lake we're departing from
+      ; (including any associated data in the bracket) and whatever
+      ; island or lake we're arriving at (excluding the data, since
+      ; this bracket must be closing some hole which was started there
+      ; earlier). In some circumstances, we need to associate an empty
+      ; list with the bracket we record to the departure island or
+      ; lake, even if this bracket is not a hole-opener as far as the
+      ; original hypertee is concerned.
+      #/begin
+        (set! hist
+          (history-info
+            location-after maybe-state-after histories-after))
+        (expect maybe-state-before (list state) (void)
+        #/dissect (unbox state) (stripe-state rev-brackets hist)
+        #/w- hist (update-simple-history d hist)
+        #/set-box! state
+          (stripe-state
+            (cons
+              (mat closing-bracket (list d data) closing-bracket
+              #/if (= d #/length hist)
+                (list d #/list)
+                d)
+              rev-brackets)
+            hist))
+        (expect maybe-state-after (list state) (void)
+        #/dissect (unbox state) (stripe-state rev-brackets hist)
+        #/set-box! state
+          (stripe-state
+            (cons d rev-brackets)
+            (update-simple-history d hist)))))
   ; In the end, we build the root island by accessing its state to get
   ; the brackets, arranging the brackets in the correct order, and
   ; recursively assembling lakes and islands using their states the
   ; same way.
   #/let assemble-island-from-state ([state root-island-state])
     (dissect (unbox state) (stripe-state rev-brackets #/list)
-    #/island-cane (list) #/hypertee pred-unstriped-degrees
+    
+    ; EMPTY LIST NOTE: This is where we put an empty list into the new
+    ; layer of stripe data.
+    #/island-cane (list)
+    
+    #/hypertee pred-unstriped-degrees
     #/list-fmap (reverse rev-brackets) #/lambda (closing-bracket)
       (expect closing-bracket (list d data) closing-bracket
       #/expect (= d pred-unstriped-degrees) #t closing-bracket
