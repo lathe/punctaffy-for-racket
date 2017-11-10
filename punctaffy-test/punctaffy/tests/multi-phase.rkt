@@ -170,3 +170,77 @@
     0
     (list 0 #/list))
   "Fully destriping a hyprid-encoded interpolated string with two interpolations gives a degree-2 hypertee with two degree-1 holes containing the interpolated values")
+
+(check-equal?
+  (hyprid-stripe-maybe
+  #/hyprid 0 3 #/hypertee 3 #/list
+    (list 2 'a)
+    1
+    (list 1 'a)
+    0
+    0
+    0
+    (list 0 'a))
+  (list
+  #/hyprid 1 2 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
+    (list 1 #/lake-cane 'a #/hypertee 2 #/list
+      (list 1 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
+        (list 1 #/non-lake-cane 'a)
+        0
+        (list 0 #/list))
+      0
+      (list 0 #/list))
+    0
+    (list 0 'a))
+  "Striping a hyprid")
+
+(check-equal?
+  
+  (car #/hyprid-stripe-maybe
+  #/car #/hyprid-stripe-maybe
+  #/hyprid 0 3 #/hypertee 3 #/list
+    (list 2 'a)
+    1
+    (list 1 'a)
+    0
+    0
+    0
+    (list 0 'a))
+  
+  ; NOTE: The only reason I was able to write this out was because I
+  ; printed the result first and transcribed it.
+  (hyprid 2 1
+  #/island-cane (list) #/hyprid 1 1
+  #/island-cane (list) #/hyprid 0 1
+  #/hypertee 1 #/list #/list 0 #/lake-cane
+    (lake-cane 'a #/hypertee 2 #/list
+      (list 1
+      #/island-cane (list) #/hyprid 1 1
+      #/island-cane (list) #/hyprid 0 1
+      #/hypertee 1 #/list #/list 0 #/lake-cane
+        (non-lake-cane 'a)
+      #/hypertee 1 #/list #/list 0
+      #/island-cane (list) #/hyprid 0 1
+      #/hypertee 1 #/list #/list 0 #/non-lake-cane #/list)
+      0
+      (list 0 #/list))
+  #/hypertee 1 #/list #/list 0
+  #/island-cane (list) #/hyprid 0 1
+  #/hypertee 1 #/list #/list 0 #/non-lake-cane 'a)
+  
+  "Striping a hyprid twice")
+
+(check-equal?
+  (hyprid-stripe-maybe
+  #/car #/hyprid-stripe-maybe
+  #/car #/hyprid-stripe-maybe
+  #/hyprid 0 3 #/hypertee 3 #/list
+    (list 2 'a)
+    1
+    (list 1 'a)
+    0
+    0
+    0
+    (list 0 'a))
+  (list)
+  "Trying to stripe a hybrid more than it can be striped")

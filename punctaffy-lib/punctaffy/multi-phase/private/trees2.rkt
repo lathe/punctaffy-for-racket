@@ -165,10 +165,12 @@
 ; We call this representation a "hyprid" ("hyper" + "hybrid") since it
 ; stores both hypersnippet information and the hypertee information
 ; beyond the holes. Hyprids allow this striping to be iterated to any
-; number of degrees up to the degree of the hypersnippet shape. Each
-; iteration works the same way, but the concept of "hypertee of
-; shape S" is replaced with "stripes that collapse to a hypertee of
-; shape S."
+; number of degrees up to one less than the degree of the hypersnippet
+; shape. Each iteration works the same way, but the concept of
+; "hypertee of shape S" is replaced with "stripes that collapse to a
+; hypertee of shape S." (Adding striping to a degree-1 hyprid doesn't
+; work, since an island stripe of degree 0 has no holes to carry a
+; lake stripe in at all.)
 ;
 ; For circumstances where we're willing to discard the string
 ; information of our interpolated string, we can use the operation
@@ -639,8 +641,8 @@
 (define (hypertee-map-one-degree ht degree func)
   (hypertee-map-all-degrees ht #/lambda (hole data)
     (if (= degree #/hypertee-degree hole)
-      (func hole)
-      hole)))
+      (func hole data)
+      data)))
 
 (define (hypertee-map-pred-degree ht degree func)
   (expect (nat-pred-maybe degree) (list pred-degree) ht
@@ -684,8 +686,8 @@
   (#:guard-easy
     (unless (exact-nonnegative-integer? striped-degrees)
       (error "Expected striped-degrees to be an exact nonnegative integer"))
-    (unless (exact-nonnegative-integer? unstriped-degrees)
-      (error "Expected unstriped-degrees to be an exact nonnegative integer"))
+    (unless (exact-positive-integer? unstriped-degrees)
+      (error "Expected unstriped-degrees to be an exact positive integer"))
     (expect (nat-pred-maybe striped-degrees)
       (list pred-striped-degrees)
       (expect striped-hypertee (hypertee degree closing-brackets)
@@ -776,7 +778,8 @@
       #/hypertee-map-highest-degree rest #/lambda (hole rest)
         (dissect
           (hyprid-map-lakes-highest-degree
-          #/hyprid striped-degrees unstriped-degrees rest)
+            (hyprid striped-degrees unstriped-degrees rest)
+            func)
           (hyprid striped-degrees-2 unstriped-degrees-2 rest)
           rest))
     #/mat rest (non-lake-cane data) (non-lake-cane data)
@@ -847,11 +850,14 @@
 ; unstriped degree. The new stripe's data values are empty lists, as
 ; implemented at the comment labeled "EMPTY LIST NOTE".
 ;
+; The last degree can't be striped, so this only returns a result if
+; the number of unstriped degrees in the input is greater than one.
+;
 ; TODO: Test this.
 ;
 (define (hyprid-stripe-maybe h)
   (define (location-needs-state? location)
-    (not #/memq location #/list 'non-lake 'lake))
+    (not #/memq location #/list 'non-lake 'hole))
   (define (location-is-island? location)
     (not #/not #/memq location #/list 'root-island 'inner-island))
   ; NOTE: The only reason we have a `location` slot here at all (and
@@ -880,15 +886,18 @@
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
-  #/expect (nat-pred-maybe unstriped-degrees)
+  #/dissect (nat-pred-maybe unstriped-degrees)
     (list pred-unstriped-degrees)
+  #/expect (nat-pred-maybe pred-unstriped-degrees)
+    (list pred-pred-unstriped-degrees)
     (list)
   #/w- succ-striped-degrees (add1 striped-degrees)
   #/list #/hyprid succ-striped-degrees pred-unstriped-degrees
   #/expect striped-degrees 0
-    (dissect (hyprid-stripe-maybe striped-hypertee)
-      (list striped-striped-hypertee)
-    #/hyprid-map-lakes-highest-degree striped-striped-hypertee
+    (dissect striped-hypertee (island-cane data rest)
+    #/dissect (hyprid-stripe-maybe rest) (list striped-rest)
+    #/island-cane data
+    #/hyprid-map-lakes-highest-degree striped-rest
     #/lambda (hole-hypertee rest)
       (mat rest (lake-cane data rest)
         (lake-cane data
@@ -941,7 +950,7 @@
           location-after maybe-state-after histories-after)
       #/w- histories-after
         (list-overwrite-first-n d hist histories-after)
-      #/if (= pred-unstriped-degrees d)
+      #/if (= d pred-unstriped-degrees)
         
         ; If we've encountered a closing bracket of the highest degree
         ; the original hypertee can support, we're definitely starting
@@ -960,11 +969,13 @@
         #/dissect (unbox state) (stripe-state rev-brackets hist)
         #/set-box! state
           (stripe-state
-            (cons (list d #/unfinished-lake-cane data rest-state)
+            (cons
+              (list pred-pred-unstriped-degrees
+              #/unfinished-lake-cane data rest-state)
               rev-brackets)
-            (update-simple-history d hist)))
+            (update-simple-history pred-pred-unstriped-degrees hist)))
       
-      #/if (= pred-unstriped-degrees #/add1 d)
+      #/if (= d pred-pred-unstriped-degrees)
         
         ; If we've encountered a closing bracket of the highest degree
         ; that a stripe in the result can support, we may be starting
@@ -975,7 +986,7 @@
           ; be closing an island, so we're starting a non-lake.
           (expect (location-is-island? location-before) #t
             (error "Internal error")
-          #/expect (eq? 'hole location-before) #t
+          #/expect (eq? 'hole location-after) #t
             (error "Internal error")
           #/begin
             (set! hist
@@ -999,11 +1010,11 @@
             (set! hist
               (history-info
                 'inner-island (list new-state) histories-after))
-          #/dissect maybe-state-after (list state)
+          #/dissect maybe-state-before (list state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
           #/set-box! state
             (stripe-state
-              (cons closing-bracket rev-brackets)
+              (cons (list d new-state) rev-brackets)
               (update-simple-history d hist))))
       
       ; If we've encountered a closing bracket of low degree, we pass
@@ -1048,18 +1059,20 @@
     ; layer of stripe data.
     #/island-cane (list)
     
+    #/hyprid 0 pred-unstriped-degrees
     #/hypertee pred-unstriped-degrees
     #/list-fmap (reverse rev-brackets) #/lambda (closing-bracket)
       (expect closing-bracket (list d data) closing-bracket
-      #/expect (= d pred-unstriped-degrees) #t closing-bracket
+      #/expect (= d pred-pred-unstriped-degrees) #t closing-bracket
       #/mat data (non-lake-cane data) closing-bracket
       #/mat data (unfinished-lake-cane data rest-state)
         (dissect (unbox rest-state)
           (stripe-state rev-brackets #/list)
         #/list d #/lake-cane data #/hypertee pred-unstriped-degrees
-        #/list-fmap rev-brackets #/lambda (closing-bracket)
+        #/list-fmap (reverse rev-brackets) #/lambda (closing-bracket)
           (expect closing-bracket (list d data) closing-bracket
-          #/expect (= d pred-unstriped-degrees) #t closing-bracket
+          #/expect (= d pred-pred-unstriped-degrees) #t
+            closing-bracket
           #/list d #/assemble-island-from-state data))
       #/error "Internal error"))))
 
