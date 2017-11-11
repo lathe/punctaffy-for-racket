@@ -142,7 +142,8 @@ knowledge at each step as we construct it. At the lowest degree, where
 we don't have another `hypermonad-striped` to rely on, we'll rely on a
 very low-degree zipping operation, which should be easier to
 implement. For cases where our basic syntax is a monoid, we'll be able
-to zip the degree-1 hypersnippets trivially.
+to zip the degree-1 hypersnippets trivially, since they always have
+exactly one hole and it's always of degree 0.
 
 hyperzip:
   
