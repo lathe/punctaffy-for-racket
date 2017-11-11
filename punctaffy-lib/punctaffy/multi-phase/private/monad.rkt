@@ -2,7 +2,7 @@
 
 ; monad.rkt
 ;
-; A dictionary-passing implementation of the monoid typeclass for
+; A dictionary-passing implementation of the monoid type class for
 ; Racket, using Racket's generic methods so that it's more
 ; straightforward to define dictiaonries that are comparable by
 ; `equal?`.
