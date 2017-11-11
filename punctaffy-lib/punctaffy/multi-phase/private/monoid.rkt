@@ -27,6 +27,7 @@
   (monoid-append monoid prefix suffix))
 
 
+; This monoid has only one segment, namely the empty list.
 (struct-easy "a monoid-trivial" (monoid-trivial)
   #:equal
   #:other

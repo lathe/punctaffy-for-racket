@@ -190,7 +190,7 @@ monoid:
 
 We'll want these building blocks for those type class instances:
 
-; This creates a degree-0 hypermonad.
+; This is a degree-0 hypermonad.
 (define (hypermonad-zero)
 
 ; Given a monad, this creates a degree-1 hypermonad.
@@ -201,7 +201,7 @@ We'll want these building blocks for those type class instances:
 (define (monad-identity)
 
 ; This monoid has only one segment, namely the empty list.
-(define (monoid-empty-list)
+(define (monoid-trivial)
 
 ; Given two degree-N hypermonads where N is at least 1, as well as two
 ; contracts, this creates a degree-N+1 hypermonad where the
@@ -249,6 +249,11 @@ We'll want these building blocks for those type class instances:
 ; where `first` and `second` are the `hypermonad-striped` of the
 ; respective `first` and `second` hypermonads.
 (define (hyperzip-striped island-hyperzip lake-hyperzip)
+
+; Given a degree-0 hypermonad, this retrns a hyperzip where `first`
+; and `combination` are that hypermonad, and `second` is
+; `hypermonad-zero`.
+(define (hyperzip-zero hypermonad)
 
 ; Given a hyperzip, this returns a hyperzip where `first` and `second`
 ; have traded places, but `combination` remains the same.

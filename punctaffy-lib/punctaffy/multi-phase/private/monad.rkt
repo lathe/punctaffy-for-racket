@@ -33,6 +33,8 @@
   (monad-join monad tree-of-trees))
 
 
+; This monad does nothing. All map and bind operations just process
+; the value itself.
 (struct-easy "a monad-identity" (monad-identity)
   #:equal
   #:other
@@ -70,6 +72,8 @@
   ])
 
 
+; Given a monoid, returns a monad where a valid tree is a cons cell
+; whose first element is a valid segment of the monoid.
 (struct-easy "a monad-from-monoid" (monad-from-monoid monoid)
   #:equal
   #:other
