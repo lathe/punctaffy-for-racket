@@ -83,7 +83,7 @@ hypermonad:
   
   ; This is a contract that classifies whether a value is an
   ; appropriate hypersnippet for this hypermonad.
-  hypersnippet/c x
+  hypersnippet/c
   
   ; This is the degree of the hypermonad, i.e. how many degrees of
   ; holes may be encountered in a value.
@@ -179,14 +179,14 @@ hyperzip:
   to-flip h
 
 monad:
-  tree/c x
+  tree/c
   map t func
   bind t func
   pure t
   join t
 
 monoid:
-  segment/c x
+  segment/c
   empty
   append a b
 
