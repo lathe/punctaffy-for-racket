@@ -268,3 +268,27 @@ We'll want these building blocks for those type class instances:
 ;
 (define
   (hyperzip-third-wheel combination-hyperzip third-wheel-hyperzip)
+
+
+We've now implemented all of those except for:
+
+(define (hypermonad-from-monad monad)
+(define (hypermonad-striped island-hypermonad lake-hypermonad)
+(define (hyperzip-identity-identity)
+(define (hyperzip-monoid monoid)
+(define (hyperzip-identity-striped island-hyperzip lake-hyperzip)
+(define (hypermonad-ignoring-highest degree hypermonad)
+(define (hypermonad-ignoring-lowest degree hypermonad)
+(define (hypermonad-trivializing-lowest degree hypermonad)
+(define (to-hypermonad-trivializing-lowest degree hypermonad h)
+(define (from-hypermonad-trivializing-lowest h)
+(define (hyperzip-striped island-hyperzip lake-hyperzip)
+(define
+  (hyperzip-third-wheel combination-hyperzip third-wheel-hyperzip)
+
+
+TODO: Implement the rest.
+
+TODO: Consider the reversal operation again. Even if we don't
+implement it, we can at least update hte design notes in the TODO in
+multi-phase/private/trees2.rkt.
