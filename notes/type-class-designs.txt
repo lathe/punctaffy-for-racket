@@ -1,0 +1,267 @@
+
+These are the operations we implement or describe in TODOs in
+punctaffy-lib/punctaffy/multi-phase/private/trees2.rkt as of the time
+of writing this:
+
+converting hypertees and their representation details back and forth
+(define (hypertee-promote new-degree ht)
+(define (hypertee-contour hole-value ht)
+(define (hypertee-tunnel hole-value ht)
+  probably don't need it
+(define (hypertee-join-all-degrees ht)
+(define (hypertee-map-all-degrees ht func)
+(define (hypertee-map-one-degree ht degree func)
+  simple implementation
+(define (hypertee-map-pred-degree ht degree func)
+  simple implementation
+(define (hypertee-map-highest-degree ht func)
+  simple implementation
+(define (hypertee-pure degree data hole)
+  simple implementation
+(define (hypertee-bind-all-degrees ht hole-to-ht)
+  simple implementation
+(define (hypertee-bind-one-degree ht degree func)
+  simple implementation
+(define (hypertee-bind-pred-degree ht degree func)
+  simple implementation
+(define (hypertee-bind-highest-degree ht func)
+  simple implementation
+(define (hypertee-each-all-degrees ht body)
+  simple implementation
+converting hyprids and their representation details back and forth
+(define (hyprid-degree h)
+(define (hyprid-map-lakes-highest-degree h func)
+(define (hyprid-destripe-maybe h)
+(define (hyprid-fully-destripe h)
+  simple implementation
+(define (hyprid-stripe-maybe h)
+reverse
+  (not implemented yet)
+(define (hypertee-truncate new-degree ht)
+(define (hypertee-zip a b func)
+(define (hypertee-zip-low-degrees smaller bigger func)
+
+
+We can probably implement the following in different ways:
+
+(define (hypertee-promote new-degree ht)
+  implement in terms of hyprid-destripe-maybe
+(define (hypertee-contour hole-value ht)
+  implement in terms of hypertee-pure
+(define (hypertee-pure degree data hole)
+  implement on its own, not depending on hypertee-contour
+(define (hypertee-zip a b func)
+  don't implement it a different way, but just think of it as part of
+  the implementation of `hypertee-zip-low-degrees`
+
+
+That means if we want to make something representation-agnostic enough
+to handle having trees or some other structure at the lowest degree,
+rather than always sequences, we should consider how to do these
+things:
+
+converting hypertees and their representation details back and forth
+(define (hypertee-pure degree data hole)
+(define (hypertee-join-all-degrees ht)
+(define (hypertee-map-all-degrees ht func)
+converting hyprids and their representation details back and forth
+(define (hyprid-degree h)
+(define (hyprid-map-lakes-highest-degree h func)
+(define (hyprid-destripe-maybe h)
+(define (hyprid-stripe-maybe h)
+reverse
+(define (hypertee-truncate new-degree ht)
+(define (hypertee-zip-low-degrees smaller bigger func)
+
+
+Let's sort those a little better.
+
+Let's have "type class" dictionaries for things that have monad
+operations:
+
+hypermonad:
+  
+  ; This is a contract that classifies whether a value is an
+  ; appropriate hypersnippet for this hypermonad.
+  hypersnippet/c x
+  
+  ; This is the degree of the hypermonad, i.e. how many degrees of
+  ; holes may be encountered in a value.
+  degree
+  
+  ; This returns a hypermonad where high-degree holes are prohibited.
+  ; The valid hypersnippets may be disjoint from this hypermonad's
+  ; valid hypersnippets as well.
+  hole-hypermonad-for-degree degree
+  
+  ; This returns a hyperzip instance where `first` is a
+  ; `hypermonad-ignoring-highest` of this hypermonad and `second` is
+  ; the corresponding `hole-hypermonad-for-degree`.
+  hole-hyperzip-for-degree degree
+  
+  ; We redundantly cover several monad operations so that they can be
+  ; implemented efficiently.
+  map-with-degree-and-shape h func
+  bind-with-degree-and-shape h func
+  pure hole-degree hole-shape data
+  join h
+  
+  ; We provide separate operations for potentially more efficient
+  ; variations.
+  map-with-degree h func
+  bind-with-degree h func
+
+The trickiest operation is going to be zipping multiple hypertees of
+similar shape together. The biggest reason we need a zipping operation
+at all is as a way to implement `bind-with-degree-and-shape`; it lets
+us associate the low-degree holes of the `func` result with their
+respective neighboring data, so that they can be seamlessly
+concatenated into it. It's also a sufficient operation for whenever we
+want to check whether data is "the right shape"; we zip the data
+together with a hypersnippet that represents the shape we need it to
+be, and if it fails, it's the wrong shape.
+
+For `hypermonad-striped` hypersnippets of degree N, we should be
+able to zip the N-minus-2-degree holes just by requiring the
+(N-minus-1-degree) island hypermonad to have a zippable hypermonad
+over the lowest N-minus-2 degrees.
+
+That leaves us with the task of zipping the degree-N-minus-1 holes,
+which it seems like we *could* do if we also knew the island
+hypersnippets, the lake hypersnippets, and the low-degree
+hypersnippet all belonged to `hypermonad-striped` hypermonads, and
+that the low-degree hypersnippet's islands zipped with a particular
+combination hypermonad made out of the islands' islands and lakes'
+islands.
+
+That is how we're going to approach this. For certain hypermonads we
+may have ready-made zipping operations ready to go, but for the case
+where we're making a high-degree hypermonad out of a tower of
+`hypermonad-striped` abstractions, we'll take advantage of that
+knowledge at each step as we construct it. At the lowest degree, where
+we don't have another `hypermonad-striped` to rely on, we'll rely on a
+very low-degree zipping operation, which should be easier to
+implement. For cases where our basic syntax is a monoid, we'll be able
+to zip the degree-1 hypersnippets trivially.
+
+hyperzip:
+  
+  ; This is a degree of hypermonads supported by this zipping
+  ; operation.
+  degree
+  
+  ; These are hypermonad instances of that degree.
+  first
+  second
+  combination
+  
+  ; This takes a hypersnippet from the `first` hypermonad instance and
+  ; a hypersnippet from the `second` hypermonad instance and returns a
+  ; maybe which contains a hypersnippet from the `combination`
+  ; hypermonad instance with with the same holes as both, if they have
+  ; the same holes. The values of the holes are cons cells containing
+  ; the original values.
+  zip-maybe first-h second-h
+  
+  ; Given a `combination` hypersnippet value, these return a `first`
+  ; or a `second` hypersnippet with the same holes, containing the
+  ; same values in those holes.
+  get-first h
+  get-second h
+  
+  ; This is a hyperzip where `first` and `second` are swapped and
+  ; where `flip` is this hyperzip.
+  flip
+  
+  ; This converts a hypersnippet from `combination` into the
+  ; `combination` of `flip`.
+  to-flip h
+
+monad:
+  tree/c x
+  map t func
+  bind t func
+  pure t
+  join t
+
+monoid:
+  segment/c x
+  empty
+  append a b
+
+
+We'll want these building blocks for those type class instances:
+
+; This creates a degree-0 hypermonad.
+(define (hypermonad-zero)
+
+; Given a monad, this creates a degree-1 hypermonad.
+(define (hypermonad-from-monad monad)
+
+; This monad does nothing. All map and bind operations just process
+; the value itself.
+(define (monad-identity)
+
+; This monoid has only one segment, namely the empty list.
+(define (monoid-empty-list)
+
+; Given two degree-N hypermonads where N is at least 1, as well as two
+; contracts, this creates a degree-N+1 hypermonad where the
+; hypersnippets are made of islands and lakes.
+(define (hypermonad-striped island-hypermonad lake-hypermonad)
+
+; Given a monoid, returns a monad where a valid tree is a cons cell
+; whose first element is a valid segment of the monoid.
+(define (monad-monoid monoid)
+
+; This hyperzip zips a hypermonad with itself, and that hypermonad in
+; particular is `hypermonad-from-monad` for `monad-identity`.
+(define (hyperzip-identity-identity)
+
+; Given a monoid, returns a hyperzip where the `first` is
+; `hypermonad-from-monad` for `monad-identity` and the `second` is
+; `hypermonad-from-monad` for `hypermonad-from-monoid` for that
+; monoid.
+(define (hyperzip-monoid monoid)
+
+; Given two hyperzips where the `first` is `hypermonad-from-monad` for
+; `monad-identity`, returns a third such hyperzip where the `second`
+; is the `hypermonad-striped` of the original two `second`
+; hypermonads.
+(define (hyperzip-identity-striped island-hyperzip lake-hyperzip)
+
+; Given a degree and a hypermonad, this returns a hypermonad where the
+; valid hypersnippets are the same, but only the lower-degree holes
+; count as holes.
+(define (hypermonad-ignoring-highest degree hypermonad)
+
+; Given a degree and a hypermonad, this returns a hypermonad where the
+; valid hypersnippets are the same, but only the higher-degree holes
+; count as holes.
+(define (hypermonad-ignoring-lowest degree hypermonad)
+
+; Given a degree and a hypermonad, this returns a hypermonad where not
+; only do the lower-degree holes not count as holes, but in the
+; representation, they must contain empty lists.
+(define (hypermonad-trivializing-lowest degree hypermonad)
+(define (to-hypermonad-trivializing-lowest degree hypermonad h)
+(define (from-hypermonad-trivializing-lowest h)
+
+; Given two hyperzips of the same degree, this returns a hyperzip
+; where `first` and `second` are the `hypermonad-striped` of the
+; respective `first` and `second` hypermonads.
+(define (hyperzip-striped island-hyperzip lake-hyperzip)
+
+; Given a hyperzip, this returns a hyperzip where `first` and `second`
+; have traded places, but `combination` remains the same.
+(define (hyperzip-backwards hz)
+
+; Given two hyperzips where the `first` hypermonad of the first is the
+; same as the `second` of the second, this returns a hyperzip where
+; `first` is the `first` of the second one and `second` is the
+; `combination` of the first one. Here's a visualization:
+;
+;   Zip a b -> Zip c a -> Zip c (a, b)
+;
+(define
+  (hyperzip-third-wheel combination-hyperzip third-wheel-hyperzip)
