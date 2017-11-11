@@ -24,7 +24,7 @@
 (define-generics monoid
   (monoid-segment/c monoid)
   (monoid-empty monoid)
-  (monoid-append monoid a b))
+  (monoid-append monoid prefix suffix))
 
 
 (struct-easy "a monoid-trivial" (monoid-trivial)
@@ -45,7 +45,7 @@
         (error "Expected this to be a monoid-trivial")
         null))
     
-    (define/contract (monoid-append this a b)
+    (define/contract (monoid-append this prefix suffix)
       (-> any/c null? null? any)
       (expect this (monoid-trivial)
         (error "Expected this to be a monoid-trivial")
@@ -99,10 +99,10 @@
         (error "Expected this to be a monoid-striped")
       #/striped-nil #/monoid-empty island))
     
-    (define (monoid-append this a b)
+    (define (monoid-append this prefix suffix)
       (expect this (monoid-striped island lake)
         (error "Expected this to be a monoid-striped")
-      #/nextlet a a b b
+      #/nextlet a prefix b suffix
         (mat a (striped-cons a-island a-lake a)
           (striped-cons a-island a-lake #/next a b)
         #/expect a (striped-nil a-island)
