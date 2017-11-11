@@ -210,7 +210,7 @@ We'll want these building blocks for those type class instances:
 
 ; Given a monoid, returns a monad where a valid tree is a cons cell
 ; whose first element is a valid segment of the monoid.
-(define (monad-monoid monoid)
+(define (monad-from-monoid monoid)
 
 ; This hyperzip zips a hypermonad with itself, and that hypermonad in
 ; particular is `hypermonad-from-monad` for `monad-identity`.

@@ -22,7 +22,7 @@
   monad-tree/c monad-pure monad-bind monad-map monad-join)
 
 (provide #/rename-out [make-monad-identity monad-identity])
-(provide #/rename-out [make-monad-monoid monad-monoid])
+(provide #/rename-out [make-monad-from-monoid monad-from-monoid])
 
 
 (define-generics monad
@@ -70,45 +70,45 @@
   ])
 
 
-(struct-easy "a monad-monoid" (monad-monoid monoid)
+(struct-easy "a monad-from-monoid" (monad-from-monoid monoid)
   #:equal
   #:other
   
-  #:constructor-name make-monad-monoid
+  #:constructor-name make-monad-from-monoid
   
   #:methods gen:monad
   [
     (define (monad-tree/c this)
-      (expect this (monad-monoid monoid)
-        (error "Expected this to be a monad-monoid")
+      (expect this (monad-from-monoid monoid)
+        (error "Expected this to be a monad-from-monoid")
       #/cons/c (monoid-segment/c monoid) any/c))
     
     (define (monad-pure this leaf)
-      (expect this (monad-monoid monoid)
-        (error "Expected this to be a monad-monoid")
+      (expect this (monad-from-monoid monoid)
+        (error "Expected this to be a monad-from-monoid")
       #/cons (monoid-empty monoid) leaf))
     
     (define/contract (monad-bind this prefix leaf-to-suffix)
       (-> any/c (cons/c any/c any/c) (-> any/c #/cons/c any/c any/c)
         any)
-      (expect this (monad-monoid monoid)
-        (error "Expected this to be a monad-monoid")
+      (expect this (monad-from-monoid monoid)
+        (error "Expected this to be a monad-from-monoid")
       #/dissect prefix (cons prefix leaf)
       #/dissect (leaf-to-suffix leaf) (cons suffix leaf)
       #/cons (monoid-append monoid prefix suffix) leaf))
     
     (define/contract (monad-map this tree leaf-to-leaf)
       (-> any/c (cons/c any/c any/c) (-> any/c any/c) any)
-      (expect this (monad-monoid monoid)
-        (error "Expected this to be a monad-monoid")
+      (expect this (monad-from-monoid monoid)
+        (error "Expected this to be a monad-from-monoid")
       #/dissect tree (cons segment leaf)
       #/cons segment #/leaf-to-leaf leaf))
     
     (define (monad-join this tree-of-trees)
       (-> any/c (cons/c any/c #/cons/c any/c any/c)
       #/cons/c any/c any/c)
-      (expect this (monad-monoid monoid)
-        (error "Expected this to be a monad-monoid")
+      (expect this (monad-from-monoid monoid)
+        (error "Expected this to be a monad-from-monoid")
       #/dissect tree-of-trees (cons prefix #/cons suffix leaf)
       #/cons (monoid-append monoid prefix suffix) leaf))
   ])
