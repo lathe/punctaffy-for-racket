@@ -147,11 +147,8 @@ exactly one hole and it's always of degree 0.
 
 hyperzip:
   
-  ; This is a degree of hypermonads supported by this zipping
-  ; operation.
-  degree
-  
-  ; These are hypermonad instances of that degree.
+  ; These are hypermonad instances, and they must all have the same
+  ; degree.
   first
   second
   combination
