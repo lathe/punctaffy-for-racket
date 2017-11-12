@@ -111,3 +111,113 @@
       #/lambda (hole-degree hole-shape leaf)
         (degree-and-leaf-to-leaf hole-degree leaf)))
   ])
+
+
+; TODO: See if we'll need these.
+(struct-easy "a striped-hypersnippet-nil"
+  (striped-hypersnippet-nil island)
+  #:equal)
+(struct-easy "a striped-hypersnippet-cons"
+  (striped-hypersnippet-cons island-and-lakes-and-rest)
+  #:equal)
+
+; This is a striped hypermonad alternating between two striped
+; hypermonads.
+#|
+to-hll :: forall holeVals.
+  (double-stripe-snippet ii il li) holeVals ->
+  (snippet-of ll) holeVals
+fill-pred-hole :: forall holeVals.
+  (double-stripe-snippet ii il li) (trivial-hole-vals) ->
+  (stripe-snippet (snippet-of li) (double-stripe-snippet ii il li)
+    ) holeVals ->
+  Maybe ((double-stripe-snippet ii il li) holeVals)
+fill-pred-pred-hole :: forall holeVals.
+  (double-stripe-snippet ii il li) (trivial-hole-vals) ->
+  (snippet-of il) holeVals ->
+  Maybe ((double-stripe-snippet ii il li) holeVals)
+|#
+(struct-easy "a hypermonad-striped-striped"
+  (hypermonad-striped-striped
+    overall-degree hii hil hli hll hl
+    to-hll fill-pred-hole fill-pred-pred-hole)
+  #:equal
+  (#:guard-easy
+    (unless (exact-nonnegative-integer? overall-degree)
+      (error "Expected overall-degree to be an exact nonnegative integer"))
+    (unless (<= 3 overall-degree)
+      (error "Expected overall-degree to be 3 or greater")))
+  #:other
+  
+  #:constructor-name make-hypermonad-striped-striped
+  
+  #:methods gen:hypermonad
+  [
+    
+    (define (hypermonad-hole-hypermonad-for-degree this degree)
+      (expect this
+        (hypermonad-striped-striped
+          overall-degree hii hil hli hll hl
+          to-hll fill-pred-hole fill-pred-pred-hole)
+        (error "Expected this to be a hypermonad-striped-striped")
+      #/expect (exact-nonnegative-integer? degree) #t
+        (error "Expected degree to be an exact nonnegative integer")
+      #/expect (< degree overall-degree) #t
+        (error "Expected degree to be an exact nonnegative integer less than overall-degree")
+      #/if (= overall-degree #/add1 degree)
+        hl
+      #/if (= overall-degree #/add1 #/add1 degree)
+        hil
+      #/hypermonad-hole-hypermonad-for-degree hii degree))
+    
+    (define (hypermonad-pure this hole-degree hole-shape leaf)
+      (expect this
+        (hypermonad-striped-striped
+          overall-degree hii hil hli hll hl
+          to-hll fill-pred-hole fill-pred-pred-hole)
+        (error "Expected this to be a hypermonad-striped-striped")
+      #/expect (exact-nonnegative-integer? hole-degree) #t
+        (error "Expected hole-degree to be an exact nonnegative integer")
+      #/expect (< hole-degree overall-degree) #t
+        (error "Expected hole-degree to be an exact nonnegative integer less than overall-degree")
+      #/if (= overall-degree #/add1 hole-degree)
+        'TODO
+      #/if (= overall-degree #/add1 #/add1 hole-degree)
+        (hypermonad-pure hii (sub1 hole-degree) 'TODO
+        #/hypermonad-map-with-degree-and-shape hil hole-shape
+        #/lambda (hole-hole-degree hole-hole-shape leaf)
+          (hypermonad-pure hii hole-hole-degree hole-hole-shape leaf))
+      #/hypermonad-pure hii hole-degree hole-shape leaf))
+    (define
+      (hypermonad-bind-with-degree-and-shape
+        this prefix degree-shape-and-leaf-to-suffix)
+      (expect this
+        (hypermonad-striped-striped
+          overall-degree hii hil hli hll hl
+          to-hll fill-pred-hole fill-pred-pred-hole)
+        (error "Expected this to be a hypermonad-striped-striped")
+        'TODO))
+    (define
+      (hypermonad-map-with-degree-and-shape
+        this hypersnippet degree-shape-and-leaf-to-leaf)
+      (hypermonad-bind-with-degree-and-shape this hypersnippet
+      #/lambda (hole-degree hole-shape leaf)
+      #/hypermonad-pure this hole-degree hole-shape leaf))
+    (define (hypermonad-join this hypersnippets)
+      (hypermonad-bind-with-degree-and-shape this hypersnippets
+      #/lambda (hole-degree hole-shape hypersnippet)
+        hypersnippet))
+    
+    (define
+      (hypermonad-bind-with-degree
+        this prefix degree-and-leaf-to-suffix)
+      (hypermonad-bind-with-degree-and-shape this prefix
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-suffix hole-degree leaf)))
+    (define
+      (hypermonad-map-with-degree
+        this hypersnippet degree-and-leaf-to-leaf)
+      (hypermonad-map-with-degree-and-shape this hypersnippet
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-leaf hole-degree leaf)))
+  ])

@@ -428,10 +428,3 @@ Hmm. What if we didn't require zips there, but just required appropriate functio
     (double-stripe-snippet ii il li) (trivial-hole-vals) ->
     (snippet-of il) holeVals ->
     Maybe ((double-stripe-snippet ii il li) holeVals)
-
-    (ignore-highest (double-stripe ii il li ll ???))
-    (stripe li
-      (ignore-highest (ignore-highest (double-stripe ii il li ll ???))))
-  Zip
-    (ignore-highest (ignore-highest (double-stripe ii il li ll ???)))
-    il
