@@ -292,3 +292,140 @@ TODO: Implement the rest.
 TODO: Consider the reversal operation again. Even if we don't
 implement it, we can at least update hte design notes in the TODO in
 multi-phase/private/trees2.rkt.
+
+
+============
+
+(This are some stream-of-consciousness notes toward an implementation
+of `hypermonad-striped`. It's still challenging at this point, and
+some inelegance in the type classes is showing again.)
+
+
+To make a striped hypermonad that can be properly zipped, we need to pass in:
+
+  island's island hypermonad
+  island's lake hypermonad
+  lake's island hypermonad
+  lake's lake hypermonad
+
+To zip this striped hypermonad with its highest-degree hole hypermonad (namely the striped hypermonad of the lake's island hypermonad and the lake's lake hypermonad)...
+
+we'll need a way to zip these:
+
+  A) the striped hypermonad of the island's island hypermonad and the lake's island hypermonad
+  B) the lake's island hypermonad
+
+but fortunately, B is the highest-degree hole hypermonad of A, so as long as we can get A, we can zip them.
+
+A tricky part is that we can't construct A directly, since in order to construct that the same way as this one, we'll need the striped components of the the island's island hypermonad and the lake's island hypermonad. In other words, we'll need to take 8 hypermonads. And then we just get to the same problem. What we really need is to provide A as its own parameter:
+
+We need to pass in:
+
+  island's island hypermonad
+  island's lake hypermonad
+  lake's island hypermonad (redundant)
+  lake's lake hypermonad
+  the striped hypermonad of the island's island hypermonad and the lake's island hypermonad
+
+
+When we're zipping a double-striped hypersnippet with its highest-degree hole, it looks roughly like this:
+
+^2(  ~1(  ,(  ,(  )  )  )  ,(  )  )
+   ii   li  ii  il ii li ii  il ii
+
+^1(           ,(  )        ,(  )  )
+   hi           hl hi        hl hi
+
+The representation of the higher-degree one is:
+
+  (fix x.
+    stripe-snippet
+      (stripe-snippet (snippet-of ii) (snippet-of il))
+      (stripe-snippet (snippet-of li) (snippet-of x)))
+
+Let (double-stripe-snippet ii il li) be shorthand for that. Let
+(double-stripe ii il li ll ???) be shorthand for the hypermonad
+(including those question marks since we don't know all the arguments
+we need yet).
+
+An alternate representation is
+
+  (stripe-snippet
+    (stripe-snippet (snippet-of ii) (snippet-of li))
+    (snippet-of il))
+
+where the occurrences of `li` are balanced.
+
+the representation of the lower-degree one is:
+
+  (stripe-snippet (snippet-of hi) (snippet-of hl))
+
+To zip them, we need to be able to zip
+
+  (ignore-highest (stripe ii li))
+  hi
+
+as well as two hypermonads of the same degree
+
+  il
+  hl
+
+
+When you have only one level of striping...
+
+^1( ,( ) )
+   i  l i
+
+  (      )
+   h
+
+but for the sake of implementing what we've already implemented in trees2.rkt, we can safely assume at this point that `i`, `l`, and `h` are all hypermonads based on monoids, so there's always just one hole to zip up, namely the degree-0 hole at the end.
+
+So let's run by that again.
+
+To define a hyperzip between (on the one hand) an at-least-two-degrees-striped hypermonad with its highest-degree holes ignored and (on the other hand) the hypermonad of the holes ignored that way, we need to pass in two hyperzips:
+
+  Zip (ignore-highest (stripe ii li)) hi
+  Zip il hl
+
+That gives us some hypermonads automatically, and we need to pass in at least one more:
+
+  ii
+
+We probably don't need to pass in `ll` at all to make the hyperzip.
+
+To define the at-least-two-degrees-striped hypermonad itself, with a representation of (double-stripe-snippet ii il li), we'll need to pass in a way to convert the representation to `ll` to assemble hole shapes for the map/bind callbacks, and we'll need hyperzips in order to insert the bind callback's results as interpolations.
+
+  forall holeVals.
+    (double-stripe-snippet ii il li) holeVals ->
+    (snippet-of ll) holeVals
+  Zip
+    (ignore-highest (double-stripe ii il li ll ???))
+    (stripe li
+      (ignore-highest (ignore-highest (double-stripe ii il li ll ???))))
+  Zip
+    (ignore-highest (ignore-highest (double-stripe ii il li ll ???)))
+    il
+
+We probably need other parameters too, such as hypermonads like `ll` itself.
+
+Hmm. What if we didn't require zips there, but just required appropriate functions?
+
+  forall holeVals.
+    (double-stripe-snippet ii il li) holeVals ->
+    (snippet-of ll) holeVals
+  forall holeVals.
+    (double-stripe-snippet ii il li) (trivial-hole-vals) ->
+    (stripe-snippet (snippet-of li) (double-stripe-snippet ii il li)) holeVals ->
+    Maybe ((double-stripe-snippet ii il li) holeVals)
+  forall holeVals.
+    (double-stripe-snippet ii il li) (trivial-hole-vals) ->
+    (snippet-of il) holeVals ->
+    Maybe ((double-stripe-snippet ii il li) holeVals)
+
+    (ignore-highest (double-stripe ii il li ll ???))
+    (stripe li
+      (ignore-highest (ignore-highest (double-stripe ii il li ll ???))))
+  Zip
+    (ignore-highest (ignore-highest (double-stripe ii il li ll ???)))
+    il
