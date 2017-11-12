@@ -123,6 +123,11 @@
 ; This is a striped hypermonad alternating between two striped
 ; hypermonads.
 #|
+double-stripe-snippet ii il li = fix x.
+  stripe-snippet
+    (stripe-snippet (snippet-of ii) (snippet-of il))
+    (stripe-snippet (snippet-of li) (snippet-of x))
+
 hll-to-hil :: forall holeVals.
   (snippet-of ll) holeVals ->
   (snippet-of il) holeVals
@@ -197,16 +202,16 @@ fill-pred-pred-hole :: forall holeVals.
         ; We transform something of the form:
         ;
         ;         ^N+1(  ~N(  )  )
-        ;              hi   hl hi
+        ;              li   ll li
         ;   Striped:  [          ]
         ;
         ; into something of the form:
         ;
-        ;         ^N+2(  ~N+1(  ~N(  ~N(  )  )    )    )
-        ;              ii     hi   ii   il ii   hi   ii
+        ;         ^N+2(  ~N+1(  ~N(  ~N(  )  )   )    )
+        ;              ii     li   ii   il ii  li   ii
         ;   Striped:              [          ]
-        ;   Striped:  [  ]   [                    ] [  ]
-        ;   Striped:  [                                ]
+        ;   Striped:  [  ]   [                   ] [  ]
+        ;   Striped:  [                               ]
         ;
         (striped-hypersnippet-nil
         #/striped-hypersnippet-nil
@@ -277,6 +282,42 @@ fill-pred-pred-hole :: forall holeVals.
           hll-to-hil hl-to-hiil hil-to-hiil to-hll
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
+        
+        ; TODO: At some point during this process, we might transform
+        ; something of the form:
+        ;
+        ;             ^N+2(  ~N+1(  ~N(  ~N(  )    )   )    ~N(  )  )
+        ;                  ii     li   ii   il   ii  li   ii   il ii
+        ;   Striped:                  [            ]
+        ;   Striped:      [  ]   [                     ] [          ]
+        ;   Striped:      [                                         ]
+        ;
+        ; into something of the form:
+        ;
+        ;             ^N+2(              ~N(  )             ~N(  )  )
+        ;                  ii     li   ii   il   ii  li  ii    il ii
+        ;   Striped:      [              ]      [          ]     [  ]
+        ;   Striped:      [                                         ]
+        ;
+        ;
+        ; so that we can zip it with something of the form:
+        ;
+        ;             ^N+2(              ~N(  )             ~N(  )  )
+        ;                         hi        hl       hi        hl hi
+        ;   Striped:      [                                         ]
+        ;
+        ; by zipping things of the form:
+        ;
+        ;               ^N(              )
+        ;   Ignored:  ^N+1(    ~N(  )    )
+        ;                  ii     li   ii
+        ;   Striped:      [              ]
+        ;
+        ; with things of the form:
+        ;
+        ;                      ^N(  )
+        ;                         hi
+        ;
         'TODO))
     (define
       (hypermonad-map-with-degree-and-shape
