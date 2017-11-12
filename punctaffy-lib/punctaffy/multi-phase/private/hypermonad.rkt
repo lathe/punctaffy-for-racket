@@ -191,7 +191,23 @@ fill-pred-pred-hole :: forall holeVals.
         (error "Expected hole-degree to be an exact nonnegative integer")
       #/expect (< hole-degree overall-degree) #t
         (error "Expected hole-degree to be an exact nonnegative integer less than overall-degree")
+      
       #/if (= overall-degree #/add1 hole-degree)
+        
+        ; We transform something of the form:
+        ;
+        ;         ^N+1(  ~N(  )  )
+        ;              hi   hl hi
+        ;   Striped:  [          ]
+        ;
+        ; into something of the form:
+        ;
+        ;         ^N+2(  ~N+1(  ~N(  ~N(  )  )    )    )
+        ;              ii     hi   ii   il ii   hi   ii
+        ;   Striped:              [          ]
+        ;   Striped:  [  ]   [                    ] [  ]
+        ;   Striped:  [                                ]
+        ;
         (striped-hypersnippet-nil
         #/striped-hypersnippet-nil
         #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
@@ -226,7 +242,20 @@ fill-pred-pred-hole :: forall holeVals.
             ; shape at every degree.
             #/hypermonad-pure hii hole-degree hole-shape
             #/next rest)))
+      
       #/if (= overall-degree #/add1 #/add1 hole-degree)
+        
+        ; We transform something of the form:
+        ;
+        ;   ^N(  )
+        ;      il
+        ;
+        ; into something of the form:
+        ;
+        ;        ^N+1(  ~N(  )  )
+        ;             ii   il ii
+        ;  Striped:  [          ]
+        ;
         (striped-hypersnippet-nil
         #/striped-hypersnippet-cons
         #/hypermonad-pure hii (sub1 hole-degree)
@@ -237,6 +266,7 @@ fill-pred-pred-hole :: forall holeVals.
           ; NOTE: This assumes `hil` and `hii` have the same hole
           ; shape at every degree.
           #/hypermonad-pure hii hole-hole-degree hole-hole-shape leaf))
+      
       #/hypermonad-pure hii hole-degree hole-shape leaf))
     (define
       (hypermonad-bind-with-degree-and-shape
