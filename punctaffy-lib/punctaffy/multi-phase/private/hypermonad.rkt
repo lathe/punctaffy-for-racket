@@ -7,7 +7,7 @@
 
 (require #/only-in racket/generic define-generics)
 
-(require #/only-in lathe expect)
+(require #/only-in lathe expect mat next nextlet)
 
 (require "../../private/util.rkt")
 
@@ -113,7 +113,6 @@
   ])
 
 
-; TODO: See if we'll need these.
 (struct-easy "a striped-hypersnippet-nil"
   (striped-hypersnippet-nil island)
   #:equal)
@@ -124,6 +123,15 @@
 ; This is a striped hypermonad alternating between two striped
 ; hypermonads.
 #|
+hll-to-hil :: forall holeVals.
+  (snippet-of ll) holeVals ->
+  (snippet-of il) holeVals
+hl-to-hiil :: forall holeVals.
+  (snippet-of (ignore-highest (ignore-highest l))) holeVals ->
+  (snippet-of (hole-hypermonad-for-pred-degree ii)) holeVals
+hil-to-hiil :: forall holeVals.
+  (snippet-of (ignore-highest il)) holeVals ->
+  (snippet-of (hole-hypermonad-for-pred-degree ii)) holeVals
 to-hll :: forall holeVals.
   (double-stripe-snippet ii il li) holeVals ->
   (snippet-of ll) holeVals
@@ -140,7 +148,8 @@ fill-pred-pred-hole :: forall holeVals.
 (struct-easy "a hypermonad-striped-striped"
   (hypermonad-striped-striped
     overall-degree hii hil hli hll hl
-    to-hll fill-pred-hole fill-pred-pred-hole)
+    hll-to-hil hl-to-hiil hil-to-hiil to-hll
+    fill-pred-hole fill-pred-pred-hole)
   #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? overall-degree)
@@ -158,7 +167,8 @@ fill-pred-pred-hole :: forall holeVals.
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
-          to-hll fill-pred-hole fill-pred-pred-hole)
+          hll-to-hil hl-to-hiil hil-to-hiil to-hll
+          fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
       #/expect (exact-nonnegative-integer? degree) #t
         (error "Expected degree to be an exact nonnegative integer")
@@ -174,19 +184,59 @@ fill-pred-pred-hole :: forall holeVals.
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
-          to-hll fill-pred-hole fill-pred-pred-hole)
+          hll-to-hil hl-to-hiil hil-to-hiil to-hll
+          fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
       #/expect (exact-nonnegative-integer? hole-degree) #t
         (error "Expected hole-degree to be an exact nonnegative integer")
       #/expect (< hole-degree overall-degree) #t
         (error "Expected hole-degree to be an exact nonnegative integer less than overall-degree")
       #/if (= overall-degree #/add1 hole-degree)
-        'TODO
+        (striped-hypersnippet-nil
+        #/striped-hypersnippet-nil
+        #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
+         (hl-to-hiil hole-shape)
+        #/nextlet rest hole-shape
+        #/mat rest (striped-hypersnippet-nil hole-island)
+          (striped-hypersnippet-nil
+          #/hypermonad-map-with-degree-and-shape hli hole-island
+          #/lambda (hole-degree hole-shape leaf)
+            (striped-hypersnippet-nil
+            ; NOTE: This assumes `hli` and `hii` have the same hole
+            ; shape at every degree, so we should at least document
+            ; this requirement as we document the parameters to
+            ; `hypersnippet-striped-striped`.
+            #/hypermonad-pure hii hole-degree hole-shape leaf))
+        #/expect rest
+          (striped-hypersnippet-cons island-and-lakes-and-rest)
+          (error "Expected rest to be a striped hypersnippet")
+        #/striped-hypersnippet-cons
+        #/hypermonad-map-with-degree-and-shape hli
+          island-and-lakes-and-rest
+        #/lambda (hole-degree hole-shape lake-and-rest)
+          (striped-hypersnippet-cons
+          ; NOTE: This assumes `hli` and `hii` have the same hole
+          ; shape at every degree.
+          #/hypermonad-pure hii hole-degree hole-shape
+          #/hypermonad-map-with-degree-and-shape hil
+            (hll-to-hil lake-and-rest)
+          #/lambda (hole-degree hole-shape rest)
+            (striped-hypersnippet-nil
+            ; NOTE: This assumes `hil` and `hii` have the same hole
+            ; shape at every degree.
+            #/hypermonad-pure hii hole-degree hole-shape
+            #/next rest)))
       #/if (= overall-degree #/add1 #/add1 hole-degree)
-        (hypermonad-pure hii (sub1 hole-degree) 'TODO
+        (striped-hypersnippet-nil
+        #/striped-hypersnippet-cons
+        #/hypermonad-pure hii (sub1 hole-degree)
+          (hil-to-hiil hole-shape)
         #/hypermonad-map-with-degree-and-shape hil hole-shape
         #/lambda (hole-hole-degree hole-hole-shape leaf)
-          (hypermonad-pure hii hole-hole-degree hole-hole-shape leaf))
+          (striped-hypersnippet-nil
+          ; NOTE: This assumes `hil` and `hii` have the same hole
+          ; shape at every degree.
+          #/hypermonad-pure hii hole-hole-degree hole-hole-shape leaf))
       #/hypermonad-pure hii hole-degree hole-shape leaf))
     (define
       (hypermonad-bind-with-degree-and-shape
@@ -194,7 +244,8 @@ fill-pred-pred-hole :: forall holeVals.
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
-          to-hll fill-pred-hole fill-pred-pred-hole)
+          hll-to-hil hl-to-hiil hil-to-hiil to-hll
+          fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
         'TODO))
     (define
