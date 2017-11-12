@@ -15,18 +15,16 @@
 
 (require "../../private/util.rkt")
 
-(require #/only-in "monoid.rkt"
-  monoid-segment/c monoid-empty monoid-append)
+(require #/only-in "monoid.rkt" monoid-empty monoid-append)
 
 (provide gen:monad monad? monad/c
-  monad-tree/c monad-pure monad-bind monad-map monad-join)
+  monad-pure monad-bind monad-map monad-join)
 
 (provide #/rename-out [make-monad-identity monad-identity])
 (provide #/rename-out [make-monad-from-monoid monad-from-monoid])
 
 
 (define-generics monad
-  (monad-tree/c monad)
   (monad-pure monad leaf)
   (monad-bind monad prefix leaf-to-suffix)
   (monad-map monad tree leaf-to-leaf)
@@ -43,10 +41,6 @@
   
   #:methods gen:monad
   [
-    (define (monad-tree/c this)
-      (expect this (monad-identity)
-        (error "Expected this to be a monad-identity")
-        any/c))
     
     (define (monad-pure this leaf)
       (expect this (monad-identity)
@@ -82,10 +76,6 @@
   
   #:methods gen:monad
   [
-    (define (monad-tree/c this)
-      (expect this (monad-from-monoid monoid)
-        (error "Expected this to be a monad-from-monoid")
-      #/cons/c (monoid-segment/c monoid) any/c))
     
     (define (monad-pure this leaf)
       (expect this (monad-from-monoid monoid)
