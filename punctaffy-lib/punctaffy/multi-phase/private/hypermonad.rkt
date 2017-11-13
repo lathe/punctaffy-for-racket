@@ -7,7 +7,7 @@
 
 (require #/only-in racket/generic define-generics)
 
-(require #/only-in lathe expect mat next nextlet)
+(require #/only-in lathe expect mat next nextlet w-)
 
 (require "../../private/util.rkt")
 
@@ -113,11 +113,14 @@
   ])
 
 
-(struct-easy "a striped-hypersnippet-nil"
-  (striped-hypersnippet-nil island)
+(struct-easy "a striped-hypersnippet"
+  (striped-hypersnippet island-and-lakes-and-rest)
   #:equal)
-(struct-easy "a striped-hypersnippet-cons"
-  (striped-hypersnippet-cons island-and-lakes-and-rest)
+(struct-easy "a striped-hypersnippet-lake"
+  (striped-hypersnippet-lake leaf lake-and-rest)
+  #:equal)
+(struct-easy "a striped-hypersnippet-non-lake"
+  (striped-hypersnippet-non-lake rest)
   #:equal)
 
 ; This is a striped hypermonad alternating between two striped
@@ -210,43 +213,69 @@ fill-pred-pred-hole :: forall holeVals.
         ;         ^N+2(  ~N+1(  ~N(  ~N(  )  )   )    )
         ;              ii     li   ii   il ii  li   ii
         ;   Striped:              [          ]
+        ;   Striped:              [          ]
         ;   Striped:  [  ]   [                   ] [  ]
         ;   Striped:  [                               ]
         ;
-        (striped-hypersnippet-nil
-        #/striped-hypersnippet-nil
+        (striped-hypersnippet
+        #/striped-hypersnippet
         #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
          (hl-to-hiil hole-shape)
+        #/striped-hypersnippet-non-lake
+        #/striped-hypersnippet-lake leaf
+        #/striped-hypersnippet
         #/nextlet rest hole-shape
-        #/mat rest (striped-hypersnippet-nil hole-island)
-          (striped-hypersnippet-nil
-          #/hypermonad-map-with-degree-and-shape hli hole-island
-          #/lambda (hole-degree hole-shape leaf)
-            (striped-hypersnippet-nil
-            ; NOTE: This assumes `hli` and `hii` have the same hole
-            ; shape at every degree, so we should at least document
-            ; this requirement as we document the parameters to
-            ; `hypersnippet-striped-striped`.
-            #/hypermonad-pure hii hole-degree hole-shape leaf))
         #/expect rest
-          (striped-hypersnippet-cons island-and-lakes-and-rest)
+          (striped-hypersnippet lakeisland-and-lakes-and-rest)
           (error "Expected rest to be a striped hypersnippet")
-        #/striped-hypersnippet-cons
         #/hypermonad-map-with-degree-and-shape hli
-          island-and-lakes-and-rest
-        #/lambda (hole-degree hole-shape lake-and-rest)
-          (striped-hypersnippet-cons
+          lakeisland-and-lakes-and-rest
+        #/lambda
+          (
+            lakeisland-hole-degree lakeisland-hole-shape
+            lakeisland-leaf)
+          (w- lakeisland-degree (sub1 hole-degree)
+          #/expect (< lakeisland-hole-degree lakeisland-degree) #t
+            (error "Expected hole-shape to be a valid hypersnippet for a particular hypermonad")
+          #/expect (= lakeisland-hole-degree #/sub1 lakeisland-degree)
+            #t
+            (expect lakeisland-leaf (list)
+              (error "Expected each leaf of hole-shape and every low-degree leaf of its islands to be an empty list")
+              null)
+          #/mat lakeisland-leaf (striped-hypersnippet-non-lake rest)
+            (striped-hypersnippet-non-lake rest)
+          #/expect lakeisland-leaf
+            (striped-hypersnippet-lake lake-leaf lakelake-and-rest)
+            (error "Expected a lake-island's highest-degree holes to contain striped hypersnippet lakes/non-lakes")
+          #/expect lake-leaf (list)
+            (error "Expected each leaf of hole-shape to be an empty list")
+          #/striped-hypersnippet-lake null
+          #/striped-hypersnippet
+          #/striped-hypersnippet
           ; NOTE: This assumes `hli` and `hii` have the same hole
           ; shape at every degree.
-          #/hypermonad-pure hii hole-degree hole-shape
+          #/hypermonad-pure hii
+            lakeisland-hole-degree lakeisland-hole-shape
+          #/striped-hypersnippet-lake null
           #/hypermonad-map-with-degree-and-shape hil
-            (hll-to-hil lake-and-rest)
-          #/lambda (hole-degree hole-shape rest)
-            (striped-hypersnippet-nil
+            (hll-to-hil lakelake-and-rest)
+          #/lambda
+            (lakelake-hole-degree lakelake-hole-shape lakelake-leaf)
+            (w- lakelake-degree (sub1 hole-degree)
+            #/expect (< lakelake-hole-degree lakelake-degree) #t
+              (error "Expected hole-shape to be a valid hypersnippet for a particular hypermonad")
+            #/expect (= lakelake-hole-degree #/sub1 lakelake-degree)
+              #t
+              (expect lakelake-leaf (list)
+                (error "Expected each lower-degree leaf of hole-shape's lakes to be an empty list")
+                null)
             ; NOTE: This assumes `hil` and `hii` have the same hole
             ; shape at every degree.
-            #/hypermonad-pure hii hole-degree hole-shape
-            #/next rest)))
+            #/hypermonad-pure hii
+              lakelake-hole-degree lakelake-hole-shape
+            #/striped-hypersnippet-non-lake
+            #/striped-hypersnippet-non-lake
+            #/next lakelake-leaf)))
       
       #/if (= overall-degree #/add1 #/add1 hole-degree)
         
@@ -260,17 +289,28 @@ fill-pred-pred-hole :: forall holeVals.
         ;        ^N+1(  ~N(  )  )
         ;             ii   il ii
         ;  Striped:  [          ]
+        ;  Striped:  [          ]
         ;
-        (striped-hypersnippet-nil
-        #/striped-hypersnippet-cons
+        (striped-hypersnippet
+        #/striped-hypersnippet
         #/hypermonad-pure hii (sub1 hole-degree)
           (hil-to-hiil hole-shape)
+        #/striped-hypersnippet-lake leaf
         #/hypermonad-map-with-degree-and-shape hil hole-shape
-        #/lambda (hole-hole-degree hole-hole-shape leaf)
-          (striped-hypersnippet-nil
+        #/lambda
+          (
+            islandisland-hole-degree islandisland-hole-shape
+            islandisland-leaf)
+          (expect islandisland-leaf (list)
+            (error "Expected each leaf of hole-shape to be an empty list")
+          #/expect (= islandisland-hole-degree #/sub1 hole-degree) #t
+            null
           ; NOTE: This assumes `hil` and `hii` have the same hole
           ; shape at every degree.
-          #/hypermonad-pure hii hole-hole-degree hole-hole-shape leaf))
+          #/hypermonad-pure hii
+            islandisland-hole-degree islandisland-hole-shape
+          #/striped-hypersnippet-non-lake
+          #/striped-hypersnippet-non-lake null))
       
       #/hypermonad-pure hii hole-degree hole-shape leaf))
     (define
@@ -283,11 +323,14 @@ fill-pred-pred-hole :: forall holeVals.
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
         
+        ; TODO: Reindent this comment.
+        ;
         ; TODO: At some point during this process, we might transform
         ; something of the form:
         ;
         ;             ^N+2(  ~N+1(  ~N(  ~N(  )    )   )    ~N(  )  )
         ;                  ii     li   ii   il   ii  li   ii   il ii
+        ;   Striped:                  [            ]
         ;   Striped:                  [            ]
         ;   Striped:      [  ]   [                     ] [          ]
         ;   Striped:      [                                         ]
@@ -317,8 +360,31 @@ fill-pred-pred-hole :: forall holeVals.
         ;
         ;                      ^N(  )
         ;                         hi
-        ;
-        'TODO))
+      
+      #/expect prefix (striped-hypersnippet prefix)
+        (error "Expected prefix to be a valid double-striped hypersnippet")
+      #/striped-hypersnippet
+      #/let next-island ([island-and-lakes-and-rest prefix])
+      #/expect island-and-lakes-and-rest
+        (striped-hypersnippet island-and-lakes-and-rest)
+        (error "Expected prefix to be a valid double-striped hypersnippet")
+      #/striped-hypersnippet
+      #/let next-islandisland
+        ([islandisland-etc island-and-lakes-and-rest])
+      #/hypermonad-bind-with-degree-and-shape hii islandisland-etc
+      #/lambda (islandisland-hole-degree islandisland-hole-shape leaf)
+        (w- islandisland-degree (sub1 #/sub1 overall-degree)
+        #/expect (< islandisland-hole-degree islandisland-degree) #t
+          (error "Expected prefix to be a valid double-striped hypersnippet for a particular hypermonad")
+        #/expect
+          (= islandisland-hole-degree #/sub1 islandisland-degree)
+          #t
+          leaf
+        #/mat leaf (striped-hypersnippet-lake leaf islandlake-etc)
+          'TODO
+        #/mat leaf (striped-hypersnippet-non-lake lake-and-rest)
+          'TODO
+        #/error "Expected prefix to be a valid double-striped hypersnippet")))
     (define
       (hypermonad-map-with-degree-and-shape
         this hypersnippet degree-shape-and-leaf-to-leaf)
