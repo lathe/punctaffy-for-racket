@@ -322,57 +322,54 @@ fill-pred-pred-hole :: forall holeVals.
           hll-to-hil hl-to-hiil hil-to-hiil to-hll
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
-        
-        ; TODO: Reindent this comment.
-        ;
-        ; TODO: At some point during this process, we might transform
-        ; something of the form:
-        ;
-        ;             ^N+2(  ~N+1(  ~N(  ~N(  )    )   )    ~N(  )  )
-        ;                  ii     li   ii   il   ii  li   ii   il ii
-        ;   Striped:                  [            ]
-        ;   Striped:                  [            ]
-        ;   Striped:      [  ]   [                     ] [          ]
-        ;   Striped:      [                                         ]
-        ;
-        ; into something of the form:
-        ;
-        ;             ^N+2(              ~N(  )             ~N(  )  )
-        ;                  ii     li   ii   il   ii  li  ii    il ii
-        ;   Striped:      [              ]      [          ]     [  ]
-        ;   Striped:      [                                         ]
-        ;
-        ;
-        ; so that we can zip it with something of the form:
-        ;
-        ;             ^N+2(              ~N(  )             ~N(  )  )
-        ;                         hi        hl       hi        hl hi
-        ;   Striped:      [                                         ]
-        ;
-        ; by zipping things of the form:
-        ;
-        ;               ^N(              )
-        ;   Ignored:  ^N+1(    ~N(  )    )
-        ;                  ii     li   ii
-        ;   Striped:      [              ]
-        ;
-        ; with things of the form:
-        ;
-        ;                      ^N(  )
-        ;                         hi
-        ;
-        ; TODO: ...Whoops. We're representing a double-striped
-        ; hypersnippet in a different way than we would represent a
-        ; regular hypersnippet. This is a problem because if we want
-        ; to do that conversion, striping `ii` and `li` together, we
-        ; can't assume a particular representation for that. Worse,
-        ; we're already assuming all over the place what
-        ; representation the striping of `ii` and `il` uses, so we
-        ; really can't use this representation recursively to stripe
-        ; arbitrary numbers of degrees. We can probably change this
-        ; double-striped hypersnippet representation to be aligned
-        ; with what we're assuming the single-striped hypersnippet
-        ; representation to be.
+      
+      ; TODO: At some point during this process, we might transform
+      ; something of the form:
+      ;
+      ;             ^N+2(  ~N+1(  ~N(  ~N(  )    )   )    ~N(  )  )
+      ;                  ii     li   ii   il   ii  li   ii   il ii
+      ;   Striped:                  [            ]
+      ;   Striped:                  [            ]
+      ;   Striped:      [  ]   [                     ] [          ]
+      ;   Striped:      [                                         ]
+      ;
+      ; into something of the form:
+      ;
+      ;             ^N+2(              ~N(  )             ~N(  )  )
+      ;                  ii     li   ii   il   ii  li  ii    il ii
+      ;   Striped:      [              ]      [          ]     [  ]
+      ;   Striped:      [                                         ]
+      ;
+      ;
+      ; so that we can zip it with something of the form:
+      ;
+      ;             ^N+2(              ~N(  )             ~N(  )  )
+      ;                         hi        hl       hi        hl hi
+      ;   Striped:      [                                         ]
+      ;
+      ; by zipping things of the form:
+      ;
+      ;               ^N(              )
+      ;   Ignored:  ^N+1(    ~N(  )    )
+      ;                  ii     li   ii
+      ;   Striped:      [              ]
+      ;
+      ; with things of the form:
+      ;
+      ;                      ^N(  )
+      ;                         hi
+      ;
+      ; TODO: ...Whoops. We're representing a double-striped
+      ; hypersnippet in a different way than we would represent a
+      ; regular hypersnippet. This is a problem because if we want to
+      ; do that conversion, striping `ii` and `li` together, we can't
+      ; assume a particular representation for that. Worse, we're
+      ; already assuming all over the place what representation the
+      ; striping of `ii` and `il` uses, so we really can't use this
+      ; representation recursively to stripe arbitrary numbers of
+      ; degrees. We can probably change this double-striped
+      ; hypersnippet representation to be aligned with what we're
+      ; assuming the single-striped hypersnippet representation to be.
       
       #/expect prefix (striped-hypersnippet prefix)
         (error "Expected prefix to be a valid double-striped hypersnippet")
