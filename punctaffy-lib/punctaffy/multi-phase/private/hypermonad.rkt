@@ -360,6 +360,19 @@ fill-pred-pred-hole :: forall holeVals.
         ;
         ;                      ^N(  )
         ;                         hi
+        ;
+        ; TODO: ...Whoops. We're representing a double-striped
+        ; hypersnippet in a different way than we would represent a
+        ; regular hypersnippet. This is a problem because if we want
+        ; to do that conversion, striping `ii` and `li` together, we
+        ; can't assume a particular representation for that. Worse,
+        ; we're already assuming all over the place what
+        ; representation the striping of `ii` and `il` uses, so we
+        ; really can't use this representation recursively to stripe
+        ; arbitrary numbers of degrees. We can probably change this
+        ; double-striped hypersnippet representation to be aligned
+        ; with what we're assuming the single-striped hypersnippet
+        ; representation to be.
       
       #/expect prefix (striped-hypersnippet prefix)
         (error "Expected prefix to be a valid double-striped hypersnippet")
