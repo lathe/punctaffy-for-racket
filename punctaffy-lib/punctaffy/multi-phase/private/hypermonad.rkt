@@ -145,6 +145,10 @@ to-hll :: forall holeVals.
   (snippet-of ll) holeVals
 fill-pred-hole :: forall holeVals.
   (double-stripe-snippet ii il li ll) (trivial-hole-vals) ->
+  ; TODO: See how we should document this type. It should probably be
+  ; `(stripe-snippet (snippet-of li) (snippet-of-ll)) holeVals`, but
+  ; with values of type (double-stripe-snippet ii il li ll) in the
+  ; highest-degree holes. Where do those values go in the result?
   (stripe-snippet (snippet-of li) (double-stripe-snippet ii il li ll)
     ) holeVals ->
   Maybe ((double-stripe-snippet ii il li ll) holeVals)
@@ -358,29 +362,20 @@ fill-pred-pred-hole :: forall holeVals.
       ;
       ;                      ^N(  )
       ;                         hi
-      ;
-      ; TODO: ...Whoops. We're representing a double-striped
-      ; hypersnippet in a different way than we would represent a
-      ; regular hypersnippet. This is a problem because if we want to
-      ; do that conversion, striping `ii` and `li` together, we can't
-      ; assume a particular representation for that. Worse, we're
-      ; already assuming all over the place what representation the
-      ; striping of `ii` and `il` uses, so we really can't use this
-      ; representation recursively to stripe arbitrary numbers of
-      ; degrees. We can probably change this double-striped
-      ; hypersnippet representation to be aligned with what we're
-      ; assuming the single-striped hypersnippet representation to be.
       
       #/expect prefix (striped-hypersnippet prefix)
         (error "Expected prefix to be a valid double-striped hypersnippet")
       #/striped-hypersnippet
-      #/let next-island ([island-and-lakes-and-rest prefix])
+      #/let next-island
+        ([island-and-lakes-and-rest prefix] [is-first-island #t])
       #/expect island-and-lakes-and-rest
         (striped-hypersnippet island-and-lakes-and-rest)
         (error "Expected prefix to be a valid double-striped hypersnippet")
       #/striped-hypersnippet
       #/let next-islandisland
-        ([islandisland-etc island-and-lakes-and-rest])
+        (
+          [islandisland-etc island-and-lakes-and-rest]
+          [is-first-islandisland #t])
       #/hypermonad-bind-with-degree-and-shape hii islandisland-etc
       #/lambda (islandisland-hole-degree islandisland-hole-shape leaf)
         (w- islandisland-degree (sub1 #/sub1 overall-degree)
@@ -389,11 +384,63 @@ fill-pred-pred-hole :: forall holeVals.
         #/expect
           (= islandisland-hole-degree #/sub1 islandisland-degree)
           #t
-          leaf
+          (if (and is-first-island is-first-islandisland)
+            (expect
+              (degree-shape-and-leaf-to-suffix
+                islandisland-hole-degree islandisland-hole-shape leaf)
+              (striped-hypersnippet #/striped-hypersnippet suffix)
+              (error "Expected the result of degree-shape-and-leaf-to-suffix to be a valid double-striped hypersnippet")
+              suffix)
+            (expect leaf (list)
+              (error "Expected prefix to be a valid double-striped hypersnippet")
+              null))
         #/mat leaf (striped-hypersnippet-lake leaf islandlake-etc)
-          'TODO
-        #/mat leaf (striped-hypersnippet-non-lake lake-and-rest)
-          'TODO
+          (w- islandlake-degree (sub1 #/sub1 overall-degree)
+          #/expect
+            (fill-pred-pred-hole
+              (degree-shape-and-leaf-to-suffix islandlake-degree
+                (hypermonad-map-with-degree hil islandlake-etc
+                #/lambda (islandlake-hole-degree leaf)
+                  null)
+                leaf)
+              (hypermonad-map-with-degree-and-shape hil islandlake-etc
+              #/lambda
+                (islandlake-hole-degree islandlake-hole-shape leaf)
+                (expect (< islandlake-hole-degree islandlake-degree)
+                  #t
+                  (error "Expected prefix to be a valid double-striped hypersnippet for a particular hypermonad")
+                #/expect
+                  (= islandlake-hole-degree #/sub1 islandlake-degree)
+                  #t
+                  (expect leaf (list)
+                    (error "Expected prefix to be a valid double-striped hypersnippet")
+                    null)
+                #/next-islandisland leaf #f)))
+            (striped-hypersnippet #/striped-hypersnippet suffix)
+            (error "Expected the results of degree-shape-and-leaf-to-suffix and fill-pred-pred-hole to be valid double-striped hypersnippets for a particular hypermonad")
+            suffix)
+        #/mat leaf
+          (striped-hypersnippet-non-lake possible-lake-and-rest)
+          (mat possible-lake-and-rest
+            (striped-hypersnippet-non-lake leaf)
+            (if is-first-island
+              (expect
+                (degree-shape-and-leaf-to-suffix
+                  (sub1 #/sub1 #/sub1 overall-degree)
+                  islandisland-hole-shape
+                  leaf)
+                (striped-hypersnippet #/striped-hypersnippet suffix)
+                (error "Expected the result of degree-shape-and-leaf-to-suffix to be a valid double-striped hypersnippet")
+                suffix)
+              (expect leaf (list)
+                (error "Expected prefix to be a valid double-edged hypersnippet")
+                null))
+          #/mat possible-lake-and-rest
+            (striped-hypersnippet-lake lake-and-rest)
+            ; TODO: Once we implement this, make sure it uses
+            ; `next-island`.
+            'TODO
+          #/error "Expected prefix to be a valid double-striped hypersnippet")
         #/error "Expected prefix to be a valid double-striped hypersnippet")))
     (define
       (hypermonad-map-with-degree-and-shape
