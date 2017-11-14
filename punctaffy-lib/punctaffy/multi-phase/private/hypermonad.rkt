@@ -134,9 +134,9 @@ double-stripe-snippet ii il li ll =
 hll-to-hil :: forall holeVals.
   (snippet-of ll) holeVals ->
   (snippet-of il) holeVals
-hl-to-hiil :: forall holeVals.
-  (snippet-of (ignore-highest (ignore-highest l))) holeVals ->
-  (snippet-of (hole-hypermonad-for-pred-degree ii)) holeVals
+hl-to-hil :: forall holeVals.
+  (snippet-of (ignore-highest l)) holeVals ->
+  (snippet-of il) holeVals
 hil-to-hiil :: forall holeVals.
   (snippet-of (ignore-highest il)) holeVals ->
   (snippet-of (hole-hypermonad-for-pred-degree ii)) holeVals
@@ -160,7 +160,7 @@ fill-pred-pred-hole :: forall holeVals.
 (struct-easy "a hypermonad-striped-striped"
   (hypermonad-striped-striped
     overall-degree hii hil hli hll hl
-    hll-to-hil hl-to-hiil hil-to-hiil to-hll
+    hll-to-hil hl-to-hil hil-to-hiil to-hll
     fill-pred-hole fill-pred-pred-hole)
   #:equal
   (#:guard-easy
@@ -179,7 +179,7 @@ fill-pred-pred-hole :: forall holeVals.
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
-          hll-to-hil hl-to-hiil hil-to-hiil to-hll
+          hll-to-hil hl-to-hil hil-to-hiil to-hll
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
       #/expect (exact-nonnegative-integer? degree) #t
@@ -196,7 +196,7 @@ fill-pred-pred-hole :: forall holeVals.
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
-          hll-to-hil hl-to-hiil hil-to-hiil to-hll
+          hll-to-hil hl-to-hil hil-to-hiil to-hll
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
       #/expect (exact-nonnegative-integer? hole-degree) #t
@@ -224,8 +224,6 @@ fill-pred-pred-hole :: forall holeVals.
         (striped-hypersnippet
         #/striped-hypersnippet
         #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
-          ; TODO: Stop providing `hl-to-hiil`, and provide
-          ; `hl-to-hil` instead.
           (hil-to-hiil #/hl-to-hil hole-shape)
         #/striped-hypersnippet-lake
           (striped-hypersnippet-lake leaf
@@ -322,7 +320,7 @@ fill-pred-pred-hole :: forall holeVals.
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
-          hll-to-hil hl-to-hiil hil-to-hiil to-hll
+          hll-to-hil hl-to-hil hil-to-hiil to-hll
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
       
@@ -403,9 +401,8 @@ fill-pred-pred-hole :: forall holeVals.
                 #/lambda (islandlake-hole-degree leaf)
                   null)
                 leaf)
-              (hypermonad-map-with-degree-and-shape hil islandlake-etc
-              #/lambda
-                (islandlake-hole-degree islandlake-hole-shape leaf)
+              (hypermonad-map-with-degree hil islandlake-etc
+              #/lambda (islandlake-hole-degree leaf)
                 (expect (< islandlake-hole-degree islandlake-degree)
                   #t
                   (error "Expected prefix to be a valid double-striped hypersnippet for a particular hypermonad")
@@ -436,7 +433,7 @@ fill-pred-pred-hole :: forall holeVals.
                 (error "Expected prefix to be a valid double-edged hypersnippet")
                 null))
           #/mat possible-lake-and-rest
-            (striped-hypersnippet-lake lake-and-rest)
+            (striped-hypersnippet-lake leaf lake-and-rest)
             ; TODO: Once we implement this, make sure it uses
             ; `next-island`.
             'TODO
