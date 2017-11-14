@@ -302,7 +302,7 @@ multi-phase/private/trees2.rkt.
 
 ============
 
-(This are some stream-of-consciousness notes toward an implementation
+(These are some stream-of-consciousness notes toward an implementation
 of `hypermonad-striped`. It's still challenging at this point, and
 some inelegance in the type classes is showing again.)
 
@@ -342,14 +342,15 @@ When we're zipping a double-striped hypersnippet with its highest-degree hole, i
 ^1(           ,(  )        ,(  )  )
    hi           hl hi        hl hi
 
-The representation of the higher-degree one is:
+The representation of the higher-degree one is this, containing `ll`
+as part of the representation even though it doesn't appear in the
+fully flattened appearance:
 
-  (fix x.
-    stripe-snippet
-      (stripe-snippet (snippet-of ii) (snippet-of il))
-      (stripe-snippet (snippet-of li) (snippet-of x)))
+  stripe-snippet
+    (stripe-snippet (snippet-of ii) (snippet-of il))
+    (stripe-snippet (snippet-of li) (snippet-of ll)))
 
-Let (double-stripe-snippet ii il li) be shorthand for that. Let
+Let (double-stripe-snippet ii il li ll) be shorthand for that. Let
 (double-stripe ii il li ll ???) be shorthand for the hypermonad
 (including those question marks since we don't know all the arguments
 we need yet).
@@ -400,10 +401,10 @@ That gives us some hypermonads automatically, and we need to pass in at least on
 
 We probably don't need to pass in `ll` at all to make the hyperzip.
 
-To define the at-least-two-degrees-striped hypermonad itself, with a representation of (double-stripe-snippet ii il li), we'll need to pass in a way to convert the representation to `ll` to assemble hole shapes for the map/bind callbacks, and we'll need hyperzips in order to insert the bind callback's results as interpolations.
+To define the at-least-two-degrees-striped hypermonad itself, with a representation of (double-stripe-snippet ii il li ll), we'll need to pass in a way to convert the representation to `ll` to assemble hole shapes for the map/bind callbacks, and we'll need hyperzips in order to insert the bind callback's results as interpolations.
 
   forall holeVals.
-    (double-stripe-snippet ii il li) holeVals ->
+    (double-stripe-snippet ii il li ll) holeVals ->
     (snippet-of ll) holeVals
   Zip
     (ignore-highest (double-stripe ii il li ll ???))
@@ -418,13 +419,13 @@ We probably need other parameters too, such as hypermonads like `ll` itself.
 Hmm. What if we didn't require zips there, but just required appropriate functions?
 
   forall holeVals.
-    (double-stripe-snippet ii il li) holeVals ->
+    (double-stripe-snippet ii il li ll) holeVals ->
     (snippet-of ll) holeVals
   forall holeVals.
-    (double-stripe-snippet ii il li) (trivial-hole-vals) ->
-    (stripe-snippet (snippet-of li) (double-stripe-snippet ii il li)) holeVals ->
-    Maybe ((double-stripe-snippet ii il li) holeVals)
+    (double-stripe-snippet ii il li ll) (trivial-hole-vals) ->
+    (stripe-snippet (snippet-of li) (double-stripe-snippet ii il li ll)) holeVals ->
+    Maybe ((double-stripe-snippet ii il li ll) holeVals)
   forall holeVals.
-    (double-stripe-snippet ii il li) (trivial-hole-vals) ->
+    (double-stripe-snippet ii il li ll) (trivial-hole-vals) ->
     (snippet-of il) holeVals ->
-    Maybe ((double-stripe-snippet ii il li) holeVals)
+    Maybe ((double-stripe-snippet ii il li ll) holeVals)
