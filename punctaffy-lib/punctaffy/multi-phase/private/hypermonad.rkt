@@ -123,6 +123,151 @@
   (striped-hypersnippet-non-lake rest)
   #:equal)
 
+(struct-easy "a bracketed-hypersnippet-lakeisland-brackets"
+  (bracketed-hypersnippet-lakeisland-brackets
+    beginning-bracket hypersnippet-of-ending-brackets)
+  #:equal)
+
+; These represent closing brackets of degree (N-2)+1 and (N-2)+0,
+; where N is the degree of the hypersnippet that's being represented
+; in bracketed form.
+;
+; NOTE: Since these are the only two bracket degrees we need to
+; represent in this format, we could call them "open" and "close," but
+; this naming convention would extrapolate better if we ever made a
+; bracketed representation of more than two levels.
+;
+(struct-easy "a bracketed-hypersnippet-close-1"
+  (bracketed-hypersnippet-close-1)
+  #:equal)
+(struct-easy "a bracketed-hypersnippet-close-0"
+  (bracketed-hypersnippet-close-0)
+  #:equal)
+
+; This transforms something of the form:
+;
+;             ^N+2(  ~N+1(  ~N(  ~N(  )    )   )    ~N(  )  )
+;                  ii     li   ii   il   ii  li   ii   il ii
+;   Striped:                  [  --il--    ]
+;   Striped:             [    ------ll------   ]
+;   Striped:      [      -----------il----------    --il--  ]
+;   (Those 3 layers of striping are striped.)
+;
+; into something roughly of the form (TODO: Stop being so sloppy
+; in the following diagrams.):
+;
+;             ^N+2(              ~N(  )             ~N(  )  )
+;                  ii     li   ii   il   ii  li  ii    il ii
+;   Striped:      [              ]      [          ]     [  ]
+;   Striped:      [                                         ]
+;
+;
+; so that the `hypermonad-bind-with-degree-and-shape` method of
+; `hypermonad-striped-striped` can zip it with something of the form:
+;
+;             ^N+2(              ~N(  )             ~N(  )  )
+;                         hi        hl       hi        hl hi
+;   Striped:      [                                         ]
+;
+; by zipping things of the form:
+;
+;               ^N(              )
+;   Ignored:  ^N+1(    ~N(  )    )
+;                  ii     li   ii
+;   Striped:      [              ]
+;
+; with things of the form:
+;
+;                      ^N(  )
+;                         hi
+;
+(define
+  (bracketed-from-double-striped ii-degree ii il li ll double-striped)
+  (expect (exact-positive-integer? ii-degree) #t
+    ; NOTE: If we allowed degree 0, then the degree-0 islandislands,
+    ; islandlakes, and so on would have no holes with which to carry
+    ; `striped-hypersnippet-lake` and `striped-hypersnippet-non-lake`
+    ; to build up to degree-1 and degree-2 data at all.
+    (error "Expected ii-degree to be an exact positive integer")
+  #/expect (hypermonad? ii) #t
+    (error "Expected ii to be a hypermonad")
+  #/expect (hypermonad? il) #t
+    (error "Expected il to be a hypermonad")
+  #/expect (hypermonad? li) #t
+    (error "Expected li to be a hypermonad")
+  #/expect (hypermonad? ll) #t
+    (error "Expected ll to be a hypermonad")
+  #/expect double-striped
+    (striped-hypersnippet #/striped-hypersnippet islandisland-etc)
+    (error "Expected double-striped to be a valid double-striped hypersnippet")
+  #/striped-hypersnippet
+  #/striped-hypersnippet
+  #/let next-islandisland ([islandisland-etc islandisland-etc])
+  #/hypermonad-map-with-degree-and-shape ii islandisland-etc
+  #/lambda (islandisland-hole-degree islandisland-hole-shape leaf)
+    (expect (< islandisland-hole-degree ii-degree) #t
+      (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
+    #/expect (= islandisland-hole-degree #/sub1 ii-degree) #t
+      leaf
+    #/mat leaf (striped-hypersnippet-lake leaf islandlake-etc)
+      (striped-hypersnippet-non-lake
+      #/striped-hypersnippet-lake leaf
+      #/hypermonad-map-with-degree-and-shape il islandlake-etc
+      #/lambda (islandlake-hole-degree islandlake-hole-shape leaf)
+        (expect (< islandlake-hole-degree ii-degree) #t
+          (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
+        #/expect (= islandlake-hole-degree #/sub1 ii-degree) #t
+          leaf
+        #/w- islandisland-etc leaf
+        #/striped-hypersnippet #/next-islandisland islandisland-etc))
+    #/mat leaf (striped-hypersnippet-non-lake possible-lake-and-rest)
+      (mat possible-lake-and-rest
+        (striped-hypersnippet-lake leaf lake-and-rest)
+        (expect lake-and-rest (striped-hypersnippet lakeisland-etc)
+          (error "Expected double-striped to be a valid double-striped hypersnippet")
+        #/striped-hypersnippet-lake
+          ; We store opening and closing brackets here.
+          (bracketed-hypersnippet-lakeisland-brackets
+            (bracketed-hypersnippet-close-1)
+          #/hypermonad-map-with-degree-and-shape li lakeisland-etc
+          #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
+            (expect (< lakeisland-hole-degree ii-degree) #t
+              (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
+            #/expect (= lakeisland-hole-degree #/sub1 ii-degree) #t
+              null
+            #/mat leaf
+              (striped-hypersnippet-lake
+                island-and-lakes-and-rest lakelake-etc)
+              (bracketed-hypersnippet-close-1)
+            #/mat leaf
+              (striped-hypersnippet-non-lake
+                island-and-lakes-and-rest)
+              (bracketed-hypersnippet-close-0)
+            #/error "Expected double-striped to be a valid double-striped hypersnippet"))
+        #/hypermonad-map-with-degree-and-shape li lakeisland-etc
+        #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
+          (expect (< lakeisland-hole-degree ii-degree) #t
+            (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
+          #/expect (= lakeisland-hole-degree #/sub1 ii-degree) #t
+            leaf
+          #/mat leaf
+            (striped-hypersnippet-lake
+              island-and-lakes-and-rest lakelake-etc)
+            'TODO
+          #/mat leaf
+            (striped-hypersnippet-non-lake island-and-lakes-and-rest)
+            (expect island-and-lakes-and-rest
+              (striped-hypersnippet islandisland-etc)
+              (error "Expected double-striped to be a valid double-striped hypersnippet")
+            #/next-islandisland islandisland-etc)
+          #/error "Expected double-striped to be a valid double-striped hypersnippet"))
+      #/mat possible-lake-and-rest
+        (striped-hypersnippet-non-lake leaf)
+        (striped-hypersnippet-non-lake
+        #/striped-hypersnippet-non-lake leaf)
+      #/error "Expected double-striped to be a valid double-striped hypersnippet")
+    #/error "Expected double-striped to be a valid double-striped hypersnippet")))
+
 ; This is a striped hypermonad alternating between two striped
 ; hypermonads.
 #|
@@ -167,6 +312,11 @@ fill-pred-pred-hole :: forall holeVals.
     (unless (exact-nonnegative-integer? overall-degree)
       (error "Expected overall-degree to be an exact nonnegative integer"))
     (unless (<= 3 overall-degree)
+      ; NOTE: If we allowed degree 2, then each of the islandislands,
+      ; islandlakes, and so on would have degree 0, so they would have
+      ; no holes with which to carry `striped-hypersnippet-lake` and
+      ; `striped-hypersnippet-non-lake` to build up to degree-1 and
+      ; degree-2 data at all.
       (error "Expected overall-degree to be 3 or greater")))
   #:other
   
@@ -235,7 +385,6 @@ fill-pred-pred-hole :: forall holeVals.
               (error "Expected each leaf of hole-shape to be an empty list")
             #/expect (= hole-hole-degree #/sub1 hole-degree) #t
               null
-            ; TODO: Provide `hll-to-hil`.
             #/w- islandlake (hll-to-hil hole-hole-shape)
             #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
               (hil-to-hiil islandlake)
@@ -323,44 +472,6 @@ fill-pred-pred-hole :: forall holeVals.
           hll-to-hil hl-to-hil hil-to-hiil to-hll
           fill-pred-hole fill-pred-pred-hole)
         (error "Expected this to be a hypermonad-striped-striped")
-      
-      ; TODO: At some point during this process, we might transform
-      ; something of the form:
-      ;
-      ;             ^N+2(  ~N+1(  ~N(  ~N(  )    )   )    ~N(  )  )
-      ;                  ii     li   ii   il   ii  li   ii   il ii
-      ;   Striped:                  [  --il--    ]
-      ;   Striped:             [    ------ll------   ]
-      ;   Striped:      [      -----------il----------    --il--  ]
-      ;   (Those 3 layers of striping are striped.)
-      ;
-      ; into something roughly of the form (TODO: Stop being so sloppy
-      ; in the following diagrams.):
-      ;
-      ;             ^N+2(              ~N(  )             ~N(  )  )
-      ;                  ii     li   ii   il   ii  li  ii    il ii
-      ;   Striped:      [              ]      [          ]     [  ]
-      ;   Striped:      [                                         ]
-      ;
-      ;
-      ; so that we can zip it with something of the form:
-      ;
-      ;             ^N+2(              ~N(  )             ~N(  )  )
-      ;                         hi        hl       hi        hl hi
-      ;   Striped:      [                                         ]
-      ;
-      ; by zipping things of the form:
-      ;
-      ;               ^N(              )
-      ;   Ignored:  ^N+1(    ~N(  )    )
-      ;                  ii     li   ii
-      ;   Striped:      [              ]
-      ;
-      ; with things of the form:
-      ;
-      ;                      ^N(  )
-      ;                         hi
-      
       #/expect prefix (striped-hypersnippet prefix)
         (error "Expected prefix to be a valid double-striped hypersnippet")
       #/striped-hypersnippet
@@ -435,7 +546,9 @@ fill-pred-pred-hole :: forall holeVals.
           #/mat possible-lake-and-rest
             (striped-hypersnippet-lake leaf lake-and-rest)
             ; TODO: Once we implement this, make sure it uses
-            ; `next-island`.
+            ; `next-island`, `bracketed-from-double-striped`, and
+            ; `double-striped-from-bracketed` (which doesn't exist
+            ; yet).
             'TODO
           #/error "Expected prefix to be a valid double-striped hypersnippet")
         #/error "Expected prefix to be a valid double-striped hypersnippet")))
