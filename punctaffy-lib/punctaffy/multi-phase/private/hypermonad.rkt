@@ -261,7 +261,7 @@
 ;
 (define
   (bracketed-from-double-striped
-    ii-degree ii il li ll fill-i double-striped)
+    ii-degree ii il li fill-i double-striped)
   (expect (exact-positive-integer? ii-degree) #t
     ; NOTE: If we allowed degree 0, then the degree-0 islandislands,
     ; islandlakes, and so on would have no holes with which to carry
@@ -274,8 +274,6 @@
     (error "Expected il to be a hypermonad")
   #/expect (hypermonad? li) #t
     (error "Expected li to be a hypermonad")
-  #/expect (hypermonad? ll) #t
-    (error "Expected ll to be a hypermonad")
   #/expect double-striped
     (striped-hypersnippet #/striped-hypersnippet islandisland-etc)
     (error "Expected double-striped to be a valid double-striped hypersnippet")
