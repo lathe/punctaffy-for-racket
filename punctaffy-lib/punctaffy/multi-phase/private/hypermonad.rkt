@@ -181,8 +181,15 @@
 ;                      ^N(  )
 ;                         hi
 ;
+;
+; fill-i :: forall holeVals.
+;   (snippet-of (ignore-highest i)) (trivial-hole-vals) ->
+;   (snippet-of ll) holeVals ->
+;   Maybe ((snippet-of (ignore-highest i)) holeVals)
+;
 (define
-  (bracketed-from-double-striped ii-degree ii il li ll double-striped)
+  (bracketed-from-double-striped
+    ii-degree ii il li ll fill-i double-striped)
   (expect (exact-positive-integer? ii-degree) #t
     ; NOTE: If we allowed degree 0, then the degree-0 islandislands,
     ; islandlakes, and so on would have no holes with which to carry
@@ -202,7 +209,8 @@
     (error "Expected double-striped to be a valid double-striped hypersnippet")
   #/striped-hypersnippet
   #/striped-hypersnippet
-  #/let next-islandisland ([islandisland-etc islandisland-etc])
+  #/let next-islandisland
+    ([islandisland-etc islandisland-etc] [lakes-still-unclosed 0])
   #/hypermonad-map-with-degree-and-shape ii islandisland-etc
   #/lambda (islandisland-hole-degree islandisland-hole-shape leaf)
     (expect (< islandisland-hole-degree ii-degree) #t
@@ -219,52 +227,69 @@
         #/expect (= islandlake-hole-degree #/sub1 ii-degree) #t
           leaf
         #/w- islandisland-etc leaf
-        #/striped-hypersnippet #/next-islandisland islandisland-etc))
+        #/striped-hypersnippet
+        #/next-islandisland islandisland-etc lakes-still-unclosed))
     #/mat leaf (striped-hypersnippet-non-lake possible-lake-and-rest)
-      (mat possible-lake-and-rest
-        (striped-hypersnippet-lake leaf lake-and-rest)
-        (expect lake-and-rest (striped-hypersnippet lakeisland-etc)
-          (error "Expected double-striped to be a valid double-striped hypersnippet")
-        #/striped-hypersnippet-lake
-          ; We store opening and closing brackets here.
-          (bracketed-hypersnippet-lakeisland-brackets
-            (bracketed-hypersnippet-close-1)
+      (w- process-lakeisland-etc
+        (lambda (lakeisland-etc lakes-still-unclosed first-bracket)
+          (striped-hypersnippet-lake
+            ; We store opening and closing brackets here.
+            (bracketed-hypersnippet-lakeisland-brackets
+              (bracketed-hypersnippet-close-1)
+            #/hypermonad-map-with-degree-and-shape li lakeisland-etc
+            #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
+              (expect (< lakeisland-hole-degree ii-degree) #t
+                (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
+              #/expect (= lakeisland-hole-degree #/sub1 ii-degree) #t
+                null
+              #/mat leaf
+                (striped-hypersnippet-lake
+                  island-and-lakes-and-rest lakelake-etc)
+                (bracketed-hypersnippet-close-1)
+              #/mat leaf
+                (striped-hypersnippet-non-lake
+                  island-and-lakes-and-rest)
+                (bracketed-hypersnippet-close-0)
+              #/error "Expected double-striped to be a valid double-striped hypersnippet"))
           #/hypermonad-map-with-degree-and-shape li lakeisland-etc
           #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
             (expect (< lakeisland-hole-degree ii-degree) #t
               (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
             #/expect (= lakeisland-hole-degree #/sub1 ii-degree) #t
-              null
+              leaf
             #/mat leaf
               (striped-hypersnippet-lake
                 island-and-lakes-and-rest lakelake-etc)
-              (bracketed-hypersnippet-close-1)
+              (expect (fill-i island-and-lakes-and-rest lakelake-etc)
+                (list island-and-lakes-and-rest-and-lakeislands-etc)
+                (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad and for its islands to fit in its lakes according to fill-i")
+              #/expect island-and-lakes-and-rest-and-lakeislands-etc
+                (hypersnippet-striped ii-etc-and-li-etc)
+                (error "Expected the result of fill-i to be a valid striped hypersnippet")
+              #/next-islandisland ii-etc-and-li-etc
+              #/add1 lakes-still-unclosed)
             #/mat leaf
-              (striped-hypersnippet-non-lake
-                island-and-lakes-and-rest)
-              (bracketed-hypersnippet-close-0)
-            #/error "Expected double-striped to be a valid double-striped hypersnippet"))
-        #/hypermonad-map-with-degree-and-shape li lakeisland-etc
-        #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
-          (expect (< lakeisland-hole-degree ii-degree) #t
-            (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad")
-          #/expect (= lakeisland-hole-degree #/sub1 ii-degree) #t
-            leaf
-          #/mat leaf
-            (striped-hypersnippet-lake
-              island-and-lakes-and-rest lakelake-etc)
-            'TODO
-          #/mat leaf
-            (striped-hypersnippet-non-lake island-and-lakes-and-rest)
-            (expect island-and-lakes-and-rest
-              (striped-hypersnippet islandisland-etc)
-              (error "Expected double-striped to be a valid double-striped hypersnippet")
-            #/next-islandisland islandisland-etc)
-          #/error "Expected double-striped to be a valid double-striped hypersnippet"))
+              (striped-hypersnippet-non-lake island-and-lakes-and-rest)
+              (expect island-and-lakes-and-rest
+                (striped-hypersnippet islandisland-etc)
+                (error "Expected double-striped to be a valid double-striped hypersnippet")
+              #/next-islandisland islandisland-etc lakes-still-unclosed)
+            #/error "Expected double-striped to be a valid double-striped hypersnippet")))
+      #/mat possible-lake-and-rest
+        (striped-hypersnippet-lake leaf lake-and-rest)
+        (expect lake-and-rest (striped-hypersnippet lakeisland-etc)
+          (error "Expected double-striped to be a valid double-striped hypersnippet")
+        #/process-lakeisland-etc lakeisland-etc lakes-still-unclosed
+        #/bracketed-hypersnippet-close-1)
       #/mat possible-lake-and-rest
         (striped-hypersnippet-non-lake leaf)
-        (striped-hypersnippet-non-lake
-        #/striped-hypersnippet-non-lake leaf)
+        (case (nat-pred-maybe lakes-still-unclosed)
+          (list lakes-still-unclosed)
+          (striped-hypersnippet-non-lake
+          #/striped-hypersnippet-non-lake leaf)
+        #/w- lakeisland-etc leaf
+        #/process-lakeisland-etc lakeisland-etc lakes-still-unclosed
+        #/bracketed-hypersnippet-close-0)
       #/error "Expected double-striped to be a valid double-striped hypersnippet")
     #/error "Expected double-striped to be a valid double-striped hypersnippet")))
 
@@ -524,6 +549,9 @@ fill-pred-pred-hole :: forall holeVals.
                     (error "Expected prefix to be a valid double-striped hypersnippet")
                     null)
                 #/next-islandisland leaf #f)))
+            (list filled)
+            (error "Expected the result of degree-shape-and-leaf-to-suffix to be of the same shape as the hole shape given")
+          #/expect filled
             (striped-hypersnippet #/striped-hypersnippet suffix)
             (error "Expected the results of degree-shape-and-leaf-to-suffix and fill-pred-pred-hole to be valid double-striped hypersnippets for a particular hypermonad")
             suffix)
