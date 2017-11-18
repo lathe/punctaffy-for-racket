@@ -123,11 +123,6 @@
   (striped-hypersnippet-non-lake rest)
   #:equal)
 
-(struct-easy "a bracketed-hypersnippet-lakeisland-brackets"
-  (bracketed-hypersnippet-lakeisland-brackets
-    beginning-bracket hypersnippet-of-ending-brackets)
-  #:equal)
-
 ; These represent closing brackets of degree (N-2)+1 and (N-2)+0,
 ; where N is the degree of the hypersnippet that's being represented
 ; in bracketed form.
@@ -137,11 +132,19 @@
 ; this naming convention would extrapolate better if we ever made a
 ; bracketed representation of more than two levels.
 ;
-(struct-easy "a bracketed-hypersnippet-close-1"
-  (bracketed-hypersnippet-close-1)
+(struct-easy "a bracketed-hypersnippet-beginning-close-1"
+  (bracketed-hypersnippet-beginning-close-1 leaf
+    hypersnippet-of-ending-brackets)
   #:equal)
-(struct-easy "a bracketed-hypersnippet-close-0"
-  (bracketed-hypersnippet-close-0)
+(struct-easy "a bracketed-hypersnippet-beginning-close-0"
+  (bracketed-hypersnippet-beginning-close-0
+    hypersnippet-of-ending-brackets)
+  #:equal)
+(struct-easy "a bracketed-hypersnippet-ending-close-1"
+  (bracketed-hypersnippet-ending-close-1)
+  #:equal)
+(struct-easy "a bracketed-hypersnippet-ending-close-0"
+  (bracketed-hypersnippet-ending-close-0)
   #:equal)
 
 ; This transforms something of the form:
@@ -234,8 +237,7 @@
         (lambda (lakeisland-etc lakes-still-unclosed first-bracket)
           (striped-hypersnippet-lake
             ; We store opening and closing brackets here.
-            (bracketed-hypersnippet-lakeisland-brackets
-              (bracketed-hypersnippet-close-1)
+            (first-bracket
             #/hypermonad-map-with-degree-and-shape li lakeisland-etc
             #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
               (expect (< lakeisland-hole-degree ii-degree) #t
@@ -245,11 +247,11 @@
               #/mat leaf
                 (striped-hypersnippet-lake
                   island-and-lakes-and-rest lakelake-etc)
-                (bracketed-hypersnippet-close-1)
+                (bracketed-hypersnippet-ending-close-1)
               #/mat leaf
                 (striped-hypersnippet-non-lake
                   island-and-lakes-and-rest)
-                (bracketed-hypersnippet-close-0)
+                (bracketed-hypersnippet-ending-close-0)
               #/error "Expected double-striped to be a valid double-striped hypersnippet"))
           #/hypermonad-map-with-degree-and-shape li lakeisland-etc
           #/lambda (lakeisland-hole-degree lakeisland-hole-shape leaf)
@@ -264,7 +266,7 @@
                 (list island-and-lakes-and-rest-and-lakeislands-etc)
                 (error "Expected double-striped to be a valid double-striped hypersnippet for a particular hypermonad and for its islands to fit in its lakes according to fill-i")
               #/expect island-and-lakes-and-rest-and-lakeislands-etc
-                (hypersnippet-striped ii-etc-and-li-etc)
+                (striped-hypersnippet ii-etc-and-li-etc)
                 (error "Expected the result of fill-i to be a valid striped hypersnippet")
               #/next-islandisland ii-etc-and-li-etc
               #/add1 lakes-still-unclosed)
@@ -280,16 +282,20 @@
         (expect lake-and-rest (striped-hypersnippet lakeisland-etc)
           (error "Expected double-striped to be a valid double-striped hypersnippet")
         #/process-lakeisland-etc lakeisland-etc lakes-still-unclosed
-        #/bracketed-hypersnippet-close-1)
+        #/lambda (hypersnippet-of-ending-brackets)
+          (bracketed-hypersnippet-beginning-close-1 leaf
+            hypersnippet-of-ending-brackets))
       #/mat possible-lake-and-rest
         (striped-hypersnippet-non-lake leaf)
-        (case (nat-pred-maybe lakes-still-unclosed)
+        (expect (nat-pred-maybe lakes-still-unclosed)
           (list lakes-still-unclosed)
           (striped-hypersnippet-non-lake
           #/striped-hypersnippet-non-lake leaf)
         #/w- lakeisland-etc leaf
         #/process-lakeisland-etc lakeisland-etc lakes-still-unclosed
-        #/bracketed-hypersnippet-close-0)
+        #/lambda (hypersnippet-of-ending-brackets)
+          (bracketed-hypersnippet-beginning-close-0
+            hypersnippet-of-ending-brackets))
       #/error "Expected double-striped to be a valid double-striped hypersnippet")
     #/error "Expected double-striped to be a valid double-striped hypersnippet")))
 
