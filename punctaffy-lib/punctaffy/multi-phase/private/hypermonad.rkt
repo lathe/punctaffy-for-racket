@@ -11,6 +11,8 @@
 
 (require "../../private/util.rkt")
 
+(require "monad.rkt")
+
 (provide gen:hypermonad hypermonad? hypermonad/c
   
   hypermonad-hole-hypermonad-for-degree
@@ -25,6 +27,7 @@
 )
 
 (provide #/rename-out [make-hypermonad-zero hypermonad-zero])
+(provide #/rename-out [make-hypermonad-monad hypermonad-monad])
 
 
 (define-generics hypermonad
@@ -97,6 +100,72 @@
       #/expect hypersnippets (list)
         (error "Expected hypersnippets to be an empty list")
       #/list))
+    
+    (define
+      (hypermonad-bind-with-degree
+        this prefix degree-and-leaf-to-suffix)
+      (hypermonad-bind-with-degree-and-shape this prefix
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-suffix hole-degree leaf)))
+    (define
+      (hypermonad-map-with-degree
+        this hypersnippet degree-and-leaf-to-leaf)
+      (hypermonad-map-with-degree-and-shape this hypersnippet
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-leaf hole-degree leaf)))
+  ])
+
+
+; This is a degree-1 hypermonad based on the given monad.
+(struct-easy "a hypermonad-monad" (hypermonad-monad monad)
+  #:equal
+  (#:guard-easy
+    (unless (monad? monad)
+      (error "Expected monad to be a monad")))
+  #:other
+  
+  #:constructor-name make-hypermonad-monad
+  
+  #:methods gen:hypermonad
+  [
+    
+    (define (hypermonad-hole-hypermonad-for-degree this degree)
+      (expect this (hypermonad-monad monad)
+        (error "Expected this to be a hypermonad-monad")
+      #/expect (exact-nonnegative-integer? degree) #t
+        (error "Expected degree to be an exact nonnegative integer")
+      #/expect (< degree 1) #t
+        (error "Expected degree to be less than one")
+      #/make-hypermonad-zero))
+    
+    (define (hypermonad-pure this hole-degree hole-shape leaf)
+      (expect this (hypermonad-monad monad)
+        (error "Expected this to be a hypermonad-monad")
+      #/expect (exact-nonnegative-integer? hole-degree) #t
+        (error "Expected hole-degree to be an exact nonnegative integer")
+      #/expect (< hole-degree 1) #t
+        (error "Expected hole-degree to be less than one")
+      #/expect hole-shape (list)
+        (error "Expected hole-shape to be an empty list")
+      #/monad-pure monad leaf))
+    (define
+      (hypermonad-bind-with-degree-and-shape
+        this prefix degree-shape-and-leaf-to-suffix)
+      (expect this (hypermonad-monad monad)
+        (error "Expected this to be a hypermonad-monad")
+      #/monad-bind monad prefix #/lambda (leaf)
+        (degree-shape-and-leaf-to-suffix 0 null leaf)))
+    (define
+      (hypermonad-map-with-degree-and-shape
+        this hypersnippet degree-shape-and-leaf-to-leaf)
+      (expect this (hypermonad-monad monad)
+        (error "Expected this to be a hypermonad-monad")
+      #/monad-map monad hypersnippet #/lambda (leaf)
+        (degree-shape-and-leaf-to-leaf 0 null leaf)))
+    (define (hypermonad-join this hypersnippets)
+      (expect this (hypermonad-monad monad)
+        (error "Expected this to be a hypermonad-monad")
+      #/monad-join monad hypersnippets))
     
     (define
       (hypermonad-bind-with-degree
