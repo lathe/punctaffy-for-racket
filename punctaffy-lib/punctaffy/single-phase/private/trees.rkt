@@ -41,22 +41,17 @@
   (or (symbol? x) (hoqq-tower-key-derived? x)))
 
 (struct-easy "a hoqq-tower" (hoqq-tower tables) #:equal #:write
-#/lambda (this port mode)
-  (hoqq-tower-print port mode this #/lambda (v)
-    (write-string " " port)
-    (print-for-custom port mode v)))
+#/lambda (this)
+  (hoqq-tower-print this #/lambda (v) #/list v))
 
-(define (hoqq-tower-print port mode tower print-v)
+(define (hoqq-tower-print tower print-v)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a hoqq-tower")
-  #/list-each tables #/lambda (table)
-    (write-string " (" port)
-    (hash-kv-each-sorted symbol<? table #/lambda (k v)
-      (write-string "[" port)
-      (print-for-custom port mode k)
-      (print-v v)
-      (write-string "]" port))
-    (write-string ")" port)))
+  #/list-fmap tables #/lambda (table)
+    (hash-kv-map-sorted symbol<? table #/lambda (k v)
+      ; TODO: Print this list with square brackets instead of (round)
+      ; parentheses.
+      (cons k #/print-v v))))
 
 (define (careful-hoqq-tower tables)
   (unless (list? tables)
@@ -321,9 +316,8 @@
       (not #/hoqq-tower-has-any-of-at-least-degree? subsig degree)
       (hoqq-spansig? subsig))))
 
-(define (hoqq-sig-print port mode sig)
-  (hoqq-tower-print port mode sig #/lambda (subsig)
-    (hoqq-sig-print port mode subsig)))
+(define (hoqq-sig-print sig)
+  (hoqq-tower-print sig #/lambda (subsig) #/hoqq-sig-print subsig))
 
 (define (hoqq-sig-eq? a b)
   (equal? a b))
@@ -332,10 +326,9 @@
 ; ===== Suspended computations over higher quasiquotation spans ======
 
 (struct-easy "a hoqq-span-step" (hoqq-span-step sig func) #:write
-#/lambda (this port mode)
-  (hoqq-sig-print port mode sig)
-  (print-all-for-custom port mode #/list #/func
-  #/hoqq-tower-fmap sig #/lambda (subsig)
+#/lambda (this)
+  (append (hoqq-sig-print sig)
+  #/list #/func #/hoqq-tower-fmap sig #/lambda (subsig)
     (careful-hoqq-span-step subsig #/lambda (span-steps)
       ; TODO: Hmm, this seems to be a mess. Shouldn't we be
       ; instantiating the span-steps or something?

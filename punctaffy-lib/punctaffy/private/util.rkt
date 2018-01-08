@@ -14,6 +14,7 @@
 (require racket/contract/base)
 (require racket/list)
 (require racket/match)
+(require #/only-in racket/struct make-constructor-style-printer)
 
 (require #/for-meta 1 #/only-in lathe next nextlet w-)
 (require #/only-in lathe dissect dissectfn expect next nextlet w-)
@@ -113,8 +114,8 @@
   (list-each (hash->list hash) #/dissectfn (cons k v)
     (body k v)))
 
-(define (hash-kv-each-sorted key<? hash body)
-  (list-each (sort (hash->list hash) key<? #:key car)
+(define (hash-kv-map-sorted key<? hash body)
+  (list-fmap (sort (hash->list hash) key<? #:key car)
   #/dissectfn (cons k v)
     (body k v)))
 
@@ -129,16 +130,6 @@
       (next #/hash-iterate-next hash cursor)
       result)))
 
-
-(define (print-for-custom port mode value)
-  (if (eq? #t mode) (write value port)
-  #/if (eq? #f mode) (display value port)
-  #/print value port mode))
-
-(define (print-all-for-custom port mode vals)
-  (list-each vals #/lambda (value)
-    (write-string " " port)
-    (print-for-custom port mode value)))
 
 (define (guard-easy guard)
   (lambda slots-and-name
@@ -161,8 +152,7 @@
       #/if has-write
         #`(struct name (slot ...) #,@options)
         (next
-          #'(#:write #/lambda (this port mode)
-            (print-all-for-custom port mode #/list slot ...))
+          #'(#:write #/lambda (this) #/list slot ...)
           #f
           #'())]
       
@@ -170,14 +160,13 @@
       
       [(#:write writefn rest ...)
       #/next #'(rest ...) #t #'#/#:methods gen:custom-write #/
-        (define write-proc #/lambda (this port mode)
-          (expect this (name slot ...)
-            (error #/string-append "Expected this to be " phrase)
-            
-            (write-string "#<" port)
-            (write-string (symbol->string 'name) port)
-            (writefn this port mode)
-            (write-string ">" port)))]
+        (define write-proc
+          (make-constructor-style-printer
+            (lambda (this) 'name)
+            (lambda (this)
+              (expect this (name slot ...)
+                (error #/string-append "Expected this to be " phrase)
+              #/writefn this))))]
       
       [(#:equal rest ...)
       #/next #'(rest ...) #f #'#/#:methods gen:equal+hash #/
