@@ -9,6 +9,9 @@
 
 (require #/only-in lathe dissect expect mat w-)
 
+(require #/only-in punctaffy/multi-phase/private/hypermonad
+  gen:hypermonad)
+
 (require "../../private/util.rkt")
 
 (provide #/all-defined-out)
@@ -675,6 +678,75 @@
   ; TODO: See if this can be more efficient.
   (hypertee-map-all-degrees ht body)
   (void))
+
+; Several of the hypertee operations we've defined obey the hypermonad
+; interface. In fact, this may be the only nontrivial hypermonad
+; instance we've implemented right now. (TODO: Revise this comment
+; when we have other instances. We should see if hyprids (below) form
+; an instance.)
+(struct-easy "a hypermonad-hypertee" (hypermonad-hypertee degree)
+  #:equal
+  (#:guard-easy
+    (unless (exact-nonnegative-integer? degree)
+      (error "Expected degree to be an exact nonnegative integer")))
+  #:other
+  
+  #:constructor-name make-hypermonad-hypertee
+  
+  #:methods gen:hypermonad
+  [
+    
+    (define (hypermonad-hole-hypermonad-for-degree this degree)
+      (expect this (hypermonad-hypertee overall-degree)
+        (error "Expected this to be a hypermonad-hypertee")
+      #/expect (exact-nonnegative-integer? degree) #t
+        (error "Expected degree to be an exact nonnegative integer")
+      #/expect (< degree overall-degree) #t
+        (error "Expected the hole degree to be less than the degree of the hypermonad-hypertee")
+      #/make-hypermonad-hypertee degree))
+    
+    (define (hypermonad-pure this hole-degree hole-shape leaf)
+      (expect this (hypermonad-hypertee degree)
+        (error "Expected this to be a hypermonad-hypertee")
+      #/expect (exact-nonnegative-integer? hole-degree) #t
+        (error "Expected hole-degree to be an exact nonnegative integer")
+      #/hypertee-pure degree leaf hole-shape))
+    (define
+      (hypermonad-bind-with-degree-and-shape
+        this prefix degree-shape-and-leaf-to-suffix)
+      (expect this (hypermonad-hypertee degree)
+        (error "Expected this to be a hypermonad-hypertee")
+      #/hypertee-bind-all-degrees prefix #/lambda (hole data)
+        (expect hole (hypertee degree closing-brackets)
+          (error "Expected hole to be a hypertee")
+        #/degree-shape-and-leaf-to-suffix degree hole data)))
+    (define
+      (hypermonad-map-with-degree-and-shape
+        this hypersnippet degree-shape-and-leaf-to-leaf)
+      (expect this (hypermonad-hypertee degree)
+        (error "Expected this to be a hypermonad-hypertee")
+      #/hypertee-map-all-degrees hypersnippet #/lambda (hole data)
+        (expect hole (hypertee degree closing-brackets)
+          (error "Expected hole to be a hypertee")
+        #/degree-shape-and-leaf-to-leaf degree hole data)))
+    (define (hypermonad-join this hypersnippets)
+      (expect this (hypermonad-hypertee degree)
+        (error "Expected this to be a hypermonad-hypertee")
+      #/hypertee-join-all-degrees hypersnippets))
+    
+    (define
+      (hypermonad-bind-with-degree
+        this prefix degree-and-leaf-to-suffix)
+      (hypermonad-bind-with-degree-and-shape this prefix
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-suffix hole-degree leaf)))
+    (define
+      (hypermonad-map-with-degree
+        this hypersnippet degree-and-leaf-to-leaf)
+      (hypermonad-map-with-degree-and-shape this hypersnippet
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-leaf hole-degree leaf)))
+  ])
 
 ; A hyprid is a hypertee that *also* contains hypersnippet data.
 ;
