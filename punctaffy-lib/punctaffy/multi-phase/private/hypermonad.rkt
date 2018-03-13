@@ -126,7 +126,7 @@
     (unless (exact-nonnegative-integer? start-degree)
       (error "Expected start-degree to be an exact nonnegative integer"))
     (unless (hypermonad? original)
-      (error "Expected original to b e a hypermonad")))
+      (error "Expected original to be a hypermonad")))
   #:other
   
   #:constructor-name make-hypermonad-ignoring-lowest
