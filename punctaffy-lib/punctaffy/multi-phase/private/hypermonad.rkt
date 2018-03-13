@@ -115,6 +115,90 @@
         (degree-and-leaf-to-leaf hole-degree leaf)))
   ])
 
+; This is a degree-N hypermonad, where N is the `original`
+; hypermonad's degree minus `start-degree`. The `map`, `bind`, and
+; `join` operations of this monad leave holes alone if they're of
+; degree less than `start-degree`.
+(struct-easy "a hypermonad-ignoring-lowest"
+  (hypermonad-ignoring-lowest start-degree original)
+  #:equal
+  (#:guard-easy
+    (unless (exact-nonnegative-integer? start-degree)
+      (error "Expected start-degree to be an exact nonnegative integer"))
+    (unless (hypermonad? original)
+      (error "Expected original to b e a hypermonad")))
+  #:other
+  
+  #:constructor-name make-hypermonad-ignoring-lowest
+  
+  #:methods gen:hypermonad
+  [
+    
+    (define (hypermonad-hole-hypermonad-for-degree this degree)
+      (expect this (hypermonad-ignoring-lowest start-degree original)
+        (error "Expected this to be a hypermonad-ignoring-lowest")
+      #/expect (exact-nonnegative-integer? degree) #t
+        (error "Expected degree to be an exact nonnegative integer")
+      #/make-hypermonad-ignoring-lowest start-degree
+      #/hypermonad-hole-hypermonad-for-degree
+        original (+ degree start-degree)))
+    
+    (define (hypermonad-pure this hole-degree hole-shape leaf)
+      (expect this (hypermonad-ignoring-lowest start-degree original)
+        (error "Expected this to be a hypermonad-ignoring-lowest")
+      #/expect (exact-nonnegative-integer? hole-degree) #t
+        (error "Expected hole-degree to be an exact nonnegative integer")
+      #/hypermonad-pure
+        original (+ hole-degree start-degree) hole-shape leaf))
+    (define
+      (hypermonad-bind-with-degree-and-shape
+        this prefix degree-shape-and-leaf-to-suffix)
+      (expect this (hypermonad-ignoring-lowest start-degree original)
+        (error "Expected this to be a hypermonad-ignoring-lowest")
+      #/hypermonad-bind-with-degree-and-shape original prefix
+      #/lambda (degree shape leaf)
+        (if (< degree start-degree)
+          (hypermonad-pure original degree shape leaf)
+        #/degree-shape-and-leaf-to-suffix
+          (- degree start-degree)
+          shape
+          leaf)))
+    (define
+      (hypermonad-map-with-degree-and-shape
+        this hypersnippet degree-shape-and-leaf-to-leaf)
+      (expect this (hypermonad-ignoring-lowest start-degree original)
+        (error "Expected this to be a hypermonad-ignoring-lowest")
+      #/hypermonad-map-with-degree-and-shape original hypersnippet
+      #/lambda (degree shape leaf)
+        (if (< degree start-degree)
+          leaf
+        #/degree-shape-and-leaf-to-leaf
+          (- degree start-degree)
+          shape
+          leaf)))
+    (define
+      (hypermonad-map-with-degree
+        this hypersnippet degree-and-leaf-to-leaf)
+      (expect this (hypermonad-ignoring-lowest start-degree original)
+        (error "Expected this to be a hypermonad-ignoring-lowest")
+      #/hypermonad-map-with-degree original hypersnippet
+      #/lambda (degree leaf)
+        (if (< degree start-degree)
+          leaf
+        #/degree-and-leaf-to-leaf (- degree start-degree) leaf)))
+    
+    (define
+      (hypermonad-bind-with-degree
+        this prefix degree-and-leaf-to-suffix)
+      (hypermonad-bind-with-degree-and-shape this prefix
+      #/lambda (hole-degree hole-shape leaf)
+        (degree-and-leaf-to-suffix hole-degree leaf)))
+    (define (hypermonad-join this hypersnippets)
+      (hypermonad-bind-with-degree this hypersnippets
+      #/lambda (degree hypersnippet)
+        hypersnippet))
+  ])
+
 
 ; This is a degree-1 hypermonad based on the given monad.
 (struct-easy "a hypermonad-monad" (hypermonad-monad monad)
