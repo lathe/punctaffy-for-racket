@@ -4,7 +4,9 @@
 ;
 ; Miscellaneous utilities
 
-(require #/for-meta 1 racket/base)
+(require #/for-syntax racket/base)
+
+(require #/for-syntax #/only-in lathe-comforts w- w-loop)
 
 ; NOTE: Just in case we want to switch back to `eq?` hashes, we refer
 ; to `equal?` hashes more explicitly.
@@ -16,8 +18,7 @@
 (require racket/match)
 (require #/only-in racket/struct make-constructor-style-printer)
 
-(require #/for-meta 1 #/only-in lathe next nextlet w-)
-(require #/only-in lathe dissect dissectfn expect next nextlet w-)
+(require #/only-in lathe-comforts dissect dissectfn expect w- w-loop)
 
 (provide #/all-defined-out)
 
@@ -122,7 +123,7 @@
 (define (hash-kv-all hash func)
   ; NOTE: We go to all this trouble just so that when we exit early,
   ; we avoid the cost of a full `hash->list`.
-  (nextlet cursor (hash-iterate-first hash)
+  (w-loop next cursor (hash-iterate-first hash)
     (if (eq? #f cursor) #t
     #/dissect (hash-iterate-pair hash cursor) (cons k v)
     #/w- result (func k v)
@@ -141,7 +142,7 @@
 
 (define-syntax (struct-easy stx)
   (syntax-case stx () #/ (_ phrase (name slot ...) rest ...)
-  #/nextlet rest #'(rest ...) has-write #f options #'()
+  #/w-loop next rest #'(rest ...) has-write #f options #'()
     (w- next
       (lambda (rest has-write-now options-suffix)
         (next rest (or has-write has-write-now)
@@ -195,9 +196,8 @@
 
 (define (syntax-local-maybe identifier)
   (if (identifier? identifier)
-    (w-
-      dummy (list #/list)
-      local (syntax-local-value identifier #/lambda () dummy)
+    (w- dummy (list #/list)
+    #/w- local (syntax-local-value identifier #/lambda () dummy)
     #/if (eq? local dummy)
       (list)
       (list local))

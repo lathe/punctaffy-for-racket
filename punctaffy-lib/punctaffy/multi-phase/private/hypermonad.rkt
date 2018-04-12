@@ -7,7 +7,7 @@
 
 (require #/only-in racket/generic define-generics)
 
-(require #/only-in lathe expect mat next nextlet w-)
+(require #/only-in lathe-comforts expect mat w-)
 
 (require "../../private/util.rkt")
 

@@ -11,7 +11,7 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/generic define-generics)
 
-(require #/only-in lathe dissect expect)
+(require #/only-in lathe-comforts dissect expect)
 
 (require "../../private/util.rkt")
 

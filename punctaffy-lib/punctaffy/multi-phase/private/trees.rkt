@@ -8,7 +8,7 @@
 (require #/only-in racket/generic define-generics)
 (require #/only-in racket/match match)
 
-(require #/only-in lathe dissect expect mat w-)
+(require #/only-in lathe-comforts dissect expect mat w-)
 
 (require "../../private/util.rkt")
 
@@ -69,9 +69,11 @@
       (error "Expected degreee to be an exact nonnegative integer"))
     (expect (nat-pred-maybe degree) (list lower-degree)
       (expect maybe-edge-medium (list)
-        (error "Expected maybe-edge-medium to be an empty list for degree zero"))
+        (error "Expected maybe-edge-medium to be an empty list for degree zero")
+      #/void)
     #/expect maybe-edge-medium (list edge-medium)
       (error "Expected maybe-edge-medium to be a singleton list for degree nonzero")
+    #/begin
       (unless (medium? edge-medium)
         (error "Expected edge-medium to be a medium"))
       (unless (= lower-degree #/medium-degree edge-medium)
@@ -109,9 +111,11 @@
       (error "Expected degree to be an exact nonnegative integer"))
     (expect (nat-pred-maybe degree) (list lower-degree)
       (expect maybe-edge-medium (list)
-        (error "Expected maybe-edge-medium to be an empty list for degree zero"))
+        (error "Expected maybe-edge-medium to be an empty list for degree zero")
+      #/void)
     #/expect maybe-edge-medium (list edge-medium)
       (error "Expected maybe-edge-medium to be a singleton list for degree nonzero")
+    #/begin
       (unless (medium? edge-medium)
         (error "Expected edge-medium to be a medium"))
       (unless (= lower-degree #/medium-degree edge-medium)
@@ -125,7 +129,8 @@
     #/medium-unpacked degree maybe-edge-medium
     #/lambda (maybe-content-edge content)
       (expect content (list)
-        (error "Expected content to be an empty list")))]
+        (error "Expected content to be an empty list")
+      #/void))]
 )
 
 ; The degree N is the natural number `degree`.
@@ -169,6 +174,7 @@
     #/lambda (maybe-content-edge content)
       (expect content (cons content-a content-b)
         (error "Expected content to be a cons cell")
+      #/begin
         (verify-content-a maybe-content-edge content-a)
         (verify-content-b maybe-content-edge content-b)))]
 )
@@ -953,9 +959,11 @@
       (error "Expected degree to be an exact nonnegative integer"))
     (expect (nat-pred-maybe degree) (list lower-degree)
       (expect maybe-edge-medium (list)
-        (error "Expected maybe-edge-medium to be an empty list for degree zero"))
+        (error "Expected maybe-edge-medium to be an empty list for degree zero")
+      #/void)
     #/expect maybe-edge-medium (list edge-medium)
       (error "Expected maybe-edge-medium to be a singleton list for degree nonzero")
+    #/begin
       (unless (medium? edge-medium)
         (error "Expected edge-medium to be a medium"))
       (unless (= lower-degree #/medium-degree edge-medium)

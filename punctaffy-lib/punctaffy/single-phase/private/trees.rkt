@@ -13,7 +13,8 @@
 
 (require #/only-in racket/hash hash-union)
 
-(require #/only-in lathe dissect expect expectfn mat next nextlet w-)
+(require #/only-in lathe-comforts
+  dissect expect expectfn mat w- w-loop)
 
 (require "../../private/util.rkt")
 
@@ -200,9 +201,10 @@
   (hoqq-tower-map-keys tower #/expectfn
     (hoqq-tower-key-derived found-prefix k)
     (error "Expected each key of tower to be a hoqq-tower-key-derived")
-    (unless (equal? prefix found-prefix)
-      (error "Expected each key of tower to have a certain prefix"))
-    k))
+    (begin
+      (unless (equal? prefix found-prefix)
+        (error "Expected each key of tower to have a certain prefix"))
+      k)))
 
 (define (hoqq-tower-merge-ab as bs)
   (hoqq-tower-merge-prefix 'a as 'b bs))
@@ -251,7 +253,7 @@
 (define (hoqq-tower-has-any-of-less-than-degree? tower degree)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a tower")
-  #/nextlet tables tables degree degree
+  #/w-loop next tables tables degree degree
     (expect (nat-pred-maybe degree) (list degree) #f
     #/expect tables (cons table tables) #f
     #/expect (hash-empty? table) #t #t
@@ -345,7 +347,8 @@
       (expect span-step (hoqq-span-step span-step-subsig func)
         (error "Expected span-step to be a hoqq-span-step")
       #/expect (hoqq-sig-eq? subsig span-step-subsig) #t
-        (error "Expected a careful-hoqq-span-step and the tower of span-steps it was given to have the same sig")))
+        (error "Expected a careful-hoqq-span-step and the tower of span-steps it was given to have the same sig")
+      #/void))
   #/func span-steps))
 
 (define (hoqq-span-step-instantiate span-step)

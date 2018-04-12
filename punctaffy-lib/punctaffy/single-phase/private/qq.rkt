@@ -13,7 +13,7 @@
 ; to `equal?` hashes more explicitly.
 (require #/for-meta 1 #/only-in racket/base [hash hashequal])
 
-(require #/for-meta 1 #/only-in lathe
+(require #/for-meta 1 #/only-in lathe-comforts
   dissect dissectfn expect expectfn w-)
 
 (require #/for-meta 1 "../../private/util.rkt")
@@ -143,7 +143,8 @@
       (hoqq-closing-bracket data liner
       #/hoqq-closing-hatch (hoqq-tower #/list)
         closing-brackets partial-span-step)
-      (error "Expected the bracroexpansion result's closing brackets to have no holes beyond them"))
+      (error "Expected the bracroexpansion result's closing brackets to have no holes beyond them")
+      (void))
   #/w- key-body 'body
   ; TODO: come up with a better value for `bracket-data`.
   #/w- bracket-data (hashequal)

@@ -7,7 +7,7 @@
 
 (require #/only-in racket/list make-list)
 
-(require #/only-in lathe dissect expect mat w-)
+(require #/only-in lathe-comforts dissect expect mat w-)
 
 (require #/only-in punctaffy/multi-phase/private/hypermonad
   gen:hypermonad)
@@ -370,11 +370,13 @@
         (when (= closing-degree #/length restored-history)
           ; NOTE: We don't validate `hole-value`.
           (expect closing-bracket (list closing-degree hole-value)
-            (error "Expected a closing bracket that began a hole to be annotated with a data value")))
+            (error "Expected a closing bracket that began a hole to be annotated with a data value")
+          #/void))
       #/list-overwrite-first-n
         closing-degree histories restored-history))
     (list)
-    (error "Expected more closing brackets")))
+    (error "Expected more closing brackets")
+  #/void))
 
 
 (struct-easy "a hypertee" (hypertee degree closing-brackets)
@@ -484,7 +486,9 @@
               (verify-bracket-degree d #/pop-root-bracket!)
               (mat closing-bracket (list d data)
                 (expect data (list)
-                  (error "A hypertee join interpolation had a hole of low degree where the value wasn't an empty list"))))
+                  (error "A hypertee join interpolation had a hole of low degree where the value wasn't an empty list")
+                #/void)
+              #/void))
             (set! rev-result (cons closing-bracket rev-result)))
           (set! hist
             (history-info maybe-interpolation-i
@@ -552,10 +556,12 @@
       ; was done in the condition.
       (void))
     (expect brackets (list)
-      (error "Internal error: Encountered the end of a hypertee join interpolation in a region of degree 0 before getting to the end of the root"))
+      (error "Internal error: Encountered the end of a hypertee join interpolation in a region of degree 0 before getting to the end of the root")
+    #/void)
     (hash-kv-each interpolations #/lambda (i brackets)
       (expect brackets (list)
-        (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")))
+        (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")
+      #/void))
     (hypertee overall-degree #/reverse rev-result)))
 
 
@@ -824,9 +830,11 @@
           ; holes don't represent transitions back to the lake.
           
           #/expect data (list)
-            (error "Expected data to be an island-cane where the low-degree holes contained empty lists")))
+            (error "Expected data to be an island-cane where the low-degree holes contained empty lists")
+          #/void))
         (expect data (list)
-          (error "Expected data to be an empty list"))))))
+          (error "Expected data to be an empty list")
+        #/void)))))
 
 (struct-easy "a non-lake-cane" (non-lake-cane data) #:equal)
 
@@ -943,9 +951,11 @@
         (error "Internal error"))
       (if (location-needs-state? location)
         (expect maybe-state (list state)
-          (error "Internal error"))
+          (error "Internal error")
+        #/void)
         (expect maybe-state (list)
-          (error "Internal error")))))
+          (error "Internal error")
+        #/void))))
   (struct-easy "an unfinished-lake-cane"
     (unfinished-lake-cane data rest-state))
   (struct-easy "a stripe-state" (stripe-state rev-brackets hist))

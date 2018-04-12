@@ -8,7 +8,7 @@
 (require #/for-meta -1 racket/base)
 (require racket/match)
 
-(require #/only-in lathe dissect expect)
+(require #/only-in lathe-comforts dissect expect)
 
 (require "../../private/util.rkt")
 (require "trees.rkt")
