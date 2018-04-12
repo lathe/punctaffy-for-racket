@@ -43,14 +43,17 @@
 (define (list-bind lst func)
   (append-map func lst))
 
-(define (list-each lst body)
-  (for-each body lst))
+(define (list-any lst func)
+  (ormap func lst))
 
 (define (list-kv-all lst func)
   (andmap func (range #/length lst) lst))
 
 (define (list-all lst func)
   (andmap func lst))
+
+(define (list-each lst body)
+  (for-each body lst))
 
 (define (list-zip-map a b func)
   (list-fmap (map list a b) #/dissectfn (list a b) #/func a b))
