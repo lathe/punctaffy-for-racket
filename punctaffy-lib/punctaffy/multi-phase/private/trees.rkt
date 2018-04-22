@@ -576,7 +576,7 @@
 ; side, allowing each encountered branch to consume its own slice of
 ; the tail from base to tip.)
 
-(struct-easy (extra val))
+(struct-easy (carry extra val))
 
 (define (tower? x)
   (or (hoqq-tower-readable? x) (hoqq-tower-content? x)))
