@@ -16,7 +16,6 @@
 (require #/for-meta 1 #/only-in lathe-comforts
   dissect dissectfn expect expectfn w-)
 
-(require #/for-meta 1 "../../private/util.rkt")
 (require #/for-meta 1 "trees.rkt")
 (require #/for-meta 1 "expanders.rkt")
 

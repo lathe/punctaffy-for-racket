@@ -15,21 +15,32 @@
 
 (require #/only-in lathe-comforts
   dissect expect expectfn mat w- w-loop)
-
-(require "../../private/util.rkt")
+(require #/only-in lathe-comforts/hash
+  hash-keys-same? hash-kv-all hash-kv-each hash-kv-map hash-kv-map-kv
+  hash-kv-map-maybe hash-kv-map-sorted hash-v-map)
+(require #/only-in lathe-comforts/list
+  list-bind list-each list-kv-all list-kv-map list-map list-zip-all
+  list-zip-each list-zip-map nat<list-length? nat->maybe)
+(require #/only-in lathe-comforts/maybe just nothing)
+(require #/only-in lathe-comforts/struct struct-easy)
 
 (provide #/all-defined-out)
 
 
+; ===== Helpers for this module ======================================
+
+(define (hashequal-immutable? x)
+  (and (hash? x) (hash-equal? x) (immutable? x)))
+
+
 ; ===== Fake nodes for printing things with higher-order holes =======
 
-(struct-easy "an example" (example val))
+(struct-easy (example val))
 
 
 ; ===== Low-order building block for higher qq spans and hatches =====
 
-(struct-easy "a hoqq-tower-key-derived" (hoqq-tower-key-derived a b)
-  #:equal)
+(struct-easy (hoqq-tower-key-derived a b) #:equal)
 
 (define (careful-hoqq-tower-key-derived a b)
   (unless (hoqq-tower-key? a)
@@ -41,14 +52,13 @@
 (define (hoqq-tower-key? x)
   (or (symbol? x) (hoqq-tower-key-derived? x)))
 
-(struct-easy "a hoqq-tower" (hoqq-tower tables) #:equal #:write
-#/lambda (this)
+(struct-easy (hoqq-tower tables) #:equal #:write #/lambda (this)
   (hoqq-tower-print this #/lambda (v) #/list v))
 
 (define (hoqq-tower-print tower print-v)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a hoqq-tower")
-  #/list-fmap tables #/lambda (table)
+  #/list-map tables #/lambda (table)
     (hash-kv-map-sorted symbol<? table #/lambda (k v)
       ; TODO: Print this list with square brackets instead of (round)
       ; parentheses.
@@ -112,7 +122,7 @@
     (error "Expected b to be a hoqq-tower")
   #/hoqq-tower
   #/list-zip-map a-tables b-tables #/lambda (a-table b-table)
-    (hashequal-kv-map a-table #/lambda (k a-v)
+    (hash-kv-map a-table #/lambda (k a-v)
       (func a-v #/hash-ref b-table k))))
 
 (define (hoqq-tower-dkv-map-maybe tower func)
@@ -120,7 +130,7 @@
     (error "Expected tower to be a tower")
   #/careful-hoqq-tower
   #/list-kv-map tables #/lambda (degree table)
-    (hashequal-kv-map-maybe table #/lambda (key value)
+    (hash-kv-map-maybe table #/lambda (key value)
       (func degree key value))))
 
 (define (hoqq-tower-dkv-map tower func)
@@ -128,29 +138,29 @@
     (error "Expected tower to be a tower")
   #/hoqq-tower
   #/list-kv-map tables #/lambda (degree table)
-    (hashequal-kv-map table #/lambda (key value)
+    (hash-kv-map table #/lambda (key value)
       (func degree key value))))
 
 (define (hoqq-tower-fmap tower func)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a tower")
   #/hoqq-tower
-  #/list-fmap tables #/lambda (table) #/hashequal-fmap table func))
+  #/list-map tables #/lambda (table) #/hash-v-map table func))
 
 (define (hoqq-tower-map-keys tower func)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a tower")
   #/hoqq-tower
-  #/list-fmap tables #/lambda (table)
-    (hashequal-kv-map-kv table #/lambda (k v)
+  #/list-map tables #/lambda (table)
+    (hash-kv-map-kv table #/lambda (k v)
       (list (func k) v))))
 
 (define (hoqq-tower-dkv-split-by tower func)
   (w- tower
     (hoqq-tower-dkv-map tower #/lambda (d k v)
       (if (func d k v)
-        (list (list) (list v))
-        (list (list v) (list))))
+        (list (nothing) (just v))
+        (list (just v) (nothing))))
   #/list
     (hoqq-tower-dkv-map-maybe tower #/lambda (d k v)
       (dissect v (list vf vt) vf))
@@ -160,8 +170,8 @@
 (define (hoqq-tower-restrict original example)
   (hoqq-tower-dkv-map-maybe original #/lambda (degree k v)
     (if (hoqq-tower-has-key? example degree k)
-      (list v)
-      (list))))
+      (just v)
+      (nothing))))
 
 (define (hoqq-tower-merge as bs merge-v)
   (expect as (hoqq-tower a-tables)
@@ -213,7 +223,7 @@
   (unless (hashequal-immutable? table-of-towers)
     (error "Expected table-of-towers to be an immutable equal? hash"))
   (w- table-of-prefixed-towers
-    (hashequal-kv-map table-of-towers #/lambda (k v)
+    (hash-kv-map table-of-towers #/lambda (k v)
       (unless (hoqq-tower-key? k)
         (error "Expected each key of table-of-towers to be a valid tower key"))
       (unless (hoqq-tower? v)
@@ -231,7 +241,7 @@
       (error "Expected corresponding to be a hoqq-tower"))
     (unless (hoqq-tower-keys-same? merged corresponding)
       (error "Expected corresponding to be a hoqq-tower with the same keys as the hoqq-tower-pair-prefix merged result"))
-    (hashequal-kv-map table-of-prefixed-towers #/lambda (k v)
+    (hash-kv-map table-of-prefixed-towers #/lambda (k v)
       (hoqq-tower-deprefix k #/hoqq-tower-restrict corresponding v))))
 
 (define (hoqq-tower-pair-ab as bs)
@@ -248,13 +258,13 @@
 (define (hoqq-tower-has-any-of-at-least-degree? tower degree)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a tower")
-  #/lt-length degree tables))
+  #/nat<list-length? degree tables))
 
 (define (hoqq-tower-has-any-of-less-than-degree? tower degree)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a tower")
   #/w-loop next tables tables degree degree
-    (expect (nat-pred-maybe degree) (list degree) #f
+    (expect (nat->maybe degree) (list degree) #f
     #/expect tables (cons table tables) #f
     #/expect (hash-empty? table) #t #t
     #/next tables degree)))
@@ -273,7 +283,7 @@
 (define (hoqq-tower-has-key? tower degree key)
   (expect tower (hoqq-tower tables)
     (error "Expected tower to be a tower")
-  #/and (lt-length degree tables)
+  #/and (nat<list-length? degree tables)
   #/hash-has-key? (list-ref tables degree) key))
 
 (define (hoqq-tower-ref-degree tower degree)
@@ -281,7 +291,7 @@
     (error "Expected tower to be a tower")
   #/expect (exact-nonnegative-integer? degree) #t
     (error "Expected degree to be an exact nonnegative integer")
-  #/expect (lt-length degree tables) #t (hashequal)
+  #/expect (nat<list-length? degree tables) #t (hashequal)
   #/list-ref tables degree))
 
 (define (hoqq-tower-ref tower degree k)
@@ -327,7 +337,7 @@
 
 ; ===== Suspended computations over higher quasiquotation spans ======
 
-(struct-easy "a hoqq-span-step" (hoqq-span-step sig func) #:write
+(struct-easy(hoqq-span-step sig func) #:write
 #/lambda (this)
   (append (hoqq-sig-print sig)
   #/list #/func #/hoqq-tower-fmap sig #/lambda (subsig)
@@ -692,8 +702,7 @@
 ; resembles the original bracro calls. The `escapable-expression`
 ; struct carries that alternative along with the regular result.
 ;
-(struct-easy "an escapable-expression"
-  (escapable-expression literal expr))
+(struct-easy (escapable-expression literal expr))
 
 
 ; A `hoqq-closing-hatch` represents a partial, inside-out portion of a
@@ -731,7 +740,7 @@
 ; The sigs of the `lower-spansig` and `closing-brackets` put together
 ; must match the sig of `partial-span-step`.
 ;
-(struct-easy "a hoqq-closing-hatch"
+(struct-easy
   (hoqq-closing-hatch
     lower-spansig closing-brackets partial-span-step))
 
@@ -798,8 +807,7 @@
 ;     content that could be part of this closing bracket's enclosed
 ;     region if not for this closing bracket being where it is.
 ;
-(struct-easy "a hoqq-closing-bracket"
-  (hoqq-closing-bracket data liner closing-hatch))
+(struct-easy (hoqq-closing-bracket data liner closing-hatch))
 
 (define (careful-hoqq-closing-bracket data liner closing-hatch)
   (expect closing-hatch

@@ -12,8 +12,7 @@
 (require #/only-in racket/generic define-generics)
 
 (require #/only-in lathe-comforts expect)
-
-(require "../../private/util.rkt")
+(require #/only-in lathe-comforts/struct struct-easy)
 
 (provide gen:monoid monoid? monoid/c monoid-empty monoid-append)
 
@@ -26,7 +25,7 @@
 
 
 ; This monoid has only one segment, namely the empty list.
-(struct-easy "a monoid-trivial" (monoid-trivial)
+(struct-easy (monoid-trivial)
   #:equal
   #:other
   

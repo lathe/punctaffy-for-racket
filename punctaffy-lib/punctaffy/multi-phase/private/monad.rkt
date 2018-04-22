@@ -12,8 +12,7 @@
 (require #/only-in racket/generic define-generics)
 
 (require #/only-in lathe-comforts dissect expect)
-
-(require "../../private/util.rkt")
+(require #/only-in lathe-comforts/struct struct-easy)
 
 (require #/only-in "monoid.rkt" monoid-empty monoid-append)
 
@@ -33,7 +32,7 @@
 
 ; This monad does nothing. All map and bind operations just process
 ; the value itself.
-(struct-easy "a monad-identity" (monad-identity)
+(struct-easy (monad-identity)
   #:equal
   #:other
   
@@ -68,7 +67,7 @@
 
 ; Given a monoid, returns a monad where a valid tree is a cons cell
 ; whose first element is a valid segment of the monoid.
-(struct-easy "a monad-from-monoid" (monad-from-monoid monoid)
+(struct-easy (monad-from-monoid monoid)
   #:equal
   #:other
   

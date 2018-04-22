@@ -8,8 +8,9 @@
 (require #/only-in racket/generic define-generics)
 
 (require #/only-in lathe-comforts expect mat w-)
-
-(require "../../private/util.rkt")
+(require #/only-in lathe-comforts/list nat->maybe)
+(require #/only-in lathe-comforts/maybe just)
+(require #/only-in lathe-comforts/struct struct-easy)
 
 (require "monad.rkt")
 
@@ -56,7 +57,7 @@
 
 
 ; This is a degree-0 hypermonad.
-(struct-easy "a hypermonad-zero" (hypermonad-zero)
+(struct-easy (hypermonad-zero)
   #:equal
   #:other
   
@@ -119,8 +120,7 @@
 ; hypermonad's degree minus `start-degree`. The `map`, `bind`, and
 ; `join` operations of this monad leave holes alone if they're of
 ; degree less than `start-degree`.
-(struct-easy "a hypermonad-ignoring-lowest"
-  (hypermonad-ignoring-lowest start-degree original)
+(struct-easy (hypermonad-ignoring-lowest start-degree original)
   #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? start-degree)
@@ -201,7 +201,7 @@
 
 
 ; This is a degree-1 hypermonad based on the given monad.
-(struct-easy "a hypermonad-monad" (hypermonad-monad monad)
+(struct-easy (hypermonad-monad monad)
   #:equal
   (#:guard-easy
     (unless (monad? monad)
@@ -266,15 +266,9 @@
   ])
 
 
-(struct-easy "a striped-hypersnippet"
-  (striped-hypersnippet island-and-lakes-and-rest)
-  #:equal)
-(struct-easy "a striped-hypersnippet-lake"
-  (striped-hypersnippet-lake leaf lake-and-rest)
-  #:equal)
-(struct-easy "a striped-hypersnippet-non-lake"
-  (striped-hypersnippet-non-lake rest)
-  #:equal)
+(struct-easy (striped-hypersnippet island-and-lakes-and-rest) #:equal)
+(struct-easy (striped-hypersnippet-lake leaf lake-and-rest) #:equal)
+(struct-easy (striped-hypersnippet-non-lake rest) #:equal)
 
 ; These represent closing brackets of degree (N-2)+1 and (N-2)+0,
 ; where N is the degree of the hypersnippet that's being represented
@@ -285,20 +279,16 @@
 ; this naming convention would extrapolate better if we ever made a
 ; bracketed representation of more than two levels.
 ;
-(struct-easy "a bracketed-hypersnippet-beginning-close-1"
+(struct-easy
   (bracketed-hypersnippet-beginning-close-1 leaf
     hypersnippet-of-ending-brackets)
   #:equal)
-(struct-easy "a bracketed-hypersnippet-beginning-close-0"
+(struct-easy
   (bracketed-hypersnippet-beginning-close-0
     hypersnippet-of-ending-brackets)
   #:equal)
-(struct-easy "a bracketed-hypersnippet-ending-close-1"
-  (bracketed-hypersnippet-ending-close-1)
-  #:equal)
-(struct-easy "a bracketed-hypersnippet-ending-close-0"
-  (bracketed-hypersnippet-ending-close-0)
-  #:equal)
+(struct-easy (bracketed-hypersnippet-ending-close-1) #:equal)
+(struct-easy (bracketed-hypersnippet-ending-close-0) #:equal)
 
 ; This transforms something of the form:
 ;
@@ -438,8 +428,8 @@
             hypersnippet-of-ending-brackets))
       #/mat possible-lake-and-rest
         (striped-hypersnippet-non-lake leaf)
-        (expect (nat-pred-maybe lakes-still-unclosed)
-          (list lakes-still-unclosed)
+        (expect (nat->maybe lakes-still-unclosed)
+          (just lakes-still-unclosed)
           (striped-hypersnippet-non-lake
           #/striped-hypersnippet-non-lake leaf)
         #/w- lakeisland-etc leaf
@@ -484,7 +474,7 @@ fill-pred-pred-hole :: forall holeVals.
   (snippet-of il) holeVals ->
   Maybe ((double-stripe-snippet ii il li ll) holeVals)
 |#
-(struct-easy "a hypermonad-striped-striped"
+(struct-easy
   (hypermonad-striped-striped
     overall-degree hii hil hli hll hl
     hll-to-hil hl-to-hil hil-to-hiil to-hll

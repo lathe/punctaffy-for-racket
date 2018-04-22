@@ -9,8 +9,9 @@
 (require #/only-in racket/match match)
 
 (require #/only-in lathe-comforts dissect expect mat w-)
-
-(require "../../private/util.rkt")
+(require #/only-in lathe-comforts/list nat->maybe)
+(require #/only-in lathe-comforts/maybe just)
+(require #/only-in lathe-comforts/struct struct-easy)
 
 (provide #/all-defined-out)
 
@@ -62,12 +63,11 @@
 ; of that content along various degrees of nested syntax, which is
 ; what we use the rest of the tower data to represent.
 
-(struct-easy "a medium-unpacked"
-  (medium-unpacked degree maybe-edge-medium verify-content)
+(struct-easy (medium-unpacked degree maybe-edge-medium verify-content)
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
       (error "Expected degreee to be an exact nonnegative integer"))
-    (expect (nat-pred-maybe degree) (list lower-degree)
+    (expect (nat->maybe degree) (just lower-degree)
       (expect maybe-edge-medium (list)
         (error "Expected maybe-edge-medium to be an empty list for degree zero")
       #/void)
@@ -104,12 +104,12 @@
 ; This is a medium where the degree N is `degree` and the edge (if N
 ; is nonzero) is `maybe-edge-medium`. The content values are empty
 ; lists.
-(struct-easy "a null-medium" (null-medium degree maybe-edge-medium)
+(struct-easy (null-medium degree maybe-edge-medium)
   #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
       (error "Expected degree to be an exact nonnegative integer"))
-    (expect (nat-pred-maybe degree) (list lower-degree)
+    (expect (nat->maybe degree) (just lower-degree)
       (expect maybe-edge-medium (list)
         (error "Expected maybe-edge-medium to be an empty list for degree zero")
       #/void)
@@ -141,7 +141,7 @@
 ; A content value is a cons cell consisting of the content values of
 ; the components.
 ;
-(struct-easy "a cons-medium" (cons-medium degree a b) #:equal
+(struct-easy (cons-medium degree a b) #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
       (error "Expected degree to be an exact nonnegative integer"))
@@ -490,11 +490,9 @@
 ; The `island-medium` and `lake-medium` of the tower must be the given
 ; `subtower-island-medium` and `subtower-lake-medium`.
 ;
-(struct-easy "a subtower-medium-continue"
-  (subtower-medium-continue content))
-(struct-easy "a subtower-medium-subtower"
-  (subtower-medium-subtower tower))
-(struct-easy "a subtower-medium"
+(struct-easy (subtower-medium-continue content))
+(struct-easy (subtower-medium-subtower tower))
+(struct-easy
   (subtower-medium
     degree main-medium subtower-island-medium subtower-lake-medium)
   #:equal
@@ -578,7 +576,7 @@
 ; side, allowing each encountered branch to consume its own slice of
 ; the tail from base to tip.)
 
-(struct-easy "a carry" (extra val))
+(struct-easy (extra val))
 
 (define (tower? x)
   (or (hoqq-tower-readable? x) (hoqq-tower-content? x)))
@@ -693,7 +691,7 @@
 ; variables. The given `island-medium` and `lake-medium` must be
 ; mediums of degree 0, and the given `island-readable` must be a valid
 ; content value for `island-medium`.
-(struct-easy "a hoqq-tower-readable"
+(struct-easy
   (hoqq-tower-readable island-medium lake-medium island-readable)
   #:equal)
 
@@ -742,7 +740,7 @@
 ; free variables of the subtowers. This is computed each time, not
 ; summarized anywhere.
 ;
-(struct-easy "a hoqq-tower-content"
+(struct-easy
   (hoqq-tower-content
     degree island-medium lake-medium lake-sig root-content
     tower-of-subtowers)
@@ -807,9 +805,9 @@
 ; `island-medium` and `lake-medium` of the tower must be the overall
 ; `fill-medium` and the given `fill-lake-medium`.
 ;
-(struct-easy "a fill-medium-continue" (fill-medium-continue content))
-(struct-easy "a fill-medium-fill" (fill-medium-fill tower))
-(struct-easy "a fill-medium"
+(struct-easy (fill-medium-continue content))
+(struct-easy (fill-medium-fill tower))
+(struct-easy
   (fill-medium degree main-medium fill-lake-medium)
   #:equal
   (#:guard-easy
@@ -877,9 +875,9 @@
 ; given ones. The `island-medium` and `lake-medium` of the tower must
 ; be the given `tail-island-medium` and `tail-lake-medium`.
 ;
-(struct-easy "a tail-medium-continue" (tail-medium-continue content))
-(struct-easy "a tail-medium-tail" (tail-medium-tail tower))
-(struct-easy "a tail-medium"
+(struct-easy (tail-medium-continue content))
+(struct-easy (tail-medium-tail tower))
+(struct-easy
   (tail-medium degree main-medium tail-island-medium tail-lake-medium)
   #:equal
   (#:guard-easy
@@ -951,13 +949,13 @@
 ; A content value is also like a `readable-medium` content value,
 ; ignoring the tower edge altogether.
 ;
-(struct-easy "a const-medium"
+(struct-easy
   (const-medium degree maybe-edge-medium readable-medium)
   #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
       (error "Expected degree to be an exact nonnegative integer"))
-    (expect (nat-pred-maybe degree) (list lower-degree)
+    (expect (nat->maybe degree) (just lower-degree)
       (expect maybe-edge-medium (list)
         (error "Expected maybe-edge-medium to be an empty list for degree zero")
       #/void)

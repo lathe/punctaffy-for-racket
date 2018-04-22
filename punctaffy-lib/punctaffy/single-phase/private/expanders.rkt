@@ -8,9 +8,9 @@
 (require #/for-meta -1 racket/base)
 (require racket/match)
 
-(require #/only-in lathe-comforts dissect expect)
+(require #/only-in lathe-comforts dissect expect fn w-)
+(require #/only-in lathe-comforts/maybe just nothing)
 
-(require "../../private/util.rkt")
 (require "trees.rkt")
 
 (provide #/all-defined-out)
@@ -123,10 +123,19 @@
     [(list) #/hoqq-closing-hatch-simple #/datum->syntax stx lst]
     [_ #/error "Expected a list"]))
 
+(define (syntax-local-maybe identifier)
+  (if (identifier? identifier)
+    (w- dummy (list #/list)
+    #/w- local (syntax-local-value identifier #/fn dummy)
+    #/if (eq? local dummy)
+      (nothing)
+      (just local))
+    (nothing)))
+
 (define (bracroexpand stx)
   (match (syntax-e stx)
     [(cons first rest)
-    #/expect (syntax-local-maybe first) (list local)
+    #/expect (syntax-local-maybe first) (just local)
       (bracroexpand-list stx stx)
     #/expect (q-expr-syntax-maybe local) (list q-expr-syntax)
       (bracroexpand-list stx stx)

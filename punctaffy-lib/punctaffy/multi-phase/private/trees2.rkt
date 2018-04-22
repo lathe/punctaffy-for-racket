@@ -8,13 +8,23 @@
 (require #/only-in racket/list make-list)
 
 (require #/only-in lathe-comforts dissect expect mat w-)
+(require #/only-in lathe-comforts/hash hash-kv-each)
+(require #/only-in lathe-comforts/list
+  list-bind list-each list-foldl list-kv-map list-map nat->maybe)
+(require #/only-in lathe-comforts/maybe just)
+(require #/only-in lathe-comforts/struct struct-easy)
 
 (require #/only-in punctaffy/multi-phase/private/hypermonad
   gen:hypermonad)
 
-(require "../../private/util.rkt")
-
 (provide #/all-defined-out)
+
+
+; ===== Helpers for this module ======================================
+
+(define-syntax-rule (while condition body ...)
+  (let next () #/when condition #/#/begin0 next
+    body ...))
 
 
 ; ===== Hypertees ====================================================
@@ -379,7 +389,7 @@
   #/void))
 
 
-(struct-easy "a hypertee" (hypertee degree closing-brackets)
+(struct-easy (hypertee degree closing-brackets)
   #:equal
   (#:guard-easy
     (assert-valid-hypertee-brackets degree closing-brackets)))
@@ -416,7 +426,7 @@
     (error "Expected ht to be a hypertee")
   #/hypertee (add1 d)
   #/append
-    (list-fmap closing-brackets #/lambda (closing-bracket)
+    (list-map closing-brackets #/lambda (closing-bracket)
       (mat closing-bracket (list d data)
         (list (add1 d) data)
         (add1 closing-bracket)))
@@ -430,8 +440,7 @@
 ; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 (define (hypertee-join-all-degrees ht)
-  (struct-easy "a history-info"
-    (history-info maybe-interpolation-i histories))
+  (struct-easy (history-info maybe-interpolation-i histories))
   (expect ht (hypertee overall-degree closing-brackets)
     (error "Expected ht to be a hypertee")
   #/w-
@@ -566,12 +575,11 @@
 
 
 (define (hypertee-map-all-degrees ht func)
-  (struct-easy "a history-info"
-    (history-info maybe-current-hole histories))
+  (struct-easy (history-info maybe-current-hole histories))
   (expect ht (hypertee overall-degree closing-brackets)
     (error "Expected ht to be a hypertee")
   #/w- result
-    (list-fmap closing-brackets #/lambda (closing-bracket)
+    (list-map closing-brackets #/lambda (closing-bracket)
       (mat closing-bracket (list d data)
         (w- rev-brackets (list)
         #/w- hist
@@ -640,7 +648,7 @@
   #/expect (unbox state) (list (list) (list))
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
   #/hypertee overall-degree
-  #/list-fmap result #/lambda (closing-bracket)
+  #/list-map result #/lambda (closing-bracket)
     (expect closing-bracket (list d #/list data state) closing-bracket
     #/dissect (unbox state) (list rev-brackets hist)
     #/expect hist (list)
@@ -654,7 +662,7 @@
       data)))
 
 (define (hypertee-map-pred-degree ht degree func)
-  (expect (nat-pred-maybe degree) (list pred-degree) ht
+  (expect (nat->maybe degree) (just pred-degree) ht
   #/hypertee-map-one-degree ht pred-degree func))
 
 (define (hypertee-map-highest-degree ht func)
@@ -674,7 +682,7 @@
       (hypertee-pure (hypertee-degree ht) data hole))))
 
 (define (hypertee-bind-pred-degree ht degree func)
-  (expect (nat-pred-maybe degree) (list pred-degree) ht
+  (expect (nat->maybe degree) (just pred-degree) ht
   #/hypertee-bind-one-degree ht pred-degree func))
 
 (define (hypertee-bind-highest-degree ht func)
@@ -690,7 +698,7 @@
 ; instance we've implemented right now. (TODO: Revise this comment
 ; when we have other instances. We should see if hyprids (below) form
 ; an instance.)
-(struct-easy "a hypermonad-hypertee" (hypermonad-hypertee degree)
+(struct-easy (hypermonad-hypertee degree)
   #:equal
   (#:guard-easy
     (unless (exact-nonnegative-integer? degree)
@@ -758,7 +766,7 @@
 ;
 ; TODO: Come up with a better name than "hyprid."
 ;
-(struct-easy "a hyprid"
+(struct-easy
   (hyprid striped-degrees unstriped-degrees striped-hypertee)
   #:equal
   (#:guard-easy
@@ -766,8 +774,7 @@
       (error "Expected striped-degrees to be an exact nonnegative integer"))
     (unless (exact-positive-integer? unstriped-degrees)
       (error "Expected unstriped-degrees to be an exact positive integer"))
-    (expect (nat-pred-maybe striped-degrees)
-      (list pred-striped-degrees)
+    (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
       (expect striped-hypertee (hypertee degree closing-brackets)
         (error "Expected striped-hypertee to be a hypertee since striped-degrees was zero")
       #/unless (= unstriped-degrees degree)
@@ -787,7 +794,7 @@
     (error "Expected h to be a hyprid")
   #/+ striped-degrees unstriped-degrees))
 
-(struct-easy "an island-cane" (island-cane data rest)
+(struct-easy (island-cane data rest)
   #:equal
   (#:guard-easy
     (unless (hyprid? rest)
@@ -802,7 +809,7 @@
           (void)
         #/error "Expected data to be a lake-cane or a non-lake-cane")))))
 
-(struct-easy "a lake-cane" (lake-cane data rest)
+(struct-easy (lake-cane data rest)
   #:equal
   (#:guard-easy
     (unless (hypertee? rest)
@@ -836,15 +843,14 @@
           (error "Expected data to be an empty list")
         #/void)))))
 
-(struct-easy "a non-lake-cane" (non-lake-cane data) #:equal)
+(struct-easy (non-lake-cane data) #:equal)
 
 (define (hyprid-map-lakes-highest-degree h func)
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
   #/hyprid striped-degrees unstriped-degrees
-  #/expect (nat-pred-maybe striped-degrees)
-    (list pred-striped-degrees)
+  #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (hypertee-map-highest-degree striped-hypertee func)
   #/dissect striped-hypertee (island-cane data rest)
   #/island-cane data
@@ -869,16 +875,15 @@
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
-  #/expect (nat-pred-maybe striped-degrees)
-    (list pred-striped-degrees)
+  #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (list)
   #/w- succ-unstriped-degrees (add1 unstriped-degrees)
   #/list #/hyprid pred-striped-degrees succ-unstriped-degrees
   #/dissect striped-hypertee
     (island-cane data
     #/hyprid pred-striped-degrees-2 unstriped-degrees-2 rest)
-  #/expect (nat-pred-maybe pred-striped-degrees)
-    (list pred-pred-striped-degrees)
+  #/expect (nat->maybe pred-striped-degrees)
+    (just pred-pred-striped-degrees)
     (hypertee-bind-pred-degree
       (hypertee-promote succ-unstriped-degrees rest)
       unstriped-degrees
@@ -942,8 +947,7 @@
     (not #/not #/memq location #/list 'root-island 'inner-island))
   ; NOTE: The only reason we have a `location` slot here at all (and
   ; the makeshift enum that goes in it) is for sanity checks.
-  (struct-easy "a history-info"
-    (history-info location maybe-state histories)
+  (struct-easy (history-info location maybe-state histories)
     (#:guard-easy
       (unless
         (memq location
@@ -956,9 +960,8 @@
         (expect maybe-state (list)
           (error "Internal error")
         #/void))))
-  (struct-easy "an unfinished-lake-cane"
-    (unfinished-lake-cane data rest-state))
-  (struct-easy "a stripe-state" (stripe-state rev-brackets hist))
+  (struct-easy (unfinished-lake-cane data rest-state))
+  (struct-easy (stripe-state rev-brackets hist))
   (define (update-simple-history closing-degree hist)
     (expect (< closing-degree #/length hist) #t
       (error "Internal error")
@@ -968,10 +971,10 @@
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
-  #/dissect (nat-pred-maybe unstriped-degrees)
-    (list pred-unstriped-degrees)
-  #/expect (nat-pred-maybe pred-unstriped-degrees)
-    (list pred-pred-unstriped-degrees)
+  #/dissect (nat->maybe unstriped-degrees)
+    (just pred-unstriped-degrees)
+  #/expect (nat->maybe pred-unstriped-degrees)
+    (just pred-pred-unstriped-degrees)
     (list)
   #/w- succ-striped-degrees (add1 striped-degrees)
   #/list #/hyprid succ-striped-degrees pred-unstriped-degrees
@@ -1143,7 +1146,7 @@
     
     #/hyprid 0 pred-unstriped-degrees
     #/hypertee pred-unstriped-degrees
-    #/list-fmap (reverse rev-brackets) #/lambda (closing-bracket)
+    #/list-map (reverse rev-brackets) #/lambda (closing-bracket)
       (expect closing-bracket (list d data) closing-bracket
       #/expect (= d pred-pred-unstriped-degrees) #t closing-bracket
       #/mat data (non-lake-cane data) closing-bracket
@@ -1151,7 +1154,7 @@
         (dissect (unbox rest-state)
           (stripe-state rev-brackets #/list)
         #/list d #/lake-cane data #/hypertee pred-unstriped-degrees
-        #/list-fmap (reverse rev-brackets) #/lambda (closing-bracket)
+        #/list-map (reverse rev-brackets) #/lambda (closing-bracket)
           (expect closing-bracket (list d data) closing-bracket
           #/expect (= d pred-pred-unstriped-degrees) #t
             closing-bracket
