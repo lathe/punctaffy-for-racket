@@ -1,0 +1,238 @@
+#lang parendown racket/base
+
+
+(require #/only-in racket/contract/base
+  -> ->* ->i any any/c contract? parameter/c struct/c)
+(require #/only-in racket/contract/region define/contract)
+(require #/only-in racket/math natural?)
+
+(require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
+(require #/only-in lathe-comforts/hash hash-ref-maybe)
+(require #/only-in lathe-comforts/maybe just maybe? nothing)
+(require #/only-in lathe-comforts/struct struct-easy)
+
+; TODO: Stop relying on `.../private/...` modules like this.
+(require #/only-in
+  lathe-morphisms/private/ordinals/below-epsilon-zero/onum
+  onum? onum<? onum-drop onum-one onum-plus onum-zero)
+(require #/only-in
+  lathe-morphisms/private/ordinals/below-epsilon-zero/olist
+  olist? olist-build olist-drop olist-length olist-map olist-tails
+  olist-update-thunk olist-plus olist-ref-and-call olist-zip-map
+  olist-zero)
+
+; TODO: Once we implement this concretely in terms of the operations
+; of `.../below-epsilon-zero/olist`, implement it instead in terms of
+; algebras which those can be a special case of.
+
+;(provide #/all-defined-out)
+
+
+(struct-easy (token))
+(struct-easy (hyperparameterization escapes))
+
+(define/contract current-hyperparameterization
+  (parameter/c hyperparameterization?)
+  (make-parameter #/hyperparameterization olist-zero))
+
+; TODO: See if this should go into the olist library.
+(define/contract (onum-drop-clamp-zero amount n)
+  (-> onum? onum? onum?)
+  (expect (onum-drop amount n) (just result) onum-zero
+    result))
+
+; TODO: See if this should go into the olist library.
+; TODO: See if we'll ever use this.
+(define/contract (olist-unaligned-zip-map a b func)
+  (-> olist? olist? (-> maybe? maybe? any/c) olist?)
+  (w- an (olist-length a)
+  #/w- bn (olist-length b)
+  #/olist-zip-map
+    (olist-plus
+      (olist-map a #/fn elem #/just elem)
+      (olist-build (onum-drop-clamp-zero an bn) #/fn _ #/nothing))
+    (olist-plus
+      (olist-map b #/fn elem #/just elem)
+      (olist-build (onum-drop-clamp-zero bn an) #/fn _ #/nothing))
+    func))
+
+; TODO: See if this should go into Lathe Comforts.
+(define/contract (list-ref-maybe lst i)
+  (-> list? natural? maybe?)
+  (expect (< i #/length lst) #t (nothing)
+  #/just #/list-ref lst i))
+
+(struct-easy (hyperparameter dimension key default-value guard wrap)
+  #:other
+  #:property prop:procedure
+  (case-lambda
+    [ (this)
+      (expect this
+        (hyperparameter dimension key default-value guard wrap)
+        (error "Expected this to be a hyperparameter")
+      #/dissect (get-current-hyperparameterization)
+        (hyperparameterization escapes)
+      #/wrap
+      #/expect (onum<? dimension #/olist-length escapes) #t
+        default-value
+      #/dissect (olist-ref-and-call escapes dimension)
+        (list locals escapes)
+      #/mat (hash-ref-maybe locals key) (just value) value
+        default-value)]
+    [ (this incoming)
+      (expect this
+        (hyperparameter dimension key default-value guard wrap)
+        (error "Expected this to be a hyperparameter")
+      #/dissect (get-current-hyperparameterization)
+        (hyperparameterization escapes)
+      #/current-hyperparameterization #/hyperparameterization
+      #/olist-update-thunk
+        (olist-plus escapes
+        #/olist-build
+          (onum-drop-clamp-zero (olist-length escapes) dimension)
+        #/fn _
+          (list (make-immutable-hasheq) (make-immutable-hasheq)))
+      #/fn get-escape
+        (dissect (get-escape) (list locals escapes)
+        #/w- escape
+          (list (hash-set locals key #/wrap incoming) escapes)
+        #/fn escape))]))
+
+; NOTE: This corresponds to `make-parameter`.
+(define/contract
+  (make-hyperparameter dimension value [guard (fn incoming incoming)])
+  (->* (onum? any/c) ((-> any/c any/c)) hyperparameter?)
+  (hyperparameter dimension (token) value
+    guard
+    (fn outgoing outgoing)))
+
+(define/contract (-hyperparameter-dimension hp)
+  (-> hyperparameter? onum?)
+  (dissect hp (hyperparameter dimension key default-value guard wrap)
+    dimension))
+
+; NOTE: This corresponds to `parameterize` and `parameterize*`.
+;
+; TODO: Define syntaxes closer to `parameterize` and `parameterize*`
+; for this.
+;
+(define/contract
+  (call-with-hyperparameterization-binding hp value body)
+  (->i
+    (
+      [hp hyperparameter?]
+      [value any/c]
+      [body (hp)
+        (->i ([escapes olist?])
+          
+          #:pre (escapes)
+          (equal?
+            (-hyperparameter-dimension hp)
+            (olist-length escapes))
+          
+          any)])
+    any)
+  (dissect hp (hyperparameter dimension key default-value guard wrap)
+  #/dissect (get-current-hyperparameterization)
+    (hyperparameterization escapes)
+  #/w- wrapped-value (wrap value)
+  #/w- pad-escapes
+    (fn dimension escapes
+      (olist-plus escapes
+      #/olist-build
+        (onum-drop-clamp-zero (olist-length escapes)
+        #/onum-plus dimension onum-one)
+      #/fn _
+        (list (make-immutable-hasheq) (make-immutable-hasheq))))
+  #/w- padded-escapes (pad-escapes dimension escapes)
+  #/w- escapes-with-locals
+    (olist-update-thunk padded-escapes dimension #/fn get-escape
+      (dissect (get-escape) (list locals escapes)
+      #/w- escape (list (hash-set locals key wrapped-value) escapes)
+      #/fn escape))
+  #/dissect (olist-drop dimension escapes-with-locals)
+    (just #/list low-local-escapes high-local-escapes)
+  #/w-loop loop
+    dimension dimension
+    nonlocal-escapes padded-escapes
+    low-local-escapes low-local-escapes
+    high-local-escapes high-local-escapes
+    body body
+  #/dissect (olist-drop dimension #/olist-tails nonlocal-escapes)
+    (just #/list low-tails _)
+  #/w- id (token)
+  #/w- new-escapes
+    (olist-plus
+      (olist-zip-map low-local-escapes low-tails #/fn escape tail
+        (dissect escape (list locals escapes)
+        #/list locals (hash-set escapes id tail)))
+      high-local-escapes)
+  #/parameterize
+    (
+      [current-hyperparameterization
+        (hyperparameterization new-escapes)])
+    (body #/olist-build dimension #/fn d
+      (fn body
+        (dissect (get-current-hyperparameterization)
+          (hyperparameterization escapes)
+        #/expect
+          (expect (onum<? d #/olist-length escapes) #t (nothing)
+          #/dissect (olist-ref-and-call escapes d)
+            (list locals escapes)
+          #/list-ref-maybe escapes id)
+          (just high-local-escapes)
+          (error "Used a hyperameterize hole for a dynamic extent that wasn't currently in progress")
+        #/w- low-local-escapes
+          (olist-build d #/fn _
+            (list (make-immutable-hasheq) (make-immutable-hasheq)))
+        #/loop
+          d escapes low-local-escapes high-local-escapes body)))))
+
+; NOTE: This corresponds to `make-derived-parameter`.
+(define/contract (make-derived-hyperparameter hp guard wrap)
+  (-> hyperparameter? (-> any/c any/c) (-> any/c any/c)
+    hyperparameter?)
+  ; NOTE: The "o" stands for "original."
+  (dissect hp
+    (hyperparameter o-dimension o-key o-default-value o-guard o-wrap)
+  #/hyperparameter o-dimension o-key o-default-value
+    (fn incoming #/o-guard #/guard incoming)
+    (fn outgoing #/wrap #/o-wrap outgoing)))
+
+; NOTE: This corresponds to `parameter?`.
+(define/contract (-hyperparameter? x)
+  (-> any/c boolean?)
+  (hyperparameter? x))
+
+; TODO: See if we can make something that corresponds to
+; `parameter-procedure=?`.
+
+; NOTE: This corresponds to `current-parameterization`.
+;
+; TODO: See if we should rename this to
+; `current-hyperparameterization` and rename the parameter of that
+; name to something else.
+;
+; TODO: See if we really need this, or if we'll just export the
+; parameter directly.
+;
+(define/contract (get-current-hyperparameterization)
+  (-> hyperparameterization?)
+  (current-hyperparameterization))
+
+; NOTE: This corresponds to `call-with-parameterization`.
+(define/contract (call-with-hyperparameterization hp thunk)
+  (-> hyperparameterization? (-> any) any)
+  (parameterize ([current-hyperparameterization hp]) #/thunk))
+
+; NOTE: This corresponds to `parameterization?`.
+(define/contract (-hyperparameterization? x)
+  (-> any/c boolean?)
+  (hyperparameterization? x))
+
+; NOTE: This corresponds to `parameter/c`.
+(define/contract (hyperparameter/c dimension/c in/c [out/c in/c])
+  (->* (contract? contract?) (contract?) contract?)
+  (struct/c hyperparameter dimension/c any/c any/c
+    (-> in/c any/c)
+    (-> any/c out/c)))
