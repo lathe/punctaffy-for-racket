@@ -1,7 +1,7 @@
 #lang parendown racket/base
 
 
-(require #/only-in racket/contract/base -> ->d any/c list/c)
+(require #/only-in racket/contract/base -> ->i any/c list/c)
 (require #/only-in racket/contract/region define/contract)
 
 (require #/only-in lathe-comforts dissect fn w-)
@@ -32,8 +32,8 @@
   #/olist-length olist))
 
 (define/contract (poppable-hyperstack-peek-elem h i)
-  (->d ([h poppable-hyperstack?] [i onum?])
-    #:pre (onum<? i #/poppable-hyperstack-dimension h)
+  (->i ([h poppable-hyperstack?] [i onum?])
+    #:pre (h i) (onum<? i #/poppable-hyperstack-dimension h)
     [_ any/c])
   (dissect h (poppable-hyperstack olist)
   #/dissect (olist-ref-and-call olist i) (list elem olist-suffix)
@@ -45,9 +45,9 @@
     (list elem olist-zero)))
 
 (define/contract (poppable-hyperstack-pop h elems-to-push)
-  (->d ([h poppable-hyperstack?] [elems-to-push olist?])
+  (->i ([h poppable-hyperstack?] [elems-to-push olist?])
     
-    #:pre
+    #:pre (h elems-to-push)
     (onum<?
       (olist-length elems-to-push)
       (poppable-hyperstack-dimension h))
