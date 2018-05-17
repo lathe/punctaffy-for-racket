@@ -29,6 +29,8 @@
 (define/contract (poppable-hyperstack-dimension h)
   (-> poppable-hyperstack? onum?)
   (dissect h (poppable-hyperstack olist)
+  ; TODO NOW: We've changed `olist-length` to return an `onumext?`.
+  ; Update this call.
   #/olist-length olist))
 
 (define/contract (poppable-hyperstack-peek-elem h i)
@@ -49,11 +51,15 @@
     
     #:pre (h elems-to-push)
     (onum<?
+      ; TODO NOW: We've changed `olist-length` to return an `onumext?`.
+      ; Update this call.
       (olist-length elems-to-push)
       (poppable-hyperstack-dimension h))
     
     [_ (list/c any/c poppable-hyperstack?)])
   (dissect h (poppable-hyperstack olist)
+  ; TODO NOW: We've changed `olist-length` to return an `onumext?`.
+  ; Update this call.
   #/w- i (olist-length elems-to-push)
   #/dissect (olist-ref-and-call olist i) (list elem olist-suffix)
   #/dissect (olist-drop i #/olist-tails olist) (just #/list tails _)

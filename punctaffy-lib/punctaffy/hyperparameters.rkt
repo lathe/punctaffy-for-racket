@@ -28,6 +28,9 @@
 ;(provide #/all-defined-out)
 
 
+; TODO NOW: We've changed `olist-build` to take an `onumext?` and
+; `olist-length` to take one. Update the calls in this file.
+
 (struct-easy (token))
 (struct-easy (hyperparameterization escapes))
 
