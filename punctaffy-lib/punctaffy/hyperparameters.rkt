@@ -14,7 +14,8 @@
 ; TODO: Stop relying on `.../private/...` modules like this.
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onum<? onum-drop onum-one onum-plus onum-zero)
+  onum? onum<? onum-drop onumext? onumext<? onumext-drop onum-one
+  onum-plus onum-zero)
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/olist
   olist? olist-build olist-drop olist-length olist-map olist-tails
@@ -28,9 +29,6 @@
 ;(provide #/all-defined-out)
 
 
-; TODO NOW: We've changed `olist-build` to take an `onumext?` and
-; `olist-length` to take one. Update the calls in this file.
-
 (struct-easy (token))
 (struct-easy (hyperparameterization escapes))
 
@@ -39,10 +37,11 @@
   (make-parameter #/hyperparameterization olist-zero))
 
 ; TODO: See if this should go into the olist library.
-(define/contract (onum-drop-clamp-zero amount n)
-  (-> onum? onum? onum?)
-  (expect (onum-drop amount n) (just result) onum-zero
-    result))
+(define/contract (olist-plus-build-const a minimum-length elem)
+  (-> olist? onumext? (-> onum? any/c) olist?)
+  (expect (olist-length a) (just an) a
+  #/olist-plus a
+  #/olist-build (onumext-drop an minimum-length) #/fn _ elem))
 
 ; TODO: See if this should go into the olist library.
 ; TODO: See if we'll ever use this.
@@ -51,12 +50,10 @@
   (w- an (olist-length a)
   #/w- bn (olist-length b)
   #/olist-zip-map
-    (olist-plus
-      (olist-map a #/fn elem #/just elem)
-      (olist-build (onum-drop-clamp-zero an bn) #/fn _ #/nothing))
-    (olist-plus
-      (olist-map b #/fn elem #/just elem)
-      (olist-build (onum-drop-clamp-zero bn an) #/fn _ #/nothing))
+    (olist-plus-build-const (olist-map a #/fn elem #/just elem) bn
+      (nothing))
+    (olist-plus-build-const (olist-map b #/fn elem #/just elem) an
+      (nothing))
     func))
 
 ; TODO: See if this should go into Lathe Comforts.
@@ -76,7 +73,7 @@
       #/dissect (get-current-hyperparameterization)
         (hyperparameterization escapes)
       #/wrap
-      #/expect (onum<? dimension #/olist-length escapes) #t
+      #/expect (onumext<? (just dimension) (olist-length escapes)) #t
         default-value
       #/dissect (olist-ref-and-call escapes dimension)
         (list locals escapes)
@@ -90,10 +87,7 @@
         (hyperparameterization escapes)
       #/current-hyperparameterization #/hyperparameterization
       #/olist-update-thunk
-        (olist-plus escapes
-        #/olist-build
-          (onum-drop-clamp-zero (olist-length escapes) dimension)
-        #/fn _
+        (olist-plus-build-const escapes (just dimension)
           (list (make-immutable-hasheq) (make-immutable-hasheq)))
       #/fn get-escape
         (dissect (get-escape) (list locals escapes)
@@ -130,7 +124,7 @@
           
           #:pre (escapes)
           (equal?
-            (-hyperparameter-dimension hp)
+            (just #/-hyperparameter-dimension hp)
             (olist-length escapes))
           
           any)])
@@ -141,11 +135,8 @@
   #/w- wrapped-value (wrap value)
   #/w- pad-escapes
     (fn dimension escapes
-      (olist-plus escapes
-      #/olist-build
-        (onum-drop-clamp-zero (olist-length escapes)
-        #/onum-plus dimension onum-one)
-      #/fn _
+      (olist-plus-build-const escapes
+        (just #/onum-plus dimension onum-one)
         (list (make-immutable-hasheq) (make-immutable-hasheq))))
   #/w- padded-escapes (pad-escapes dimension escapes)
   #/w- escapes-with-locals
@@ -174,19 +165,20 @@
     (
       [current-hyperparameterization
         (hyperparameterization new-escapes)])
-    (body #/olist-build dimension #/fn d
+    (body #/olist-build (just dimension) #/fn d
       (fn body
         (dissect (get-current-hyperparameterization)
           (hyperparameterization escapes)
         #/expect
-          (expect (onum<? d #/olist-length escapes) #t (nothing)
+          (expect (onumext<? (just d) (olist-length escapes)) #t
+            (nothing)
           #/dissect (olist-ref-and-call escapes d)
             (list locals escapes)
           #/list-ref-maybe escapes id)
           (just high-local-escapes)
           (error "Used a hyperameterize hole for a dynamic extent that wasn't currently in progress")
         #/w- low-local-escapes
-          (olist-build d #/fn _
+          (olist-build (just d) #/fn _
             (list (make-immutable-hasheq) (make-immutable-hasheq)))
         #/loop
           d escapes low-local-escapes high-local-escapes body)))))
