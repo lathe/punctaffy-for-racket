@@ -61,7 +61,7 @@
   (hyperparameterization #/olist-build (nothing) #/fn _
     hyperparameterization-empty-escape))
 
-(define/contract (hyperparameterization-get-maybe hp dimension key)
+(define/contract (hyperparameterization-ref-maybe hp dimension key)
   (-> hyperparameterization? onum? any/c maybe?)
   (dissect hp (hyperparameterization escapes)
   #/dissect (olist-ref-and-call escapes dimension)
@@ -136,7 +136,7 @@
         (error "Expected this to be a hyperparameter")
       #/wrap
       #/expect
-        (hyperparameterization-get-maybe
+        (hyperparameterization-ref-maybe
           (get-current-hyperparameterization)
           dimension key)
         (just value)
