@@ -2,7 +2,8 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->* ->i any any/c contract? parameter/c struct/c)
+  -> ->* ->i any any/c contract? parameter/c recursive-contract
+  struct/c)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 
@@ -96,12 +97,8 @@
   #/hyperparameterization
   #/olist-plus-binary (zip low-hp low-tails) high-hp))
 
-(define/contract (hyperparameterization-push hp dimension key)
-  (-> hyperparameterization? onumext? any/c hyperparameterization?)
-  (hyperparameterization-set-low-escapes hp dimension key hp))
-
 (define/contract
-  (hyperparameterization-pop-maybe
+  (hyperparameterization-ref-escape-maybe
     hp dimension escape-now-key escape-later-key)
   (-> hyperparameterization? onum? any/c any/c
     (maybe/c hyperparameterization?))
@@ -163,6 +160,48 @@
   (dissect hp (hyperparameter dimension key default-value guard wrap)
     dimension))
 
+; TODO: See if we should put this in onum.rkt.
+(define/contract (onum<onumext/c strict-bound)
+  (-> onumext? contract?)
+  (fn x #/and (onum? x) (onumext<? (just x) strict-bound)))
+
+(define/contract (hyperbody/c dimension)
+  (-> onumext? contract?)
+  (->
+    (->i
+      (
+        [d (onum<onumext/c dimension)]
+        [body (d) (recursive-contract #/hyperbody/c #/just d)])
+      any)
+    any))
+
+; NOTE: This corresponds to `call-with-parameterization`.
+(define/contract
+  (call-while-updating-hyperparameterization func dimension body)
+  (->i
+    (
+      [func (-> hyperparameterization? hyperparameterization?)]
+      [dimension onumext?]
+      [body (dimension) (hyperbody/c dimension)])
+    any)
+  (w- hp (get-current-hyperparameterization)
+  #/w- id (token)
+  #/w-loop loop
+    id id
+    hp
+    (hyperparameterization-set-low-escapes (func hp) dimension id hp)
+    body body
+  #/parameterize ([current-hyperparameterization hp])
+    (body #/fn d body
+      (w- sub-id (token)
+      #/expect
+        (hyperparameterization-ref-escape-maybe
+          (get-current-hyperparameterization)
+          d id sub-id)
+        (just hp)
+        (error "Used a hyperparameterizing hole for a dynamic extent that wasn't currently in progress")
+      #/loop sub-id hp body))))
+
 ; NOTE: This corresponds to `parameterize` and `parameterize*`.
 ;
 ; TODO: Define syntaxes closer to `parameterize` and `parameterize*`
@@ -173,39 +212,13 @@
     (
       [hp hyperparameter?]
       [value any/c]
-      [body (hp)
-        (->i ([escapes olist?])
-          
-          #:pre (escapes)
-          (equal?
-            (just #/-hyperparameter-dimension hp)
-            (olist-length escapes))
-          
-          any)])
+      [body (hp) (hyperbody/c #/just #/-hyperparameter-dimension hp)])
     any)
   (dissect hp (hyperparameter dimension key default-value guard wrap)
-  #/w- id (token)
-  #/w-loop loop
-    dimension dimension
-    id id
-    hpn
-    (hyperparameterization-set
-      (hyperparameterization-push (get-current-hyperparameterization)
-        (just dimension)
-        id)
-      dimension key (guard value))
-    body body
-  #/parameterize ([current-hyperparameterization hpn])
-    (body #/olist-build (just dimension) #/fn d
-      (fn body
-        (w- sub-id (token)
-        #/expect
-          (hyperparameterization-pop-maybe
-            (get-current-hyperparameterization)
-            d id sub-id)
-          (just hpn)
-          (error "Used a hyperameterize hole for a dynamic extent that wasn't currently in progress")
-        #/loop d sub-id hpn body)))))
+  #/call-while-updating-hyperparameterization
+    (fn hp #/hyperparameterization-set hp dimension key #/guard value)
+    dimension
+    body))
 
 ; NOTE: This corresponds to `make-derived-parameter`.
 (define/contract (make-derived-hyperparameter hp guard wrap)
@@ -238,11 +251,6 @@
 (define/contract (get-current-hyperparameterization)
   (-> hyperparameterization?)
   (current-hyperparameterization))
-
-; NOTE: This corresponds to `call-with-parameterization`.
-(define/contract (call-with-hyperparameterization hp thunk)
-  (-> hyperparameterization? (-> any) any)
-  (parameterize ([current-hyperparameterization hp]) #/thunk))
 
 ; NOTE: This corresponds to `parameterization?`.
 (define/contract (-hyperparameterization? x)
