@@ -8,7 +8,8 @@
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
-(require #/only-in lathe-comforts/maybe just maybe? maybe/c nothing)
+(require #/only-in lathe-comforts/maybe
+  just maybe? maybe/c maybe-map nothing nothing?)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 ; TODO: Stop relying on `.../private/...` modules like this.
@@ -19,8 +20,8 @@
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/olist
   olist? olist-build olist-drop olist-length olist-map olist-tails
-  olist-update-thunk olist-plus olist-ref-and-call olist-zip-map
-  olist-zero)
+  olist-update-thunk olist-plus-binary olist-ref-and-call
+  olist-zip-map olist-zero)
 
 ; TODO: Once we implement this concretely in terms of the operations
 ; of `.../below-epsilon-zero/olist`, implement it instead in terms of
@@ -33,7 +34,7 @@
 (define/contract (olist-plus-build-const a minimum-length elem)
   (-> olist? onumext? (-> onum? any/c) olist?)
   (expect (olist-length a) (just an) a
-  #/olist-plus a
+  #/olist-plus-binary a
   #/olist-build (onumext-drop an minimum-length) #/fn _ elem))
 
 ; TODO: See if this should go into the olist library.
@@ -60,13 +61,12 @@
 
 (define/contract (make-empty-hyperparameterization)
   (-> hyperparameterization?)
-  (hyperparameterization olist-zero))
+  (hyperparameterization #/olist-build (nothing) #/fn _
+    (list (make-immutable-hasheq) (make-immutable-hasheq))))
 
 (define/contract (hyperparameterization-get-maybe hp dimension key)
   (-> hyperparameterization? onum? any/c maybe?)
   (dissect hp (hyperparameterization escapes)
-  #/expect (onumext<? (just dimension) (olist-length escapes)) #t
-    (nothing)
   #/dissect (olist-ref-and-call escapes dimension)
     (list locals escapes)
   #/hash-ref-maybe locals key))
@@ -74,22 +74,26 @@
 (define/contract (hyperparameterization-set hp dimension key value)
   (-> hyperparameterization? onum? any/c any/c hyperparameterization?)
   (dissect hp (hyperparameterization escapes)
-  #/hyperparameterization #/olist-update-thunk
-    (olist-plus-build-const escapes (just dimension)
-      (list (make-immutable-hasheq) (make-immutable-hasheq)))
+  #/hyperparameterization #/olist-update-thunk escapes dimension
   #/fn get-escape
     (dissect (get-escape) (list locals escapes)
     #/w- escape (list (hash-set locals key value) escapes)
     #/fn escape)))
 
+; TODO: See if this should go in olist.rkt.
+(define/contract (olist-unbounded? x)
+  (-> any/c boolean?)
+  (and (olist? x) (nothing? #/olist-length x)))
+
 (define/contract
   (make-hyperparameterization-for-push-or-pop
     dimension escape-key
     nonlocal-escapes low-local-escapes high-local-escapes)
-  (-> onum? any/c olist? olist? olist? hyperparameterization?)
+  (-> onum? any/c olist-unbounded? olist? olist-unbounded?
+    hyperparameterization?)
   (dissect (olist-drop dimension #/olist-tails nonlocal-escapes)
     (just #/list low-tails _)
-  #/hyperparameterization #/olist-plus
+  #/hyperparameterization #/olist-plus-binary
     (olist-zip-map low-local-escapes low-tails #/fn escape tail
       (dissect escape (list locals escapes)
       #/list locals (hash-set escapes escape-key tail)))
@@ -100,20 +104,16 @@
   (-> hyperparameterization? onum? any/c any/c any/c
     hyperparameterization?)
   (dissect hp (hyperparameterization escapes)
-  #/w- padded-escapes
-    (olist-plus-build-const escapes
-      (just #/onum-plus dimension onum-one)
-      (list (make-immutable-hasheq) (make-immutable-hasheq)))
   #/dissect
     (olist-drop dimension
-    #/olist-update-thunk padded-escapes dimension #/fn get-escape
+    #/olist-update-thunk escapes dimension #/fn get-escape
       (dissect (get-escape) (list locals escapes)
       #/w- escape (list (hash-set locals local-key value) escapes)
       #/fn escape))
     (just #/list low-local-escapes high-local-escapes)
   #/make-hyperparameterization-for-push-or-pop
     dimension escape-key
-    padded-escapes low-local-escapes high-local-escapes))
+    escapes low-local-escapes high-local-escapes))
 
 (define/contract
   (hyperparameterization-pop-maybe
@@ -121,19 +121,16 @@
   (-> hyperparameterization? onum? any/c any/c
     (maybe/c hyperparameterization?))
   (dissect hp (hyperparameterization escapes)
-  #/expect (onumext<? (just dimension) (olist-length escapes)) #t
-    (nothing)
   #/dissect (olist-ref-and-call escapes dimension)
     (list e-locals e-escapes)
-  #/expect (list-ref-maybe e-escapes escape-now-key)
-    (just high-local-escapes)
-    (nothing)
-  #/w- low-local-escapes
-    (olist-build (just dimension) #/fn _
-      (list (make-immutable-hasheq) (make-immutable-hasheq)))
-  #/just #/make-hyperparameterization-for-push-or-pop
-    dimension escape-later-key
-    escapes low-local-escapes high-local-escapes))
+  #/maybe-map (list-ref-maybe e-escapes escape-now-key)
+  #/fn high-local-escapes
+    (w- low-local-escapes
+      (olist-build (just dimension) #/fn _
+        (list (make-immutable-hasheq) (make-immutable-hasheq)))
+    #/make-hyperparameterization-for-push-or-pop
+      dimension escape-later-key
+      escapes low-local-escapes high-local-escapes)))
 
 
 (struct-easy (token))
