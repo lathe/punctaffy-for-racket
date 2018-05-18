@@ -168,8 +168,7 @@
 ; TODO: Define syntaxes closer to `parameterize` and `parameterize*`
 ; for this.
 ;
-(define/contract
-  (call-with-hyperparameterization-binding hp value body)
+(define/contract (call-while-hyperparameterizing hp value body)
   (->i
     (
       [hp hyperparameter?]
