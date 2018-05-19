@@ -5,51 +5,27 @@
   -> ->* ->i any any/c contract? parameter/c recursive-contract
   struct/c)
 (require #/only-in racket/contract/region define/contract)
-(require #/only-in racket/math natural?)
 
-(require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
+(require #/only-in lathe-comforts dissect expect fn w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
 (require #/only-in lathe-comforts/maybe
-  just maybe? maybe/c maybe-map nothing nothing?)
+  just maybe? maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 ; TODO: Stop relying on `.../private/...` modules like this.
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onum<? onum-drop onumext? onumext<? onumext-drop onum-one
-  onum-plus onum-zero)
+  onum? onumext? onumext<?)
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/olist
-  olist? olist-build olist-drop olist-length olist-map olist-tails
-  olist-update-thunk olist-plus-binary olist-ref-and-call
-  olist-zip-map olist-zero)
+  olist-build olist-drop olist-tails olist-update-thunk
+  olist-plus-binary olist-ref-and-call olist-zip-map)
 
 ; TODO: Once we implement this concretely in terms of the operations
 ; of `.../below-epsilon-zero/olist`, implement it instead in terms of
 ; algebras which those can be a special case of.
 
 ;(provide #/all-defined-out)
-
-
-; TODO: See if this should go into the olist library.
-(define/contract (olist-plus-build-const a minimum-length elem)
-  (-> olist? onumext? (-> onum? any/c) olist?)
-  (expect (olist-length a) (just an) a
-  #/olist-plus-binary a
-  #/olist-build (onumext-drop an minimum-length) #/fn _ elem))
-
-; TODO: See if this should go into the olist library.
-; TODO: See if we'll ever use this.
-(define/contract (olist-unaligned-zip-map a b func)
-  (-> olist? olist? (-> maybe? maybe? any/c) olist?)
-  (w- an (olist-length a)
-  #/w- bn (olist-length b)
-  #/olist-zip-map
-    (olist-plus-build-const (olist-map a #/fn elem #/just elem) bn
-      (nothing))
-    (olist-plus-build-const (olist-map b #/fn elem #/just elem) an
-      (nothing))
-    func))
 
 
 (struct-easy (hyperparameterization escapes))
