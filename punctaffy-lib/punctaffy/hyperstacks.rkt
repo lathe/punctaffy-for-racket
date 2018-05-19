@@ -11,7 +11,7 @@
 ; TODO: Stop relying on `.../private/...` modules like this.
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onum<? onumext? onumext<?)
+  onum? onumext? onumext<?)
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/olist
   olist? olist-drop olist-length olist-map olist-tails olist-plus
