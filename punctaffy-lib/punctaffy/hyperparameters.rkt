@@ -193,7 +193,7 @@
   (dissect hp (hyperparameter dimension key default-value guard wrap)
   #/call-while-updating-hyperparameterization
     (fn hp #/hyperparameterization-set hp dimension key #/guard value)
-    dimension
+    (just dimension)
     body))
 
 ; NOTE: This corresponds to `make-derived-parameter`.
