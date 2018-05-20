@@ -6,7 +6,8 @@
   struct/c)
 (require #/only-in racket/contract/region define/contract)
 
-(require #/only-in lathe-comforts dissect expect fn w- w-loop)
+(require #/only-in lathe-comforts
+  dissect dissectfn expect fn w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
@@ -28,63 +29,60 @@
 ;(provide #/all-defined-out)
 
 
-(struct-easy (hyperparameterization escapes))
+(struct-easy (hyperparameterization locals escapes))
 
-(define hyperparameterization-empty-escape
-  (list (make-immutable-hasheq) (make-immutable-hasheq)))
+(define hyperparameterization-empty-locals (make-immutable-hasheq))
+(define hyperparameterization-empty-escape (make-immutable-hasheq))
 
 (define/contract (make-empty-hyperparameterization)
   (-> hyperparameterization?)
-  (hyperparameterization #/olist-build (nothing) #/fn _
+  (hyperparameterization hyperparameterization-empty-locals
+  #/olist-build (nothing) #/fn _
     hyperparameterization-empty-escape))
 
-(define/contract (hyperparameterization-ref-maybe hp dimension key)
-  (-> hyperparameterization? onum? any/c maybe?)
-  (dissect hp (hyperparameterization escapes)
-  #/dissect (olist-ref-and-call escapes dimension)
-    (list locals escapes)
+(define/contract (hyperparameterization-ref-maybe hp key)
+  (-> hyperparameterization? any/c maybe?)
+  (dissect hp (hyperparameterization locals escapes)
   #/hash-ref-maybe locals key))
 
-(define/contract (hyperparameterization-set hp dimension key value)
-  (-> hyperparameterization? onum? any/c any/c hyperparameterization?)
-  (dissect hp (hyperparameterization escapes)
-  #/hyperparameterization #/olist-update-thunk escapes dimension
-  #/fn get-escape
-    (dissect (get-escape) (list locals escapes)
-    #/w- escape (list (hash-set locals key value) escapes)
-    #/fn escape)))
+(define/contract (hyperparameterization-set hp key value)
+  (-> hyperparameterization? any/c any/c hyperparameterization?)
+  (dissect hp (hyperparameterization locals escapes)
+  #/hyperparameterization (hash-set locals key value) escapes))
 
 (define/contract
-  (hyperparameterization-set-low-escapes hp dimension key escape-hp)
+  (hyperparameterization-set-low-escapes
+    orig-hp dimension key escape-hp)
   (-> hyperparameterization? onumext? any/c hyperparameterization?
     hyperparameterization?)
-  (dissect hp (hyperparameterization hp)
-  #/dissect escape-hp (hyperparameterization escape-hp)
+  (dissect orig-hp (hyperparameterization orig-locals orig-escapes)
+  #/dissect escape-hp
+    (hyperparameterization escape-locals escape-escapes)
   #/w- zip
-    (fn low-hp low-tails
-      (olist-zip-map low-hp low-tails #/fn escape tail
-        (dissect escape (list locals escapes)
-        #/list locals (hash-set escapes key tail))))
+    (fn orig-low low-tails
+      (olist-zip-map orig-low low-tails #/fn escapes tail
+        (hash-set escapes key #/list escape-locals tail)))
   #/expect dimension (just dimension)
-    (hyperparameterization #/zip hp #/olist-tails escape-hp)
-  #/dissect (olist-drop dimension #/olist-tails escape-hp)
+    (hyperparameterization orig-locals
+    #/zip orig-escapes #/olist-tails escape-escapes)
+  #/dissect (olist-drop dimension #/olist-tails escape-escapes)
     (just #/list low-tails _)
-  #/dissect (olist-drop dimension hp) (just #/list low-hp high-hp)
-  #/hyperparameterization
-  #/olist-plus-binary (zip low-hp low-tails) high-hp))
+  #/dissect (olist-drop dimension orig-escapes)
+    (just #/list orig-low orig-high)
+  #/hyperparameterization orig-locals
+  #/olist-plus-binary (zip orig-low low-tails) orig-high))
 
 (define/contract
   (hyperparameterization-ref-escape-maybe
     hp dimension escape-now-key escape-later-key)
   (-> hyperparameterization? onum? any/c any/c
     (maybe/c hyperparameterization?))
-  (dissect hp (hyperparameterization escapes)
-  #/dissect (olist-ref-and-call escapes dimension)
-    (list e-locals e-escapes)
-  #/maybe-map (hash-ref-maybe e-escapes escape-now-key)
-  #/fn high-local-escapes
+  (dissect hp (hyperparameterization locals escapes)
+  #/w- escapes (olist-ref-and-call escapes dimension)
+  #/maybe-map (hash-ref-maybe escapes escape-now-key)
+  #/dissectfn (list locals high-local-escapes)
     (hyperparameterization-set-low-escapes
-      (hyperparameterization #/olist-plus-binary
+      (hyperparameterization locals #/olist-plus-binary
         (olist-build (just dimension) #/fn _
           hyperparameterization-empty-escape)
         high-local-escapes)
@@ -99,42 +97,34 @@
   (parameter/c hyperparameterization?)
   (make-parameter #/make-empty-hyperparameterization))
 
-(struct-easy (hyperparameter dimension key default-value guard wrap)
+(struct-easy (hyperparameter key default-value guard wrap)
   #:other
   #:property prop:procedure
   (case-lambda
     [ (this)
-      (expect this
-        (hyperparameter dimension key default-value guard wrap)
+      (expect this (hyperparameter key default-value guard wrap)
         (error "Expected this to be a hyperparameter")
       #/wrap
       #/expect
         (hyperparameterization-ref-maybe
           (get-current-hyperparameterization)
-          dimension key)
+          key)
         (just value)
         default-value
         value)]
     [ (this incoming)
-      (expect this
-        (hyperparameter dimension key default-value guard wrap)
+      (expect this (hyperparameter key default-value guard wrap)
         (error "Expected this to be a hyperparameter")
       #/current-hyperparameterization #/hyperparameterization-set
         (get-current-hyperparameterization)
-        dimension key #/guard incoming)]))
+        key
+        (guard incoming))]))
 
 ; NOTE: This corresponds to `make-parameter`.
 (define/contract
-  (make-hyperparameter dimension value [guard (fn incoming incoming)])
-  (->* (onum? any/c) ((-> any/c any/c)) hyperparameter?)
-  (hyperparameter dimension (token) value
-    guard
-    (fn outgoing outgoing)))
-
-(define/contract (-hyperparameter-dimension hp)
-  (-> hyperparameter? onum?)
-  (dissect hp (hyperparameter dimension key default-value guard wrap)
-    dimension))
+  (make-hyperparameter value [guard (fn incoming incoming)])
+  (->* (any/c) ((-> any/c any/c)) hyperparameter?)
+  (hyperparameter (token) value guard (fn outgoing outgoing)))
 
 ; TODO: See if we should put this in onum.rkt.
 (define/contract (onum<onumext/c strict-bound)
@@ -153,11 +143,11 @@
 
 ; NOTE: This corresponds to `call-with-parameterization`.
 (define/contract
-  (call-while-updating-hyperparameterization func dimension body)
+  (call-while-updating-hyperparameterization dimension func body)
   (->i
     (
-      [func (-> hyperparameterization? hyperparameterization?)]
       [dimension onumext?]
+      [func (-> hyperparameterization? hyperparameterization?)]
       [body (dimension) (hyperbody/c dimension)])
     any)
   (w- hp (get-current-hyperparameterization)
@@ -183,17 +173,18 @@
 ; TODO: Define syntaxes closer to `parameterize` and `parameterize*`
 ; for this.
 ;
-(define/contract (call-while-hyperparameterizing hp value body)
+(define/contract
+  (call-while-hyperparameterizing dimension hp value body)
   (->i
     (
+      [dimension onumext?]
       [hp hyperparameter?]
       [value any/c]
-      [body (hp) (hyperbody/c #/just #/-hyperparameter-dimension hp)])
+      [body (dimension) (hyperbody/c dimension)])
     any)
-  (dissect hp (hyperparameter dimension key default-value guard wrap)
-  #/call-while-updating-hyperparameterization
-    (fn hp #/hyperparameterization-set hp dimension key #/guard value)
-    (just dimension)
+  (dissect hp (hyperparameter key default-value guard wrap)
+  #/call-while-updating-hyperparameterization dimension
+    (fn hp #/hyperparameterization-set hp key #/guard value)
     body))
 
 ; NOTE: This corresponds to `make-derived-parameter`.
@@ -201,9 +192,8 @@
   (-> hyperparameter? (-> any/c any/c) (-> any/c any/c)
     hyperparameter?)
   ; NOTE: The "o" stands for "original."
-  (dissect hp
-    (hyperparameter o-dimension o-key o-default-value o-guard o-wrap)
-  #/hyperparameter o-dimension o-key o-default-value
+  (dissect hp (hyperparameter o-key o-default-value o-guard o-wrap)
+  #/hyperparameter o-key o-default-value
     (fn incoming #/o-guard #/guard incoming)
     (fn outgoing #/wrap #/o-wrap outgoing)))
 
@@ -234,8 +224,8 @@
   (hyperparameterization? x))
 
 ; NOTE: This corresponds to `parameter/c`.
-(define/contract (hyperparameter/c dimension/c in/c [out/c in/c])
-  (->* (contract? contract?) (contract?) contract?)
-  (struct/c hyperparameter dimension/c any/c any/c
+(define/contract (hyperparameter/c in/c [out/c in/c])
+  (->* (contract?) (contract?) contract?)
+  (struct/c hyperparameter any/c any/c
     (-> in/c any/c)
     (-> any/c out/c)))
