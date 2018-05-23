@@ -4,4 +4,9 @@
 
 (define deps (list))
 (define build-deps
-  (list "base" "parendown" "punctaffy-lib" "rackunit-lib"))
+  (list
+    "base"
+    "lathe-comforts-lib"
+    "parendown"
+    "punctaffy-lib"
+    "rackunit-lib"))
