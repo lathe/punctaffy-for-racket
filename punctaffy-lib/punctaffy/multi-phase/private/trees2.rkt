@@ -5,9 +5,12 @@
 ; Data structures for encoding the kind of higher-order structure that
 ; occurs in higher quasiquotation.
 
+(require #/only-in racket/contract/base -> any any/c list/c or/c)
+(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/list make-list)
+(require #/only-in racket/math natural?)
 
-(require #/only-in lathe-comforts dissect expect mat w-)
+(require #/only-in lathe-comforts dissect expect fn mat w-)
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
   list-bind list-each list-foldl list-kv-map list-map nat->maybe)
@@ -346,25 +349,20 @@
 
 
 
-(define (list-overwrite-first-n n val lst)
+(define/contract (list-overwrite-first-n n val lst)
+  (-> natural? any/c list? list?)
   (list-kv-map lst #/lambda (i elem)
     (if (< i n) val elem)))
 
-(define (hypertee-closing-bracket-degree closing-bracket)
-  (w- d
-    (mat closing-bracket (list d data)
-      d
-      closing-bracket)
-  #/expect (exact-nonnegative-integer? d) #t
-    (error "Expected the degree of a hypertee closing bracket to be an exact nonnegative integer")
-    d))
+(define/contract (hypertee-closing-bracket-degree closing-bracket)
+  (-> (or/c natural? #/list/c natural? any/c) natural?)
+  (mat closing-bracket (list d data)
+    d
+    closing-bracket))
 
-(define
+(define/contract
   (assert-valid-hypertee-brackets opening-degree closing-brackets)
-  (unless (exact-nonnegative-integer? opening-degree)
-    (error "Expected opening-degree to be an exact nonnegative integer"))
-  (unless (list? closing-brackets)
-    (error "Expected closing-brackets to be a list"))
+  (-> natural? list? void?)
   (expect
     (list-foldl
       (build-list opening-degree #/lambda (i)
@@ -399,11 +397,9 @@
 
 ; Takes a hypertee of any degree N and upgrades it to any degree N or
 ; greater, while leaving its holes the way they are.
-(define (hypertee-promote new-degree ht)
-  (unless (exact-nonnegative-integer? new-degree)
-    (error "Expected new-degree to be an exact nonnegative integer"))
-  (expect ht (hypertee d closing-brackets)
-    (error "Expected ht to be a hypertee")
+(define/contract (hypertee-promote new-degree ht)
+  (-> natural? hypertee? hypertee?)
+  (dissect ht (hypertee d closing-brackets)
   #/expect (<= d new-degree) #t
     (error "Expected ht to be a hypertee of degree no greater than new-degree")
   #/hypertee new-degree closing-brackets))
@@ -412,9 +408,9 @@
 ; N+1 with all the same degree-less-than-N holes as well as a single
 ; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
-(define (hypertee-contour hole-value ht)
-  (expect ht (hypertee d closing-brackets)
-    (error "Expected ht to be a hypertee")
+(define/contract (hypertee-contour hole-value ht)
+  (-> any/c hypertee? hypertee?)
+  (dissect ht (hypertee d closing-brackets)
   #/hypertee (add1 d)
   #/cons (list d hole-value)
   #/list-bind closing-brackets #/lambda (closing-bracket)
@@ -424,9 +420,9 @@
 ; Takes a hypertee of any degree N and returns a hypertee of degree
 ; N+1 where each hole has been replaced with a one-degree-greater
 ; hole. This creates one new hole of degree 0.
-(define (hypertee-tunnel hole-value ht)
-  (expect ht (hypertee d closing-brackets)
-    (error "Expected ht to be a hypertee")
+(define/contract (hypertee-tunnel hole-value ht)
+  (-> any/c hypertee? hypertee?)
+  (dissect ht (hypertee d closing-brackets)
   #/hypertee (add1 d)
   #/append
     (list-map closing-brackets #/lambda (closing-bracket)
@@ -442,10 +438,10 @@
 ; must be empty lists. This returns a single degree-N hypertee which
 ; has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
-(define (hypertee-join-all-degrees ht)
+(define/contract (hypertee-join-all-degrees ht)
+  (-> hypertee? hypertee?)
   (struct-easy (history-info maybe-interpolation-i histories))
-  (expect ht (hypertee overall-degree closing-brackets)
-    (error "Expected ht to be a hypertee")
+  (dissect ht (hypertee overall-degree closing-brackets)
   #/w-
     rev-result (list)
     brackets closing-brackets
@@ -577,7 +573,8 @@
     (hypertee overall-degree #/reverse rev-result)))
 
 
-(define (hypertee-map-all-degrees ht func)
+(define/contract (hypertee-map-all-degrees ht func)
+  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (struct-easy (history-info maybe-current-hole histories))
   (expect ht (hypertee overall-degree closing-brackets)
     (error "Expected ht to be a hypertee")
@@ -658,42 +655,53 @@
       (error "Internal error: Failed to exhaust the history of a hole while doing hypertee-map-all-degrees")
     #/list d (func (hypertee d #/reverse rev-brackets) data))))
 
-(define (hypertee-map-one-degree ht degree func)
+(define/contract (hypertee-map-one-degree ht degree func)
+  (-> hypertee? natural? (-> hypertee? any/c any/c) hypertee?)
   (hypertee-map-all-degrees ht #/lambda (hole data)
     (if (= degree #/hypertee-degree hole)
       (func hole data)
       data)))
 
-(define (hypertee-map-pred-degree ht degree func)
+(define/contract (hypertee-map-pred-degree ht degree func)
+  (-> hypertee? natural? (-> hypertee? any/c any/c) hypertee?)
   (expect (nat->maybe degree) (just pred-degree) ht
   #/hypertee-map-one-degree ht pred-degree func))
 
-(define (hypertee-map-highest-degree ht func)
+(define/contract (hypertee-map-highest-degree ht func)
+  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (hypertee-map-pred-degree ht (hypertee-degree ht) func))
 
-(define (hypertee-pure degree data hole)
+(define/contract (hypertee-pure degree data hole)
+  (-> natural? any/c hypertee? hypertee?)
   (hypertee-promote degree #/hypertee-contour data hole))
 
-(define (hypertee-bind-all-degrees ht hole-to-ht)
+(define/contract (hypertee-bind-all-degrees ht hole-to-ht)
+  (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
 
-(define (hypertee-bind-one-degree ht degree func)
+(define/contract (hypertee-bind-one-degree ht degree func)
+  (-> hypertee? natural? (-> hypertee? any/c hypertee?) hypertee?)
   (hypertee-bind-all-degrees ht #/lambda (hole data)
     (if (= degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-pure (hypertee-degree ht) data hole))))
 
-(define (hypertee-bind-pred-degree ht degree func)
+(define/contract (hypertee-bind-pred-degree ht degree func)
+  (-> hypertee? natural? (-> hypertee? any/c hypertee?) hypertee?)
   (expect (nat->maybe degree) (just pred-degree) ht
   #/hypertee-bind-one-degree ht pred-degree func))
 
-(define (hypertee-bind-highest-degree ht func)
+(define/contract (hypertee-bind-highest-degree ht func)
+  (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)
   (hypertee-bind-pred-degree ht (hypertee-degree ht) func))
 
-(define (hypertee-each-all-degrees ht body)
+(define/contract (hypertee-each-all-degrees ht body)
+  (-> hypertee? (-> hypertee? any/c any) void?)
   ; TODO: See if this can be more efficient.
-  (hypertee-map-all-degrees ht body)
+  (hypertee-map-all-degrees ht #/fn hole data #/begin
+    (body hole data)
+    (void))
   (void))
 
 ; Several of the hypertee operations we've defined obey the hypermonad
@@ -791,10 +799,10 @@
       #/unless (= unstriped-degrees unstriped-degrees-2)
         (error "Expected striped-hypertee to be an island-cane of the same unstriped-degrees")))))
 
-(define (hyprid-degree h)
-  (expect h
+(define/contract (hyprid-degree h)
+  (-> hyprid? natural?)
+  (dissect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
-    (error "Expected h to be a hyprid")
   #/+ striped-degrees unstriped-degrees))
 
 (struct-easy (island-cane data rest)
@@ -848,10 +856,10 @@
 
 (struct-easy (non-lake-cane data) #:equal)
 
-(define (hyprid-map-lakes-highest-degree h func)
-  (expect h
+(define/contract (hyprid-map-lakes-highest-degree h func)
+  (-> hyprid? (-> hypertee? any/c any/c) hyprid?)
+  (dissect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
-    (error "Expected h to be a hyprid")
   #/hyprid striped-degrees unstriped-degrees
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (hypertee-map-highest-degree striped-hypertee func)
@@ -874,10 +882,10 @@
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
 
-(define (hyprid-destripe-once h)
-  (expect h
+(define/contract (hyprid-destripe-once h)
+  (-> hyprid? hyprid?)
+  (dissect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
-    (error "Expected h to be a hyprid")
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (error "Expected h to be a hyprid with at least one degree of striping")
   #/w- succ-unstriped-degrees (add1 unstriped-degrees)
@@ -920,14 +928,16 @@
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
 
-(define (hyprid-fully-destripe h)
+(define/contract (hyprid-fully-destripe h)
+  (-> hyprid? hypertee?)
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
   #/if (= 0 striped-degrees) striped-hypertee
   #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
-(define (hyprid-each-lake-all-degrees h body)
+(define/contract (hyprid-each-lake-all-degrees h body)
+  (-> hyprid? (-> hypertee? any/c any) void?)
   (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
 
 ; This is the inverse of `hyprid-destripe-once`, taking a hyprid and
@@ -935,12 +945,14 @@
 ; unstriped degree. The new stripe's data values are empty lists, as
 ; implemented at the comment labeled "EMPTY LIST NOTE".
 ;
-; The last degree can't be striped, so this only returns a result if
-; the number of unstriped degrees in the input is greater than one.
+; The last degree can't be striped, so the number of unstriped degrees
+; in the input must be greater than one.
 ;
 ; TODO: Test this.
 ;
-(define (hyprid-stripe-maybe h)
+(define/contract (hyprid-stripe-once h)
+  (-> hyprid? hyprid?)
+  
   (define (location-needs-state? location)
     (not #/memq location #/list 'non-lake 'hole))
   (define (location-is-island? location)
@@ -968,19 +980,18 @@
     #/list-overwrite-first-n closing-degree hist
     #/list-ref hist closing-degree))
   
-  (expect h
+  (dissect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
-    (error "Expected h to be a hyprid")
   #/dissect (nat->maybe unstriped-degrees)
     (just pred-unstriped-degrees)
   #/expect (nat->maybe pred-unstriped-degrees)
     (just pred-pred-unstriped-degrees)
-    (list)
+    (error "Expected h to be a hyprid with at least two unstriped degrees")
   #/w- succ-striped-degrees (add1 striped-degrees)
-  #/list #/hyprid succ-striped-degrees pred-unstriped-degrees
+  #/hyprid succ-striped-degrees pred-unstriped-degrees
   #/expect striped-degrees 0
     (dissect striped-hypertee (island-cane data rest)
-    #/dissect (hyprid-stripe-maybe rest) (list striped-rest)
+    #/w- striped-rest (hyprid-stripe-once rest)
     #/island-cane data
     #/hyprid-map-lakes-highest-degree striped-rest
     #/lambda (hole-hypertee rest)
@@ -988,10 +999,9 @@
         (lake-cane data
         #/hypertee-map-highest-degree rest #/lambda (hole rest)
           (dissect
-            (hyprid-stripe-maybe
+            (hyprid-stripe-once
             #/hyprid striped-degrees unstriped-degrees rest)
-            (list
-            #/hyprid succ-striped-degrees pred-unstriped-degrees
+            (hyprid succ-striped-degrees pred-unstriped-degrees
               striped-rest)
             striped-rest))
       #/mat rest (non-lake-cane data) (non-lake-cane data)
@@ -1221,11 +1231,9 @@
 ; greater than a given degree, and demotes the hypertee to that
 ; degree. The given degree must not be greater than the hypertee's
 ; existing degree.
-(define (hypertee-truncate new-degree ht)
-  (unless (exact-nonnegative-integer? new-degree)
-    (error "Expected new-degree to be an exact nonnegative integer"))
-  (expect ht (hypertee d closing-brackets)
-    (error "Expected ht to be a hypertee")
+(define/contract (hypertee-truncate new-degree ht)
+  (-> natural? hypertee? hypertee?)
+  (dissect ht (hypertee d closing-brackets)
   #/expect (<= new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
   #/dissect
@@ -1236,11 +1244,11 @@
     (hypertee d closing-brackets)
   #/hypertee new-degree closing-brackets))
 
-(define (hypertee-zip a b func)
-  (expect a (hypertee d-a closing-brackets-a)
-    (error "Expected a to be a hypertee")
-  #/expect b (hypertee d-b closing-brackets-b)
-    (error "Expected b to be a hypertee")
+(define/contract (hypertee-zip a b func)
+  (-> hypertee? hypertee? (-> hypertee? any/c any/c hypertee?)
+    hypertee?)
+  (dissect a (hypertee d-a closing-brackets-a)
+  #/dissect b (hypertee d-b closing-brackets-b)
   #/expect (= d-a d-b) #t
     (error "Expected hypertees a and b to have the same degree")
   #/expect (= (length closing-brackets-a) (length closing-brackets-b))
@@ -1268,7 +1276,8 @@
 
 ; This zips a degree-N hypertee with a higher-degree hypertee if the
 ; hypertees have the same shape when truncated to degree N.
-(define (hypertee-zip-low-degrees smaller bigger func)
+(define/contract (hypertee-zip-low-degrees smaller bigger func)
+  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c) hypertee?)
   (expect smaller (hypertee d-smaller closing-brackets-smaller)
     (error "Expected smaller to be a hypertee")
   #/expect bigger (hypertee d-bigger closing-brackets-bigger)
