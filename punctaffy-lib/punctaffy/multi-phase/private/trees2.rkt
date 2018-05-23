@@ -575,8 +575,7 @@
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (struct-easy (history-info maybe-current-hole histories))
-  (expect ht (hypertee overall-degree closing-brackets)
-    (error "Expected ht to be a hypertee")
+  (dissect ht (hypertee overall-degree closing-brackets)
   #/w- result
     (list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (list d data)
@@ -710,8 +709,8 @@
 (struct-easy (hypermonad-hypertee degree)
   #:equal
   (#:guard-easy
-    (unless (exact-nonnegative-integer? degree)
-      (error "Expected degree to be an exact nonnegative integer")))
+    (unless (natural? degree)
+      (error "Expected degree to be a natural number")))
   #:other
   
   #:constructor-name make-hypermonad-hypertee
@@ -722,8 +721,8 @@
     (define (hypermonad-hole-hypermonad-for-degree this degree)
       (expect this (hypermonad-hypertee overall-degree)
         (error "Expected this to be a hypermonad-hypertee")
-      #/expect (exact-nonnegative-integer? degree) #t
-        (error "Expected degree to be an exact nonnegative integer")
+      #/expect (natural? degree) #t
+        (error "Expected degree to be a natural number")
       #/expect (< degree overall-degree) #t
         (error "Expected the hole degree to be less than the degree of the hypermonad-hypertee")
       #/make-hypermonad-hypertee degree))
@@ -731,8 +730,8 @@
     (define (hypermonad-pure this hole-degree hole-shape leaf)
       (expect this (hypermonad-hypertee degree)
         (error "Expected this to be a hypermonad-hypertee")
-      #/expect (exact-nonnegative-integer? hole-degree) #t
-        (error "Expected hole-degree to be an exact nonnegative integer")
+      #/expect (natural? hole-degree) #t
+        (error "Expected hole-degree to be a natural number")
       #/hypertee-pure degree leaf hole-shape))
     (define
       (hypermonad-bind-with-degree-and-shape
@@ -740,8 +739,7 @@
       (expect this (hypermonad-hypertee degree)
         (error "Expected this to be a hypermonad-hypertee")
       #/hypertee-bind-all-degrees prefix #/fn hole data
-        (expect hole (hypertee degree closing-brackets)
-          (error "Expected hole to be a hypertee")
+        (dissect hole (hypertee degree closing-brackets)
         #/degree-shape-and-leaf-to-suffix degree hole data)))
     (define
       (hypermonad-map-with-degree-and-shape
@@ -749,8 +747,7 @@
       (expect this (hypermonad-hypertee degree)
         (error "Expected this to be a hypermonad-hypertee")
       #/hypertee-map-all-degrees hypersnippet #/fn hole data
-        (expect hole (hypertee degree closing-brackets)
-          (error "Expected hole to be a hypertee")
+        (dissect hole (hypertee degree closing-brackets)
         #/degree-shape-and-leaf-to-leaf degree hole data)))
     (define (hypermonad-join this hypersnippets)
       (expect this (hypermonad-hypertee degree)
@@ -779,8 +776,8 @@
   (hyprid striped-degrees unstriped-degrees striped-hypertee)
   #:equal
   (#:guard-easy
-    (unless (exact-nonnegative-integer? striped-degrees)
-      (error "Expected striped-degrees to be an exact nonnegative integer"))
+    (unless (natural? striped-degrees)
+      (error "Expected striped-degrees to be a natural number"))
     (unless (exact-positive-integer? unstriped-degrees)
       (error "Expected unstriped-degrees to be an exact positive integer"))
     (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
@@ -928,9 +925,8 @@
 
 (define/contract (hyprid-fully-destripe h)
   (-> hyprid? hypertee?)
-  (expect h
+  (dissect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
-    (error "Expected h to be a hyprid")
   #/if (= 0 striped-degrees) striped-hypertee
   #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
