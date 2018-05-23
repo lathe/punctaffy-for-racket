@@ -351,7 +351,7 @@
 
 (define/contract (list-overwrite-first-n n val lst)
   (-> natural? any/c list? list?)
-  (list-kv-map lst #/lambda (i elem)
+  (list-kv-map lst #/fn i elem
     (if (< i n) val elem)))
 
 (define/contract (hypertee-closing-bracket-degree closing-bracket)
@@ -365,13 +365,13 @@
   (-> natural? list? void?)
   (expect
     (list-foldl
-      (build-list opening-degree #/lambda (i)
+      (build-list opening-degree #/fn i
         ; Whatever sub-histories we put here don't actually matter
         ; because they'll be overwritten whenever this history is
         ; used, so we just make them empty lists.
         (make-list i #/list))
       closing-brackets
-    #/lambda (histories closing-bracket)
+    #/fn histories closing-bracket
       (w- closing-degree
         (hypertee-closing-bracket-degree closing-bracket)
       #/expect (< closing-degree #/length histories) #t
@@ -413,7 +413,7 @@
   (dissect ht (hypertee d closing-brackets)
   #/hypertee (add1 d)
   #/cons (list d hole-value)
-  #/list-bind closing-brackets #/lambda (closing-bracket)
+  #/list-bind closing-brackets #/fn closing-bracket
     (list (hypertee-closing-bracket-degree closing-bracket)
       closing-bracket)))
 
@@ -425,7 +425,7 @@
   (dissect ht (hypertee d closing-brackets)
   #/hypertee (add1 d)
   #/append
-    (list-map closing-brackets #/lambda (closing-bracket)
+    (list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (list d data)
         (list (add1 d) data)
         (add1 closing-bracket)))
@@ -447,7 +447,7 @@
     brackets closing-brackets
     interpolations (make-hasheq)
     hist
-      (history-info (nothing) #/build-list overall-degree #/lambda (i)
+      (history-info (nothing) #/build-list overall-degree #/fn i
         (history-info (nothing) #/make-list i
         ; These `history-info` values with empty lists are just dummy
         ; values, since they'll be replaced whenever this part of the
@@ -550,8 +550,7 @@
           
           ; The highest-degree holes are propagated through to the
           ; result. They don't cause us to return to the root.
-          #/build-list (- overall-degree histories-len)
-          #/lambda (j)
+          #/build-list (- overall-degree histories-len) #/fn j
             (history-info (just this-root-bracket-i)
             #/make-list (+ histories-len j)
             
@@ -566,7 +565,7 @@
     (expect brackets (list)
       (error "Internal error: Encountered the end of a hypertee join interpolation in a region of degree 0 before getting to the end of the root")
     #/void)
-    (hash-kv-each interpolations #/lambda (i brackets)
+    (hash-kv-each interpolations #/fn i brackets
       (expect brackets (list)
         (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")
       #/void))
@@ -579,11 +578,11 @@
   (expect ht (hypertee overall-degree closing-brackets)
     (error "Expected ht to be a hypertee")
   #/w- result
-    (list-map closing-brackets #/lambda (closing-bracket)
+    (list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (list d data)
         (w- rev-brackets (list)
         #/w- hist
-          (build-list d #/lambda (i)
+          (build-list d #/fn i
             (make-list i
             ; These empty lists are just dummy values, since they'll
             ; be replaced whenever this part of the history is used.
@@ -591,14 +590,14 @@
         #/list d #/list data #/box #/list rev-brackets hist)
         closing-bracket))
   #/w- hist
-    (history-info (nothing) #/build-list overall-degree #/lambda (i)
+    (history-info (nothing) #/build-list overall-degree #/fn i
       (history-info (nothing) #/make-list i
       ; These `history-info` values with empty lists are just dummy
       ; values, since they'll be replaced whenever this part of the
       ; history is used.
       #/history-info (nothing) #/list))
   #/begin
-    (list-each result #/lambda (closing-bracket)
+    (list-each result #/fn closing-bracket
       (dissect hist (history-info maybe-current-hole histories)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
       #/expect (< d #/length histories) #t
@@ -607,7 +606,7 @@
         (history-info maybe-restored-hole histories)
       #/w- histories (list-overwrite-first-n d hist histories)
       #/w- update-hole-state!
-        (lambda (state)
+        (fn state
           (dissect (unbox state) (list rev-brackets hist)
           #/expect (< d #/length hist) #t
             (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
@@ -647,8 +646,7 @@
     (error "Internal error: Ended hypertee-map-all-degrees without being in a hole")
   #/expect (unbox state) (list (list) (list))
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
-  #/hypertee overall-degree
-  #/list-map result #/lambda (closing-bracket)
+  #/hypertee overall-degree #/list-map result #/fn closing-bracket
     (expect closing-bracket (list d #/list data state) closing-bracket
     #/dissect (unbox state) (list rev-brackets hist)
     #/expect hist (list)
@@ -657,7 +655,7 @@
 
 (define/contract (hypertee-map-one-degree ht degree func)
   (-> hypertee? natural? (-> hypertee? any/c any/c) hypertee?)
-  (hypertee-map-all-degrees ht #/lambda (hole data)
+  (hypertee-map-all-degrees ht #/fn hole data
     (if (= degree #/hypertee-degree hole)
       (func hole data)
       data)))
@@ -682,7 +680,7 @@
 
 (define/contract (hypertee-bind-one-degree ht degree func)
   (-> hypertee? natural? (-> hypertee? any/c hypertee?) hypertee?)
-  (hypertee-bind-all-degrees ht #/lambda (hole data)
+  (hypertee-bind-all-degrees ht #/fn hole data
     (if (= degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-pure (hypertee-degree ht) data hole))))
@@ -741,7 +739,7 @@
         this prefix degree-shape-and-leaf-to-suffix)
       (expect this (hypermonad-hypertee degree)
         (error "Expected this to be a hypermonad-hypertee")
-      #/hypertee-bind-all-degrees prefix #/lambda (hole data)
+      #/hypertee-bind-all-degrees prefix #/fn hole data
         (expect hole (hypertee degree closing-brackets)
           (error "Expected hole to be a hypertee")
         #/degree-shape-and-leaf-to-suffix degree hole data)))
@@ -750,7 +748,7 @@
         this hypersnippet degree-shape-and-leaf-to-leaf)
       (expect this (hypermonad-hypertee degree)
         (error "Expected this to be a hypermonad-hypertee")
-      #/hypertee-map-all-degrees hypersnippet #/lambda (hole data)
+      #/hypertee-map-all-degrees hypersnippet #/fn hole data
         (expect hole (hypertee degree closing-brackets)
           (error "Expected hole to be a hypertee")
         #/degree-shape-and-leaf-to-leaf degree hole data)))
@@ -763,13 +761,13 @@
       (hypermonad-bind-with-degree
         this prefix degree-and-leaf-to-suffix)
       (hypermonad-bind-with-degree-and-shape this prefix
-      #/lambda (hole-degree hole-shape leaf)
+      #/fn hole-degree hole-shape leaf
         (degree-and-leaf-to-suffix hole-degree leaf)))
     (define
       (hypermonad-map-with-degree
         this hypersnippet degree-and-leaf-to-leaf)
       (hypermonad-map-with-degree-and-shape this hypersnippet
-      #/lambda (hole-degree hole-shape leaf)
+      #/fn hole-degree hole-shape leaf
         (degree-and-leaf-to-leaf hole-degree leaf)))
   ])
 
@@ -811,7 +809,7 @@
     (unless (hyprid? rest)
       (error "Expected rest to be a hyprid"))
     (w- d (hyprid-degree rest)
-    #/hyprid-each-lake-all-degrees rest #/lambda (hole-hypertee data)
+    #/hyprid-each-lake-all-degrees rest #/fn hole-hypertee data
       (when (= d #/add1 #/hypertee-degree hole-hypertee)
         (mat data (lake-cane data rest)
           (unless (= d #/hypertee-degree rest)
@@ -826,14 +824,14 @@
     (unless (hypertee? rest)
       (error "Expected rest to be a hypertee"))
     (w- d (hypertee-degree rest)
-    #/hypertee-each-all-degrees rest #/lambda (hole data)
+    #/hypertee-each-all-degrees rest #/fn hole data
       (if (= d #/add1 #/hypertee-degree hole)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
         #/unless (= d #/hyprid-degree rest)
           (error "Expected data to be an island-cane of the same degree")
         #/hyprid-each-lake-all-degrees rest
-        #/lambda (hole-hypertee data)
+        #/fn hole-hypertee data
           (unless (= d #/add1 #/hypertee-degree hole-hypertee)
           
           ; A root island is allowed to contain arbitrary values in
@@ -865,14 +863,14 @@
     (hypertee-map-highest-degree striped-hypertee func)
   #/dissect striped-hypertee (island-cane data rest)
   #/island-cane data
-  #/hyprid-map-lakes-highest-degree rest #/lambda (hole-hypertee rest)
+  #/hyprid-map-lakes-highest-degree rest #/fn hole-hypertee rest
     (mat rest (lake-cane data rest)
       (lake-cane
         (func
-          (hypertee-map-highest-degree rest #/lambda (hole rest)
+          (hypertee-map-highest-degree rest #/fn hole rest
             (list))
           data)
-      #/hypertee-map-highest-degree rest #/lambda (hole rest)
+      #/hypertee-map-highest-degree rest #/fn hole rest
         (dissect
           (hyprid-map-lakes-highest-degree
             (hyprid striped-degrees unstriped-degrees rest)
@@ -898,11 +896,11 @@
     (hypertee-bind-pred-degree
       (hypertee-promote succ-unstriped-degrees rest)
       unstriped-degrees
-    #/lambda (hole rest)
+    #/fn hole rest
       (mat rest (lake-cane data rest)
         (hypertee-bind-pred-degree (hypertee-contour data rest)
           unstriped-degrees
-        #/lambda (hole rest)
+        #/fn hole rest
           (dissect
             (hyprid-destripe-once
             #/hyprid striped-degrees unstriped-degrees rest)
@@ -915,10 +913,10 @@
   #/island-cane data
   #/w- destriped-rest (hyprid-destripe-once rest)
   #/hyprid-map-lakes-highest-degree destriped-rest
-  #/lambda (hole-hypertee rest)
+  #/fn hole-hypertee rest
     (mat rest (lake-cane data rest)
       (lake-cane data
-      #/hypertee-map-highest-degree rest #/lambda (hole rest)
+      #/hypertee-map-highest-degree rest #/fn hole rest
         (dissect
           (hyprid-destripe-once
           #/hyprid striped-degrees unstriped-degrees rest)
@@ -994,10 +992,10 @@
     #/w- striped-rest (hyprid-stripe-once rest)
     #/island-cane data
     #/hyprid-map-lakes-highest-degree striped-rest
-    #/lambda (hole-hypertee rest)
+    #/fn hole-hypertee rest
       (mat rest (lake-cane data rest)
         (lake-cane data
-        #/hypertee-map-highest-degree rest #/lambda (hole rest)
+        #/hypertee-map-highest-degree rest #/fn hole rest
           (dissect
             (hyprid-stripe-once
             #/hyprid striped-degrees unstriped-degrees rest)
@@ -1014,21 +1012,21 @@
   #/w- stripe-starting-state
     (w- rev-brackets (list)
     #/stripe-state rev-brackets
-    #/build-list pred-unstriped-degrees #/lambda (i)
+    #/build-list pred-unstriped-degrees #/fn i
       ; These empty lists are just dummy values, since they'll be
       ; replaced whenever this part of the history is used.
       (make-list i #/list))
   #/w- root-island-state (box stripe-starting-state)
   #/w- hist
     (history-info 'root-island (just root-island-state)
-    #/build-list d #/lambda (i)
+    #/build-list d #/fn i
       (history-info 'hole (nothing) #/make-list i
       ; These `history-info` values with empty lists are just dummy
       ; values, since they'll be replaced whenever this part of the
       ; history is used.
       #/history-info 'hole (nothing) #/list))
   #/begin
-    (list-each closing-brackets #/lambda (closing-bracket)
+    (list-each closing-brackets #/fn closing-bracket
       
       ; As we encounter lakes, we build mutable states to keep their
       ; histories in, and so on for every island and lake at every
@@ -1156,7 +1154,7 @@
     
     #/hyprid 0 pred-unstriped-degrees
     #/hypertee pred-unstriped-degrees
-    #/list-map (reverse rev-brackets) #/lambda (closing-bracket)
+    #/list-map (reverse rev-brackets) #/fn closing-bracket
       (expect closing-bracket (list d data) closing-bracket
       #/expect (= d pred-pred-unstriped-degrees) #t closing-bracket
       #/mat data (non-lake-cane data) closing-bracket
@@ -1164,7 +1162,7 @@
         (dissect (unbox rest-state)
           (stripe-state rev-brackets #/list)
         #/list d #/lake-cane data #/hypertee pred-unstriped-degrees
-        #/list-map (reverse rev-brackets) #/lambda (closing-bracket)
+        #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (list d data) closing-bracket
           #/expect (= d pred-pred-unstriped-degrees) #t
             closing-bracket
@@ -1237,7 +1235,7 @@
   #/expect (<= new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
   #/dissect
-    (hypertee-bind-all-degrees ht #/lambda (hole data)
+    (hypertee-bind-all-degrees ht #/fn hole data
       (if (<= new-degree #/hypertee-degree hole)
         (hypertee-promote d hole)
         (hypertee-pure d data hole)))
@@ -1256,7 +1254,7 @@
     (error "Expected hypertees a and b to have the same shape")
   #/hypertee-map-all-degrees
     (hypertee d-a #/map
-      (lambda (a b)
+      (fn a b
         (mat a (list d-a data-a)
           (mat b (list d-b data-b)
             (expect (= d-a d-b) #t
@@ -1270,7 +1268,7 @@
               a))))
       closing-brackets-a
       closing-brackets-b)
-  #/lambda (hole data)
+  #/fn hole data
     (dissect data (list a b)
     #/func hole a b)))
 
@@ -1286,17 +1284,15 @@
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/expect
     (equal?
-      (hypertee-map-all-degrees smaller #/lambda (hole data) #/list)
+      (hypertee-map-all-degrees smaller #/fn hole data #/list)
       (hypertee-map-all-degrees (hypertee-truncate d-smaller bigger)
-      #/lambda (hole data) #/list))
+      #/fn hole data #/list))
     #t
     (error "Expected hypertees smaller and bigger to have the same low-degree shape")
   #/w- mutable
-    (hypertee-map-all-degrees bigger #/lambda (hole data)
-      (box data))
+    (hypertee-map-all-degrees bigger #/fn hole data #/box data)
   #/begin
     (hypertee-zip smaller (hypertee-truncate d-smaller mutable)
-    #/lambda (hole smaller mutable)
+    #/fn hole smaller mutable
       (set-box! mutable (func hole smaller #/unbox mutable)))
-  #/hypertee-map-all-degrees mutable #/lambda (hole data)
-    (unbox data)))
+  #/hypertee-map-all-degrees mutable #/fn hole data #/unbox data))
