@@ -132,8 +132,8 @@
 ; holes always represent themselves, never lakes. These rules
 ; characterize the structure of our stripe-divided data.
 ;
-; Once divide a hypersnippet shape up this way, we can represent each
-; island as a pair of a data value and the hypertee of lakes and
+; Once we divide a hypersnippet shape up this way, we can represent
+; each island as a pair of a data value and the hypertee of lakes and
 ; non-lake hole contents beyond, while we represent each lake as a
 ; pair of its hole contents and the hypertee of islands beyond.
 ;
@@ -177,17 +177,21 @@
 ;
 ; We call this representation a "hyprid" ("hyper" + "hybrid") since it
 ; stores both hypersnippet information and the hypertee information
-; beyond the holes. Hyprids allow this striping to be iterated to any
-; number of degrees up to one less than the degree of the hypersnippet
-; shape. Each iteration works the same way, but the concept of
+; beyond the holes. Actually, hyprids generalize this striping a bit
+; further by allowing the stripes to be striped, and so on. Each
+; iteration of the striping works the same way, but the concept of
 ; "hypertee of shape S" is replaced with "stripes that collapse to a
-; hypertee of shape S." (Adding striping to a degree-1 hyprid doesn't
-; work, since an island stripe of degree 0 has no holes to carry a
-; lake stripe in at all.)
+; hypertee of shape S."
+;
+; A hyprid can have a number of striping iterations strictly less than
+; the degree it has when collapsed to a hypertee. For instance, adding
+; even one degree of striping to a degree-1 hyprid doesn't work, since
+; an island stripe of degree 0 would have no holes to carry a lake
+; stripe in at all.
 ;
 ; For circumstances where we're willing to discard the string
 ; information of our interpolated string, we can use the operation
-; `hyprid-destripe-maybe` to get back a simpler hypertee:
+; `hyprid-destripe-once` to get back a simpler hypertee:
 ;
 ;   Hypertee of shape "^2( ,( ) ,( ) )"
 ;    |
@@ -197,11 +201,10 @@
 ;    |
 ;    `-- Hole of shape ")": An ignored trivial value
 ;
-; Technically, `hyprid-destripe-maybe` returns a hyprid of one less
-; stripe iteration (or will even return nothing if the original hyprid
-; had zero stripe iterations). While this collapses one level of
-; stripes, the operation `hyprid-fully-destripe` repeatedly collapses
-; stripes and always results in a hypertee value.
+; Technically, `hyprid-destripe-once` returns a hyprid of one less
+; stripe iteration. We also offer an operation that collapses all
+; degrees of stripes at once, `hyprid-fully-destripe`, which always
+; results in a hypertee value.
 ;
 ; Note that it would not be so easy to represent hypersnippet data
 ; without building it out of hypertees. If we have hypertees, we can
@@ -436,8 +439,8 @@
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is another degree-N hypertee to be interpolated. In those
 ; interpolated hypertees, the values of holes of degree less than M
-; must be empty lists. This returns a single degree-N hypertee
-; which has holes for all the degree-M-or-greater holes of the
+; must be empty lists. This returns a single degree-N hypertee which
+; has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 (define (hypertee-join-all-degrees ht)
   (struct-easy (history-info maybe-interpolation-i histories))
@@ -871,14 +874,14 @@
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
 
-(define (hyprid-destripe-maybe h)
+(define (hyprid-destripe-once h)
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
-    (list)
+    (error "Expected h to be a hyprid with at least one degree of striping")
   #/w- succ-unstriped-degrees (add1 unstriped-degrees)
-  #/list #/hyprid pred-striped-degrees succ-unstriped-degrees
+  #/hyprid pred-striped-degrees succ-unstriped-degrees
   #/dissect striped-hypertee
     (island-cane data
     #/hyprid pred-striped-degrees-2 unstriped-degrees-2 rest)
@@ -893,27 +896,25 @@
           unstriped-degrees
         #/lambda (hole rest)
           (dissect
-            (hyprid-destripe-maybe
+            (hyprid-destripe-once
             #/hyprid striped-degrees unstriped-degrees rest)
-            (list
-            #/hyprid pred-striped-degrees succ-unstriped-degrees
+            (hyprid pred-striped-degrees succ-unstriped-degrees
               destriped-rest)
             destriped-rest))
       #/mat rest (non-lake-cane data)
         (hypertee-pure succ-unstriped-degrees data hole)
       #/error "Internal error"))
   #/island-cane data
-  #/dissect (hyprid-destripe-maybe rest) (list destriped-rest)
+  #/w- destriped-rest (hyprid-destripe-once rest)
   #/hyprid-map-lakes-highest-degree destriped-rest
   #/lambda (hole-hypertee rest)
     (mat rest (lake-cane data rest)
       (lake-cane data
       #/hypertee-map-highest-degree rest #/lambda (hole rest)
         (dissect
-          (hyprid-destripe-maybe
+          (hyprid-destripe-once
           #/hyprid striped-degrees unstriped-degrees rest)
-          (list
-          #/hyprid pred-striped-degrees succ-unstriped-degrees
+          (hyprid pred-striped-degrees succ-unstriped-degrees
             destriped-rest)
           destriped-rest))
     #/mat rest (non-lake-cane data) (non-lake-cane data)
@@ -923,14 +924,13 @@
   (expect h
     (hyprid striped-degrees unstriped-degrees striped-hypertee)
     (error "Expected h to be a hyprid")
-  #/mat (hyprid-destripe-maybe h) (list destriped-once)
-    (hyprid-fully-destripe destriped-once)
-    striped-hypertee))
+  #/if (= 0 striped-degrees) striped-hypertee
+  #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
 (define (hyprid-each-lake-all-degrees h body)
   (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
 
-; This is the inverse of `hyprid-destripe-maybe`, taking a hyprid and
+; This is the inverse of `hyprid-destripe-once`, taking a hyprid and
 ; returning a hyprid with one more striped degree and one fewer
 ; unstriped degree. The new stripe's data values are empty lists, as
 ; implemented at the comment labeled "EMPTY LIST NOTE".
@@ -1191,7 +1191,7 @@
 ;
 ;   A ~3( ~2( ,( B C ) ,( D E ) ) ) F
 ;
-; When we reverse that, should we get three roots back?  Or are only
+; When we reverse that, should we get three roots back? Or are only
 ; lakes that have one neighboring island (i.e. no islands beyond)
 ; valid targets? Or should we instead target an arbitrary place in an
 ; *island*, punching a hole so we can treat that hole as the root?
