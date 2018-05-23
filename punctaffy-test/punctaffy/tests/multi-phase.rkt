@@ -6,6 +6,8 @@
 
 (require rackunit)
 
+(require #/only-in lathe-comforts fn)
+
 (require punctaffy/multi-phase/private/trees2)
 
 ; (We provide nothing from this module.)
@@ -146,11 +148,11 @@
 
 
 (check-equal?
-  (hyprid-destripe-maybe
+  (hyprid-destripe-once
     (hyprid 1 1
     #/island-cane "Hello." #/hyprid 0 1 #/hypertee 1 #/list #/list 0
     #/non-lake-cane #/list))
-  (list #/hyprid 0 2 #/hypertee 2 #/list
+  (hyprid 0 2 #/hypertee 2 #/list
     (list 0 #/list))
   "Destriping a hyprid-encoded interpolated string with no interpolations gives a degree-2 hyprid with no nonzero-degree holes")
 
@@ -172,7 +174,7 @@
   "Fully destriping a hyprid-encoded interpolated string with two interpolations gives a degree-2 hypertee with two degree-1 holes containing the interpolated values")
 
 (check-equal?
-  (hyprid-stripe-maybe
+  (hyprid-stripe-once
   #/hyprid 0 3 #/hypertee 3 #/list
     (list 2 'a)
     1
@@ -181,8 +183,7 @@
     0
     0
     (list 0 'a))
-  (list
-  #/hyprid 1 2 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
+  (hyprid 1 2 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
     (list 1 #/lake-cane 'a #/hypertee 2 #/list
       (list 1 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
         (list 1 #/non-lake-cane 'a)
@@ -196,8 +197,8 @@
 
 (check-equal?
   
-  (car #/hyprid-stripe-maybe
-  #/car #/hyprid-stripe-maybe
+  (hyprid-stripe-once
+  #/hyprid-stripe-once
   #/hyprid 0 3 #/hypertee 3 #/list
     (list 2 'a)
     1
@@ -230,10 +231,11 @@
   
   "Striping a hyprid twice")
 
-(check-equal?
-  (hyprid-stripe-maybe
-  #/car #/hyprid-stripe-maybe
-  #/car #/hyprid-stripe-maybe
+(check-exn exn:fail?
+  (fn
+  #/hyprid-stripe-once
+  #/hyprid-stripe-once
+  #/hyprid-stripe-once
   #/hyprid 0 3 #/hypertee 3 #/list
     (list 2 'a)
     1
@@ -242,5 +244,4 @@
     0
     0
     (list 0 'a))
-  (list)
   "Trying to stripe a hybrid more than it can be striped")

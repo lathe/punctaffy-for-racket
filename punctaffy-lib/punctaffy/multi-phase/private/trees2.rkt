@@ -10,11 +10,11 @@
 (require #/only-in racket/list make-list)
 (require #/only-in racket/math natural?)
 
-(require #/only-in lathe-comforts dissect expect fn mat w-)
+(require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
   list-bind list-each list-foldl list-kv-map list-map nat->maybe)
-(require #/only-in lathe-comforts/maybe just)
+(require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 (require #/only-in punctaffy/multi-phase/private/hypermonad
@@ -26,7 +26,7 @@
 ; ===== Helpers for this module ======================================
 
 (define-syntax-rule (while condition body ...)
-  (let next () #/when condition #/#/begin0 next
+  (w-loop next #/when condition #/#/begin0 next
     body ...))
 
 
@@ -447,37 +447,37 @@
     brackets closing-brackets
     interpolations (make-hasheq)
     hist
-      (history-info (list) #/build-list overall-degree #/lambda (i)
-        (history-info (list) #/make-list i
+      (history-info (nothing) #/build-list overall-degree #/lambda (i)
+        (history-info (nothing) #/make-list i
         ; These `history-info` values with empty lists are just dummy
         ; values, since they'll be replaced whenever this part of the
         ; history is used.
-        #/history-info (list) #/list))
+        #/history-info (nothing) #/list))
     root-bracket-i 0
     (define (pop-root-bracket!)
       (expect brackets (cons bracket rest)
-        (list)
+        (nothing)
       #/begin
         (set! brackets rest)
         (set! root-bracket-i (add1 root-bracket-i))
-        (list bracket)))
+        (just bracket)))
     (define (pop-interpolation-bracket! i)
       (expect (hash-ref interpolations i) (cons bracket rest)
-        (list)
+        (nothing)
       #/begin
         (hash-set! interpolations i rest)
-        (list bracket)))
+        (just bracket)))
     (define (verify-bracket-degree d maybe-closing-bracket)
-      (dissect maybe-closing-bracket (list closing-bracket)
+      (dissect maybe-closing-bracket (just closing-bracket)
       #/unless (= d #/hypertee-closing-bracket-degree closing-bracket)
         (error "Expected each interpolation of a hypertee join to be the right shape for its interpolation context")))
     (while
       (dissect hist (history-info maybe-interpolation-i histories)
-      #/mat maybe-interpolation-i (list interpolation-i)
+      #/mat maybe-interpolation-i (just interpolation-i)
         
         ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
-          (list closing-bracket)
+          (just closing-bracket)
           (expect histories (list)
             (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
             ; The interpolation has no more closing brackets, and
@@ -489,7 +489,7 @@
         #/dissect (list-ref histories d)
           (history-info maybe-interpolation-i histories)
         #/begin0 #t
-          (mat maybe-interpolation-i (list)
+          (mat maybe-interpolation-i (nothing)
             (begin
               (verify-bracket-degree d #/pop-root-bracket!)
               (mat closing-bracket (list d data)
@@ -504,7 +504,7 @@
       
       ; We read from the root's closing bracket stream.
       #/w- this-root-bracket-i root-bracket-i
-      #/expect (pop-root-bracket!) (list closing-bracket)
+      #/expect (pop-root-bracket!) (just closing-bracket)
         (expect histories (list)
           (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
           ; The root has no more closing brackets, and we're in a
@@ -518,7 +518,7 @@
       #/begin0 #t
       #/expect closing-bracket (list d data)
         ; We resume an interpolation.
-        (expect maybe-interpolation-i (list i)
+        (expect maybe-interpolation-i (just i)
           (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
         #/begin
           (verify-bracket-degree d (pop-interpolation-bracket! i))
@@ -537,7 +537,7 @@
         (hash-set! interpolations this-root-bracket-i
           data-closing-brackets)
         (set! hist
-          (history-info (list this-root-bracket-i)
+          (history-info (just this-root-bracket-i)
           
           ; We build a list of histories of length `overall-degree`,
           ; since the hypertee we're interpolating into the root must
@@ -552,13 +552,13 @@
           ; result. They don't cause us to return to the root.
           #/build-list (- overall-degree histories-len)
           #/lambda (j)
-            (history-info (list this-root-bracket-i)
+            (history-info (just this-root-bracket-i)
             #/make-list (+ histories-len j)
             
             ; The values we use here don't matter since they'll be
             ; overwritten whenever this part of the history is
             ; restored.
-            #/history-info (list this-root-bracket-i) #/list))))
+            #/history-info (just this-root-bracket-i) #/list))))
       
       ; This while loop's body is intentionally left blank. Everything
       ; was done in the condition.
@@ -591,12 +591,12 @@
         #/list d #/list data #/box #/list rev-brackets hist)
         closing-bracket))
   #/w- hist
-    (history-info (list) #/build-list overall-degree #/lambda (i)
-      (history-info (list) #/make-list i
+    (history-info (nothing) #/build-list overall-degree #/lambda (i)
+      (history-info (nothing) #/make-list i
       ; These `history-info` values with empty lists are just dummy
       ; values, since they'll be replaced whenever this part of the
       ; history is used.
-      #/history-info (list) #/list))
+      #/history-info (nothing) #/list))
   #/begin
     (list-each result #/lambda (closing-bracket)
       (dissect hist (history-info maybe-current-hole histories)
@@ -620,30 +620,30 @@
                   d)
                 rev-brackets)
               hist)))
-      #/mat maybe-current-hole (list state)
-        (mat maybe-restored-hole (list state)
+      #/mat maybe-current-hole (just state)
+        (mat maybe-restored-hole (just state)
           (error "Internal error: Went directly from one hole to another in progress")
         #/mat closing-bracket (list d #/list data state)
           (error "Internal error: Went directly from one hole to another's beginning")
         #/begin
-          (set! hist (history-info (list) histories))
+          (set! hist (history-info (nothing) histories))
           (update-hole-state! state))
-      #/mat maybe-restored-hole (list state)
+      #/mat maybe-restored-hole (just state)
         (mat closing-bracket (list d #/list data state)
           (error "Internal error: Went into two holes at once")
         #/begin
-          (set! hist (history-info (list state) histories))
+          (set! hist (history-info (just state) histories))
           (update-hole-state! state))
       #/mat closing-bracket (list d #/list data state)
         ; NOTE: We don't need to `update-hole-state!` here because as
         ; far as this hole's state is concerned, this bracket is the
         ; opening bracket of the hole, not a closing bracket.
-        (set! hist (history-info (list state) histories))
+        (set! hist (history-info (just state) histories))
       #/error "Internal error: Went directly from the root to the root without passing through a hole"))
   #/dissect hist (history-info maybe-current-hole histories)
   #/expect histories (list)
     (error "Internal error: Ended hypertee-map-all-degrees without being in a zero-degree region")
-  #/expect maybe-current-hole (list state)
+  #/expect maybe-current-hole (just state)
     (error "Internal error: Ended hypertee-map-all-degrees without being in a hole")
   #/expect (unbox state) (list (list) (list))
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
@@ -966,10 +966,10 @@
         #/list 'root-island 'non-lake 'lake 'inner-island 'hole)
         (error "Internal error"))
       (if (location-needs-state? location)
-        (expect maybe-state (list state)
+        (expect maybe-state (just state)
           (error "Internal error")
         #/void)
-        (expect maybe-state (list)
+        (expect maybe-state (nothing)
           (error "Internal error")
         #/void))))
   (struct-easy (unfinished-lake-cane data rest-state))
@@ -1020,13 +1020,13 @@
       (make-list i #/list))
   #/w- root-island-state (box stripe-starting-state)
   #/w- hist
-    (history-info 'root-island (list root-island-state)
+    (history-info 'root-island (just root-island-state)
     #/build-list d #/lambda (i)
-      (history-info 'hole (list) #/make-list i
+      (history-info 'hole (nothing) #/make-list i
       ; These `history-info` values with empty lists are just dummy
       ; values, since they'll be replaced whenever this part of the
       ; history is used.
-      #/history-info 'hole (list) #/list))
+      #/history-info 'hole (nothing) #/list))
   #/begin
     (list-each closing-brackets #/lambda (closing-bracket)
       
@@ -1059,8 +1059,8 @@
         #/w- rest-state (box stripe-starting-state)
         #/begin
           (set! hist
-            (history-info 'lake (list rest-state) histories-after))
-        #/dissect maybe-state-before (list state)
+            (history-info 'lake (just rest-state) histories-after))
+        #/dissect maybe-state-before (just state)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
         #/set-box! state
           (stripe-state
@@ -1085,8 +1085,8 @@
             (error "Internal error")
           #/begin
             (set! hist
-              (history-info 'non-lake (list) histories-after))
-          #/dissect maybe-state-before (list state)
+              (history-info 'non-lake (nothing) histories-after))
+          #/dissect maybe-state-before (just state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
           #/set-box! state
             (stripe-state
@@ -1104,8 +1104,8 @@
           #/begin
             (set! hist
               (history-info
-                'inner-island (list new-state) histories-after))
-          #/dissect maybe-state-before (list state)
+                'inner-island (just new-state) histories-after))
+          #/dissect maybe-state-before (just state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
           #/set-box! state
             (stripe-state
@@ -1125,7 +1125,7 @@
         (set! hist
           (history-info
             location-after maybe-state-after histories-after))
-        (expect maybe-state-before (list state) (void)
+        (expect maybe-state-before (just state) (void)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
         #/w- hist (update-simple-history d hist)
         #/set-box! state
@@ -1137,7 +1137,7 @@
                 d)
               rev-brackets)
             hist))
-        (expect maybe-state-after (list state) (void)
+        (expect maybe-state-after (just state) (void)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
         #/set-box! state
           (stripe-state
@@ -1147,7 +1147,7 @@
   ; the brackets, arranging the brackets in the correct order, and
   ; recursively assembling lakes and islands using their states the
   ; same way.
-  #/let assemble-island-from-state ([state root-island-state])
+  #/w-loop assemble-island-from-state state root-island-state
     (dissect (unbox state) (stripe-state rev-brackets #/list)
     
     ; EMPTY LIST NOTE: This is where we put an empty list into the new
