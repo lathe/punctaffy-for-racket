@@ -4,7 +4,4 @@
 
 (define deps
   (list
-    "base"
-    "lathe-comforts-lib"
-    "lathe-morphisms-lib"
-    "parendown-lib"))
+    "base" "lathe-comforts-lib" "lathe-ordinals-lib" "parendown-lib"))

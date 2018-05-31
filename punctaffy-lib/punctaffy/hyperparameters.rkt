@@ -9,22 +9,13 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
-(require #/only-in lathe-comforts/maybe
-  just maybe? maybe/c maybe-map nothing)
+(require #/only-in lathe-comforts/maybe just maybe? maybe/c maybe-map)
 (require #/only-in lathe-comforts/struct struct-easy)
-
-; TODO: Stop relying on `.../private/...` modules like this.
-(require #/only-in
-  lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onumext? onumext<?)
-(require #/only-in
-  lathe-morphisms/private/ordinals/below-epsilon-zero/olist
-  olist-build olist-drop olist-tails olist-update-thunk
-  olist-plus-binary olist-ref-and-call olist-zip-map)
-
-; TODO: Once we implement this concretely in terms of the operations
-; of `.../below-epsilon-zero/olist`, implement it instead in terms of
-; algebras which those can be a special case of.
+(require #/only-in lathe-ordinals
+  onum<? onum</c onum<=e0? onum<e0? onum-e0)
+(require #/only-in lathe-ordinals/olist
+  olist-build olist-drop olist-tails olist-update-thunk olist-plus
+  olist-ref-and-call olist-zip-map)
 
 ;(provide #/all-defined-out)
 
@@ -37,7 +28,7 @@
 (define/contract (make-empty-hyperparameterization)
   (-> hyperparameterization?)
   (hyperparameterization hyperparameterization-empty-locals
-  #/olist-build (nothing) #/fn _
+  #/olist-build (onum-e0) #/fn _
     hyperparameterization-empty-escape))
 
 (define/contract (hyperparameterization-ref-maybe hp key)
@@ -53,7 +44,7 @@
 (define/contract
   (hyperparameterization-set-low-escapes
     orig-hp dimension key escape-hp)
-  (-> hyperparameterization? onumext? any/c hyperparameterization?
+  (-> hyperparameterization? onum<=e0? any/c hyperparameterization?
     hyperparameterization?)
   (dissect orig-hp (hyperparameterization orig-locals orig-escapes)
   #/dissect escape-hp
@@ -62,7 +53,7 @@
     (fn orig-low low-tails
       (olist-zip-map orig-low low-tails #/fn escapes tail
         (hash-set escapes key #/list escape-locals tail)))
-  #/expect dimension (just dimension)
+  #/if (equal? dimension #/onum-e0)
     (hyperparameterization orig-locals
     #/zip orig-escapes #/olist-tails escape-escapes)
   #/dissect (olist-drop dimension #/olist-tails escape-escapes)
@@ -70,23 +61,23 @@
   #/dissect (olist-drop dimension orig-escapes)
     (just #/list orig-low orig-high)
   #/hyperparameterization orig-locals
-  #/olist-plus-binary (zip orig-low low-tails) orig-high))
+  #/olist-plus (zip orig-low low-tails) orig-high))
 
 (define/contract
   (hyperparameterization-ref-escape-maybe
     hp dimension escape-now-key escape-later-key)
-  (-> hyperparameterization? onum? any/c any/c
+  (-> hyperparameterization? onum<e0? any/c any/c
     (maybe/c hyperparameterization?))
   (dissect hp (hyperparameterization locals escapes)
   #/w- escapes (olist-ref-and-call escapes dimension)
   #/maybe-map (hash-ref-maybe escapes escape-now-key)
   #/dissectfn (list locals high-local-escapes)
     (hyperparameterization-set-low-escapes
-      (hyperparameterization locals #/olist-plus-binary
-        (olist-build (just dimension) #/fn _
+      (hyperparameterization locals #/olist-plus
+        (olist-build dimension #/fn _
           hyperparameterization-empty-escape)
         high-local-escapes)
-      (just dimension)
+      dimension
       escape-later-key
       hp)))
 
@@ -126,18 +117,13 @@
   (->* (any/c) ((-> any/c any/c)) hyperparameter?)
   (hyperparameter (token) value guard (fn outgoing outgoing)))
 
-; TODO: See if we should put this in onum.rkt.
-(define/contract (onum<onumext/c strict-bound)
-  (-> onumext? contract?)
-  (fn x #/and (onum? x) (onumext<? (just x) strict-bound)))
-
 (define/contract (hyperbody/c dimension)
-  (-> onumext? contract?)
+  (-> onum<=e0? contract?)
   (->
     (->i
       (
-        [d (onum<onumext/c dimension)]
-        [body (d) (recursive-contract #/hyperbody/c #/just d)])
+        [d (onum</c dimension)]
+        [body (d) (recursive-contract #/hyperbody/c d)])
       any)
     any))
 
@@ -146,7 +132,7 @@
   (call-while-updating-hyperparameterization dimension func body)
   (->i
     (
-      [dimension onumext?]
+      [dimension onum<=e0?]
       [func (-> hyperparameterization? hyperparameterization?)]
       [body (dimension) (hyperbody/c dimension)])
     any)
@@ -177,7 +163,7 @@
   (call-while-hyperparameterizing dimension hp value body)
   (->i
     (
-      [dimension onumext?]
+      [dimension onum<=e0?]
       [hp hyperparameter?]
       [value any/c]
       [body (dimension) (hyperbody/c dimension)])
