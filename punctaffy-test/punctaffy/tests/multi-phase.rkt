@@ -150,20 +150,20 @@
 (check-equal?
   (hyprid-destripe-once
     (hyprid 1 1
-    #/island-cane "Hello." #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+    #/island-cane "Hello." #/hyprid 1 0 #/hypertee 1 #/list #/list 0
     #/non-lake-cane #/list))
-  (hyprid 0 2 #/hypertee 2 #/list
+  (hyprid 2 0 #/hypertee 2 #/list
     (list 0 #/list))
   "Destriping a hyprid-encoded interpolated string with no interpolations gives a degree-2 hyprid with no nonzero-degree holes")
 
 (check-equal?
   (hyprid-fully-destripe
     (hyprid 1 1
-    #/island-cane "Hello, " #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+    #/island-cane "Hello, " #/hyprid 1 0 #/hypertee 1 #/list #/list 0
     #/lake-cane 'name #/hypertee 1 #/list #/list 0
-    #/island-cane "! It's " #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+    #/island-cane "! It's " #/hyprid 1 0 #/hypertee 1 #/list #/list 0
     #/lake-cane 'weather #/hypertee 1 #/list #/list 0
-    #/island-cane " today." #/hyprid 0 1 #/hypertee 1 #/list #/list 0
+    #/island-cane " today." #/hyprid 1 0 #/hypertee 1 #/list #/list 0
     #/non-lake-cane #/list))
   (hypertee 2 #/list
     (list 1 'name)
@@ -175,7 +175,7 @@
 
 (check-equal?
   (hyprid-stripe-once
-  #/hyprid 0 3 #/hypertee 3 #/list
+  #/hyprid 3 0 #/hypertee 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
@@ -183,9 +183,9 @@
     0
     0
     (list 0 'a))
-  (hyprid 1 2 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
+  (hyprid 2 1 #/island-cane (list) #/hyprid 2 0 #/hypertee 2 #/list
     (list 1 #/lake-cane 'a #/hypertee 2 #/list
-      (list 1 #/island-cane (list) #/hyprid 0 2 #/hypertee 2 #/list
+      (list 1 #/island-cane (list) #/hyprid 2 0 #/hypertee 2 #/list
         (list 1 #/non-lake-cane 'a)
         0
         (list 0 #/list))
@@ -199,7 +199,7 @@
   
   (hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid 0 3 #/hypertee 3 #/list
+  #/hyprid 3 0 #/hypertee 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
@@ -210,23 +210,23 @@
   
   ; NOTE: The only reason I was able to write this out was because I
   ; printed the result first and transcribed it.
-  (hyprid 2 1
+  (hyprid 1 2
   #/island-cane (list) #/hyprid 1 1
-  #/island-cane (list) #/hyprid 0 1
+  #/island-cane (list) #/hyprid 1 0
   #/hypertee 1 #/list #/list 0 #/lake-cane
     (lake-cane 'a #/hypertee 2 #/list
       (list 1
       #/island-cane (list) #/hyprid 1 1
-      #/island-cane (list) #/hyprid 0 1
+      #/island-cane (list) #/hyprid 1 0
       #/hypertee 1 #/list #/list 0 #/lake-cane
         (non-lake-cane 'a)
       #/hypertee 1 #/list #/list 0
-      #/island-cane (list) #/hyprid 0 1
+      #/island-cane (list) #/hyprid 1 0
       #/hypertee 1 #/list #/list 0 #/non-lake-cane #/list)
       0
       (list 0 #/list))
   #/hypertee 1 #/list #/list 0
-  #/island-cane (list) #/hyprid 0 1
+  #/island-cane (list) #/hyprid 1 0
   #/hypertee 1 #/list #/list 0 #/non-lake-cane 'a)
   
   "Striping a hyprid twice")
@@ -236,7 +236,7 @@
   #/hyprid-stripe-once
   #/hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid 0 3 #/hypertee 3 #/list
+  #/hyprid 3 0 #/hypertee 3 #/list
     (list 2 'a)
     1
     (list 1 'a)

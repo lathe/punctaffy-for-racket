@@ -100,8 +100,8 @@
     (nothing)))
 
 
-; TODO: Generalize hypertees to allow "unbounded-degree hypertees" so
-; that we can use them as syntax.
+; TODO: Now that we have degree-omega hypertees, use them as syntax
+; here.
 
 
 

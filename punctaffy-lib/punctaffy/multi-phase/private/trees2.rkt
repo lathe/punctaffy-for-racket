@@ -10,12 +10,22 @@
 (require #/only-in racket/list make-list)
 (require #/only-in racket/math natural?)
 
-(require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
+(require #/only-in lathe-comforts
+  dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
   list-bind list-each list-foldl list-kv-map list-map nat->maybe)
 (require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-ordinals
+  onum<=? onum<? onum<=omega? onum<omega? onum-plus onum-plus1
+  onum-pred-maybe)
+(require #/only-in lathe-ordinals/olist olist-build)
+
+(require #/only-in punctaffy/hyperstacks
+  make-poppable-hyperstack make-poppable-hyperstack-n
+  poppable-hyperstack-dimension poppable-hyperstack-pop
+  poppable-hyperstack-pop-n poppable-hyperstack-promote)
 
 (require #/only-in punctaffy/multi-phase/private/hypermonad
   gen:hypermonad)
@@ -349,11 +359,6 @@
 
 
 
-(define/contract (list-overwrite-first-n n val lst)
-  (-> natural? any/c list? list?)
-  (list-kv-map lst #/fn i elem
-    (if (< i n) val elem)))
-
 (define/contract (hypertee-closing-bracket-degree closing-bracket)
   (-> (or/c natural? #/list/c natural? any/c) natural?)
   (mat closing-bracket (list d data)
@@ -362,30 +367,31 @@
 
 (define/contract
   (assert-valid-hypertee-brackets opening-degree closing-brackets)
-  (-> natural? list? void?)
+  (-> onum<=omega? list? void?)
   (expect
-    (list-foldl
-      (build-list opening-degree #/fn i
-        ; Whatever sub-histories we put here don't actually matter
-        ; because they'll be overwritten whenever this history is
-        ; used, so we just make them empty lists.
-        (make-list i #/list))
+    (poppable-hyperstack-dimension #/list-foldl
+      (make-poppable-hyperstack-n opening-degree)
       closing-brackets
     #/fn histories closing-bracket
       (w- closing-degree
         (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (< closing-degree #/length histories) #t
+      #/expect
+        (onum<? closing-degree
+        #/poppable-hyperstack-dimension histories)
+        #t
         (error "Encountered a closing bracket of degree higher than the current region's degree")
-      #/w- restored-history (list-ref histories closing-degree)
+      #/w- restored-history
+        (poppable-hyperstack-pop-n histories closing-degree)
       #/begin
-        (when (= closing-degree #/length restored-history)
+        (when
+          (equal? closing-degree
+          #/poppable-hyperstack-dimension restored-history)
           ; NOTE: We don't validate `hole-value`.
           (expect closing-bracket (list closing-degree hole-value)
             (error "Expected a closing bracket that began a hole to be annotated with a data value")
           #/void))
-      #/list-overwrite-first-n
-        closing-degree histories restored-history))
-    (list)
+        restored-history))
+    0
     (error "Expected more closing brackets")
   #/void))
 
@@ -398,37 +404,41 @@
 ; Takes a hypertee of any degree N and upgrades it to any degree N or
 ; greater, while leaving its holes the way they are.
 (define/contract (hypertee-promote new-degree ht)
-  (-> natural? hypertee? hypertee?)
+  (-> onum<=omega? hypertee? hypertee?)
   (dissect ht (hypertee d closing-brackets)
-  #/expect (<= d new-degree) #t
+  #/expect (onum<=? d new-degree) #t
     (error "Expected ht to be a hypertee of degree no greater than new-degree")
   #/hypertee new-degree closing-brackets))
+
+(define/contract (hypertee<omega? v)
+  (-> any/c boolean?)
+  (and (hypertee? v) (onum<omega? #/hypertee-degree v)))
 
 ; Takes a hypertee of any degree N and returns a hypertee of degree
 ; N+1 with all the same degree-less-than-N holes as well as a single
 ; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
 (define/contract (hypertee-contour hole-value ht)
-  (-> any/c hypertee? hypertee?)
+  (-> any/c hypertee<omega? hypertee?)
   (dissect ht (hypertee d closing-brackets)
-  #/hypertee (add1 d)
+  #/hypertee (onum-plus d 1)
   #/cons (list d hole-value)
   #/list-bind closing-brackets #/fn closing-bracket
     (list (hypertee-closing-bracket-degree closing-bracket)
       closing-bracket)))
 
 ; Takes a hypertee of any degree N and returns a hypertee of degree
-; N+1 where each hole has been replaced with a one-degree-greater
+; 1+N where each hole has been replaced with a one-degree-greater
 ; hole. This creates one new hole of degree 0.
 (define/contract (hypertee-tunnel hole-value ht)
   (-> any/c hypertee? hypertee?)
   (dissect ht (hypertee d closing-brackets)
-  #/hypertee (add1 d)
+  #/hypertee (onum-plus1 d)
   #/append
     (list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (list d data)
-        (list (add1 d) data)
-        (add1 closing-bracket)))
+        (list (onum-plus1 d) data)
+        (onum-plus1 closing-bracket)))
     (make-list (length closing-brackets) 0)
     (list #/list 0 hole-value)))
 
@@ -438,21 +448,18 @@
 ; must be empty lists. This returns a single degree-N hypertee which
 ; has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
+;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
-  (struct-easy (history-info maybe-interpolation-i histories))
   (dissect ht (hypertee overall-degree closing-brackets)
   #/w-
     rev-result (list)
     brackets closing-brackets
     interpolations (make-hasheq)
     hist
-      (history-info (nothing) #/build-list overall-degree #/fn i
-        (history-info (nothing) #/make-list i
-        ; These `history-info` values with empty lists are just dummy
-        ; values, since they'll be replaced whenever this part of the
-        ; history is used.
-        #/history-info (nothing) #/list))
+      (list (nothing)
+      #/make-poppable-hyperstack
+      #/olist-build overall-degree #/dissectfn _ #/nothing)
     root-bracket-i 0
     (define (pop-root-bracket!)
       (expect brackets (cons bracket rest)
@@ -469,25 +476,29 @@
         (just bracket)))
     (define (verify-bracket-degree d maybe-closing-bracket)
       (dissect maybe-closing-bracket (just closing-bracket)
-      #/unless (= d #/hypertee-closing-bracket-degree closing-bracket)
+      #/unless
+        (equal? d #/hypertee-closing-bracket-degree closing-bracket)
         (error "Expected each interpolation of a hypertee join to be the right shape for its interpolation context")))
     (while
-      (dissect hist (history-info maybe-interpolation-i histories)
+      (dissect hist (list maybe-interpolation-i histories)
       #/mat maybe-interpolation-i (just interpolation-i)
         
         ; We read from the interpolation's closing bracket stream.
         (expect (pop-interpolation-bracket! interpolation-i)
           (just closing-bracket)
-          (expect histories (list)
+          (expect (poppable-hyperstack-dimension histories) 0
             (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
             ; The interpolation has no more closing brackets, and
             ; we're in a region of degree 0, so we end the loop.
             #f)
         #/w- d (hypertee-closing-bracket-degree closing-bracket)
-        #/expect (< d #/length histories) #t
+        #/expect (onum<? d #/poppable-hyperstack-dimension histories)
+          #t
           (error "Internal error: A hypertee join interpolation had a closing bracket of degree not less than the current region's degree")
-        #/dissect (list-ref histories d)
-          (history-info maybe-interpolation-i histories)
+        #/dissect
+          (poppable-hyperstack-pop histories
+          #/olist-build d #/dissectfn _ maybe-interpolation-i)
+          (list maybe-interpolation-i histories)
         #/begin0 #t
           (mat maybe-interpolation-i (nothing)
             (begin
@@ -498,23 +509,23 @@
                 #/void)
               #/void))
             (set! rev-result (cons closing-bracket rev-result)))
-          (set! hist
-            (history-info maybe-interpolation-i
-            #/list-overwrite-first-n d hist histories)))
+          (set! hist (list maybe-interpolation-i histories)))
       
       ; We read from the root's closing bracket stream.
       #/w- this-root-bracket-i root-bracket-i
       #/expect (pop-root-bracket!) (just closing-bracket)
-        (expect histories (list)
+        (expect (poppable-hyperstack-dimension histories) 0
           (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
           ; The root has no more closing brackets, and we're in a
           ; region of degree 0, so we end the loop.
           #f)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (< d #/length histories) #t
+      #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
         (error "Internal error: A hypertee join root had a closing bracket of degree not less than the current region's degree")
-      #/dissect (list-ref histories d)
-        (history-info maybe-interpolation-i histories)
+      #/dissect
+        (poppable-hyperstack-pop histories
+        #/olist-build d #/dissectfn _ maybe-interpolation-i)
+        (list maybe-interpolation-i histories)
       #/begin0 #t
       #/expect closing-bracket (list d data)
         ; We resume an interpolation.
@@ -522,42 +533,31 @@
           (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
         #/begin
           (verify-bracket-degree d (pop-interpolation-bracket! i))
-          (set! hist
-            (history-info maybe-interpolation-i
-            #/list-overwrite-first-n d hist histories)))
+          (set! hist (list maybe-interpolation-i histories)))
       ; We begin an interpolation.
       #/expect data (hypertee data-d data-closing-brackets)
         (error "Expected each hypertee join interpolation to be a hypertee")
-      #/expect (= data-d overall-degree) #t
+      #/expect (equal? data-d overall-degree) #t
         (error "Expected each hypertee join interpolation to have the same degree as the root")
-      #/w- overwritten-histories
-        (list-overwrite-first-n d hist histories)
-      #/w- histories-len (length overwritten-histories)
       #/begin
         (hash-set! interpolations this-root-bracket-i
           data-closing-brackets)
         (set! hist
-          (history-info (just this-root-bracket-i)
+          (list (just this-root-bracket-i)
           
           ; We build a list of histories of length `overall-degree`,
           ; since the hypertee we're interpolating into the root must
           ; be of that degree.
-          
+          ;
           ; The lowest-degree holes correspond to the structure of the
           ; hole this interpolation is being spliced into, so they
           ; return us to the root's histories.
-          #/append overwritten-histories
-          
+          ;
           ; The highest-degree holes are propagated through to the
           ; result. They don't cause us to return to the root.
-          #/build-list (- overall-degree histories-len) #/fn j
-            (history-info (just this-root-bracket-i)
-            #/make-list (+ histories-len j)
-            
-            ; The values we use here don't matter since they'll be
-            ; overwritten whenever this part of the history is
-            ; restored.
-            #/history-info (just this-root-bracket-i) #/list))))
+          ;
+          #/poppable-hyperstack-promote histories overall-degree
+            (just this-root-bracket-i))))
       
       ; This while loop's body is intentionally left blank. Everything
       ; was done in the condition.
@@ -574,46 +574,38 @@
 
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
-  (struct-easy (history-info maybe-current-hole histories))
   (dissect ht (hypertee overall-degree closing-brackets)
   #/w- result
     (list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (list d data)
         (w- rev-brackets (list)
-        #/w- hist
-          (build-list d #/fn i
-            (make-list i
-            ; These empty lists are just dummy values, since they'll
-            ; be replaced whenever this part of the history is used.
-            #/list))
+        #/w- hist (make-poppable-hyperstack-n d)
         #/list d #/list data #/box #/list rev-brackets hist)
         closing-bracket))
   #/w- hist
-    (history-info (nothing) #/build-list overall-degree #/fn i
-      (history-info (nothing) #/make-list i
-      ; These `history-info` values with empty lists are just dummy
-      ; values, since they'll be replaced whenever this part of the
-      ; history is used.
-      #/history-info (nothing) #/list))
+    (list (nothing)
+    #/make-poppable-hyperstack
+    #/olist-build overall-degree #/dissectfn _ #/nothing)
   #/begin
     (list-each result #/fn closing-bracket
-      (dissect hist (history-info maybe-current-hole histories)
+      (dissect hist (list maybe-current-hole histories)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (< d #/length histories) #t
+      #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
         (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
-      #/dissect (list-ref histories d)
-        (history-info maybe-restored-hole histories)
-      #/w- histories (list-overwrite-first-n d hist histories)
+      #/dissect
+        (poppable-hyperstack-pop histories
+        #/olist-build d #/dissectfn _ maybe-current-hole)
+        (list maybe-restored-hole histories)
       #/w- update-hole-state!
         (fn state
           (dissect (unbox state) (list rev-brackets hist)
-          #/expect (< d #/length hist) #t
+          #/expect (onum<? d #/poppable-hyperstack-dimension hist) #t
             (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
-          #/w- hist (list-overwrite-first-n d hist #/list-ref hist d)
+          #/w- hist (poppable-hyperstack-pop-n hist d)
           #/set-box! state
             (list
               (cons
-                (if (= d #/length hist)
+                (if (equal? d #/poppable-hyperstack-dimension hist)
                   (list d #/list)
                   d)
                 rev-brackets)
@@ -624,44 +616,51 @@
         #/mat closing-bracket (list d #/list data state)
           (error "Internal error: Went directly from one hole to another's beginning")
         #/begin
-          (set! hist (history-info (nothing) histories))
+          (set! hist (list (nothing) histories))
           (update-hole-state! state))
       #/mat maybe-restored-hole (just state)
         (mat closing-bracket (list d #/list data state)
           (error "Internal error: Went into two holes at once")
         #/begin
-          (set! hist (history-info (just state) histories))
+          (set! hist (list (just state) histories))
           (update-hole-state! state))
       #/mat closing-bracket (list d #/list data state)
         ; NOTE: We don't need to `update-hole-state!` here because as
         ; far as this hole's state is concerned, this bracket is the
         ; opening bracket of the hole, not a closing bracket.
-        (set! hist (history-info (just state) histories))
+        (set! hist (list (just state) histories))
       #/error "Internal error: Went directly from the root to the root without passing through a hole"))
-  #/dissect hist (history-info maybe-current-hole histories)
-  #/expect histories (list)
+  #/dissect hist (list maybe-current-hole histories)
+  #/expect (poppable-hyperstack-dimension histories) 0
     (error "Internal error: Ended hypertee-map-all-degrees without being in a zero-degree region")
   #/expect maybe-current-hole (just state)
     (error "Internal error: Ended hypertee-map-all-degrees without being in a hole")
-  #/expect (unbox state) (list (list) (list))
+  #/expect (unbox state) (list (list) state-hist)
+    (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
+  #/expect (poppable-hyperstack-dimension state-hist) 0
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
   #/hypertee overall-degree #/list-map result #/fn closing-bracket
     (expect closing-bracket (list d #/list data state) closing-bracket
     #/dissect (unbox state) (list rev-brackets hist)
-    #/expect hist (list)
+    #/expect (poppable-hyperstack-dimension hist) 0
       (error "Internal error: Failed to exhaust the history of a hole while doing hypertee-map-all-degrees")
     #/list d (func (hypertee d #/reverse rev-brackets) data))))
 
 (define/contract (hypertee-map-one-degree ht degree func)
   (-> hypertee? natural? (-> hypertee? any/c any/c) hypertee?)
   (hypertee-map-all-degrees ht #/fn hole data
-    (if (= degree #/hypertee-degree hole)
+    (if (equal? degree #/hypertee-degree hole)
       (func hole data)
       data)))
 
 (define/contract (hypertee-map-pred-degree ht degree func)
-  (-> hypertee? natural? (-> hypertee? any/c any/c) hypertee?)
-  (expect (nat->maybe degree) (just pred-degree) ht
+  (-> hypertee? onum<=omega? (-> hypertee? any/c any/c) hypertee?)
+  
+  ; If the degree is 0 or a limit ordinal, we have nothing to do,
+  ; because no hole's degree has the given degree as its successor, so
+  ; there are no holes to process.
+  (expect (onum-pred-maybe degree) (just pred-degree) ht
+  
   #/hypertee-map-one-degree ht pred-degree func))
 
 (define/contract (hypertee-map-highest-degree ht func)
@@ -669,7 +668,7 @@
   (hypertee-map-pred-degree ht (hypertee-degree ht) func))
 
 (define/contract (hypertee-pure degree data hole)
-  (-> natural? any/c hypertee? hypertee?)
+  (-> onum<=omega? any/c hypertee? hypertee?)
   (hypertee-promote degree #/hypertee-contour data hole))
 
 (define/contract (hypertee-bind-all-degrees ht hole-to-ht)
@@ -680,13 +679,18 @@
 (define/contract (hypertee-bind-one-degree ht degree func)
   (-> hypertee? natural? (-> hypertee? any/c hypertee?) hypertee?)
   (hypertee-bind-all-degrees ht #/fn hole data
-    (if (= degree #/hypertee-degree hole)
+    (if (equal? degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-pure (hypertee-degree ht) data hole))))
 
 (define/contract (hypertee-bind-pred-degree ht degree func)
-  (-> hypertee? natural? (-> hypertee? any/c hypertee?) hypertee?)
-  (expect (nat->maybe degree) (just pred-degree) ht
+  (-> hypertee? onum<=omega? (-> hypertee? any/c hypertee?) hypertee?)
+  
+  ; If the degree is 0 or a limit ordinal, we have nothing to do,
+  ; because no hole's degree has the given degree as its successor, so
+  ; there are no holes to process.
+  (expect (onum-pred-maybe degree) (just pred-degree) ht
+  
   #/hypertee-bind-one-degree ht pred-degree func))
 
 (define/contract (hypertee-bind-highest-degree ht func)
@@ -773,13 +777,13 @@
 ; TODO: Come up with a better name than "hyprid."
 ;
 (struct-easy
-  (hyprid striped-degrees unstriped-degrees striped-hypertee)
+  (hyprid unstriped-degrees striped-degrees striped-hypertee)
   #:equal
   (#:guard-easy
-    (unless (natural? striped-degrees)
-      (error "Expected striped-degrees to be a natural number"))
     (unless (exact-positive-integer? unstriped-degrees)
       (error "Expected unstriped-degrees to be an exact positive integer"))
+    (unless (natural? striped-degrees)
+      (error "Expected striped-degrees to be a natural number"))
     (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
       (expect striped-hypertee (hypertee degree closing-brackets)
         (error "Expected striped-hypertee to be a hypertee since striped-degrees was zero")
@@ -787,18 +791,19 @@
         (error "Expected striped-hypertee to be a hypertee of degree unstriped-degrees"))
       (expect striped-hypertee
         (island-cane data
-        #/hyprid striped-degrees-2 unstriped-degrees-2 striped-hypertee-2)
+        #/hyprid
+          unstriped-degrees-2 striped-degrees-2 striped-hypertee-2)
         (error "Expected striped-hypertee to be an island-cane since striped-degrees was nonzero")
-      #/expect (= pred-striped-degrees striped-degrees-2) #t
-        (error "Expected striped-hypertee to be an island-cane of striped-degrees one less")
-      #/unless (= unstriped-degrees unstriped-degrees-2)
-        (error "Expected striped-hypertee to be an island-cane of the same unstriped-degrees")))))
+      #/expect (= unstriped-degrees unstriped-degrees-2) #t
+        (error "Expected striped-hypertee to be an island-cane of the same unstriped-degrees")
+      #/unless (= pred-striped-degrees striped-degrees-2)
+        (error "Expected striped-hypertee to be an island-cane of striped-degrees one less")))))
 
 (define/contract (hyprid-degree h)
   (-> hyprid? natural?)
   (dissect h
-    (hyprid striped-degrees unstriped-degrees striped-hypertee)
-  #/+ striped-degrees unstriped-degrees))
+    (hyprid unstriped-degrees striped-degrees striped-hypertee)
+  #/+ unstriped-degrees striped-degrees))
 
 (struct-easy (island-cane data rest)
   #:equal
@@ -854,8 +859,8 @@
 (define/contract (hyprid-map-lakes-highest-degree h func)
   (-> hyprid? (-> hypertee? any/c any/c) hyprid?)
   (dissect h
-    (hyprid striped-degrees unstriped-degrees striped-hypertee)
-  #/hyprid striped-degrees unstriped-degrees
+    (hyprid unstriped-degrees striped-degrees striped-hypertee)
+  #/hyprid unstriped-degrees striped-degrees
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (hypertee-map-highest-degree striped-hypertee func)
   #/dissect striped-hypertee (island-cane data rest)
@@ -870,9 +875,9 @@
       #/hypertee-map-highest-degree rest #/fn hole rest
         (dissect
           (hyprid-map-lakes-highest-degree
-            (hyprid striped-degrees unstriped-degrees rest)
+            (hyprid unstriped-degrees striped-degrees rest)
             func)
-          (hyprid striped-degrees-2 unstriped-degrees-2 rest)
+          (hyprid unstriped-degrees-2 striped-degrees-2 rest)
           rest))
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
@@ -880,14 +885,14 @@
 (define/contract (hyprid-destripe-once h)
   (-> hyprid? hyprid?)
   (dissect h
-    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (hyprid unstriped-degrees striped-degrees striped-hypertee)
+  #/w- succ-unstriped-degrees (add1 unstriped-degrees)
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (error "Expected h to be a hyprid with at least one degree of striping")
-  #/w- succ-unstriped-degrees (add1 unstriped-degrees)
-  #/hyprid pred-striped-degrees succ-unstriped-degrees
+  #/hyprid succ-unstriped-degrees pred-striped-degrees
   #/dissect striped-hypertee
     (island-cane data
-    #/hyprid pred-striped-degrees-2 unstriped-degrees-2 rest)
+    #/hyprid unstriped-degrees-2 pred-striped-degrees-2 rest)
   #/expect (nat->maybe pred-striped-degrees)
     (just pred-pred-striped-degrees)
     (hypertee-bind-pred-degree
@@ -900,8 +905,8 @@
         #/fn hole rest
           (dissect
             (hyprid-destripe-once
-            #/hyprid striped-degrees unstriped-degrees rest)
-            (hyprid pred-striped-degrees succ-unstriped-degrees
+            #/hyprid unstriped-degrees striped-degrees rest)
+            (hyprid succ-unstriped-degrees pred-striped-degrees
               destriped-rest)
             destriped-rest))
       #/mat rest (non-lake-cane data)
@@ -916,8 +921,8 @@
       #/hypertee-map-highest-degree rest #/fn hole rest
         (dissect
           (hyprid-destripe-once
-          #/hyprid striped-degrees unstriped-degrees rest)
-          (hyprid pred-striped-degrees succ-unstriped-degrees
+          #/hyprid unstriped-degrees striped-degrees rest)
+          (hyprid succ-unstriped-degrees pred-striped-degrees
             destriped-rest)
           destriped-rest))
     #/mat rest (non-lake-cane data) (non-lake-cane data)
@@ -926,8 +931,8 @@
 (define/contract (hyprid-fully-destripe h)
   (-> hyprid? hypertee?)
   (dissect h
-    (hyprid striped-degrees unstriped-degrees striped-hypertee)
-  #/if (= 0 striped-degrees) striped-hypertee
+    (hyprid unstriped-degrees striped-degrees striped-hypertee)
+  #/mat striped-degrees 0 striped-hypertee
   #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
 (define/contract (hyprid-each-lake-all-degrees h body)
@@ -953,7 +958,7 @@
     (not #/not #/memq location #/list 'root-island 'inner-island))
   ; NOTE: The only reason we have a `location` slot here at all (and
   ; the makeshift enum that goes in it) is for sanity checks.
-  (struct-easy (history-info location maybe-state histories)
+  (struct-easy (history-info location maybe-state)
     (#:guard-easy
       (unless
         (memq location
@@ -968,21 +973,16 @@
         #/void))))
   (struct-easy (unfinished-lake-cane data rest-state))
   (struct-easy (stripe-state rev-brackets hist))
-  (define (update-simple-history closing-degree hist)
-    (expect (< closing-degree #/length hist) #t
-      (error "Internal error")
-    #/list-overwrite-first-n closing-degree hist
-    #/list-ref hist closing-degree))
   
   (dissect h
-    (hyprid striped-degrees unstriped-degrees striped-hypertee)
+    (hyprid unstriped-degrees striped-degrees striped-hypertee)
   #/dissect (nat->maybe unstriped-degrees)
     (just pred-unstriped-degrees)
   #/expect (nat->maybe pred-unstriped-degrees)
     (just pred-pred-unstriped-degrees)
     (error "Expected h to be a hyprid with at least two unstriped degrees")
   #/w- succ-striped-degrees (add1 striped-degrees)
-  #/hyprid succ-striped-degrees pred-unstriped-degrees
+  #/hyprid pred-unstriped-degrees succ-striped-degrees
   #/expect striped-degrees 0
     (dissect striped-hypertee (island-cane data rest)
     #/w- striped-rest (hyprid-stripe-once rest)
@@ -994,8 +994,8 @@
         #/hypertee-map-highest-degree rest #/fn hole rest
           (dissect
             (hyprid-stripe-once
-            #/hyprid striped-degrees unstriped-degrees rest)
-            (hyprid succ-striped-degrees pred-unstriped-degrees
+            #/hyprid unstriped-degrees striped-degrees rest)
+            (hyprid pred-unstriped-degrees succ-striped-degrees
               striped-rest)
             striped-rest))
       #/mat rest (non-lake-cane data) (non-lake-cane data)
@@ -1008,19 +1008,12 @@
   #/w- stripe-starting-state
     (w- rev-brackets (list)
     #/stripe-state rev-brackets
-    #/build-list pred-unstriped-degrees #/fn i
-      ; These empty lists are just dummy values, since they'll be
-      ; replaced whenever this part of the history is used.
-      (make-list i #/list))
+    #/make-poppable-hyperstack-n pred-unstriped-degrees)
   #/w- root-island-state (box stripe-starting-state)
   #/w- hist
-    (history-info 'root-island (just root-island-state)
-    #/build-list d #/fn i
-      (history-info 'hole (nothing) #/make-list i
-      ; These `history-info` values with empty lists are just dummy
-      ; values, since they'll be replaced whenever this part of the
-      ; history is used.
-      #/history-info 'hole (nothing) #/list))
+    (list (history-info 'root-island #/just root-island-state)
+    #/make-poppable-hyperstack #/olist-build d #/dissectfn _
+      (history-info 'hole #/nothing))
   #/begin
     (list-each closing-brackets #/fn closing-bracket
       
@@ -1029,16 +1022,18 @@
       ; depth.
       
       (dissect hist
-        (history-info
-          location-before maybe-state-before histories-before)
+        (list (history-info location-before maybe-state-before)
+          histories-before)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (< d #/length histories-before) #t
+      #/expect (< d #/poppable-hyperstack-dimension histories-before)
+        #t
         (error "Internal error")
-      #/dissect (list-ref histories-before d)
-        (history-info
-          location-after maybe-state-after histories-after)
-      #/w- histories-after
-        (list-overwrite-first-n d hist histories-after)
+      #/dissect
+        (poppable-hyperstack-pop histories-before
+        #/olist-build d #/dissectfn _
+          (history-info location-before maybe-state-before))
+        (list (history-info location-after maybe-state-after)
+          histories-after)
       #/if (= d pred-unstriped-degrees)
         
         ; If we've encountered a closing bracket of the highest degree
@@ -1053,7 +1048,8 @@
         #/w- rest-state (box stripe-starting-state)
         #/begin
           (set! hist
-            (history-info 'lake (just rest-state) histories-after))
+            (list (history-info 'lake #/just rest-state)
+              histories-after))
         #/dissect maybe-state-before (just state)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
         #/set-box! state
@@ -1062,7 +1058,8 @@
               (list pred-pred-unstriped-degrees
               #/unfinished-lake-cane data rest-state)
               rev-brackets)
-            (update-simple-history pred-pred-unstriped-degrees hist)))
+            (poppable-hyperstack-pop-n
+              hist pred-pred-unstriped-degrees)))
       
       #/if (= d pred-pred-unstriped-degrees)
         
@@ -1079,13 +1076,14 @@
             (error "Internal error")
           #/begin
             (set! hist
-              (history-info 'non-lake (nothing) histories-after))
+              (list (history-info 'non-lake #/nothing)
+                histories-after))
           #/dissect maybe-state-before (just state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
           #/set-box! state
             (stripe-state
               (cons (list d #/non-lake-cane data) rev-brackets)
-              (update-simple-history d hist)))
+              (poppable-hyperstack-pop-n hist d)))
           
           ; This bracket is closing an even higher-degree bracket,
           ; which must have started a lake, so we're starting an
@@ -1097,14 +1095,14 @@
           #/w- new-state (box stripe-starting-state)
           #/begin
             (set! hist
-              (history-info
-                'inner-island (just new-state) histories-after))
+              (list (history-info 'inner-island #/just new-state)
+                histories-after))
           #/dissect maybe-state-before (just state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
           #/set-box! state
             (stripe-state
               (cons (list d new-state) rev-brackets)
-              (update-simple-history d hist))))
+              (poppable-hyperstack-pop-n hist d))))
       
       ; If we've encountered a closing bracket of low degree, we pass
       ; it through to whatever island or lake we're departing from
@@ -1117,16 +1115,16 @@
       ; original hypertee is concerned.
       #/begin
         (set! hist
-          (history-info
-            location-after maybe-state-after histories-after))
+          (list (history-info location-after maybe-state-after)
+            histories-after))
         (expect maybe-state-before (just state) (void)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
-        #/w- hist (update-simple-history d hist)
+        #/w- hist (poppable-hyperstack-pop-n hist d)
         #/set-box! state
           (stripe-state
             (cons
               (mat closing-bracket (list d data) closing-bracket
-              #/if (= d #/length hist)
+              #/if (= d #/poppable-hyperstack-dimension hist)
                 (list d #/list)
                 d)
               rev-brackets)
@@ -1136,27 +1134,28 @@
         #/set-box! state
           (stripe-state
             (cons d rev-brackets)
-            (update-simple-history d hist)))))
+            (poppable-hyperstack-pop-n hist d)))))
   ; In the end, we build the root island by accessing its state to get
   ; the brackets, arranging the brackets in the correct order, and
   ; recursively assembling lakes and islands using their states the
   ; same way.
   #/w-loop assemble-island-from-state state root-island-state
-    (dissect (unbox state) (stripe-state rev-brackets #/list)
+    (dissect (unbox state) (stripe-state rev-brackets hist)
+    #/dissect (poppable-hyperstack-dimension hist) 0
     
     ; EMPTY LIST NOTE: This is where we put an empty list into the new
     ; layer of stripe data.
     #/island-cane (list)
     
-    #/hyprid 0 pred-unstriped-degrees
+    #/hyprid pred-unstriped-degrees 0
     #/hypertee pred-unstriped-degrees
     #/list-map (reverse rev-brackets) #/fn closing-bracket
       (expect closing-bracket (list d data) closing-bracket
       #/expect (= d pred-pred-unstriped-degrees) #t closing-bracket
       #/mat data (non-lake-cane data) closing-bracket
       #/mat data (unfinished-lake-cane data rest-state)
-        (dissect (unbox rest-state)
-          (stripe-state rev-brackets #/list)
+        (dissect (unbox rest-state) (stripe-state rev-brackets hist)
+        #/dissect (poppable-hyperstack-dimension hist) 0
         #/list d #/lake-cane data #/hypertee pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (list d data) closing-bracket
@@ -1226,24 +1225,23 @@
 ; degree. The given degree must not be greater than the hypertee's
 ; existing degree.
 (define/contract (hypertee-truncate new-degree ht)
-  (-> natural? hypertee? hypertee?)
+  (-> onum<=omega? hypertee? hypertee?)
   (dissect ht (hypertee d closing-brackets)
-  #/expect (<= new-degree d) #t
+  #/expect (onum<=? new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
   #/dissect
     (hypertee-bind-all-degrees ht #/fn hole data
-      (if (<= new-degree #/hypertee-degree hole)
+      (if (onum<=? new-degree #/hypertee-degree hole)
         (hypertee-promote d hole)
         (hypertee-pure d data hole)))
     (hypertee d closing-brackets)
   #/hypertee new-degree closing-brackets))
 
 (define/contract (hypertee-zip a b func)
-  (-> hypertee? hypertee? (-> hypertee? any/c any/c hypertee?)
-    hypertee?)
+  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c) hypertee?)
   (dissect a (hypertee d-a closing-brackets-a)
   #/dissect b (hypertee d-b closing-brackets-b)
-  #/expect (= d-a d-b) #t
+  #/expect (equal? d-a d-b) #t
     (error "Expected hypertees a and b to have the same degree")
   #/expect (= (length closing-brackets-a) (length closing-brackets-b))
     #t
@@ -1253,13 +1251,13 @@
       (fn a b
         (mat a (list d-a data-a)
           (mat b (list d-b data-b)
-            (expect (= d-a d-b) #t
+            (expect (equal? d-a d-b) #t
               (error "Expected hypertees a and b to have the same shape")
             #/list d-a #/list data-a data-b)
             (error "Expected hypertees a and b to have the same shape"))
           (mat b (list d-b data-b)
             (error "Expected hypertees a and b to have the same shape")
-            (expect (= a b) #t
+            (expect (equal? a b) #t
               (error "Expected hypertees a and b to have the same shape")
               a))))
       closing-brackets-a
@@ -1276,7 +1274,7 @@
     (error "Expected smaller to be a hypertee")
   #/expect bigger (hypertee d-bigger closing-brackets-bigger)
     (error "Expected smaller to be a hypertee")
-  #/expect (<= d-smaller d-bigger) #t
+  #/expect (onum<=? d-smaller d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/expect
     (equal?
