@@ -2,216 +2,64 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->* ->i any any/c contract? parameter/c recursive-contract
-  struct/c)
+  -> any any/c contract? recursive-contract)
 (require #/only-in racket/contract/region define/contract)
 
-(require #/only-in lathe-comforts
-  dissect dissectfn expect fn w- w-loop)
-(require #/only-in lathe-comforts/hash hash-ref-maybe)
-(require #/only-in lathe-comforts/maybe just maybe? maybe/c maybe-map)
-(require #/only-in lathe-comforts/struct struct-easy)
-(require #/only-in lathe-ordinals
-  onum<? onum</c onum<=e0? onum<e0? onum-e0)
-(require #/only-in lathe-ordinals/olist
-  olist-build olist-drop olist-tails olist-update-thunk olist-plus
-  olist-ref-and-call olist-zip-map)
+(require #/only-in lathe-comforts expect fn w-)
+(require #/only-in lathe-comforts/maybe just nothing)
 
-;(provide #/all-defined-out)
+; TODO: Document all of these exports.
+(provide
+  hyperbody/c
+  call-hyperbody-while-updating-parameterization
+  call-hyperbody-while-parameterizing)
 
 
-(struct-easy (hyperparameterization locals escapes))
+; If hypersnippets divide up code into high-dimensional structured
+; code-with-holes-in-it pieces, higher-dimensional parameters do the
+; same thing for dynamic extents.
+;
+; Racket already has support for getting and replacing the whole
+; current parameterization, which already means Racket's
+; parameterization frames can be uninstalled for dynamic extents of
+; arbitrary dimension and come back good as new. All there is for us
+; to do is to provide an implementation of this kind of structured
+; uninstallation and reinstallation.
 
-(define hyperparameterization-empty-locals (make-immutable-hasheq))
-(define hyperparameterization-empty-escape (make-immutable-hasheq))
 
-(define/contract (make-empty-hyperparameterization)
-  (-> hyperparameterization?)
-  (hyperparameterization hyperparameterization-empty-locals
-  #/olist-build (onum-e0) #/fn _
-    hyperparameterization-empty-escape))
-
-(define/contract (hyperparameterization-ref-maybe hp key)
-  (-> hyperparameterization? any/c maybe?)
-  (dissect hp (hyperparameterization locals escapes)
-  #/hash-ref-maybe locals key))
-
-(define/contract (hyperparameterization-set hp key value)
-  (-> hyperparameterization? any/c any/c hyperparameterization?)
-  (dissect hp (hyperparameterization locals escapes)
-  #/hyperparameterization (hash-set locals key value) escapes))
+(define/contract hyperbody/c
+  contract?
+  ; NOTE: While this is equivalent to having only one `(-> ... any)`
+  ; layer instead of two, we keep them both around because they
+  ; represent different things: The inner `->` is a procedure meant
+  ; for opening a hole in the hyperbody, and this hole can have any
+  ; dimension less than the hyperbody's own dimension. This means if
+  ; we were actually keeping track of dimensions and enforcing this,
+  ; that function would receive the dimension as a second parameter,
+  ; while the outer `->` would not; it would come paired with a
+  ; dimension instead of taking it as a parameter.
+  (-> (-> (recursive-contract hyperbody/c) any) any))
 
 (define/contract
-  (hyperparameterization-set-low-escapes
-    orig-hp dimension key escape-hp)
-  (-> hyperparameterization? onum<=e0? any/c hyperparameterization?
-    hyperparameterization?)
-  (dissect orig-hp (hyperparameterization orig-locals orig-escapes)
-  #/dissect escape-hp
-    (hyperparameterization escape-locals escape-escapes)
-  #/w- zip
-    (fn orig-low low-tails
-      (olist-zip-map orig-low low-tails #/fn escapes tail
-        (hash-set escapes key #/list escape-locals tail)))
-  #/if (equal? dimension #/onum-e0)
-    (hyperparameterization orig-locals
-    #/zip orig-escapes #/olist-tails escape-escapes)
-  #/dissect (olist-drop dimension #/olist-tails escape-escapes)
-    (just #/list low-tails _)
-  #/dissect (olist-drop dimension orig-escapes)
-    (just #/list orig-low orig-high)
-  #/hyperparameterization orig-locals
-  #/olist-plus (zip orig-low low-tails) orig-high))
+  (call-hyperbody-while-updating-parameterization func body)
+  (-> (-> parameterization? parameterization?) hyperbody/c any)
+  (w- current-p (current-parameterization)
+  ; NOTE: We could refrain from storing `current-p` in the parameter
+  ; here, and instead use a boolean here and use `current-p` in place
+  ; of `old-p` below, but this way, `current-p` can be
+  ; garbage-collected even if that function remains reachable.
+  #/call-with-parameterization (func current-p) #/fn
+    (w- in-progress (make-parameter #/nothing)
+    #/parameterize ([in-progress (just current-p)])
+      (body #/fn body
+        (expect (in-progress) (just old-p)
+          (error "Used a hyperbody hole for a dynamic extent that wasn't currently in progress")
+        #/call-hyperbody-while-updating-parameterization (fn _ old-p)
+          body)))))
 
 (define/contract
-  (hyperparameterization-ref-escape-maybe
-    hp dimension escape-now-key escape-later-key)
-  (-> hyperparameterization? onum<e0? any/c any/c
-    (maybe/c hyperparameterization?))
-  (dissect hp (hyperparameterization locals escapes)
-  #/w- escapes (olist-ref-and-call escapes dimension)
-  #/maybe-map (hash-ref-maybe escapes escape-now-key)
-  #/dissectfn (list locals high-local-escapes)
-    (hyperparameterization-set-low-escapes
-      (hyperparameterization locals #/olist-plus
-        (olist-build dimension #/fn _
-          hyperparameterization-empty-escape)
-        high-local-escapes)
-      dimension
-      escape-later-key
-      hp)))
-
-
-(struct-easy (token))
-
-(define/contract current-hyperparameterization
-  (parameter/c hyperparameterization?)
-  (make-parameter #/make-empty-hyperparameterization))
-
-(struct-easy (hyperparameter key default-value guard wrap)
-  #:other
-  #:property prop:procedure
-  (case-lambda
-    [ (this)
-      (expect this (hyperparameter key default-value guard wrap)
-        (error "Expected this to be a hyperparameter")
-      #/wrap
-      #/expect
-        (hyperparameterization-ref-maybe
-          (get-current-hyperparameterization)
-          key)
-        (just value)
-        default-value
-        value)]
-    [ (this incoming)
-      (expect this (hyperparameter key default-value guard wrap)
-        (error "Expected this to be a hyperparameter")
-      #/current-hyperparameterization #/hyperparameterization-set
-        (get-current-hyperparameterization)
-        key
-        (guard incoming))]))
-
-; NOTE: This corresponds to `make-parameter`.
-(define/contract
-  (make-hyperparameter value [guard (fn incoming incoming)])
-  (->* (any/c) ((-> any/c any/c)) hyperparameter?)
-  (hyperparameter (token) value guard (fn outgoing outgoing)))
-
-(define/contract (hyperbody/c dimension)
-  (-> onum<=e0? contract?)
-  (->
-    (->i
-      (
-        [d (onum</c dimension)]
-        [body (d) (recursive-contract #/hyperbody/c d)])
-      any)
-    any))
-
-; NOTE: This corresponds to `call-with-parameterization`.
-(define/contract
-  (call-while-updating-hyperparameterization dimension func body)
-  (->i
-    (
-      [dimension onum<=e0?]
-      [func (-> hyperparameterization? hyperparameterization?)]
-      [body (dimension) (hyperbody/c dimension)])
-    any)
-  (w- hp (get-current-hyperparameterization)
-  #/w- id (token)
-  #/w-loop loop
-    id id
-    hp
-    (hyperparameterization-set-low-escapes (func hp) dimension id hp)
-    body body
-  #/parameterize ([current-hyperparameterization hp])
-    (body #/fn d body
-      (w- sub-id (token)
-      #/expect
-        (hyperparameterization-ref-escape-maybe
-          (get-current-hyperparameterization)
-          d id sub-id)
-        (just hp)
-        (error "Used a hyperparameterizing hole for a dynamic extent that wasn't currently in progress")
-      #/loop sub-id hp body))))
-
-; NOTE: This corresponds to `parameterize` and `parameterize*`.
-;
-; TODO: Define syntaxes closer to `parameterize` and `parameterize*`
-; for this.
-;
-(define/contract
-  (call-while-hyperparameterizing dimension hp value body)
-  (->i
-    (
-      [dimension onum<=e0?]
-      [hp hyperparameter?]
-      [value any/c]
-      [body (dimension) (hyperbody/c dimension)])
-    any)
-  (dissect hp (hyperparameter key default-value guard wrap)
-  #/call-while-updating-hyperparameterization dimension
-    (fn hp #/hyperparameterization-set hp key #/guard value)
-    body))
-
-; NOTE: This corresponds to `make-derived-parameter`.
-(define/contract (make-derived-hyperparameter hp guard wrap)
-  (-> hyperparameter? (-> any/c any/c) (-> any/c any/c)
-    hyperparameter?)
-  ; NOTE: The "o" stands for "original."
-  (dissect hp (hyperparameter o-key o-default-value o-guard o-wrap)
-  #/hyperparameter o-key o-default-value
-    (fn incoming #/o-guard #/guard incoming)
-    (fn outgoing #/wrap #/o-wrap outgoing)))
-
-; NOTE: This corresponds to `parameter?`.
-(define/contract (-hyperparameter? x)
-  (-> any/c boolean?)
-  (hyperparameter? x))
-
-; TODO: See if we can make something that corresponds to
-; `parameter-procedure=?`.
-
-; NOTE: This corresponds to `current-parameterization`.
-;
-; TODO: See if we should rename this to
-; `current-hyperparameterization` and rename the parameter of that
-; name to something else.
-;
-; TODO: See if we really need this, or if we'll just export the
-; parameter directly.
-;
-(define/contract (get-current-hyperparameterization)
-  (-> hyperparameterization?)
-  (current-hyperparameterization))
-
-; NOTE: This corresponds to `parameterization?`.
-(define/contract (-hyperparameterization? x)
-  (-> any/c boolean?)
-  (hyperparameterization? x))
-
-; NOTE: This corresponds to `parameter/c`.
-(define/contract (hyperparameter/c in/c [out/c in/c])
-  (->* (contract?) (contract?) contract?)
-  (struct/c hyperparameter any/c any/c
-    (-> in/c any/c)
-    (-> any/c out/c)))
+  (call-hyperbody-while-parameterizing pr value body)
+  (-> parameter? any/c hyperbody/c any)
+  (call-hyperbody-while-updating-parameterization (fn pn pn) #/fn esc
+    (parameterize ([pr value])
+      (body esc))))
