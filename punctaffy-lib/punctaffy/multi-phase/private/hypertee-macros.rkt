@@ -16,19 +16,18 @@
 ; TODO: We're going to take this approach:
 ;
 ;
-; Conceptually, we'll treat the program's syntax as an
-; unbounded-degree hypertee built up from a sequential encoding. That
-; is, the program's syntax is an arrangement of
-; "holes with holes with holes..." of various degrees, and the
-; particular holes we're using can always be flattened into a sequence
-; of degree-annotated parentheses.
+; Conceptually, we'll treat the program's syntax as a degree-omega
+; hypertee built up from a sequential encoding. That is, the program's
+; syntax is an arrangement of "holes with holes with holes..." of
+; various degrees, and the particular holes we're using can always be
+; flattened into a sequence of degree-annotated parentheses.
 ;
 ; Since we're in Racket, our syntax transformers will take
 ; s-expression-shaped syntax objects as input like usual. When we
 ; write a syntax transformer where we care to process
 ; higher-dimensional syntax, we will explicitly convert these syntax
-; objects to unbounded-degree hypertees using a special macroexpansion
-; procedure called `s-expr-stx->ht-expr`. We call the unbounded-degree
+; objects to degree-omega hypertees using a special macroexpansion
+; procedure called `s-expr-stx->ht-expr`. We call the degree-omega
 ; hypertees "ht-expressions" when we use them for syntax this way.
 ;
 ; This conversion is a kind of macroexpansion only because we don't
@@ -118,8 +117,8 @@
     (nothing)))
 
 ; This recursively converts the given Racket syntax object into an
-; unbounded-degree hypertee. It performs a kind of macroexpansion on
-; lists that begin with an identifier with an appropriate
+; degree-omega hypertee. It performs a kind of macroexpansion on lists
+; that begin with an identifier with an appropriate
 ; `syntax-local-value` binding. For everything else, it uses
 ; particular data structures in the holes of the result hypertee to
 ; represent the other atoms, proper lists, improper lists, vectors,
@@ -179,8 +178,8 @@
     #/w- elems (process-list elems)
     #/mat tail (list)
       ; TODO: At this point, the elements of `elems` should be
-      ; unbounded-degree hypertees, and their degree-0 holes should
-      ; have trivial contents. Degree-0-concatenate them, and then
+      ; degree-omega hypertees, and their degree-0 holes should have
+      ; trivial contents. Degree-0-concatenate them, and then
       ; degree-1-concatenate a degree-2 hole around that. Return the
       ; unbouded-degree hypertee that results.
       ;
@@ -196,34 +195,34 @@
     ; wrapped up as an atom.
     #/w- tail (s-expr-stx->ht-expr tail)
       ; TODO: At this point, the elements of `elems` as well as `tail`
-      ; should be unbounded-degree hypertees. Concatenate and wrap
-      ; them the same way as for the proper list case, but this time
-      ; the degree-2 hole represents an improper list operation
-      ; (`list*`) rather than a proper list operation (`list`).
+      ; should be degree-omega hypertees. Concatenate and wrap them
+      ; the same way as for the proper list case, but this time the
+      ; degree-2 hole represents an improper list operation (`list*`)
+      ; rather than a proper list operation (`list`).
       'TODO)
   #/syntax-parse stx
     [ #(elem ...)
       (w- elems (process-list #'(elem ...))
         ; TODO: At this point, the elements of `elems` should be
-        ; unbounded-degree hypertees. Concatenate and wrap them the
-        ; same way as for the proper list case, but this time the
-        ; degree-2 hole represents a vector operation (`vector`)
-        ; rather than a proper list operation (`list`).
+        ; degree-omega hypertees. Concatenate and wrap them the same
+        ; way as for the proper list case, but this time the degree-2
+        ; hole represents a vector operation (`vector`) ratehr than a
+        ; proper list operation (`list`).
         'TODO)]
     ; TODO: We support lists and vectors, but let's also support
     ; prefabricated structs like Racket's `quasiquote` and
     ; `quasisyntax` do.
     
     [_
-      ; TODO: Return an unbounded-degree hypertee with trivial
-      ; contents in its degree-0 hole, and with a single degree-1 hole
-      ; that contains `stx` itself (perhaps put in some kind of
-      ; container so that it can be distinguished from degree-1 holes
-      ; that a user-defined syntax introduces for a different reason).
+      ; TODO: Return an degree-omega hypertee with trivial contents in
+      ; its degree-0 hole, and with a single degree-1 hole that
+      ; contains `stx` itself (perhaps put in some kind of container
+      ; so that it can be distinguished from degree-1 holes that a
+      ; user-defined syntax introduces for a different reason).
       'TODO]))
 
 ; This recursively converts the given Racket syntax object into an
-; unbounded-degree hypertee just like `s-expr-stx->ht-expr`, but it
+; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it
 ; expects the outermost layer of the syntax object to be a proper
 ; list, and it does not represent that list in the result, so the
 ; result will "splice" all the list's elements in whatever place it's
@@ -239,8 +238,8 @@
     (list-map (syntax->list stx) #/fn elem
       (s-expr-stx->ht-expr elem))
     ; TODO: At this point, the elements of `elems` should be
-    ; unbounded-degree hypertees, and their degree-0 holes should
-    ; have trivial contents. Return their degree-0 concatenation.
+    ; degree-omega hypertees, and their degree-0 holes should have
+    ; trivial contents. Return their degree-0 concatenation.
     'TODO))
 
 
