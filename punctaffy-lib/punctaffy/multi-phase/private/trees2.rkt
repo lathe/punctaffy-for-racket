@@ -5,7 +5,8 @@
 ; Data structures for encoding the kind of higher-order structure that
 ; occurs in higher quasiquotation.
 
-(require #/only-in racket/contract/base -> any any/c list/c or/c)
+(require #/only-in racket/contract/base
+  -> any any/c list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/list make-list)
 (require #/only-in racket/math natural?)
@@ -30,7 +31,20 @@
 (require #/only-in punctaffy/multi-phase/private/hypermonad
   gen:hypermonad)
 
-(provide #/all-defined-out)
+(provide
+  (rename-out [-hypertee? hypertee?])
+  degree-and-closing-brackets->hypertee
+  hypertee-join-all-degrees
+  hypertee-pure
+  hypertee-bind-one-degree
+  ; TODO: See if there's anything more abstract we can export in place
+  ; of these structure types.
+  (struct-out hyprid)
+  (struct-out island-cane)
+  (struct-out lake-cane)
+  (struct-out non-lake-cane)
+  hyprid-destripe-once hyprid-fully-destripe
+  hyprid-stripe-once)
 
 
 ; ===== Helpers for this module ======================================
@@ -400,6 +414,30 @@
   #:equal
   (#:guard-easy
     (assert-valid-hypertee-brackets degree closing-brackets)))
+
+; A version of `hypertee?` that does not satisfy
+; `struct-predicate-procedure?`.
+(define/contract (-hypertee? v)
+  (-> any/c boolean?)
+  (hypertee? v))
+
+; A version of the `hypertee` constructor that does not satisfy
+; `struct-constructor-procedure?`.
+(define/contract
+  (degree-and-closing-brackets->hypertee degree closing-brackets)
+  (-> onum<=omega? (listof #/or/c natural? #/list/c natural? any/c)
+    hypertee?)
+  ; TODO: See if we can improve the error messages so that they're
+  ; like part of the contract of this procedure instead of being
+  ; thrown from inside the `hypertee` constructor.
+  (hypertee degree closing-brackets))
+
+(define/contract (hypertee->degree-and-closing-brackets ht)
+  (-> hypertee?
+    (list/c onum<=omega?
+    #/listof #/or/c natural? #/list/c natural? any/c))
+  (dissect ht (hypertee d closing-brackets)
+  #/list d closing-brackets))
 
 ; Takes a hypertee of any degree N and upgrades it to any degree N or
 ; greater, while leaving its holes the way they are.

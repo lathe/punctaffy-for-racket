@@ -5,12 +5,15 @@
 (require #/only-in syntax/parse id syntax-parse)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/list list-map)
+(require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe-bind nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-ordinals onum-omega)
 
-(require #/only-in punctaffy/multi-phase/private/trees2 hypertee?)
+(require #/only-in punctaffy/multi-phase/private/trees2
+  degree-and-closing-brackets->hypertee hypertee?
+  hypertee-bind-one-degree)
 
 
 ; TODO: We're going to take this approach:
@@ -116,6 +119,19 @@
     (just #/ht-builder-syntax-ref x)
     (nothing)))
 
+(define (omega-ht . closing-brackets)
+  (degree-and-closing-brackets->hypertee (onum-omega)
+    closing-brackets))
+
+(define (omega-ht-append0 hts)
+  ; When we call this, the elements of `hts` are degree-omega
+  ; hypertees, and their degree-0 holes have empty lists as contents.
+  ; We return their degree-0 concatenation.
+  (list-foldr hts (omega-ht #/list 0 #/list) #/fn ht tail
+    (hypertee-bind-one-degree ht 0 #/fn hole data
+      (dissect data (list)
+        tail))))
+
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee. It performs a kind of macroexpansion on lists
 ; that begin with an identifier with an appropriate
@@ -123,6 +139,10 @@
 ; particular data structures in the holes of the result hypertee to
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefabricated structs it encounters.
+;
+; TODO: Finish implementing all the metadata that this attaches to its
+; result's degree-2 holes. Curerntly, that data is always `'TODO`.
+;
 (define/contract (s-expr-stx->ht-expr stx)
   (-> syntax? hypertee?)
   (mat
@@ -173,53 +193,58 @@
   ; of if we simply used `syntax->list` or `syntax-parse` with a
   ; pattern of `(elem ...)` or `(elem ... . tail)`.
   #/w- s (syntax-e stx)
+  #/w- make-list-layer
+    (fn metadata elems
+      ; When we call this, `elems` is a list of degree-omega
+      ; hypertees, and their degree-0 holes have trivial contents. We
+      ; degree-0-concatenate them, and then we degree-1-concatenate a
+      ; degree-2 hole around that, holding the given metadata. We
+      ; return the degree-omega hypertee that results.
+      (hypertee-bind-one-degree
+        (omega-ht
+          (list 2 metadata)
+            1 (list 1 #/list) 0 0
+          0
+        #/list 0 #/list)
+        1
+      #/fn hole data
+        (omega-ht-append0 elems)))
   #/if (pair? s)
     (dissect (improper-list->list-and-tail s) (list elems tail)
     #/w- elems (process-list elems)
     #/mat tail (list)
-      ; TODO: At this point, the elements of `elems` should be
-      ; degree-omega hypertees, and their degree-0 holes should have
-      ; trivial contents. Degree-0-concatenate them, and then
-      ; degree-1-concatenate a degree-2 hole around that. Return the
-      ; unbouded-degree hypertee that results.
-      ;
-      ; That degree-2 hole represents the `list` operation, so its
-      ; data should contain the metadata of `stx` so that clients
+      ; The metadata we pass in here represents the `list` operation,
+      ; so its data contains the metadata of `stx` so that clients
       ; processing this hypertee-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      ;
-      'TODO
+      (make-list-layer 'TODO elems)
     ; NOTE: Even though we call the full `s-expr-stx->ht-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped,
     ; so we know it's either going to be expanded as a symbol macro or
     ; wrapped up as an atom.
     #/w- tail (s-expr-stx->ht-expr tail)
-      ; TODO: At this point, the elements of `elems` as well as `tail`
-      ; should be degree-omega hypertees. Concatenate and wrap them
-      ; the same way as for the proper list case, but this time the
-      ; degree-2 hole represents an improper list operation (`list*`)
-      ; rather than a proper list operation (`list`).
-      'TODO)
+      ; This is like the proper list case, but this time the metadata
+      ; represents an improper list operation (`list*`) rather than a
+      ; proper list operation (`list`).
+      (make-list-layer 'TODO #/append elems #/list tail))
   #/syntax-parse stx
     [ #(elem ...)
       (w- elems (process-list #'(elem ...))
-        ; TODO: At this point, the elements of `elems` should be
-        ; degree-omega hypertees. Concatenate and wrap them the same
-        ; way as for the proper list case, but this time the degree-2
-        ; hole represents a vector operation (`vector`) ratehr than a
-        ; proper list operation (`list`).
-        'TODO)]
+        ; This is like the proper list case, but this time the
+        ; metadata represents a vector operation (`vector`) rather
+        ; than a proper list operation (`list`).
+        (make-list-layer 'TODO elems))]
     ; TODO: We support lists and vectors, but let's also support
     ; prefabricated structs like Racket's `quasiquote` and
     ; `quasisyntax` do.
     
     [_
-      ; TODO: Return an degree-omega hypertee with trivial contents in
-      ; its degree-0 hole, and with a single degree-1 hole that
-      ; contains `stx` itself (perhaps put in some kind of container
-      ; so that it can be distinguished from degree-1 holes that a
-      ; user-defined syntax introduces for a different reason).
-      'TODO]))
+      ; We return a degree-omega hypertee with trivial contents in its
+      ; degree-0 hole, and with a single degree-1 hole that contains
+      ; `stx` itself (perhaps put in some kind of container so that it
+      ; can be distinguished from degree-1 holes that a user-defined
+      ; syntax introduces for a different reason).
+      (omega-ht (list 1 'TODO) 0 #/list 0 #/list)]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it
@@ -234,13 +259,8 @@
 ;
 (define/contract (splicing-s-expr-stx->ht-expr stx)
   (-> syntax? hypertee?)
-  (w- elems
-    (list-map (syntax->list stx) #/fn elem
-      (s-expr-stx->ht-expr elem))
-    ; TODO: At this point, the elements of `elems` should be
-    ; degree-omega hypertees, and their degree-0 holes should have
-    ; trivial contents. Return their degree-0 concatenation.
-    'TODO))
+  (omega-ht-append0 #/list-map (syntax->list stx) #/fn elem
+    (s-expr-stx->ht-expr elem)))
 
 
 (struct-easy (simple-ht-builder-syntax impl)

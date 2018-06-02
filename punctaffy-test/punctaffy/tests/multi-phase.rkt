@@ -13,52 +13,57 @@
 ; (We provide nothing from this module.)
 
 
-(assert-valid-hypertee-brackets 0 #/list)
-(assert-valid-hypertee-brackets 1 #/list (list 0 'a))
-(assert-valid-hypertee-brackets 2 #/list (list 1 'a) 0 (list 0 'a))
-(assert-valid-hypertee-brackets 3 #/list
+(define make-ht degree-and-closing-brackets->hypertee)
+
+
+(degree-and-closing-brackets->hypertee 0 #/list)
+(degree-and-closing-brackets->hypertee 1 #/list (list 0 'a))
+(degree-and-closing-brackets->hypertee 2 #/list
+  (list 1 'a)
+  0 (list 0 'a))
+(degree-and-closing-brackets->hypertee 3 #/list
   (list 2 'a)
   1 (list 1 'a) 0 0 0 (list 0 'a))
-(assert-valid-hypertee-brackets 4 #/list
+(degree-and-closing-brackets->hypertee 4 #/list
   (list 3 'a)
   2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a))
-(assert-valid-hypertee-brackets 5 #/list
+(degree-and-closing-brackets->hypertee 5 #/list
   (list 4 'a)
   3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a))
 
 
 (check-equal?
-  (hypertee-join-all-degrees #/hypertee 2 #/list
-    (list 1 #/hypertee 2 #/list
+  (hypertee-join-all-degrees #/make-ht 2 #/list
+    (list 1 #/make-ht 2 #/list
       (list 0 #/list))
     0
-    (list 1 #/hypertee 2 #/list
+    (list 1 #/make-ht 2 #/list
       (list 0 #/list))
     0
-    (list 0 #/hypertee-pure 2 'a #/hypertee 0 #/list))
-  (hypertee 2 #/list
+    (list 0 #/hypertee-pure 2 'a #/make-ht 0 #/list))
+  (make-ht 2 #/list
     (list 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
 
 (check-equal?
-  (hypertee-join-all-degrees #/hypertee 2 #/list
-    (list 1 #/hypertee 2 #/list
+  (hypertee-join-all-degrees #/make-ht 2 #/list
+    (list 1 #/make-ht 2 #/list
       (list 1 'a)
       0
       (list 1 'a)
       0
       (list 0 #/list))
     0
-    (list 1 #/hypertee 2 #/list
+    (list 1 #/make-ht 2 #/list
       (list 1 'a)
       0
       (list 1 'a)
       0
       (list 0 #/list))
     0
-    (list 0 #/hypertee-pure 2 'a #/hypertee 0 #/list))
-  (hypertee 2 #/list
+    (list 0 #/hypertee-pure 2 'a #/make-ht 0 #/list))
+  (make-ht 2 #/list
     (list 1 'a)
     0
     (list 1 'a)
@@ -71,22 +76,22 @@
   "Joining hypertees to make a hypertee with more holes than any of the parts on its own")
 
 (check-equal?
-  (hypertee-join-all-degrees #/hypertee 2 #/list
-    (list 1 #/hypertee-pure 2 'a #/hypertee 1 #/list
+  (hypertee-join-all-degrees #/make-ht 2 #/list
+    (list 1 #/hypertee-pure 2 'a #/make-ht 1 #/list
       (list 0 #/list))
     0
-    (list 1 #/hypertee 2 #/list
+    (list 1 #/make-ht 2 #/list
       (list 1 'a)
       0
       (list 0 #/list))
     0
-    (list 1 #/hypertee 2 #/list
+    (list 1 #/make-ht 2 #/list
       (list 1 'a)
       0
       (list 0 #/list))
     0
-    (list 0 #/hypertee-pure 2 'a #/hypertee 0 #/list))
-  (hypertee 2 #/list
+    (list 0 #/hypertee-pure 2 'a #/make-ht 0 #/list))
+  (make-ht 2 #/list
     (list 1 'a)
     0
     (list 1 'a)
@@ -97,14 +102,14 @@
   "Joining hypertees where one of the nonzero-degree holes in the root is just a hole rather than an interpolation")
 
 (check-equal?
-  (hypertee-join-all-degrees #/hypertee 3 #/list
+  (hypertee-join-all-degrees #/make-ht 3 #/list
     
     ; This is propagated to the result.
-    (list 1 #/hypertee-pure 3 'a #/hypertee 1 #/list
+    (list 1 #/hypertee-pure 3 'a #/make-ht 1 #/list
       (list 0 #/list))
     0
     
-    (list 2 #/hypertee 3 #/list
+    (list 2 #/make-ht 3 #/list
       
       ; This is propagated to the result.
       (list 2 'a)
@@ -129,12 +134,12 @@
     0
     
     ; This is propagated to the result.
-    (list 1 #/hypertee-pure 3 'a #/hypertee 1 #/list
+    (list 1 #/hypertee-pure 3 'a #/make-ht 1 #/list
       (list 0 #/list))
     0
     
-    (list 0 #/hypertee-pure 3 'a #/hypertee 0 #/list))
-  (hypertee 3 #/list
+    (list 0 #/hypertee-pure 3 'a #/make-ht 0 #/list))
+  (make-ht 3 #/list
     (list 1 'a)
     0
     (list 2 'a)
@@ -150,22 +155,22 @@
 (check-equal?
   (hyprid-destripe-once
     (hyprid 1 1
-    #/island-cane "Hello." #/hyprid 1 0 #/hypertee 1 #/list #/list 0
+    #/island-cane "Hello." #/hyprid 1 0 #/make-ht 1 #/list #/list 0
     #/non-lake-cane #/list))
-  (hyprid 2 0 #/hypertee 2 #/list
+  (hyprid 2 0 #/make-ht 2 #/list
     (list 0 #/list))
   "Destriping a hyprid-encoded interpolated string with no interpolations gives a degree-2 hyprid with no nonzero-degree holes")
 
 (check-equal?
   (hyprid-fully-destripe
     (hyprid 1 1
-    #/island-cane "Hello, " #/hyprid 1 0 #/hypertee 1 #/list #/list 0
-    #/lake-cane 'name #/hypertee 1 #/list #/list 0
-    #/island-cane "! It's " #/hyprid 1 0 #/hypertee 1 #/list #/list 0
-    #/lake-cane 'weather #/hypertee 1 #/list #/list 0
-    #/island-cane " today." #/hyprid 1 0 #/hypertee 1 #/list #/list 0
+    #/island-cane "Hello, " #/hyprid 1 0 #/make-ht 1 #/list #/list 0
+    #/lake-cane 'name #/make-ht 1 #/list #/list 0
+    #/island-cane "! It's " #/hyprid 1 0 #/make-ht 1 #/list #/list 0
+    #/lake-cane 'weather #/make-ht 1 #/list #/list 0
+    #/island-cane " today." #/hyprid 1 0 #/make-ht 1 #/list #/list 0
     #/non-lake-cane #/list))
-  (hypertee 2 #/list
+  (make-ht 2 #/list
     (list 1 'name)
     0
     (list 1 'weather)
@@ -175,7 +180,7 @@
 
 (check-equal?
   (hyprid-stripe-once
-  #/hyprid 3 0 #/hypertee 3 #/list
+  #/hyprid 3 0 #/make-ht 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
@@ -183,9 +188,9 @@
     0
     0
     (list 0 'a))
-  (hyprid 2 1 #/island-cane (list) #/hyprid 2 0 #/hypertee 2 #/list
-    (list 1 #/lake-cane 'a #/hypertee 2 #/list
-      (list 1 #/island-cane (list) #/hyprid 2 0 #/hypertee 2 #/list
+  (hyprid 2 1 #/island-cane (list) #/hyprid 2 0 #/make-ht 2 #/list
+    (list 1 #/lake-cane 'a #/make-ht 2 #/list
+      (list 1 #/island-cane (list) #/hyprid 2 0 #/make-ht 2 #/list
         (list 1 #/non-lake-cane 'a)
         0
         (list 0 #/list))
@@ -199,7 +204,7 @@
   
   (hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid 3 0 #/hypertee 3 #/list
+  #/hyprid 3 0 #/make-ht 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
@@ -213,21 +218,21 @@
   (hyprid 1 2
   #/island-cane (list) #/hyprid 1 1
   #/island-cane (list) #/hyprid 1 0
-  #/hypertee 1 #/list #/list 0 #/lake-cane
-    (lake-cane 'a #/hypertee 2 #/list
+  #/make-ht 1 #/list #/list 0 #/lake-cane
+    (lake-cane 'a #/make-ht 2 #/list
       (list 1
       #/island-cane (list) #/hyprid 1 1
       #/island-cane (list) #/hyprid 1 0
-      #/hypertee 1 #/list #/list 0 #/lake-cane
+      #/make-ht 1 #/list #/list 0 #/lake-cane
         (non-lake-cane 'a)
-      #/hypertee 1 #/list #/list 0
+      #/make-ht 1 #/list #/list 0
       #/island-cane (list) #/hyprid 1 0
-      #/hypertee 1 #/list #/list 0 #/non-lake-cane #/list)
+      #/make-ht 1 #/list #/list 0 #/non-lake-cane #/list)
       0
       (list 0 #/list))
-  #/hypertee 1 #/list #/list 0
+  #/make-ht 1 #/list #/list 0
   #/island-cane (list) #/hyprid 1 0
-  #/hypertee 1 #/list #/list 0 #/non-lake-cane 'a)
+  #/make-ht 1 #/list #/list 0 #/non-lake-cane 'a)
   
   "Striping a hyprid twice")
 
@@ -236,7 +241,7 @@
   #/hyprid-stripe-once
   #/hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid 3 0 #/hypertee 3 #/list
+  #/hyprid 3 0 #/make-ht 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
