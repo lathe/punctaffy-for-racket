@@ -32,9 +32,12 @@
   gen:hypermonad)
 
 (provide
-  (rename-out [-hypertee? hypertee?])
+  (rename-out
+    [-hypertee? hypertee?]
+    [-hypertee-degree hypertee-degree])
   degree-and-closing-brackets->hypertee
   hypertee-join-all-degrees
+  hypertee-map-all-degrees
   hypertee-pure
   hypertee-bind-one-degree
   ; TODO: See if there's anything more abstract we can export in place
@@ -431,6 +434,12 @@
   ; like part of the contract of this procedure instead of being
   ; thrown from inside the `hypertee` constructor.
   (hypertee degree closing-brackets))
+
+; A version of `hypertee-degree` that does not satisfy
+; `struct-accessor-procedure?`.
+(define/contract (-hypertee-degree ht)
+  (-> hypertee? onum<=omega?)
+  (hypertee-degree ht))
 
 (define/contract (hypertee->degree-and-closing-brackets ht)
   (-> hypertee?

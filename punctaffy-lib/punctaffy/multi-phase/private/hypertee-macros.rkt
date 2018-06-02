@@ -7,13 +7,21 @@
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
-  just maybe? maybe-bind nothing)
+  just maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-ordinals onum-omega)
 
 (require #/only-in punctaffy/multi-phase/private/trees2
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-one-degree)
+
+(provide
+  (struct-out ht-tag-list)
+  (struct-out ht-tag-list*)
+  (struct-out ht-tag-vector)
+  (struct-out ht-tag-atom)
+  s-expr-stx->ht-expr
+  simple-ht-builder-syntax)
 
 
 ; TODO: We're going to take this approach:
@@ -148,12 +156,14 @@
     (syntax-parse stx
       [ (op:id arg ...)
         (maybe-bind (syntax-local-maybe #'op) #/fn op
-        #/ht-builder-syntax-maybe op)]
+        #/maybe-map (ht-builder-syntax-maybe op) #/fn proc
+        #/list op proc)]
       [op:id
         (maybe-bind (syntax-local-maybe #'op) #/fn op
-        #/ht-builder-syntax-maybe op)]
+        #/maybe-map (ht-builder-syntax-maybe op) #/fn proc
+        #/list op proc)]
       [_ (nothing)])
-    (just op)
+    (just #/list op proc)
     
     ; If `stx` is shaped like `op` or `(op arg ...)` where `op` is
     ; bound to an `ht-builder-syntax?` syntax transformer according to
@@ -176,16 +186,15 @@
     ;     peers of each other, as well as several holes that have
     ;     nothing to do with this encoding of Racket syntax objects.
     ;
-    ; TODO: Use a contract to enforce that `op` returns a single
+    ; TODO: Use a contract to enforce that `proc` returns a single
     ; value matching `hypertee?`. Currently, if it doesn't, then
     ; `s-expr-stx->ht-expr` reports that it has broken its own
     ; contract.
     ;
-    (op stx)
+    (proc op stx)
   #/w- process-list
     (fn elems
-      (list-map (syntax->list elems) #/fn elem
-        (s-expr-stx->ht-expr elem)))
+      (list-map elems #/fn elem #/s-expr-stx->ht-expr elem))
   ; NOTE: We go to some trouble to detect improper lists here. This is
   ; so we can preserve the metadata of syntax objects occurring in
   ; tail positions partway through the list, which we would lose track
@@ -230,7 +239,7 @@
       #/append elems #/list tail))
   #/syntax-parse stx
     [ #(elem ...)
-      (w- elems (process-list #'(elem ...))
+      (w- elems (process-list #/syntax->list #'(elem ...))
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
@@ -267,7 +276,7 @@
 (struct-easy (simple-ht-builder-syntax impl)
   #:other
   #:property prop:ht-builder-syntax
-  (lambda (this stx)
+  (fn this stx
     (expect this (simple-ht-builder-syntax impl)
       (error "Expected this to be a simple-ht-builder-syntax")
     #/impl stx)))
@@ -277,7 +286,7 @@
   #:other
   
   #:property prop:procedure
-  (lambda (this stx)
+  (fn this stx
     (expect this
       (syntax-and-ht-builder-syntax
         syntax-impl ht-builder-syntax-impl)
@@ -285,7 +294,7 @@
     #/syntax-impl stx))
   
   #:property prop:ht-builder-syntax
-  (lambda (this stx)
+  (fn this stx
     (expect this
       (syntax-and-ht-builder-syntax
         syntax-impl ht-builder-syntax-impl)
