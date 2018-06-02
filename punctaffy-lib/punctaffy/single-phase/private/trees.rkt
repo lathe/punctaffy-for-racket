@@ -337,7 +337,7 @@
 
 ; ===== Suspended computations over higher quasiquotation spans ======
 
-(struct-easy(hoqq-span-step sig func) #:write
+(struct-easy (hoqq-span-step sig func) #:write
 #/lambda (this)
   (append (hoqq-sig-print sig)
   #/list #/func #/hoqq-tower-fmap sig #/lambda (subsig)
