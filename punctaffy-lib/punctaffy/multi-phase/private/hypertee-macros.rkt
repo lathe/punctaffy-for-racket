@@ -102,10 +102,6 @@
     (nothing)))
 
 
-; TODO: Now that we have degree-omega hypertees, use them as syntax
-; here.
-
-
 
 ; This struct property indicates a syntax's behavior as the kind of
 ; macro expected by `s-expr-stx->ht-expr`.
@@ -132,16 +128,19 @@
       (dissect data (list)
         tail))))
 
+(struct-easy (ht-tag-list stx-example) #:equal)
+(struct-easy (ht-tag-list* stx-example) #:equal)
+(struct-easy (ht-tag-vector stx-example) #:equal)
+(struct-easy (ht-tag-atom stx) #:equal)
+
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee. It performs a kind of macroexpansion on lists
 ; that begin with an identifier with an appropriate
 ; `syntax-local-value` binding. For everything else, it uses
 ; particular data structures in the holes of the result hypertee to
 ; represent the other atoms, proper lists, improper lists, vectors,
-; and prefabricated structs it encounters.
-;
-; TODO: Finish implementing all the metadata that this attaches to its
-; result's degree-2 holes. Curerntly, that data is always `'TODO`.
+; and prefabricated structs it encounters. (TODO: Implement the
+; prefabricated struct support.)
 ;
 (define/contract (s-expr-stx->ht-expr stx)
   (-> syntax? hypertee?)
@@ -193,6 +192,7 @@
   ; of if we simply used `syntax->list` or `syntax-parse` with a
   ; pattern of `(elem ...)` or `(elem ... . tail)`.
   #/w- s (syntax-e stx)
+  #/w- stx-example (datum->syntax stx #/list)
   #/w- make-list-layer
     (fn metadata elems
       ; When we call this, `elems` is a list of degree-omega
@@ -217,7 +217,7 @@
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypertee-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      (make-list-layer 'TODO elems)
+      (make-list-layer (ht-tag-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->ht-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped,
     ; so we know it's either going to be expanded as a symbol macro or
@@ -226,14 +226,15 @@
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
-      (make-list-layer 'TODO #/append elems #/list tail))
+      (make-list-layer (ht-tag-list* stx-example)
+      #/append elems #/list tail))
   #/syntax-parse stx
     [ #(elem ...)
       (w- elems (process-list #'(elem ...))
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
-        (make-list-layer 'TODO elems))]
+        (make-list-layer (ht-tag-vector stx-example) elems))]
     ; TODO: We support lists and vectors, but let's also support
     ; prefabricated structs like Racket's `quasiquote` and
     ; `quasisyntax` do.
@@ -244,7 +245,7 @@
       ; `stx` itself (perhaps put in some kind of container so that it
       ; can be distinguished from degree-1 holes that a user-defined
       ; syntax introduces for a different reason).
-      (omega-ht (list 1 'TODO) 0 #/list 0 #/list)]))
+      (omega-ht (list 1 #/ht-tag-atom stx) 0 #/list 0 #/list)]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it
