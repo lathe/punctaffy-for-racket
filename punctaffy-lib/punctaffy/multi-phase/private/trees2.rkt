@@ -16,7 +16,7 @@
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
   list-bind list-each list-foldl list-kv-map list-map nat->maybe)
-(require #/only-in lathe-comforts/maybe just nothing)
+(require #/only-in lathe-comforts/maybe just maybe/c nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-ordinals
   onum<=? onum<? onum<=omega? onum<omega? onum-plus onum-plus1
@@ -36,6 +36,8 @@
     [-hypertee? hypertee?]
     [-hypertee-degree hypertee-degree])
   degree-and-closing-brackets->hypertee
+  hypertee-drop1
+  hypertee-fold
   hypertee-join-all-degrees
   hypertee-map-all-degrees
   hypertee-pure
@@ -489,6 +491,145 @@
     (make-list (length closing-brackets) 0)
     (list #/list 0 hole-value)))
 
+(define (push-box! bx elem)
+  (set-box! bx (cons elem #/unbox bx)))
+
+(define/contract (hypertee-drop1 ht)
+  (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
+  (struct-easy (loc-outside))
+  (struct-easy (loc-dropped))
+  (struct-easy (loc-interpolation-uninitialized))
+  (struct-easy (loc-interpolation result-box d rev-brackets-box))
+  (dissect ht (hypertee d-root closing-brackets)
+  #/expect closing-brackets (cons first rest) (nothing)
+  #/dissect first (list d-dropped data-dropped)
+  #/just #/list data-dropped
+  ; NOTE: This special case is necessary. Most of the code below goes
+  ; smoothly for a `d-dropped` equal to `0`, but the fold ends with a
+  ; location of `(loc-dropped)` instead of `(loc-outside)`.
+  #/mat d-dropped 0 (hypertee 0 #/list)
+  #/w- stack
+    (make-poppable-hyperstack #/olist-build d-root #/dissectfn _
+      (loc-outside))
+  #/dissect
+    (poppable-hyperstack-pop stack
+    #/olist-build d-dropped #/dissectfn _
+      (loc-interpolation-uninitialized))
+    (list (loc-outside) stack)
+  #/dissect
+    (list-foldl (list (list) (list (loc-dropped) stack)) rest
+    #/fn state closing-bracket
+      (dissect state (list dropped-rev-brackets hist)
+      #/dissect hist (list loc stack)
+      #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
+      #/w- pop
+        (fn loc
+          (poppable-hyperstack-pop stack
+          #/olist-build d-bracket #/dissectfn _ loc))
+      #/dissect (pop loc) (list tentative-new-loc tentative-new-stack)
+      #/mat loc (loc-outside)
+        (dissect tentative-new-loc
+          (loc-interpolation result-box d rev-brackets-box)
+        #/begin (push-box! rev-brackets-box closing-bracket)
+        #/list dropped-rev-brackets
+          (list tentative-new-loc tentative-new-stack))
+      #/mat loc (loc-dropped)
+        (mat tentative-new-loc (loc-interpolation-uninitialized)
+          (w- result-box (box #/nothing)
+          #/w- rev-brackets-box (box #/list)
+          #/list
+            (cons (list closing-bracket result-box)
+              dropped-rev-brackets)
+            (list
+              (loc-interpolation
+                result-box closing-bracket rev-brackets-box)
+              tentative-new-stack))
+        #/dissect tentative-new-loc
+          (loc-interpolation result-box d rev-brackets-box)
+          (begin (push-box! rev-brackets-box closing-bracket)
+          #/list (cons closing-bracket dropped-rev-brackets)
+            (list tentative-new-loc tentative-new-stack)))
+      #/mat loc (loc-interpolation result-box d rev-brackets-box)
+        (mat tentative-new-loc (loc-outside)
+          (begin
+            (push-box! rev-brackets-box closing-bracket)
+            (mat (poppable-hyperstack-dimension tentative-new-stack) 0
+              (set-box! result-box
+                (just
+                #/hypertee d-root #/reverse #/unbox rev-brackets-box))
+            #/void)
+            (list dropped-rev-brackets
+              (list tentative-new-loc tentative-new-stack)))
+        #/dissect tentative-new-loc (loc-dropped)
+          (w- dropped-rev-brackets
+            (cons closing-bracket dropped-rev-brackets)
+          #/begin
+            (push-box! rev-brackets-box (list closing-bracket #/list))
+            (mat d-bracket 0
+              (set-box! result-box
+                (just
+                #/hypertee d-root #/reverse #/unbox rev-brackets-box))
+            #/void)
+            (list dropped-rev-brackets
+              (list tentative-new-loc tentative-new-stack))))
+      #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1"))
+    (list dropped-rev-brackets hist)
+  #/dissect hist (list (loc-outside) stack)
+  #/dissect (poppable-hyperstack-dimension stack) 0
+  ; We remove all the mutable boxes from `dropped-rev-brackets` and
+  ; make a hypertee out of it.
+  #/hypertee d-dropped #/reverse
+  #/list-map dropped-rev-brackets #/fn bracket
+    (expect bracket (list d data) bracket
+    #/dissect (unbox data) (just tail)
+    #/list d tail)))
+
+(define/contract (hypertee-fold ht func)
+  (-> hypertee? (-> any/c hypertee? any/c) any/c)
+  (mat (hypertee-degree ht) 0
+    ; TODO: Make this part of the contract instead.
+    (error "Expected ht to be a hypertee of degree greater than 0")
+  #/dissect (hypertee-drop1 ht) (just #/list data tails)
+  #/func data #/hypertee-map-all-degrees tails #/fn hole tail
+    (hypertee-fold tail func)))
+
+; TODO: See if we can simplify the implementation of
+; `hypertee-join-all-degrees` to something like this once we have
+; `hypertee-fold`. There are a few potential circular dependecy
+; problems: The implementations of `hypertee-map-all-degrees`,
+; `hypertee-truncate`, and `hypertee-zip-low-degrees` depend on
+; `hypertee-join-all-degrees`.
+;
+#;(define/contract (hypertee-join-all-degrees ht)
+  (-> hypertee? hypertee?)
+  (hypertee-fold ht #/fn suffix tails
+    (unless
+      (and
+        (hypertee? suffix)
+        (onum<? (hypertee-degree tails) (hypertee-degree suffix))
+        (equal?
+          (hypertee-map-all-degrees tails #/fn hole suffix #/list)
+          (hypertee-map-all-degrees
+            (hypertee-truncate (hypertee-degree tails) suffix)
+          #/fn hole data #/list)))
+      (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context"))
+    (hypertee-join-all-degrees
+    #/hypertee-zip-low-degrees tails suffix #/fn hole tail suffix
+      (dissect suffix (list)
+        tail))))
+
+; TODO: See if we should switch to this implementation for `hypertee-map-all-degrees`.
+;
+#;(define/contract (hypertee-map-all-degrees ht func)
+  (-> hypertee? hypertee?)
+  (hypertee-fold ht #/fn data tails
+    (w- d (hypertee-degree tails)
+    #/w- hole
+      (mat d 0 tails
+      #/hypertee-map-all-degrees tails #/fn hole data #/list)
+    #/hypertee-join-all-degrees
+    #/hypertee-pure d (func hole data) tails)))
+
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is another degree-N hypertee to be interpolated. In those
 ; interpolated hypertees, the values of holes of degree less than M
@@ -622,6 +763,10 @@
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (dissect ht (hypertee overall-degree closing-brackets)
+  ; NOTE: This special case is necessary. Most of the code below goes
+  ; smoothly for an `overall-degree` equal to `0`, but the loop ends
+  ; with a `maybe-current-hole` of `(nothing)`.
+  #/mat overall-degree 0 (hypertee 0 #/list)
   #/w- result
     (list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (list d data)

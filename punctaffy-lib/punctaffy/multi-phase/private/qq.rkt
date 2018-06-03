@@ -9,6 +9,9 @@
 
 
 (module part1-private racket/base
+  
+  (require #/for-template racket/base)
+  
   (require #/only-in racket/contract/base -> any/c list/c)
   (require #/only-in racket/contract/region define/contract)
   (require #/only-in syntax/parse expr syntax-parse)
@@ -23,7 +26,7 @@
     s-expr-stx->ht-expr simple-ht-builder-syntax)
   (require #/only-in punctaffy/multi-phase/private/trees2
     degree-and-closing-brackets->hypertee hypertee? hypertee-degree
-    hypertee-map-all-degrees)
+    hypertee-drop1 hypertee-fold)
   
   (provide #/all-defined-out)
   
@@ -31,22 +34,6 @@
   (define (omega-ht . closing-brackets)
     (degree-and-closing-brackets->hypertee (onum-omega)
       closing-brackets))
-  
-  ; TODO: Implement this.
-  (define/contract (ht-drop1 ht)
-    (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
-    'TODO)
-  
-  ; TODO: Put something like this in the
-  ; `punctaffy/multi-phase/private/trees2` module.
-  (define/contract (ht-fold ht func)
-    (-> hypertee? (-> any/c hypertee? any/c) any/c)
-    (mat (hypertee-degree ht) 0
-      ; TODO: Make this part of the contract instead.
-      (error "Expected ht to be a hypertee of degree greater than 0")
-    #/dissect (ht-drop1 ht) (just #/list data tails)
-    #/func data #/hypertee-map-all-degrees tails #/fn hole tail
-      (ht-fold tail func)))
   
   
   (struct-easy (my-quasiquote-tag-unquote stx) #:equal)
@@ -63,36 +50,43 @@
   (define (my-quasiquote-qq stx)
     (syntax-parse stx #/ (_ quotation:expr)
     #/w- quotation (s-expr-stx->ht-expr #'quotation)
-    #/ht-fold quotation #/fn data tails
-      (w- d (hypertee-degree tails)
-      #/mat d 0
-        (expect tails (list)
-          (error "Encountered an unrecognized degree-0 hole in quasiquoted syntax")
-        #/list)
-      #/mat d 1
-        (dissect (ht-drop1 tails) (just #/list data tails)
-        #/dissect (ht-drop1 tails) (nothing)
-        #/mat data (ht-tag-atom stx) #`'#,stx
-        #/mat data (my-quasiquote-tag-unquote stx) stx
-        #/error "Encountered an unrecognized degree-1 hole in quasiquoted syntax")
-      #/mat d 2
-        #`(
-          #,
-            (mat data (ht-tag-list stx-example) #'list
-            #/mat data (ht-tag-list* stx-example) #'list*
-            #/mat data (ht-tag-vector stx-example) #'vector
-            #/error "Encountered an unrecognized degree-2 hole in quasiquoted syntax")
-          #,@
-            (ht-fold tails #/fn data tails
+    #/expect
+      (hypertee-fold quotation #/fn data tails
+        (w- d (hypertee-degree tails)
+        #/mat d 0
+          (expect data (list)
+            (error "Encountered an unrecognized degree-0 hole in quasiquoted syntax")
+          #/list)
+        #/mat d 1
+          (dissect (hypertee-drop1 tails) (just #/list rest tails)
+          #/dissect (hypertee-drop1 tails) (nothing)
+          #/mat data (ht-tag-atom stx) (cons #`'#,stx rest)
+          #/mat data (my-quasiquote-tag-unquote stx) (cons stx rest)
+          #/error "Encountered an unrecognized degree-1 hole in quasiquoted syntax")
+        #/mat d 2
+          (dissect
+            (hypertee-fold tails #/fn data tails
               (w- d (hypertee-degree tails)
-              #/mat d 0
-                (dissect tails (list)
-                #/list)
+              #/mat d 0 (list (list) data)
               #/dissect d 1
-              #/dissect (ht-drop1 tails) (just #/list rest tails)
-              #/dissect (ht-drop1 tails) (nothing)
-              #/cons data rest)))
-      #/error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax")))
+              #/dissect (hypertee-drop1 tails)
+                (just #/list (list elems rest) tails)
+              #/dissect (hypertee-drop1 tails) (nothing)
+              #/list (append data elems) rest))
+            (list elems rest)
+          #/cons
+            #`(
+              #,
+                (mat data (ht-tag-list stx-example) #'list
+                #/mat data (ht-tag-list* stx-example) #'list*
+                #/mat data (ht-tag-vector stx-example) #'vector
+                #/error "Encountered an unrecognized degree-2 hole in quasiquoted syntax")
+              #,@elems)
+            rest)
+        #/error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax"))
+      (list stx)
+      (error "Internal error: Somehow reconstructed more than one syntax object out of quasiquoted syntax")
+      stx))
   
 )
 (require #/for-syntax 'part1-private)
