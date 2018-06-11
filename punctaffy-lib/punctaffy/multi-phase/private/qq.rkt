@@ -22,8 +22,9 @@
   (require #/only-in lathe-ordinals onum-omega)
   
   (require #/only-in punctaffy/multi-phase/private/hypertee-macros
-    ht-tag-atom ht-tag-list ht-tag-list* ht-tag-prefab ht-tag-vector
-    s-expr-stx->ht-expr simple-ht-builder-syntax)
+    ht-tag-1-other ht-tag-1-s-expr-stx ht-tag-2-list ht-tag-2-list*
+    ht-tag-2-prefab ht-tag-2-vector s-expr-stx->ht-expr
+    simple-ht-builder-syntax)
   (require #/only-in punctaffy/multi-phase/private/trees2
     degree-and-closing-brackets->hypertee hypertee? hypertee-degree
     hypertee-drop1 hypertee-fold)
@@ -42,7 +43,8 @@
     (simple-ht-builder-syntax #/fn stx
       (syntax-parse stx #/ (_ interpolation:expr)
       #/omega-ht
-        (list 1 #/my-quasiquote-tag-unquote #'interpolation)
+        (list 1
+        #/ht-tag-1-other #/my-quasiquote-tag-unquote #'interpolation)
         0
       #/list 0 #/list)))
   
@@ -60,8 +62,9 @@
         #/mat d 1
           (dissect (hypertee-drop1 tails) (just #/list rest tails)
           #/dissect (hypertee-drop1 tails) (nothing)
-          #/mat data (ht-tag-atom stx) (cons #`'#,stx rest)
-          #/mat data (my-quasiquote-tag-unquote stx) (cons stx rest)
+          #/mat data (ht-tag-1-s-expr-stx stx) (cons #`'#,stx rest)
+          #/mat data (ht-tag-1-other #/my-quasiquote-tag-unquote stx)
+            (cons stx rest)
           #/error "Encountered an unrecognized degree-1 hole in quasiquoted syntax")
         #/mat d 2
           (dissect
@@ -75,10 +78,11 @@
               #/list (append data elems) rest))
             (list elems rest)
           #/cons
-            (mat data (ht-tag-list stx-example) #`(list #,@elems)
-            #/mat data (ht-tag-list* stx-example) #`(list* #,@elems)
-            #/mat data (ht-tag-vector stx-example) #`(vector #,@elems)
-            #/mat data (ht-tag-prefab key stx-example)
+            (mat data (ht-tag-2-list stx-example) #`(list #,@elems)
+            #/mat data (ht-tag-2-list* stx-example) #`(list* #,@elems)
+            #/mat data (ht-tag-2-vector stx-example)
+              #`(vector #,@elems)
+            #/mat data (ht-tag-2-prefab key stx-example)
               ; NOTE: The expression this generates can raise an error
               ; if the struct has more fields than prefab structs
               ; allow.

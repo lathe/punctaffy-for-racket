@@ -16,11 +16,13 @@
   hypertee-bind-one-degree)
 
 (provide
-  (struct-out ht-tag-list)
-  (struct-out ht-tag-list*)
-  (struct-out ht-tag-vector)
-  (struct-out ht-tag-prefab)
-  (struct-out ht-tag-atom)
+  (struct-out ht-tag-1-s-expr-stx)
+  (struct-out ht-tag-1-other)
+  (struct-out ht-tag-2-list)
+  (struct-out ht-tag-2-list*)
+  (struct-out ht-tag-2-vector)
+  (struct-out ht-tag-2-prefab)
+  (struct-out ht-tag-2-other)
   s-expr-stx->ht-expr
   simple-ht-builder-syntax)
 
@@ -137,11 +139,13 @@
       (dissect data (list)
         tail))))
 
-(struct-easy (ht-tag-list stx-example) #:equal)
-(struct-easy (ht-tag-list* stx-example) #:equal)
-(struct-easy (ht-tag-vector stx-example) #:equal)
-(struct-easy (ht-tag-prefab key stx-example) #:equal)
-(struct-easy (ht-tag-atom stx) #:equal)
+(struct-easy (ht-tag-1-s-expr-stx stx) #:equal)
+(struct-easy (ht-tag-1-other val) #:equal)
+(struct-easy (ht-tag-2-list stx-example) #:equal)
+(struct-easy (ht-tag-2-list* stx-example) #:equal)
+(struct-easy (ht-tag-2-vector stx-example) #:equal)
+(struct-easy (ht-tag-2-prefab key stx-example) #:equal)
+(struct-easy (ht-tag-2-other val) #:equal)
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee. It performs a kind of macroexpansion on lists
@@ -229,7 +233,7 @@
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypertee-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      (make-list-layer (ht-tag-list stx-example) elems)
+      (make-list-layer (ht-tag-2-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->ht-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped.
     ; Usually it'll be wrapped up as an atom. However, it could still
@@ -239,13 +243,13 @@
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
-      (make-list-layer (ht-tag-list* stx-example)
+      (make-list-layer (ht-tag-2-list* stx-example)
       #/append elems #/list tail))
   
   ; We traverse into prefab structs.
   #/w- key (prefab-struct-key s)
   #/if key
-    (make-list-layer (ht-tag-prefab key stx-example)
+    (make-list-layer (ht-tag-2-prefab key stx-example)
     #/process-list #/cdr #/vector->list #/struct->vector s)
   
   #/syntax-parse stx
@@ -255,7 +259,7 @@
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
-        (make-list-layer (ht-tag-vector stx-example) elems))]
+        (make-list-layer (ht-tag-2-vector stx-example) elems))]
     
     [_
       ; We return a degree-omega hypertee with trivial contents in its
@@ -263,7 +267,8 @@
       ; `stx` itself (perhaps put in some kind of container so that it
       ; can be distinguished from degree-1 holes that a user-defined
       ; syntax introduces for a different reason).
-      (omega-ht (list 1 #/ht-tag-atom stx) 0 #/list 0 #/list)]))
+      (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
+      #/list 0 #/list)]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it
