@@ -602,7 +602,8 @@
 ;
 #;(define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
-  (hypertee-fold ht #/fn suffix tails
+  (mat (hypertee-degree ht) 0 ht
+  #/hypertee-fold ht #/fn suffix tails
     (unless
       (and
         (hypertee? suffix)
@@ -1462,10 +1463,8 @@
 ; hypertees have the same shape when truncated to degree N.
 (define/contract (hypertee-zip-low-degrees smaller bigger func)
   (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c) hypertee?)
-  (expect smaller (hypertee d-smaller closing-brackets-smaller)
-    (error "Expected smaller to be a hypertee")
-  #/expect bigger (hypertee d-bigger closing-brackets-bigger)
-    (error "Expected smaller to be a hypertee")
+  (dissect smaller (hypertee d-smaller closing-brackets-smaller)
+  #/dissect bigger (hypertee d-bigger closing-brackets-bigger)
   #/expect (onum<=? d-smaller d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/expect
