@@ -19,6 +19,7 @@
   (struct-out ht-tag-list)
   (struct-out ht-tag-list*)
   (struct-out ht-tag-vector)
+  (struct-out ht-tag-prefab)
   (struct-out ht-tag-atom)
   s-expr-stx->ht-expr
   simple-ht-builder-syntax)
@@ -139,6 +140,7 @@
 (struct-easy (ht-tag-list stx-example) #:equal)
 (struct-easy (ht-tag-list* stx-example) #:equal)
 (struct-easy (ht-tag-vector stx-example) #:equal)
+(struct-easy (ht-tag-prefab key stx-example) #:equal)
 (struct-easy (ht-tag-atom stx) #:equal)
 
 ; This recursively converts the given Racket syntax object into an
@@ -147,8 +149,7 @@
 ; `syntax-local-value` binding. For everything else, it uses
 ; particular data structures in the holes of the result hypertee to
 ; represent the other atoms, proper lists, improper lists, vectors,
-; and prefabricated structs it encounters. (TODO: Implement the
-; prefabricated struct support.)
+; and prefab structs it encounters.
 ;
 (define/contract (s-expr-stx->ht-expr stx)
   (-> syntax? hypertee?)
@@ -218,6 +219,8 @@
         1
       #/fn hole data
         (omega-ht-append0 elems)))
+  
+  ; We traverse into proper and improper lists.
   #/if (pair? s)
     (dissect (improper-list->list-and-tail s) (list elems tail)
     #/w- elems (process-list elems)
@@ -228,25 +231,31 @@
       ; can recover this layer of information about it.
       (make-list-layer (ht-tag-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->ht-expr`
-    ; operation here, we already know `#'tail` can't be cons-shaped,
-    ; so we know it's either going to be expanded as a symbol macro or
-    ; wrapped up as an atom.
+    ; operation here, we already know `#'tail` can't be cons-shaped.
+    ; Usually it'll be wrapped up as an atom. However, it could still
+    ; be expanded as a identifier syntax or processed as a vector or
+    ; as a prefab struct.
     #/w- tail (s-expr-stx->ht-expr tail)
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
       (make-list-layer (ht-tag-list* stx-example)
       #/append elems #/list tail))
+  
+  ; We traverse into prefab structs.
+  #/w- key (prefab-struct-key s)
+  #/if key
+    (make-list-layer (ht-tag-prefab key stx-example)
+    #/process-list #/cdr #/vector->list #/struct->vector s)
+  
   #/syntax-parse stx
+    ; We traverse into vectors.
     [ #(elem ...)
       (w- elems (process-list #/syntax->list #'(elem ...))
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
         (make-list-layer (ht-tag-vector stx-example) elems))]
-    ; TODO: We support lists and vectors, but let's also support
-    ; prefabricated structs like Racket's `quasiquote` and
-    ; `quasisyntax` do.
     
     [_
       ; We return a degree-omega hypertee with trivial contents in its

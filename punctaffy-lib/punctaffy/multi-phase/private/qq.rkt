@@ -22,7 +22,7 @@
   (require #/only-in lathe-ordinals onum-omega)
   
   (require #/only-in punctaffy/multi-phase/private/hypertee-macros
-    ht-tag-atom ht-tag-list ht-tag-list* ht-tag-vector
+    ht-tag-atom ht-tag-list ht-tag-list* ht-tag-prefab ht-tag-vector
     s-expr-stx->ht-expr simple-ht-builder-syntax)
   (require #/only-in punctaffy/multi-phase/private/trees2
     degree-and-closing-brackets->hypertee hypertee? hypertee-degree
@@ -75,13 +75,15 @@
               #/list (append data elems) rest))
             (list elems rest)
           #/cons
-            #`(
-              #,
-                (mat data (ht-tag-list stx-example) #'list
-                #/mat data (ht-tag-list* stx-example) #'list*
-                #/mat data (ht-tag-vector stx-example) #'vector
-                #/error "Encountered an unrecognized degree-2 hole in quasiquoted syntax")
-              #,@elems)
+            (mat data (ht-tag-list stx-example) #`(list #,@elems)
+            #/mat data (ht-tag-list* stx-example) #`(list* #,@elems)
+            #/mat data (ht-tag-vector stx-example) #`(vector #,@elems)
+            #/mat data (ht-tag-prefab key stx-example)
+              ; NOTE: The expression this generates can raise an error
+              ; if the struct has more fields than prefab structs
+              ; allow.
+              #`(make-prefab-struct '#,key #,@elems)
+            #/error "Encountered an unrecognized degree-2 hole in quasiquoted syntax")
             rest)
         #/error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax"))
       (list stx)
