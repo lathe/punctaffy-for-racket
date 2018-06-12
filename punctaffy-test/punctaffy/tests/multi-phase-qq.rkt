@@ -14,10 +14,10 @@
 
 
 (check-equal?
-  (my-quasiquote my-unquote
+  (my-quasiquote uq #/qq
     (a b
       (c d
-        (my-unquote (+ 4 5)))))
+        (uq (+ 4 5)))))
   `
     (a b
       (c d

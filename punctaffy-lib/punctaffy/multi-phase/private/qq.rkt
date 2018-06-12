@@ -191,6 +191,6 @@
 (define-syntax my-quasiquote-begin my-quasiquote-begin-fn)
 
 (define-syntax (my-quasiquote stx)
-  (syntax-parse stx #/ (_ uq:id body)
+  (syntax-parse stx #/ (_ uq:id (qq:id body))
     #'(let-syntax ([uq my-quasiquote-uq] [qq my-quasiquote-qq])
       #/my-quasiquote-begin body)))
