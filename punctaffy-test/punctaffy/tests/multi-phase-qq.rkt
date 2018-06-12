@@ -24,6 +24,42 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
+(check-equal?
+  (my-quasiquote uq #/qq
+    (a b
+      (my-quasiquote uq #/_qq
+        (c d
+          (_uq
+            (e f
+              (uq (+ 4 5))))))))
+  `
+    (a b
+      (my-quasiquote uq #/_qq
+        (c d
+          (_uq
+            (e f
+              ,(+ 4 5))))))
+  "The new quasiquote works on data that looks roughly similar to nesting")
+
+; TODO: Uncomment this once it works.
+#;
+(check-equal?
+  (my-quasiquote uq #/qq
+    (a b
+      (my-quasiquote uq #/qq
+        (c d
+          (uq
+            (e f
+              (uq (+ 4 5))))))))
+  `
+    (a b
+      (my-quasiquote uq #/qq
+        (c d
+          (uq
+            (e f
+              ,(+ 4 5))))))
+  "The new quasiquote supports nesting")
+
 
 ; TODO: Turn this into a unit test. There was at one point (although
 ; not in any code that's been committed) a bug in `hypertee-fold`

@@ -14,7 +14,7 @@
   
   (require #/only-in racket/contract/base -> any/c list/c)
   (require #/only-in racket/contract/region define/contract)
-  (require #/only-in syntax/parse expr syntax-parse)
+  (require #/only-in syntax/parse expr id syntax-parse)
   
   (require #/only-in lathe-comforts dissect expect fn mat w-)
   (require #/only-in lathe-comforts/list list-foldr)
@@ -77,7 +77,17 @@
   
   (define my-quasiquote-uq
     (simple-ht-builder-syntax #/fn stx
-      (syntax-parse stx #/ (op interpolation)
+      (syntax-parse stx
+        [op:id
+          ; If this syntax transformer is used in an identifier
+          ; position, we just expand as though the identifier isn't
+          ; bound to a syntax transformer at all. In this case, that
+          ; makes it possible to nest `(my-quasiquote uq #/qq ...)`
+          ; within itself, without the inner `uq` being treated as a
+          ; closing bracket.
+          (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
+          #/list 0 #/list)]
+      #/ (op interpolation)
       #/omega-ht
         (list 1
         #/ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
@@ -88,7 +98,14 @@
   
   (define my-quasiquote-qq
     (simple-ht-builder-syntax #/fn stx
-      (syntax-parse stx #/ (op body)
+      (syntax-parse stx
+        [op:id
+          ; If this syntax transformer is used in an identifier
+          ; position, we just expand as though the identifier isn't
+          ; bound to a syntax transformer at all.
+          (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
+          #/list 0 #/list)]
+      #/ (op body)
       #/w- body (s-expr-stx->ht-expr #'body)
       ; We make a hypertee with a single degree-2 hole (annotated with
       ; the body of the quasiquotation) and some degree-1 holes
