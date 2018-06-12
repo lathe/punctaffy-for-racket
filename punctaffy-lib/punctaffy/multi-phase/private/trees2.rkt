@@ -19,8 +19,8 @@
 (require #/only-in lathe-comforts/maybe just maybe/c nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-ordinals
-  onum<=? onum<? onum<=omega? onum<omega? onum-plus onum-plus1
-  onum-pred-maybe)
+  onum<=? onum<? onum-max onum<=omega? onum<omega? onum-plus
+  onum-plus1 onum-pred-maybe)
 (require #/only-in lathe-ordinals/olist olist-build)
 
 (require #/only-in punctaffy/hyperstacks
@@ -36,12 +36,16 @@
     [-hypertee? hypertee?]
     [-hypertee-degree hypertee-degree])
   degree-and-closing-brackets->hypertee
+  hypertee-promote
   hypertee-drop1
   hypertee-fold
   hypertee-join-all-degrees
   hypertee-map-all-degrees
+  hypertee-map-one-degree
   hypertee-pure
   hypertee-bind-one-degree
+  hypertee-join-one-degree
+  
   ; TODO: See if there's anything more abstract we can export in place
   ; of these structure types.
   (struct-out hyprid)
@@ -49,7 +53,9 @@
   (struct-out lake-cane)
   (struct-out non-lake-cane)
   hyprid-destripe-once hyprid-fully-destripe
-  hyprid-stripe-once)
+  hyprid-stripe-once
+  
+  hypertee-truncate)
 
 
 ; ===== Helpers for this module ======================================
@@ -584,14 +590,19 @@
     #/dissect (unbox data) (just tail)
     #/list d tail)))
 
-(define/contract (hypertee-fold ht func)
-  (-> hypertee? (-> any/c hypertee? any/c) any/c)
+(define/contract (hypertee-fold first-nontrivial-d ht func)
+  (-> onum<=omega? hypertee? (-> onum<=omega? any/c hypertee? any/c)
+    any/c)
   (mat (hypertee-degree ht) 0
     ; TODO: Make this part of the contract instead.
     (error "Expected ht to be a hypertee of degree greater than 0")
   #/dissect (hypertee-drop1 ht) (just #/list data tails)
-  #/func data #/hypertee-map-all-degrees tails #/fn hole tail
-    (hypertee-fold tail func)))
+  #/func first-nontrivial-d data
+  #/hypertee-map-all-degrees tails #/fn hole tail
+    (hypertee-fold
+      (onum-max first-nontrivial-d #/hypertee-degree hole)
+      tail
+      func)))
 
 ; TODO: See if we can simplify the implementation of
 ; `hypertee-join-all-degrees` to something like this once we have
@@ -603,8 +614,13 @@
 #;(define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
   (mat (hypertee-degree ht) 0 ht
-  #/hypertee-fold ht #/fn suffix tails
-    (unless
+  #/hypertee-fold 0 ht #/fn first-nontrivial-d suffix tails
+    (w- d (hypertee-degree tails)
+    #/if (onum<? d first-nontrivial-d)
+      (dissect suffix (list)
+      ; TODO: See if this is correct.
+      (hypertee-join-all-degrees tails)
+    #/expect
       (and
         (hypertee? suffix)
         (onum<? (hypertee-degree tails) (hypertee-degree suffix))
@@ -613,8 +629,9 @@
           (hypertee-map-all-degrees
             (hypertee-truncate (hypertee-degree tails) suffix)
           #/fn hole data #/list)))
+      #t
       (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context"))
-    (hypertee-join-all-degrees
+    #/hypertee-join-all-degrees
     #/hypertee-zip-low-degrees tails suffix #/fn hole tail suffix
       (dissect suffix (list)
         tail))))
@@ -623,8 +640,12 @@
 ;
 #;(define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? hypertee?)
-  (hypertee-fold ht #/fn data tails
+  (hypertee-fold 0 ht #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
+    #/if (onum<? d first-nontrivial-d)
+      ; TODO: See if this is correct.
+      (dissect data (list)
+      #/hypertee-join-all-degrees #/hypertee-pure d (list) tails)
     #/w- hole
       (mat d 0 tails
       #/hypertee-map-all-degrees tails #/fn hole data #/list)
@@ -889,6 +910,11 @@
 (define/contract (hypertee-bind-highest-degree ht func)
   (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)
   (hypertee-bind-pred-degree ht (hypertee-degree ht) func))
+
+(define/contract (hypertee-join-one-degree ht degree)
+  (-> hypertee? natural? hypertee?)
+  (hypertee-bind-one-degree ht degree #/fn hole data
+    data))
 
 (define/contract (hypertee-each-all-degrees ht body)
   (-> hypertee? (-> hypertee? any/c any) void?)
