@@ -30,7 +30,8 @@
     degree-and-closing-brackets->hypertee hypertee?
     hypertee-bind-one-degree hypertee-degree hypertee-drop1
     hypertee-fold hypertee-join-one-degree hypertee-map-one-degree
-    hypertee-promote hypertee-pure hypertee-truncate)
+    hypertee-promote hypertee-pure hypertee-truncate
+    hypertee-zip-selective)
   
   (provide #/all-defined-out)
   
@@ -49,6 +50,7 @@
           tail))))
   
   
+  (struct-easy (my-quasiquote-tag-1-expanded-expr stx) #:equal)
   (struct-easy
     (my-quasiquote-tag-1-unmatched-unquote
       closing-bracket interpolation)
@@ -135,11 +137,9 @@
       ; become part of this expansion directly.
       #/hypertee-join-one-degree intermediate 1)))
   
-  (define (my-quasiquote-begin-fn stx)
-    (syntax-parse stx #/ (_ quotation:expr)
-    #/w- quotation (s-expr-stx->ht-expr #'quotation)
-    #/expect
-      (hypertee-fold 1 quotation #/fn first-nontrivial-d data tails
+  (define (my-quasiquote-ht-expr->stx ht-expr)
+    (expect
+      (hypertee-fold 1 ht-expr #/fn first-nontrivial-d data tails
         (w- d (hypertee-degree tails)
         #/w- trivial (onum<? d first-nontrivial-d)
         #/begin
@@ -154,27 +154,21 @@
           ; TODO: Figure out what to do when `trivial` is true.
           (dissect (hypertee-drop1 tails) (just #/list rest tails)
           #/dissect (hypertee-drop1 tails) (nothing)
-          #/mat data (ht-tag-1-s-expr-stx stx) (cons #`'#,stx rest)
+          #/(fn result #/cons result rest)
+          #/mat data (ht-tag-1-s-expr-stx stx) #`'#,stx
+          #/mat data
+            (ht-tag-1-other #/my-quasiquote-tag-1-expanded-expr stx)
+            stx
           #/mat data
             (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
               bracket-ht-expr stx)
             (syntax-parse stx
-              [interpolation:expr (cons stx rest)]
+              [interpolation:expr stx]
               [_  (error "Encountered an interpolation of a non-expression in quasiquoted syntax")])
           #/error "Encountered an unrecognized degree-1 hole in quasiquoted syntax")
         #/mat d 2
           ; TODO: Figure out what to do when `trivial` is true.
-          (mat data
-            (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
-              opening-bracket body-with-closing-brackets)
-            ; TODO: Implement this. This will be the support for
-            ; nested quasiquotation. What we need to do is use the
-            ; `opening-bracket` and `body-with-closing-brackets` to
-            ; generate an expression that generates the same data that
-            ; was parsed to make the opening bracket, body, and
-            ; closing brackets in the first place.
-            'TODO
-          #/dissect
+          (dissect
             (hypertee-fold 1 tails #/fn first-nontrivial-d data tails
               (w- d (hypertee-degree tails)
               #/mat d 0 (list (list) data)
@@ -184,22 +178,93 @@
               #/dissect (hypertee-drop1 tails) (nothing)
               #/list (append data elems) rest))
             (list elems rest)
-          #/cons
-            (mat data (ht-tag-2-list stx-example) #`(list #,@elems)
-            #/mat data (ht-tag-2-list* stx-example) #`(list* #,@elems)
-            #/mat data (ht-tag-2-vector stx-example)
-              #`(vector #,@elems)
-            #/mat data (ht-tag-2-prefab key stx-example)
-              ; NOTE: The expression this generates can raise an error
-              ; if the struct has more fields than prefab structs
-              ; allow.
-              #`(make-prefab-struct '#,key #,@elems)
-            #/error "Encountered an unrecognized degree-2 hole in quasiquoted syntax")
-            rest)
+          #/(fn result #/cons result rest)
+          #/mat data (ht-tag-2-list stx-example) #`(list #,@elems)
+          #/mat data (ht-tag-2-list* stx-example) #`(list* #,@elems)
+          #/mat data (ht-tag-2-vector stx-example) #`(vector #,@elems)
+          #/mat data (ht-tag-2-prefab key stx-example)
+            ; NOTE: The expression this generates can raise an error
+            ; if the struct has more fields than prefab structs allow.
+            #`(make-prefab-struct '#,key #,@elems)
+          
+          ; This is the support for nested quasiquotation. We use the
+          ; `opening-bracket` and `body-with-closing-brackets` to
+          ; generate an expression that generates the same data that
+          ; was parsed to make the opening bracket, body, and closing
+          ; brackets in the first place.
+          ;
+          #/mat data
+            (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
+              opening-bracket body-with-closing-brackets)
+            (w- body-as-closing-bracket
+              (hypertee-bind-one-degree body-with-closing-brackets 1
+              #/fn hole data
+                (mat data
+                  (ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
+                    closing-bracket)
+                  closing-bracket
+                #/hypertee-pure (onum-omega) data hole))
+            #/w- zip-bracket-ends
+              (fn smaller bigger func
+                (hypertee-zip-selective smaller bigger
+                  (fn hole data
+                    (w- d (hypertee-degree hole)
+                    #/mat d 0
+                      (dissect data (list)
+                        #t)
+                    #/mat d 1
+                      (mat data (ht-tag-1-other #/bracket-tag-1-end)
+                        #t
+                        #f)
+                      #f))
+                #/fn hole smaller-data bigger-data
+                  (w- d (hypertee-degree hole)
+                  #/mat d 0
+                    (dissect smaller-data (list)
+                    #/dissect bigger-data (list)
+                    #/list)
+                  #/mat d 1
+                    (dissect bigger-data
+                      (ht-tag-1-other #/bracket-tag-1-end)
+                    #/func smaller-data)
+                  #/error "Internal error: Encountered unexpectedly high-dimensional structure when zipping bracket ends")))
+            #/expect
+              (zip-bracket-ends
+                (hypertee-map-one-degree tails 0 #/fn hole data
+                  (list))
+                body-as-closing-bracket
+              #/fn tails-data
+                (expect tails-data (list stx)
+                  ; TODO: See if this is really an "internal" error or
+                  ; if there's some input that can legitimately cause
+                  ; this error.
+                  (error "Internal error: Somehow reconstructed more than one syntax object out of a nested quasiquotation's unquoted syntax")
+                #/ht-tag-1-other #/my-quasiquote-tag-1-expanded-expr
+                  stx))
+              (just body-and-tails)
+              (error "Internal error: Expected tails to have the same shape as the nested quasiquotation's body and closing bracket data combined")
+            #/w- body-and-tails
+              (my-quasiquote-ht-expr->stx body-and-tails)
+            #/expect
+              (zip-bracket-ends
+                (omega-ht (list 1 body-and-tails) 0 #/list 0 #/list)
+                opening-bracket
+              #/fn body-and-tails
+                (ht-tag-1-other #/my-quasiquote-tag-1-expanded-expr
+                  body-and-tails))
+              (just body-and-tails)
+              (error "Internal error: Expected opening-bracket to have exactly one end")
+            #/my-quasiquote-ht-expr->stx body-and-tails)
+          
+          #/error "Encountered an unrecognized degree-2 hole in quasiquoted syntax")
         #/error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax"))
       (list stx)
       (error "Internal error: Somehow reconstructed more than one syntax object out of quasiquoted syntax")
       stx))
+  
+  (define (my-quasiquote-begin-fn stx)
+    (syntax-parse stx #/ (_ quotation:expr)
+    #/my-quasiquote-ht-expr->stx #/s-expr-stx->ht-expr #'quotation))
   
 )
 (require #/for-syntax 'part1-private)

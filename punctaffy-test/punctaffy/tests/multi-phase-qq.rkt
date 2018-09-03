@@ -41,8 +41,6 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; TODO: Uncomment this once it works.
-#;
 (check-equal?
   (my-quasiquote uq #/qq
     (a b

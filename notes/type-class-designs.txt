@@ -37,8 +37,10 @@ converting hyprids and their representation details back and forth
 (define (hyprid-stripe-maybe h)
 reverse
   (not implemented yet)
+(define (hypertee-filter ht should-keep?)
 (define (hypertee-truncate new-degree ht)
 (define (hypertee-zip a b func)
+(define (hypertee-zip-selective smaller bigger should-zip? func)
 (define (hypertee-zip-low-degrees smaller bigger func)
 
 

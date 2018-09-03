@@ -16,7 +16,8 @@
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
   list-bind list-each list-foldl list-kv-map list-map nat->maybe)
-(require #/only-in lathe-comforts/maybe just maybe/c nothing)
+(require #/only-in lathe-comforts/maybe
+  just maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-ordinals
   onum<=? onum<? onum-max onum<=omega? onum<omega? onum-plus
@@ -55,7 +56,8 @@
   hyprid-destripe-once hyprid-fully-destripe
   hyprid-stripe-once
   
-  hypertee-truncate)
+  hypertee-truncate
+  hypertee-zip-selective)
 
 
 ; ===== Helpers for this module ======================================
@@ -611,7 +613,8 @@
 ; `hypertee-truncate`, and `hypertee-zip-low-degrees` depend on
 ; `hypertee-join-all-degrees`.
 ;
-#;(define/contract (hypertee-join-all-degrees ht)
+#;
+(define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
   (mat (hypertee-degree ht) 0 ht
   #/hypertee-fold 0 ht #/fn first-nontrivial-d suffix tails
@@ -619,26 +622,25 @@
     #/if (onum<? d first-nontrivial-d)
       (dissect suffix (list)
       ; TODO: See if this is correct.
-      (hypertee-join-all-degrees tails)
+      #/hypertee-join-all-degrees tails)
     #/expect
       (and
         (hypertee? suffix)
-        (onum<? (hypertee-degree tails) (hypertee-degree suffix))
-        (equal?
-          (hypertee-map-all-degrees tails #/fn hole suffix #/list)
-          (hypertee-map-all-degrees
-            (hypertee-truncate (hypertee-degree tails) suffix)
-          #/fn hole data #/list)))
+        (onum<? (hypertee-degree tails) (hypertee-degree suffix)))
       #t
-      (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context"))
-    #/hypertee-join-all-degrees
-    #/hypertee-zip-low-degrees tails suffix #/fn hole tail suffix
-      (dissect suffix (list)
-        tail))))
+      (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
+    #/expect
+      (hypertee-zip-low-degrees tails suffix #/fn hole tail suffix
+        (dissect suffix (list)
+          tail))
+      (just zipped)
+      (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
+    #/hypertee-join-all-degrees zipped)))
 
 ; TODO: See if we should switch to this implementation for `hypertee-map-all-degrees`.
 ;
-#;(define/contract (hypertee-map-all-degrees ht func)
+#;
+(define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? hypertee?)
   (hypertee-fold 0 ht #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
@@ -1439,6 +1441,16 @@
 ; middle. (TODO: Rewrite this comment to incorporate this insight
 ; earlier, and reconsider the implications on our algorithms.)
 
+; This takes a hypertee and removes all holes which don't satisfy the
+; given predicate.
+(define/contract (hypertee-filter ht should-keep?)
+  (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)
+  (dissect ht (hypertee d closing-brackets)
+  #/hypertee-bind-all-degrees ht #/fn hole data
+    (if (should-keep? hole data)
+      (hypertee-pure d data hole)
+      (hypertee-promote d hole))))
+
 ; This takes a hypertee, removes all holes of degree equal to or
 ; greater than a given degree, and demotes the hypertee to that
 ; degree. The given degree must not be greater than the hypertee's
@@ -1449,61 +1461,89 @@
   #/expect (onum<=? new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
   #/dissect
-    (hypertee-bind-all-degrees ht #/fn hole data
-      (if (onum<=? new-degree #/hypertee-degree hole)
-        (hypertee-promote d hole)
-        (hypertee-pure d data hole)))
+    (hypertee-filter ht #/fn hole data
+      (onum<? (hypertee-degree hole) new-degree))
     (hypertee d closing-brackets)
   #/hypertee new-degree closing-brackets))
 
 (define/contract (hypertee-zip a b func)
-  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c) hypertee?)
+  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
+    (maybe/c hypertee?))
   (dissect a (hypertee d-a closing-brackets-a)
   #/dissect b (hypertee d-b closing-brackets-b)
   #/expect (equal? d-a d-b) #t
     (error "Expected hypertees a and b to have the same degree")
   #/expect (= (length closing-brackets-a) (length closing-brackets-b))
     #t
-    (error "Expected hypertees a and b to have the same shape")
-  #/hypertee-map-all-degrees
-    (hypertee d-a #/map
-      (fn a b
-        (mat a (list d-a data-a)
-          (mat b (list d-b data-b)
-            (expect (equal? d-a d-b) #t
-              (error "Expected hypertees a and b to have the same shape")
-            #/list d-a #/list data-a data-b)
-            (error "Expected hypertees a and b to have the same shape"))
-          (mat b (list d-b data-b)
-            (error "Expected hypertees a and b to have the same shape")
-            (expect (equal? a b) #t
-              (error "Expected hypertees a and b to have the same shape")
-              a))))
-      closing-brackets-a
-      closing-brackets-b)
+    (nothing)
+  #/maybe-map
+    (w-loop next
+      
+      closing-brackets
+      (map list closing-brackets-a closing-brackets-b)
+      
+      rev-zipped (list)
+      
+      (expect closing-brackets (cons entry closing-brackets)
+        (just #/reverse rev-zipped)
+      #/dissect entry (list a b)
+      #/mat a (list d-a data-a)
+        (mat b (list d-b data-b)
+          (expect (equal? d-a d-b) #t (nothing)
+          #/next closing-brackets
+            (cons (list d-a #/list data-a data-b) rev-zipped))
+          (nothing))
+        (mat b (list d-b data-b)
+          (nothing)
+          (expect (equal? a b) #t (nothing)
+          #/next closing-brackets (cons a rev-zipped)))))
+  #/fn zipped-closing-brackets
+  #/hypertee-map-all-degrees (hypertee d-a zipped-closing-brackets)
   #/fn hole data
     (dissect data (list a b)
     #/func hole a b)))
 
-; This zips a degree-N hypertee with a higher-degree hypertee if the
-; hypertees have the same shape when truncated to degree N.
-(define/contract (hypertee-zip-low-degrees smaller bigger func)
-  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c) hypertee?)
+; This zips a degree-N hypertee with a same-degree-or-higher hypertee
+; if the hypertees have the same shape when certain holes of the
+; higher-degree hypertee are removed -- namely, the holes of degree N
+; or greater and the holes that don't match the given predicate.
+(define/contract
+  (hypertee-zip-selective smaller bigger should-zip? func)
+  (->
+    hypertee?
+    hypertee?
+    (-> hypertee? any/c boolean?)
+    (-> hypertee? any/c any/c any/c)
+    (maybe/c hypertee?))
   (dissect smaller (hypertee d-smaller closing-brackets-smaller)
   #/dissect bigger (hypertee d-bigger closing-brackets-bigger)
   #/expect (onum<=? d-smaller d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
-  #/expect
-    (equal?
-      (hypertee-map-all-degrees smaller #/fn hole data #/list)
-      (hypertee-map-all-degrees (hypertee-truncate d-smaller bigger)
-      #/fn hole data #/list))
-    #t
-    (error "Expected hypertees smaller and bigger to have the same low-degree shape")
-  #/w- mutable
-    (hypertee-map-all-degrees bigger #/fn hole data #/box data)
-  #/begin
-    (hypertee-zip smaller (hypertee-truncate d-smaller mutable)
-    #/fn hole smaller mutable
-      (set-box! mutable (func hole smaller #/unbox mutable)))
-  #/hypertee-map-all-degrees mutable #/fn hole data #/unbox data))
+  #/w- prepared-bigger
+    (hypertee-map-all-degrees bigger #/fn hole data
+      (if
+        (and
+          (onum<? (hypertee-degree hole) d-smaller)
+          (should-zip? hole data))
+        (list #t (box data))
+        (list #f (box data))))
+  #/w- filtered-bigger
+    (hypertee-filter (hypertee-truncate d-smaller prepared-bigger)
+    #/fn hole data
+      (dissect data (list should-zip boxed-data)
+        should-zip))
+  #/maybe-map
+    (hypertee-zip smaller filtered-bigger #/fn hole smaller bigger
+      (dissect bigger (list should-zip boxed-data)
+        (set-box! boxed-data (func hole smaller #/unbox boxed-data))))
+  #/dissectfn _
+  #/hypertee-map-all-degrees prepared-bigger #/fn hole data
+    (dissect data (list should-zip boxed-data)
+      (unbox boxed-data))))
+
+; This zips a degree-N hypertee with a same-degree-or-higher hypertee
+; if the hypertees have the same shape when truncated to degree N.
+(define/contract (hypertee-zip-low-degrees smaller bigger func)
+  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
+    (maybe/c hypertee?))
+  (hypertee-zip-selective smaller bigger (fn hole data #t) func))
