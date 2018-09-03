@@ -58,6 +58,29 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
+(check-equal?
+  (my-quasiquote uq #/qq
+    (a b
+      (my-quasiquote uq #/qq
+        (c d
+          (uq
+            (e f
+              (uq (+ 4 5))
+              g h))
+          i j))
+      k l))
+  `
+    (a b
+      (my-quasiquote uq #/qq
+        (c d
+          (uq
+            (e f
+              ,(+ 4 5)
+              g h))
+          i j))
+      k l)
+  "The new quasiquote supports nesting even when it's not at the end of a list")
+
 
 ; TODO: Turn this into a unit test. There was at one point (although
 ; not in any code that's been committed) a bug in `hypertee-fold`
