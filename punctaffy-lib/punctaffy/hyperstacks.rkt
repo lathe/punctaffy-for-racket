@@ -7,6 +7,7 @@
 (require #/only-in lathe-comforts dissect dissectfn expect fn w-)
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
   onum<? onum</c onum-drop onum<e0? onum<=e0?)
 (require #/only-in lathe-ordinals/olist
@@ -75,7 +76,7 @@
 (define/contract (make-poppable-hyperstack-n dimension)
   (-> onum<=e0? poppable-hyperstack?)
   (make-poppable-hyperstack
-  #/olist-build dimension #/dissectfn _ #/list))
+  #/olist-build dimension #/dissectfn _ #/trivial))
 
 (define/contract (poppable-hyperstack-pop-n h i)
   (->i
@@ -85,6 +86,6 @@
     [_ poppable-hyperstack?])
   (dissect
     (poppable-hyperstack-pop h
-    #/olist-build i #/dissectfn _ #/list)
+    #/olist-build i #/dissectfn _ #/trivial)
     (list elem rest)
     rest))
