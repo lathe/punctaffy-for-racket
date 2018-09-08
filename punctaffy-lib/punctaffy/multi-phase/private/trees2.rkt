@@ -607,11 +607,11 @@
       func)))
 
 ; TODO: See if we can simplify the implementation of
-; `hypertee-join-all-degrees` to something like this once we have
+; `hypertee-join-all-degrees` to something like this now that we have
 ; `hypertee-fold`. There are a few potential circular dependecy
-; problems: The implementations of `hypertee-map-all-degrees`,
-; `hypertee-truncate`, and `hypertee-zip-low-degrees` depend on
-; `hypertee-join-all-degrees`.
+; problems: The implementations of `hypertee-plus1`,
+; `hypertee-map-all-degrees`, `hypertee-truncate`, and
+; `hypertee-zip-low-degrees` depend on `hypertee-join-all-degrees`.
 ;
 #;
 (define/contract (hypertee-join-all-degrees ht)
@@ -622,7 +622,7 @@
     #/if (onum<? d first-nontrivial-d)
       (dissect suffix (list)
       ; TODO: See if this is correct.
-      #/hypertee-join-all-degrees tails)
+      #/hypertee-plus1 (list) tails)
     #/expect
       (and
         (hypertee? suffix)
@@ -637,22 +637,20 @@
       (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
     #/hypertee-join-all-degrees zipped)))
 
-; TODO: See if we should switch to this implementation for `hypertee-map-all-degrees`.
+; TODO: See if we should switch to this implementation for
+; `hypertee-map-all-degrees`.
 ;
 #;
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? hypertee?)
-  (hypertee-fold 0 ht #/fn first-nontrivial-d data tails
+  (mat (hypertee-degree ht) 0 ht
+  #/hypertee-fold 0 ht #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
     #/if (onum<? d first-nontrivial-d)
-      ; TODO: See if this is correct.
       (dissect data (list)
-      #/hypertee-join-all-degrees #/hypertee-pure d (list) tails)
-    #/w- hole
-      (mat d 0 tails
-      #/hypertee-map-all-degrees tails #/fn hole data #/list)
-    #/hypertee-join-all-degrees
-    #/hypertee-pure d (func hole data) tails)))
+      #/hypertee-plus1 (list) tails)
+    #/w- hole (hypertee-map-all-degrees tails #/fn hole data #/list)
+    #/hypertee-plus1 (func hole data) tails)))
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is another degree-N hypertee to be interpolated. In those
@@ -886,6 +884,10 @@
 (define/contract (hypertee-pure degree data hole)
   (-> onum<=omega? any/c hypertee? hypertee?)
   (hypertee-promote degree #/hypertee-contour data hole))
+
+(define/contract (hypertee-plus1 data tails)
+  (-> any/c hypertee? hypertee?)
+  (hypertee-join-all-degrees #/hypertee-contour data tails))
 
 (define/contract (hypertee-bind-all-degrees ht hole-to-ht)
   (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)

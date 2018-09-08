@@ -141,17 +141,22 @@
     (expect
       (hypertee-fold 1 ht-expr #/fn first-nontrivial-d data tails
         (w- d (hypertee-degree tails)
-        #/w- trivial (onum<? d first-nontrivial-d)
+        #/w- is-trivial (onum<? d first-nontrivial-d)
         #/begin
-          (when trivial
+          (when is-trivial
             (dissect data (list)
             #/void))
         #/mat d 0
-          (expect trivial #t
+          (expect is-trivial #t
             (error "Encountered an unrecognized degree-0 hole in quasiquoted syntax")
           #/list)
+        #/expect is-trivial #f
+          ; Since `first-nontrivial-d` can only exceed 1 when we're in
+          ; a degree-2-or-greater hole of a degree-3-or-greater hole,
+          ; and since we expect no degree-3-or-greater holes, we raise
+          ; an error.
+          (error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax")
         #/mat d 1
-          ; TODO: Figure out what to do when `trivial` is true.
           (dissect (hypertee-drop1 tails) (just #/list rest tails)
           #/dissect (hypertee-drop1 tails) (nothing)
           #/(fn result #/cons result rest)
@@ -167,7 +172,6 @@
               [_  (error "Encountered an interpolation of a non-expression in quasiquoted syntax")])
           #/error "Encountered an unrecognized degree-1 hole in quasiquoted syntax")
         #/mat d 2
-          ; TODO: Figure out what to do when `trivial` is true.
           (dissect
             (hypertee-fold 1 tails #/fn first-nontrivial-d data tails
               (w- d (hypertee-degree tails)
