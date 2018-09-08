@@ -19,6 +19,7 @@
 (require #/only-in lathe-comforts/maybe
   just maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
   onum<=? onum<? onum-max onum<=omega? onum<omega? onum-plus
   onum-plus1 onum-pred-maybe)
@@ -572,7 +573,8 @@
           (w- dropped-rev-brackets
             (cons closing-bracket dropped-rev-brackets)
           #/begin
-            (push-box! rev-brackets-box (list closing-bracket #/list))
+            (push-box! rev-brackets-box
+              (list closing-bracket #/trivial))
             (mat d-bracket 0
               (set-box! result-box
                 (just
@@ -620,9 +622,9 @@
   #/hypertee-fold 0 ht #/fn first-nontrivial-d suffix tails
     (w- d (hypertee-degree tails)
     #/if (onum<? d first-nontrivial-d)
-      (dissect suffix (list)
+      (dissect suffix (trivial)
       ; TODO: See if this is correct.
-      #/hypertee-plus1 (list) tails)
+      #/hypertee-plus1 (trivial) tails)
     #/expect
       (and
         (hypertee? suffix)
@@ -631,7 +633,7 @@
       (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
     #/expect
       (hypertee-zip-low-degrees tails suffix #/fn hole tail suffix
-        (dissect suffix (list)
+        (dissect suffix (trivial)
           tail))
       (just zipped)
       (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
@@ -647,16 +649,17 @@
   #/hypertee-fold 0 ht #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
     #/if (onum<? d first-nontrivial-d)
-      (dissect data (list)
-      #/hypertee-plus1 (list) tails)
-    #/w- hole (hypertee-map-all-degrees tails #/fn hole data #/list)
+      (dissect data (trivial)
+      #/hypertee-plus1 (trivial) tails)
+    #/w- hole
+      (hypertee-map-all-degrees tails #/fn hole data #/trivial)
     #/hypertee-plus1 (func hole data) tails)))
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is another degree-N hypertee to be interpolated. In those
 ; interpolated hypertees, the values of holes of degree less than M
-; must be empty lists. This returns a single degree-N hypertee which
-; has holes for all the degree-M-or-greater holes of the
+; must be `trivial` values. This returns a single degree-N hypertee
+; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 ;
 (define/contract (hypertee-join-all-degrees ht)
@@ -714,8 +717,8 @@
             (begin
               (verify-bracket-degree d #/pop-root-bracket!)
               (mat closing-bracket (list d data)
-                (expect data (list)
-                  (error "A hypertee join interpolation had a hole of low degree where the value wasn't an empty list")
+                (expect data (trivial)
+                  (error "A hypertee join interpolation had a hole of low degree where the value wasn't a trivial value")
                 #/void)
               #/void))
             (set! rev-result (cons closing-bracket rev-result)))
@@ -820,7 +823,7 @@
             (list
               (cons
                 (if (equal? d #/poppable-hyperstack-dimension hist)
-                  (list d #/list)
+                  (list d #/trivial)
                   d)
                 rev-brackets)
               hist)))
@@ -1063,18 +1066,18 @@
           ; its low-degree holes, but the low-degree holes of an
           ; island beyond a lake just represent boundaries that
           ; transition back to the lake, so we require them to be
-          ; trivial values, namely empty lists.
+          ; `trivial` values.
           ;
           ; Note that this does not prohibit nontrivial data in holes
           ; of the highest degree an island can have (which are the
           ; same as the holes we wrap in `non-lake-cane`), since those
           ; holes don't represent transitions back to the lake.
           
-          #/expect data (list)
-            (error "Expected data to be an island-cane where the low-degree holes contained empty lists")
+          #/expect data (trivial)
+            (error "Expected data to be an island-cane where the low-degree holes contained trivial values")
           #/void))
-        (expect data (list)
-          (error "Expected data to be an empty list")
+        (expect data (trivial)
+          (error "Expected data to be a trivial value")
         #/void)))))
 
 (struct-easy (non-lake-cane data) #:equal)
@@ -1093,7 +1096,7 @@
       (lake-cane
         (func
           (hypertee-map-highest-degree rest #/fn hole rest
-            (list))
+            (trivial))
           data)
       #/hypertee-map-highest-degree rest #/fn hole rest
         (dissect
@@ -1164,8 +1167,8 @@
 
 ; This is the inverse of `hyprid-destripe-once`, taking a hyprid and
 ; returning a hyprid with one more striped degree and one fewer
-; unstriped degree. The new stripe's data values are empty lists, as
-; implemented at the comment labeled "EMPTY LIST NOTE".
+; unstriped degree. The new stripe's data values are trivial values,
+; as implemented at the comment labeled "TRIVIAL VALUE NOTE".
 ;
 ; The last degree can't be striped, so the number of unstriped degrees
 ; in the input must be greater than one.
@@ -1332,10 +1335,10 @@
       ; (including any associated data in the bracket) and whatever
       ; island or lake we're arriving at (excluding the data, since
       ; this bracket must be closing some hole which was started there
-      ; earlier). In some circumstances, we need to associate an empty
-      ; list with the bracket we record to the departure island or
-      ; lake, even if this bracket is not a hole-opener as far as the
-      ; original hypertee is concerned.
+      ; earlier). In some circumstances, we need to associate a
+      ; trivial value with the bracket we record to the departure
+      ; island or lake, even if this bracket is not a hole-opener as
+      ; far as the original hypertee is concerned.
       #/begin
         (set! hist
           (list (history-info location-after maybe-state-after)
@@ -1348,7 +1351,7 @@
             (cons
               (mat closing-bracket (list d data) closing-bracket
               #/if (= d #/poppable-hyperstack-dimension hist)
-                (list d #/list)
+                (list d #/trivial)
                 d)
               rev-brackets)
             hist))
@@ -1366,9 +1369,9 @@
     (dissect (unbox state) (stripe-state rev-brackets hist)
     #/dissect (poppable-hyperstack-dimension hist) 0
     
-    ; EMPTY LIST NOTE: This is where we put an empty list into the new
-    ; layer of stripe data.
-    #/island-cane (list)
+    ; TRIVIAL VALUE NOTE: This is where we put a trivial value into
+    ; the new layer of stripe data.
+    #/island-cane (trivial)
     
     #/hyprid pred-unstriped-degrees 0
     #/hypertee pred-unstriped-degrees

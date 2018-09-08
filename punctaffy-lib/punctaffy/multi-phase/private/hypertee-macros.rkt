@@ -9,6 +9,7 @@
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals onum-omega)
 
 (require #/only-in punctaffy/multi-phase/private/trees2
@@ -105,7 +106,7 @@
 (define/contract (syntax-local-maybe identifier)
   (-> any/c maybe?)
   (if (identifier? identifier)
-    (w- dummy (list #/list)
+    (w- dummy (trivial)
     #/w- local (syntax-local-value identifier #/fn dummy)
     #/if (eq? local dummy)
       (nothing)
@@ -132,11 +133,11 @@
 
 (define (omega-ht-append0 hts)
   ; When we call this, the elements of `hts` are degree-omega
-  ; hypertees, and their degree-0 holes have empty lists as contents.
-  ; We return their degree-0 concatenation.
-  (list-foldr hts (omega-ht #/list 0 #/list) #/fn ht tail
+  ; hypertees, and their degree-0 holes have trivial values as
+  ; contents. We return their degree-0 concatenation.
+  (list-foldr hts (omega-ht #/list 0 #/trivial) #/fn ht tail
     (hypertee-bind-one-degree ht 0 #/fn hole data
-      (dissect data (list)
+      (dissect data (trivial)
         tail))))
 
 (struct-easy (ht-tag-1-s-expr-stx stx) #:equal)
@@ -217,9 +218,9 @@
       (hypertee-bind-one-degree
         (omega-ht
           (list 2 metadata)
-            1 (list 1 #/list) 0 0
+            1 (list 1 #/trivial) 0 0
           0
-        #/list 0 #/list)
+        #/list 0 #/trivial)
         1
       #/fn hole data
         (omega-ht-append0 elems)))
@@ -268,7 +269,7 @@
       ; can be distinguished from degree-1 holes that a user-defined
       ; syntax introduces for a different reason).
       (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
-      #/list 0 #/list)]))
+      #/list 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it

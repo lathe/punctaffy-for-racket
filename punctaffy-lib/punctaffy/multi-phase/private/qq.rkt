@@ -20,6 +20,7 @@
   (require #/only-in lathe-comforts/list list-foldr)
   (require #/only-in lathe-comforts/maybe just maybe/c nothing)
   (require #/only-in lathe-comforts/struct struct-easy)
+  (require #/only-in lathe-comforts/trivial trivial)
   (require #/only-in lathe-ordinals onum<? onum-omega)
   
   (require #/only-in punctaffy/multi-phase/private/hypertee-macros
@@ -42,11 +43,11 @@
   
   (define (omega-ht-append0 hts)
     ; When we call this, the elements of `hts` are degree-omega
-    ; hypertees, and their degree-0 holes have empty lists as
+    ; hypertees, and their degree-0 holes have trivial values as
     ; contents. We return their degree-0 concatenation.
-    (list-foldr hts (omega-ht #/list 0 #/list) #/fn ht tail
+    (list-foldr hts (omega-ht #/list 0 #/trivial) #/fn ht tail
       (hypertee-bind-one-degree ht 0 #/fn hole data
-        (dissect data (list)
+        (dissect data (trivial)
           tail))))
   
   
@@ -75,7 +76,7 @@
       0
       0
       0
-    #/list 0 #/list))
+    #/list 0 #/trivial))
   
   (define my-quasiquote-uq
     (simple-ht-builder-syntax #/fn stx
@@ -88,7 +89,7 @@
           ; within itself, without the inner `uq` being treated as a
           ; closing bracket.
           (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
-          #/list 0 #/list)]
+          #/list 0 #/trivial)]
       #/ (op interpolation)
       #/omega-ht
         (list 1
@@ -96,7 +97,7 @@
           (make-op-bracket stx)
           #'interpolation)
         0
-      #/list 0 #/list)))
+      #/list 0 #/trivial)))
   
   (define my-quasiquote-qq
     (simple-ht-builder-syntax #/fn stx
@@ -106,7 +107,7 @@
           ; position, we just expand as though the identifier isn't
           ; bound to a syntax transformer at all.
           (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
-          #/list 0 #/list)]
+          #/list 0 #/trivial)]
       #/ (op body)
       #/w- body (s-expr-stx->ht-expr #'body)
       ; We make a hypertee with a single degree-2 hole (annotated with
@@ -144,7 +145,7 @@
         #/w- is-trivial (onum<? d first-nontrivial-d)
         #/begin
           (when is-trivial
-            (dissect data (list)
+            (dissect data (trivial)
             #/void))
         #/mat d 0
           (expect is-trivial #t
@@ -214,7 +215,7 @@
                   (fn hole data
                     (w- d (hypertee-degree hole)
                     #/mat d 0
-                      (dissect data (list)
+                      (dissect data (trivial)
                         #t)
                     #/mat d 1
                       (mat data (ht-tag-1-other #/bracket-tag-1-end)
@@ -224,9 +225,9 @@
                 #/fn hole smaller-data bigger-data
                   (w- d (hypertee-degree hole)
                   #/mat d 0
-                    (dissect smaller-data (list)
-                    #/dissect bigger-data (list)
-                    #/list)
+                    (dissect smaller-data (trivial)
+                    #/dissect bigger-data (trivial)
+                    #/trivial)
                   #/mat d 1
                     (dissect bigger-data
                       (ht-tag-1-other #/bracket-tag-1-end)
@@ -235,7 +236,7 @@
             #/expect
               (zip-bracket-ends
                 (hypertee-map-one-degree tails 0 #/fn hole data
-                  (list))
+                  (trivial))
                 body-as-closing-bracket
               #/fn tails-data
                 (expect tails-data (list stx)
@@ -251,7 +252,8 @@
               (my-quasiquote-ht-expr->stx body-and-tails)
             #/expect
               (zip-bracket-ends
-                (omega-ht (list 1 body-and-tails) 0 #/list 0 #/list)
+                (omega-ht (list 1 body-and-tails) 0
+                #/list 0 #/trivial)
                 opening-bracket
               #/fn body-and-tails
                 (ht-tag-1-other #/my-quasiquote-tag-1-expanded-expr
