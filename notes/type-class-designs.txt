@@ -37,11 +37,14 @@ converting hyprids and their representation details back and forth
 (define (hyprid-stripe-maybe h)
 reverse
   (not implemented yet)
-(define (hypertee-filter ht should-keep?)
 (define (hypertee-truncate new-degree ht)
 (define (hypertee-zip a b func)
-(define (hypertee-zip-selective smaller bigger should-zip? func)
 (define (hypertee-zip-low-degrees smaller bigger func)
+
+[Note from the future: Now we've added at least `hypertee-drop1`,
+`hypertee-filter`, `hypertee-zip-selective`, and `hypertee-plus1`. We
+haven't considered their place in the following design notes, so we
+haven't added them to the above list.]
 
 
 We can probably implement the following in different ways:
