@@ -106,7 +106,7 @@
 (define/contract (syntax-local-maybe identifier)
   (-> any/c maybe?)
   (if (identifier? identifier)
-    (w- dummy (trivial)
+    (w- dummy (box #/trivial)
     #/w- local (syntax-local-value identifier #/fn dummy)
     #/if (eq? local dummy)
       (nothing)
