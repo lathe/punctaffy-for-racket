@@ -9,7 +9,7 @@
 
 (require rackunit)
 
-(require punctaffy/single-phase/private/qq)
+(require "qq.rkt")
 
 ; (We provide nothing from this module.)
 

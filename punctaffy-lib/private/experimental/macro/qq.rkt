@@ -23,11 +23,13 @@
   (require #/only-in lathe-comforts/trivial trivial)
   (require #/only-in lathe-ordinals onum<? onum-omega)
   
-  (require #/only-in punctaffy/multi-phase/private/hypertee-macros
+  (require #/only-in
+    punctaffy/private/experimental/macro/hypertee-macro
+    
     ht-tag-1-other ht-tag-1-s-expr-stx ht-tag-2-list ht-tag-2-list*
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
     s-expr-stx->ht-expr simple-ht-builder-syntax)
-  (require #/only-in punctaffy/multi-phase/private/trees2
+  (require #/only-in punctaffy/hypersnippet/hypertee
     degree-and-closing-brackets->hypertee hypertee?
     hypertee-bind-one-degree hypertee-degree hypertee-drop1
     hypertee-fold hypertee-join-one-degree hypertee-map-one-degree

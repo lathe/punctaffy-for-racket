@@ -12,7 +12,7 @@
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals onum-omega)
 
-(require #/only-in punctaffy/multi-phase/private/trees2
+(require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-one-degree)
 

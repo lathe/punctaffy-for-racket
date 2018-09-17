@@ -1,15 +1,16 @@
 #lang parendown racket/base
 
-; multi-phase.rkt
+; punctaffy/tests/test-hypertee
 ;
-; Unit tests of the multi-phase higher quasiquotation macro system.
+; Unit tests of the hypertee data structure for hypersnippet-shaped
+; data.
 
 (require rackunit)
 
 (require #/only-in lathe-comforts fn)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require punctaffy/multi-phase/private/trees2)
+(require punctaffy/hypersnippet/hypertee)
 
 ; (We provide nothing from this module.)
 

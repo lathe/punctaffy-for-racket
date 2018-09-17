@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; trees2.rkt
+; punctaffy/hypersnippet/hypertee
 ;
 ; Data structures for encoding the kind of higher-order structure that
 ; occurs in higher quasiquotation.
@@ -25,12 +25,12 @@
   onum-plus1 onum-pred-maybe)
 (require #/only-in lathe-ordinals/olist olist-build)
 
-(require #/only-in punctaffy/hyperstacks
+(require #/only-in punctaffy/hypersnippet/hyperstack
   make-poppable-hyperstack make-poppable-hyperstack-n
   poppable-hyperstack-dimension poppable-hyperstack-pop
   poppable-hyperstack-pop-n poppable-hyperstack-promote)
 
-(require #/only-in punctaffy/multi-phase/private/hypermonad
+(require #/only-in punctaffy/private/experimental/hypermonad
   gen:hypermonad)
 
 (provide

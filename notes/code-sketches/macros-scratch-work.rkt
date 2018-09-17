@@ -1,7 +1,5 @@
 #lang parendown racket
 
-(require "main.rkt")
-
 (provide (all-defined-out))
 
 (require (for-meta 1 (only-in racket/match match)))

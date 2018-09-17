@@ -1,13 +1,13 @@
 #lang parendown racket/base
 
-; multi-phase-qq.rkt
+; punctaffy/tests/test-qq
 ;
-; Unit tests of a quasiquotation operator defined in the multi-phase
-; higher quasiquotation macro system.
+; Unit tests of a quasiquotation operator defined in terms of
+; hypersnippet-shaped data structures.
 
 (require rackunit)
 
-(require punctaffy/multi-phase/private/qq)
+(require punctaffy/private/experimental/macro/qq)
 
 ; (We provide nothing from this module.)
 
@@ -95,7 +95,7 @@
 ; with degree-3 holes to check it out.
 ;
 #|
-(require punctaffy/multi-phase/private/trees2)
+(require punctaffy/hypersnippet/hypertee)
 
 (writeln #/hypertee-drop1
   (degree-and-closing-brackets->hypertee 3 #/list

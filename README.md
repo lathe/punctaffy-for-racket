@@ -106,6 +106,8 @@ When users need it, they also have the option of choosing a degree and writing a
 
 ### Single-phase macroexpansion
 
+(TODO: Now that we've implemented a multi-phase approach and retired the single-phase approach into notes/code-sketches/single-phase/, this readme should get a substantial rewrite, especially this section. It might be good to move some of this old readme content into a readme file in notes/code-sketches/single-phase/ so that we don't toss it out altogether.)
+
 If we don't require separate reader-like and backend-like macroexpansion steps, we can write reader-like macros only, letting them take care of the whole loop. Instead of returning a structure of matched brackets, they return a result that only contains the closing brackets and some code that will macroexpand the matched brackets itself.
 
 This is what Punctaffy currently implements.
