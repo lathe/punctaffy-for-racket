@@ -2,11 +2,7 @@
 
 (define collection "punctaffy")
 
-(define deps (list))
+(define deps (list "base"))
 (define build-deps
   (list
-    "base"
-    "lathe-comforts-lib"
-    "parendown"
-    "punctaffy-lib"
-    "rackunit-lib"))
+    "lathe-comforts-lib" "parendown" "punctaffy-lib" "rackunit-lib"))
