@@ -1,15 +1,32 @@
 #lang parendown racket
 
-(require "main.rkt")
-(require (for-meta 1 "main.rkt"))
+;   Copyright 2017-2018 The Lathe Authors
+;
+;   Licensed under the Apache License, Version 2.0 (the "License");
+;   you may not use this file except in compliance with the License.
+;   You may obtain a copy of the License at
+;
+;       http://www.apache.org/licenses/LICENSE-2.0
+;
+;   Unless required by applicable law or agreed to in writing,
+;   software distributed under the License is distributed on an
+;   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+;   either express or implied. See the License for the specific
+;   language governing permissions and limitations under the License.
+
+
+(require #/for-syntax
+  (only-in racket/hash hash-union)
+  (only-in racket/list append-map make-list range split-at)
+  (only-in racket/match match))
+
+(require #/for-syntax #/only-in lathe-comforts
+  dissect dissectfn expect expectfn mat w-)
+
+(require #/only-in lathe-comforts expect)
+
 
 (provide (all-defined-out))
-
-(require
-  (for-meta 1
-    (only-in racket/hash hash-union)
-    (only-in racket/list append-map make-list range split-at)
-    (only-in racket/match match)))
 
 
 ; TODO: Finish defining Racket s-expression syntaxes that initiate
@@ -126,6 +143,7 @@
     (if #f (write-string "#<q-expr-layer ?>" port)
     #/expect this (q-expr-layer make-q-expr fills)
       (error "Expected this to be a q-expr-layer")
+    #/let ()
       
       (define (print-holes holes port mode)
         (for-each
@@ -142,6 +160,7 @@
       #/ #/define (write-proc this port mode)
         (expect this (hole degree key fills)
           (error "Expected this to be a hole")
+        #/begin
           (write-string "#<hole " port)
           (print-for-custom port mode key)
           (write-string " " port)
@@ -184,9 +203,8 @@
   
   (define (syntax-local-maybe identifier)
     (if (identifier? identifier)
-      (w-
-        dummy (list #/list)
-        local (syntax-local-value identifier #/lambda () dummy)
+      (w- dummy (list #/list)
+      #/w- local (syntax-local-value identifier #/lambda () dummy)
       #/if (eq? local dummy)
         (list)
         (list local))
@@ -323,6 +341,7 @@
         (fill-out-restrict-layer 1 (impl stx) #/lambda ()
           (error "Expected an initiate-bracket-syntax result that was a q-expr-layer with no more than one degree of fills"))
         (q-expr-layer make-q-expr #/list fills)
+      #/let ()
         (struct bracroexpanded-fill #/
           degree
           make-q-expr
@@ -339,6 +358,7 @@
             (fill-out-layer degree (bracroexpand s-expr) #/lambda ()
             #/error "Expected a bracroexpand result that was a q-expr-layer")
             (q-expr-layer make-q-expr fills)
+          #/let ()
             (define-values (low-degree-fills high-degree-fills)
               (split-at fills degree))
             (define remaining-fills
@@ -429,6 +449,7 @@
   (syntax-case stx () #/ (_ body)
   #/dissect (syntax-e #'body) (q-expr-layer body rests)
   #/dissect (fill-out-holes 1 rests) (list rests)
+  #/let ()
     (struct foreign (val) #:prefab)
     (define (expand-qq s-expr)
       ; TODO: Implement splicing.

@@ -75,7 +75,9 @@ script:
   - raco test --drdr --package "${PACKAGE}"
 
   # We run some of the old experiments just to be sure they haven't
-  # bitrotted too much.
+  # bitrotted too much. We run them in the order they were developed.
+  - racket notes/code-sketches/macros.rkt
   - racket notes/code-sketches/macros-scratch-work.rkt
-  - racket notes/code-sketches/trees.rkt
+  - racket notes/code-sketches/macros2.rkt
   - racket notes/code-sketches/single-phase/tests.rkt
+  - racket notes/code-sketches/trees.rkt
