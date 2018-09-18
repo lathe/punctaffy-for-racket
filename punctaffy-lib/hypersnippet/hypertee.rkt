@@ -515,23 +515,14 @@
     (make-list (length closing-brackets) 0)
     (list #/list 0 hole-value)))
 
-; NOTE MUTABLE: This uses `set-box!` on the `result-box` and
-; `rev-brackets-box` values we set up each time we make a
-; `loc-interpolation`. We could avoid this by replacing boxes with
-; meaningless numbers and managing an immutable table of
-; number-to-value associations, but it seems clearer to use object
-; allocation and mutation this way.
-;
 (define/contract (hypertee-drop1 ht)
   (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
-  
-  (define (push-box! bx elem)
-    (set-box! bx (cons elem #/unbox bx)))
   
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
   (struct-easy (loc-interpolation-uninitialized))
-  (struct-easy (loc-interpolation result-box d rev-brackets-box))
+  (struct-easy (loc-interpolation i d))
+  
   (dissect ht (hypertee d-root closing-brackets)
   #/expect closing-brackets (cons first rest) (nothing)
   #/dissect first (list d-dropped data-dropped)
@@ -548,74 +539,85 @@
     #/olist-build d-dropped #/dissectfn _
       (loc-interpolation-uninitialized))
     (list (loc-outside) stack)
-  #/dissect
-    (list-foldl (list (list) (list (loc-dropped) stack)) rest
-    #/fn state closing-bracket
-      (dissect state (list dropped-rev-brackets hist)
-      #/dissect hist (list loc stack)
-      #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
-      #/w- pop
-        (fn loc
-          (poppable-hyperstack-pop stack
-          #/olist-build d-bracket #/dissectfn _ loc))
-      #/dissect (pop loc) (list tentative-new-loc tentative-new-stack)
-      #/mat loc (loc-outside)
-        (dissect tentative-new-loc
-          (loc-interpolation result-box d rev-brackets-box)
-        #/begin (push-box! rev-brackets-box closing-bracket)
-        #/list dropped-rev-brackets
-          (list tentative-new-loc tentative-new-stack))
-      #/mat loc (loc-dropped)
-        (mat tentative-new-loc (loc-interpolation-uninitialized)
-          (w- result-box (box #/nothing)
-          #/w- rev-brackets-box (box #/list)
-          #/list
-            (cons (list closing-bracket result-box)
-              dropped-rev-brackets)
+  #/w-loop next
+    root-brackets (list-kv-map rest #/fn k v #/list k v)
+    interpolations (make-immutable-hasheq)
+    hist (list (loc-dropped) stack)
+    rev-result (list)
+    
+    (define (push-interpolation-bracket interpolations i bracket)
+      (dissect (hash-ref interpolations i)
+        (list rev-brackets maybe-result)
+      #/hash-set interpolations i
+        (list (cons bracket rev-brackets) maybe-result)))
+    
+    (expect root-brackets (cons root-bracket root-brackets)
+      (dissect hist (list (loc-outside) stack)
+      #/dissect (poppable-hyperstack-dimension stack) 0
+      ; We look up all the indexes stored in `rev-result` and make a
+      ; hypertee out of it.
+      #/hypertee d-dropped #/reverse
+      #/list-map rev-result #/fn bracket
+        (expect bracket (list d i) bracket
+        #/dissect (hash-ref interpolations i)
+          (list rev-brackets #/just tail)
+        #/list d tail))
+    #/dissect root-bracket (list new-i closing-bracket)
+    #/dissect hist (list loc stack)
+    #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
+    #/w- pop
+      (fn loc
+        (poppable-hyperstack-pop stack
+        #/olist-build d-bracket #/dissectfn _ loc))
+    #/dissect (pop loc) (list tentative-new-loc tentative-new-stack)
+    #/mat loc (loc-outside)
+      (dissect tentative-new-loc (loc-interpolation i d)
+      #/next root-brackets
+        (push-interpolation-bracket interpolations i closing-bracket)
+        (list tentative-new-loc tentative-new-stack)
+        rev-result)
+    #/mat loc (loc-dropped)
+      (mat tentative-new-loc (loc-interpolation-uninitialized)
+        (next root-brackets
+          (hash-set interpolations new-i (list (list) (nothing)))
+          (list
+            (loc-interpolation new-i closing-bracket)
+            tentative-new-stack)
+          (cons (list closing-bracket new-i) rev-result))
+      #/dissect tentative-new-loc (loc-interpolation i d)
+        (next root-brackets
+          (push-interpolation-bracket interpolations i
+            closing-bracket)
+          (list tentative-new-loc tentative-new-stack)
+          (cons closing-bracket rev-result)))
+    #/mat loc (loc-interpolation i d)
+      (dissect (hash-ref interpolations i)
+        (list rev-brackets maybe-result)
+      #/mat tentative-new-loc (loc-outside)
+        (w- rev-brackets (cons closing-bracket rev-brackets)
+        #/next root-brackets
+          (hash-set interpolations i
             (list
-              (loc-interpolation
-                result-box closing-bracket rev-brackets-box)
-              tentative-new-stack))
-        #/dissect tentative-new-loc
-          (loc-interpolation result-box d rev-brackets-box)
-          (begin (push-box! rev-brackets-box closing-bracket)
-          #/list (cons closing-bracket dropped-rev-brackets)
-            (list tentative-new-loc tentative-new-stack)))
-      #/mat loc (loc-interpolation result-box d rev-brackets-box)
-        (mat tentative-new-loc (loc-outside)
-          (begin
-            (push-box! rev-brackets-box closing-bracket)
-            (mat (poppable-hyperstack-dimension tentative-new-stack) 0
-              (set-box! result-box
-                (just
-                #/hypertee d-root #/reverse #/unbox rev-brackets-box))
-            #/void)
-            (list dropped-rev-brackets
-              (list tentative-new-loc tentative-new-stack)))
-        #/dissect tentative-new-loc (loc-dropped)
-          (w- dropped-rev-brackets
-            (cons closing-bracket dropped-rev-brackets)
-          #/begin
-            (push-box! rev-brackets-box
-              (list closing-bracket #/trivial))
-            (mat d-bracket 0
-              (set-box! result-box
-                (just
-                #/hypertee d-root #/reverse #/unbox rev-brackets-box))
-            #/void)
-            (list dropped-rev-brackets
-              (list tentative-new-loc tentative-new-stack))))
-      #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1"))
-    (list dropped-rev-brackets hist)
-  #/dissect hist (list (loc-outside) stack)
-  #/dissect (poppable-hyperstack-dimension stack) 0
-  ; We remove all the mutable boxes from `dropped-rev-brackets` and
-  ; make a hypertee out of it.
-  #/hypertee d-dropped #/reverse
-  #/list-map dropped-rev-brackets #/fn bracket
-    (expect bracket (list d data) bracket
-    #/dissect (unbox data) (just tail)
-    #/list d tail)))
+              rev-brackets
+              (mat (poppable-hyperstack-dimension tentative-new-stack)
+                0
+                (just #/hypertee d-root #/reverse rev-brackets)
+                maybe-result)))
+          (list tentative-new-loc tentative-new-stack)
+          rev-result)
+      #/dissect tentative-new-loc (loc-dropped)
+        (w- rev-brackets
+          (cons (list closing-bracket #/trivial) rev-brackets)
+        #/next root-brackets
+          (hash-set interpolations i
+            (list
+              rev-brackets
+              (mat d-bracket 0
+                (just #/hypertee d-root #/reverse rev-brackets)
+                maybe-result)))
+          (list tentative-new-loc tentative-new-stack)
+          (cons closing-bracket rev-result)))
+    #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
 
 (define/contract (hypertee-fold first-nontrivial-d ht func)
   (-> onum<=omega? hypertee? (-> onum<=omega? any/c hypertee? any/c)
@@ -995,8 +997,10 @@
 ; like a sequence of brackets anyway. Or we could branch our
 ; accumulation into multiple deteriministically concurrent uses of
 ; monotonic states, but then the code will resemble the mutable boxes
-; we're using in these algorithms as it is. Maybe it doesn't get a
-; whole lot more elegant than what we're doing now.
+; we're using in these algorithms as it is. (TODO: We're almost to the
+; point of not even using mutable boxes. Update this comment once
+; that's true.) Maybe it doesn't get a whole lot more elegant than
+; what we're doing now.
 ;
 ; Wait... Degree-2-reversing into a degree-2 target should be
 ; well-defined if we also pick one degree-1 sub-target beyond each of
