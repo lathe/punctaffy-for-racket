@@ -802,12 +802,6 @@
       rev-result)))
 
 
-; NOTE MUTABLE: This uses `set-box!` on the `state` boxes we set up
-; during the `list-map` at the beginning. We could avoid this by
-; replacing boxes with meaningless numbers and managing an immutable
-; table of number-to-value associations, but it seems clearer to use
-; object allocation and mutation this way.
-;
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (dissect ht (hypertee overall-degree closing-brackets)
@@ -816,20 +810,25 @@
   ; with a `maybe-current-hole` of `(nothing)`.
   #/mat overall-degree 0 (hypertee 0 #/list)
   #/w- result
-    (list-map closing-brackets #/fn closing-bracket
-      (mat closing-bracket (list d data)
-        (w- rev-brackets (list)
-        #/w- hist (make-poppable-hyperstack-n d)
-        #/list d #/list data #/box #/list rev-brackets hist)
-        closing-bracket))
+    (list-kv-map closing-brackets #/fn i closing-bracket
+      (expect closing-bracket (list d data) closing-bracket
+      #/list d #/list data i))
   #/dissect
     (list-foldl
-      (list (nothing)
-        (make-poppable-hyperstack
-        #/olist-build overall-degree #/dissectfn _ #/nothing))
+      (list
+        (list-foldl (make-immutable-hasheq) result
+        #/fn hole-states closing-bracket
+          (expect closing-bracket (list d data) hole-states
+          #/dissect data (list data i)
+          #/hash-set hole-states i
+            (list (list) (make-poppable-hyperstack-n d))))
+        (list (nothing)
+          (make-poppable-hyperstack
+          #/olist-build overall-degree #/dissectfn _ #/nothing)))
       result
-    #/fn hist closing-bracket
-      (dissect hist (list maybe-current-hole histories)
+    #/fn state closing-bracket
+      (dissect state
+        (list hole-states #/list maybe-current-hole histories)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
       #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
         (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
@@ -837,13 +836,13 @@
         (poppable-hyperstack-pop histories
         #/olist-build d #/dissectfn _ maybe-current-hole)
         (list maybe-restored-hole histories)
-      #/w- update-hole-state!
-        (fn state
-          (dissect (unbox state) (list rev-brackets hist)
+      #/w- update-hole-state
+        (fn hole-states i
+          (dissect (hash-ref hole-states i) (list rev-brackets hist)
           #/expect (onum<? d #/poppable-hyperstack-dimension hist) #t
             (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
           #/w- hist (poppable-hyperstack-pop-n hist d)
-          #/set-box! state
+          #/hash-set hole-states i
             (list
               (cons
                 (if (equal? d #/poppable-hyperstack-dimension hist)
@@ -851,36 +850,36 @@
                   d)
                 rev-brackets)
               hist)))
-      #/mat maybe-current-hole (just state)
-        (mat maybe-restored-hole (just state)
+      #/mat maybe-current-hole (just i)
+        (mat maybe-restored-hole (just i)
           (error "Internal error: Went directly from one hole to another in progress")
-        #/mat closing-bracket (list d #/list data state)
+        #/mat closing-bracket (list d #/list data i)
           (error "Internal error: Went directly from one hole to another's beginning")
-        #/begin (update-hole-state! state)
-        #/list (nothing) histories)
-      #/mat maybe-restored-hole (just state)
-        (mat closing-bracket (list d #/list data state)
+        #/list (update-hole-state hole-states i)
+          (list (nothing) histories))
+      #/mat maybe-restored-hole (just i)
+        (mat closing-bracket (list d #/list data i)
           (error "Internal error: Went into two holes at once")
-        #/begin (update-hole-state! state)
-        #/list (just state) histories)
+        #/list (update-hole-state hole-states i)
+          (list (just state) histories))
       #/mat closing-bracket (list d #/list data state)
-        ; NOTE: We don't need to `update-hole-state!` here because as
+        ; NOTE: We don't need to `update-hole-state` here because as
         ; far as this hole's state is concerned, this bracket is the
         ; opening bracket of the hole, not a closing bracket.
-        (list (just state) histories)
+        (list hole-states #/list (just state) histories)
       #/error "Internal error: Went directly from the root to the root without passing through a hole"))
-    (list maybe-current-hole histories)
+    (list hole-states #/list maybe-current-hole histories)
   #/expect (poppable-hyperstack-dimension histories) 0
     (error "Internal error: Ended hypertee-map-all-degrees without being in a zero-degree region")
-  #/expect maybe-current-hole (just state)
+  #/expect maybe-current-hole (just i)
     (error "Internal error: Ended hypertee-map-all-degrees without being in a hole")
-  #/expect (unbox state) (list (list) state-hist)
+  #/expect (hash-ref hole-states i) (list (list) state-hist)
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
   #/expect (poppable-hyperstack-dimension state-hist) 0
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
   #/hypertee overall-degree #/list-map result #/fn closing-bracket
-    (expect closing-bracket (list d #/list data state) closing-bracket
-    #/dissect (unbox state) (list rev-brackets hist)
+    (expect closing-bracket (list d #/list data i) closing-bracket
+    #/dissect (hash-ref hole-states i) (list rev-brackets hist)
     #/expect (poppable-hyperstack-dimension hist) 0
       (error "Internal error: Failed to exhaust the history of a hole while doing hypertee-map-all-degrees")
     #/list d (func (hypertee d #/reverse rev-brackets) data))))
