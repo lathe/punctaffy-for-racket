@@ -52,6 +52,7 @@
   degree-and-closing-brackets->hypertee
   hypertee->degree-and-closing-brackets
   hypertee-promote
+  hypertee<omega?
   hypertee-contour
   hypertee-drop1
   hypertee-fold
@@ -226,12 +227,13 @@
 ; hypertee of shape S."
 ;
 ; (TODO: This documentation is a bit old now. We still implement
-; hyprids in `punctaffy/private/experimental/hyprid`, but we're going
-; to take a different approach soon, "hypernests," where string pieces
-; like these can be represented as degree-1 nested hypernests. Whereas
-; a hypertee is a series of labeled closing brackets of various
-; degrees, a hypernest will be a series of labeled closing brackets
-; and labeled opening brackets of various degrees. Once we update this
+; hyprids in `punctaffy/private/experimental/hyprid`, but we're taking
+; a different approach now, "hypernests" (implemented in
+; `punctaffy/hyprsnippet/hypernest`), where string pieces like these
+; can be represented as degree-1 nested hypernests. Whereas a hypertee
+; is a series of labeled closing brackets of various degrees, a
+; hypernest is a series of labeled closing brackets and labeled
+; opening brackets of various degrees. Once we update this
 ; documentation, we should probably move this example into
 ; `punctaffy/private/experimental/hyprid` rather than just tossing it
 ; out.)
@@ -863,7 +865,7 @@
         (mat closing-bracket (list d #/list data i)
           (error "Internal error: Went into two holes at once")
         #/list (update-hole-state hole-states i)
-          (list (just state) histories))
+          (list (just i) histories))
       #/mat closing-bracket (list d #/list data state)
         ; NOTE: We don't need to `update-hole-state` here because as
         ; far as this hole's state is concerned, this bracket is the
@@ -1052,7 +1054,8 @@
   #/expect (onum<=? d-smaller d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/w- prepared-bigger
-    (hypertee #/list-kv-map closing-brackets-bigger #/fn i bracket
+    (hypertee d-bigger
+    #/list-kv-map closing-brackets-bigger #/fn i bracket
       (expect bracket (list d data) bracket
       #/list d #/list data i))
   #/w- prepared-bigger

@@ -20,10 +20,10 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract/base -> ->i any/c list/c)
+(require #/only-in racket/contract/base -> ->i any/c list/c or/c)
 (require #/only-in racket/contract/region define/contract)
 
-(require #/only-in lathe-comforts dissect dissectfn expect fn w-)
+(require #/only-in lathe-comforts dissect dissectfn expect fn mat w-)
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
@@ -41,7 +41,12 @@
   poppable-hyperstack-promote
   
   make-poppable-hyperstack-n
-  poppable-hyperstack-pop-n)
+  poppable-hyperstack-pop-n
+  
+  make-pushable-hyperstack
+  pushable-hyperstack-dimension
+  pushable-hyperstack-push
+  pushable-hyperstack-pop)
 
 
 (struct-easy (poppable-hyperstack nested-olist))
@@ -108,3 +113,51 @@
     #/olist-build i #/dissectfn _ #/trivial)
     (list elem rest)
     rest))
+
+
+(struct-easy (pushable-hyperstack nested-olist))
+
+(define/contract (make-pushable-hyperstack elems)
+  (-> olist<=e0? pushable-hyperstack?)
+  (pushable-hyperstack #/olist-map elems #/fn elem
+    (list 'root elem #/olist-zero)))
+
+(define/contract (pushable-hyperstack-dimension h)
+  (-> pushable-hyperstack? onum<=e0?)
+  (dissect h (pushable-hyperstack olist)
+  #/olist-length olist))
+
+(define/contract (pushable-hyperstack-push h elems-to-push)
+  (-> pushable-hyperstack? olist<=e0? pushable-hyperstack?)
+  (dissect h (pushable-hyperstack olist)
+  #/w- i (olist-length elems-to-push)
+  #/w- tails (olist-tails olist)
+  #/w- tails
+    (mat (olist-drop i tails) (just tails-and-rest)
+      (dissect tails-and-rest (list tails _)
+        tails)
+      (dissect (onum-drop (olist-length tails) i) (just excess)
+        (olist-plus tails #/olist-build excess #/dissectfn _
+          (olist-zero))))
+  #/pushable-hyperstack
+    (olist-zip-map elems-to-push tails #/fn elem tail
+      (list 'push elem tail))))
+
+(define/contract (pushable-hyperstack-pop h elems-to-push)
+  (->i ([h pushable-hyperstack?] [elems-to-push olist<e0?])
+    
+    #:pre (h elems-to-push)
+    (onum<?
+      (olist-length elems-to-push)
+      (pushable-hyperstack-dimension h))
+    
+    [_ (list/c (or/c 'root 'push 'pop) any/c pushable-hyperstack?)])
+  (dissect h (pushable-hyperstack olist)
+  #/w- i (olist-length elems-to-push)
+  #/dissect (olist-ref-and-call olist i)
+    (list popped-barrier elem olist-suffix)
+  #/dissect (olist-drop i #/olist-tails olist) (just #/list tails _)
+  #/list popped-barrier elem #/pushable-hyperstack #/olist-plus
+    (olist-zip-map elems-to-push tails #/fn elem tail
+      (list 'pop elem tail))
+    olist-suffix))

@@ -33,18 +33,18 @@
 (define make-ht degree-and-closing-brackets->hypertee)
 
 
-(degree-and-closing-brackets->hypertee 0 #/list)
-(degree-and-closing-brackets->hypertee 1 #/list (list 0 'a))
-(degree-and-closing-brackets->hypertee 2 #/list
+(make-ht 0 #/list)
+(make-ht 1 #/list (list 0 'a))
+(make-ht 2 #/list
   (list 1 'a)
   0 (list 0 'a))
-(degree-and-closing-brackets->hypertee 3 #/list
+(make-ht 3 #/list
   (list 2 'a)
   1 (list 1 'a) 0 0 0 (list 0 'a))
-(degree-and-closing-brackets->hypertee 4 #/list
+(make-ht 4 #/list
   (list 3 'a)
   2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a))
-(degree-and-closing-brackets->hypertee 5 #/list
+(make-ht 5 #/list
   (list 4 'a)
   3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a))
