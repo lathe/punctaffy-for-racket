@@ -24,7 +24,6 @@
   -> any any/c list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/list make-list)
-(require #/only-in racket/math natural?)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
@@ -67,13 +66,6 @@
   hypertee-each-all-degrees
   hypertee-truncate
   hypertee-zip-selective)
-
-
-; ===== Helpers for this module ======================================
-
-(define-syntax-rule (while condition body ...)
-  (w-loop next #/when condition #/#/begin0 next
-    body ...))
 
 
 ; ===== Hypertees ====================================================
@@ -407,7 +399,7 @@
 
 
 (define/contract (hypertee-closing-bracket-degree closing-bracket)
-  (-> (or/c natural? #/list/c natural? any/c) natural?)
+  (-> (or/c onum<omega? #/list/c onum<omega? any/c) onum<omega?)
   (mat closing-bracket (list d data)
     d
     closing-bracket))
@@ -458,7 +450,9 @@
 ; `struct-constructor-procedure?`.
 (define/contract
   (degree-and-closing-brackets->hypertee degree closing-brackets)
-  (-> onum<=omega? (listof #/or/c natural? #/list/c natural? any/c)
+  (->
+    onum<=omega?
+    (listof #/or/c onum<omega? #/list/c onum<omega? any/c)
     hypertee?)
   ; TODO: See if we can improve the error messages so that they're
   ; like part of the contract of this procedure instead of being
@@ -475,7 +469,7 @@
 (define/contract (hypertee->degree-and-closing-brackets ht)
   (-> hypertee?
     (list/c onum<=omega?
-    #/listof #/or/c natural? #/list/c natural? any/c))
+    #/listof #/or/c onum<omega? #/list/c onum<omega? any/c))
   (dissect ht (hypertee d closing-brackets)
   #/list d closing-brackets))
 
@@ -901,7 +895,7 @@
     #/list d (func (hypertee d #/reverse rev-brackets) data))))
 
 (define/contract (hypertee-map-one-degree ht degree func)
-  (-> hypertee? natural? (-> hypertee? any/c any/c) hypertee?)
+  (-> hypertee? onum<omega? (-> hypertee? any/c any/c) hypertee?)
   (hypertee-map-all-degrees ht #/fn hole data
     (if (equal? degree #/hypertee-degree hole)
       (func hole data)
@@ -935,7 +929,7 @@
   #/hypertee-map-all-degrees ht hole-to-ht))
 
 (define/contract (hypertee-bind-one-degree ht degree func)
-  (-> hypertee? natural? (-> hypertee? any/c hypertee?) hypertee?)
+  (-> hypertee? onum<omega? (-> hypertee? any/c hypertee?) hypertee?)
   (hypertee-bind-all-degrees ht #/fn hole data
     (if (equal? degree #/hypertee-degree hole)
       (func hole data)
@@ -956,7 +950,7 @@
   (hypertee-bind-pred-degree ht (hypertee-degree ht) func))
 
 (define/contract (hypertee-join-one-degree ht degree)
-  (-> hypertee? natural? hypertee?)
+  (-> hypertee? onum<omega? hypertee?)
   (hypertee-bind-one-degree ht degree #/fn hole data
     data))
 
