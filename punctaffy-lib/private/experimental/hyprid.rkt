@@ -32,6 +32,8 @@
 (require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-ordinals
+  onum<? 0<onum<omega? onum<omega? onum-plus onum-pred-maybe)
 (require #/only-in lathe-ordinals/olist olist-build)
 
 (require #/only-in punctaffy/hypersnippet/hyperstack
@@ -66,8 +68,8 @@
   (hyprid unstriped-degrees striped-degrees striped-hypertee)
   #:equal
   (#:guard-easy
-    (unless (exact-positive-integer? unstriped-degrees)
-      (error "Expected unstriped-degrees to be an exact positive integer"))
+    (unless (0<onum<omega? unstriped-degrees)
+      (error "Expected unstriped-degrees to be a nonzero ordinal numeral less than omega (i.e. an exact positive integer)"))
     (unless (natural? striped-degrees)
       (error "Expected striped-degrees to be a natural number"))
     (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
@@ -76,23 +78,23 @@
       #/dissect
         (hypertee->degree-and-closing-brackets striped-hypertee)
         (list degree closing-brackets)
-      #/unless (= unstriped-degrees degree)
+      #/unless (equal? unstriped-degrees degree)
         (error "Expected striped-hypertee to be a hypertee of degree unstriped-degrees"))
       (expect striped-hypertee
         (island-cane data
         #/hyprid
           unstriped-degrees-2 striped-degrees-2 striped-hypertee-2)
         (error "Expected striped-hypertee to be an island-cane since striped-degrees was nonzero")
-      #/expect (= unstriped-degrees unstriped-degrees-2) #t
+      #/expect (equal? unstriped-degrees unstriped-degrees-2) #t
         (error "Expected striped-hypertee to be an island-cane of the same unstriped-degrees")
       #/unless (= pred-striped-degrees striped-degrees-2)
         (error "Expected striped-hypertee to be an island-cane of striped-degrees one less")))))
 
 (define/contract (hyprid-degree h)
-  (-> hyprid? natural?)
+  (-> hyprid? onum<omega?)
   (dissect h
     (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/+ unstriped-degrees striped-degrees))
+  #/onum-plus unstriped-degrees striped-degrees))
 
 (struct-easy (island-cane data rest)
   #:equal
@@ -101,9 +103,9 @@
       (error "Expected rest to be a hyprid"))
     (w- d (hyprid-degree rest)
     #/hyprid-each-lake-all-degrees rest #/fn hole-hypertee data
-      (when (= d #/add1 #/hypertee-degree hole-hypertee)
+      (when (equal? d #/onum-plus (hypertee-degree hole-hypertee) 1)
         (mat data (lake-cane data rest)
-          (unless (= d #/hypertee-degree rest)
+          (unless (equal? d #/hypertee-degree rest)
             (error "Expected data to be of the same degree as the island-cane if it was a lake-cane"))
         #/mat data (non-lake-cane data)
           (void)
@@ -116,14 +118,15 @@
       (error "Expected rest to be a hypertee"))
     (w- d (hypertee-degree rest)
     #/hypertee-each-all-degrees rest #/fn hole data
-      (if (= d #/add1 #/hypertee-degree hole)
+      (if (equal? d #/onum-plus (hypertee-degree hole) 1)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
-        #/unless (= d #/hyprid-degree rest)
+        #/unless (equal? d #/hyprid-degree rest)
           (error "Expected data to be an island-cane of the same degree")
         #/hyprid-each-lake-all-degrees rest
         #/fn hole-hypertee data
-          (unless (= d #/add1 #/hypertee-degree hole-hypertee)
+          (unless
+            (equal? d #/onum-plus (hypertee-degree hole-hypertee) 1)
           
           ; A root island is allowed to contain arbitrary values in
           ; its low-degree holes, but the low-degree holes of an
@@ -175,7 +178,7 @@
   (-> hyprid? hyprid?)
   (dissect h
     (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/w- succ-unstriped-degrees (add1 unstriped-degrees)
+  #/w- succ-unstriped-degrees (onum-plus unstriped-degrees 1)
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (error "Expected h to be a hyprid with at least one degree of striping")
   #/hyprid succ-unstriped-degrees pred-striped-degrees
@@ -268,9 +271,9 @@
   
   (dissect h
     (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/dissect (nat->maybe unstriped-degrees)
+  #/dissect (onum-pred-maybe unstriped-degrees)
     (just pred-unstriped-degrees)
-  #/expect (nat->maybe pred-unstriped-degrees)
+  #/expect (onum-pred-maybe pred-unstriped-degrees)
     (just pred-pred-unstriped-degrees)
     (error "Expected h to be a hyprid with at least two unstriped degrees")
   #/w- succ-striped-degrees (add1 striped-degrees)
@@ -294,7 +297,7 @@
       #/error "Internal error"))
   #/dissect (hypertee->degree-and-closing-brackets striped-hypertee)
     (list d closing-brackets)
-  #/expect (= d unstriped-degrees) #t
+  #/expect (equal? d unstriped-degrees) #t
     (error "Internal error")
   ; We begin a mutable state to place the root island's brackets in
   ; and a mutable state for the overall history.
@@ -319,7 +322,8 @@
         (list (history-info location-before maybe-state-before)
           histories-before)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (< d #/poppable-hyperstack-dimension histories-before)
+      #/expect
+        (onum<? d #/poppable-hyperstack-dimension histories-before)
         #t
         (error "Internal error")
       #/dissect
@@ -328,7 +332,7 @@
           (history-info location-before maybe-state-before))
         (list (history-info location-after maybe-state-after)
           histories-after)
-      #/if (= d pred-unstriped-degrees)
+      #/if (equal? d pred-unstriped-degrees)
         
         ; If we've encountered a closing bracket of the highest degree
         ; the original hypertee can support, we're definitely starting
@@ -354,7 +358,7 @@
         #/list (history-info 'lake #/just rest-state)
           histories-after)
       
-      #/if (= d pred-pred-unstriped-degrees)
+      #/if (equal? d pred-pred-unstriped-degrees)
         
         ; If we've encountered a closing bracket of the highest degree
         ; that a stripe in the result can support, we may be starting
@@ -411,7 +415,7 @@
           (stripe-state
             (cons
               (mat closing-bracket (list d data) closing-bracket
-              #/if (= d #/poppable-hyperstack-dimension hist)
+              #/if (equal? d #/poppable-hyperstack-dimension hist)
                 (list d #/trivial)
                 d)
               rev-brackets)
@@ -440,7 +444,8 @@
     #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
     #/list-map (reverse rev-brackets) #/fn closing-bracket
       (expect closing-bracket (list d data) closing-bracket
-      #/expect (= d pred-pred-unstriped-degrees) #t closing-bracket
+      #/expect (equal? d pred-pred-unstriped-degrees) #t
+        closing-bracket
       #/mat data (non-lake-cane data) closing-bracket
       #/mat data (unfinished-lake-cane data rest-state)
         (dissect (unbox rest-state) (stripe-state rev-brackets hist)
@@ -449,7 +454,7 @@
         #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (list d data) closing-bracket
-          #/expect (= d pred-pred-unstriped-degrees) #t
+          #/expect (equal? d pred-pred-unstriped-degrees) #t
             closing-bracket
           #/list d #/assemble-island-from-state data))
       #/error "Internal error"))))
