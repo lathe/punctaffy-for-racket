@@ -46,10 +46,12 @@
   poppable-hyperstack-pop-n poppable-hyperstack-promote)
 
 (provide
+  hypertee-closing-bracket-degree
   (rename-out
     [-hypertee? hypertee?]
     [-hypertee-degree hypertee-degree])
   degree-and-closing-brackets->hypertee
+  hypertee->degree-and-closing-brackets
   hypertee-promote
   hypertee-contour
   hypertee-drop1
@@ -66,10 +68,6 @@
   hypertee-each-all-degrees
   hypertee-truncate
   hypertee-zip-selective)
-
-(module+ private/unsafe #/provide
-  hypertee
-  hypertee-closing-bracket-degree)
 
 
 ; ===== Helpers for this module ======================================
@@ -472,7 +470,8 @@
 ; `struct-accessor-procedure?`.
 (define/contract (-hypertee-degree ht)
   (-> hypertee? onum<=omega?)
-  (hypertee-degree ht))
+  (dissect ht (hypertee d closing-brackets)
+    d))
 
 (define/contract (hypertee->degree-and-closing-brackets ht)
   (-> hypertee?

@@ -38,12 +38,11 @@
   poppable-hyperstack-dimension poppable-hyperstack-pop
   poppable-hyperstack-pop-n)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  hypertee? hypertee-bind-pred-degree hypertee-contour hypertee-degree
-  hypertee-each-all-degrees hypertee-map-highest-degree
-  hypertee-promote hypertee-pure)
-(require #/only-in
-  (submod punctaffy/hypersnippet/hypertee private/unsafe)
-  hypertee hypertee-closing-bracket-degree)
+  degree-and-closing-brackets->hypertee hypertee?
+  hypertee-bind-pred-degree hypertee-closing-bracket-degree
+  hypertee-contour hypertee-degree
+  hypertee->degree-and-closing-brackets hypertee-each-all-degrees
+  hypertee-map-highest-degree hypertee-promote hypertee-pure)
 
 (provide
   ; TODO: See if there's anything more abstract we can export in place
@@ -71,8 +70,11 @@
     (unless (natural? striped-degrees)
       (error "Expected striped-degrees to be a natural number"))
     (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
-      (expect striped-hypertee (hypertee degree closing-brackets)
+      (expect (hypertee? striped-hypertee) #t
         (error "Expected striped-hypertee to be a hypertee since striped-degrees was zero")
+      #/dissect
+        (hypertee->degree-and-closing-brackets striped-hypertee)
+        (list degree closing-brackets)
       #/unless (= unstriped-degrees degree)
         (error "Expected striped-hypertee to be a hypertee of degree unstriped-degrees"))
       (expect striped-hypertee
@@ -286,7 +288,8 @@
             striped-rest))
       #/mat rest (non-lake-cane data) (non-lake-cane data)
       #/error "Internal error"))
-  #/dissect striped-hypertee (hypertee d closing-brackets)
+  #/dissect (hypertee->degree-and-closing-brackets striped-hypertee)
+    (list d closing-brackets)
   #/expect (= d unstriped-degrees) #t
     (error "Internal error")
   ; We begin a mutable state to place the root island's brackets in
@@ -434,7 +437,7 @@
     #/island-cane (trivial)
     
     #/hyprid pred-unstriped-degrees 0
-    #/hypertee pred-unstriped-degrees
+    #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
     #/list-map (reverse rev-brackets) #/fn closing-bracket
       (expect closing-bracket (list d data) closing-bracket
       #/expect (= d pred-pred-unstriped-degrees) #t closing-bracket
@@ -442,7 +445,8 @@
       #/mat data (unfinished-lake-cane data rest-state)
         (dissect (unbox rest-state) (stripe-state rev-brackets hist)
         #/dissect (poppable-hyperstack-dimension hist) 0
-        #/list d #/lake-cane data #/hypertee pred-unstriped-degrees
+        #/list d #/lake-cane data
+        #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (list d data) closing-bracket
           #/expect (= d pred-pred-unstriped-degrees) #t
