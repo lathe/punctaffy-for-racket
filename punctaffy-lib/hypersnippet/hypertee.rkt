@@ -522,11 +522,16 @@
     (make-list (length closing-brackets) 0)
     (list #/list 0 hole-value)))
 
-(define (push-box! bx elem)
-  (set-box! bx (cons elem #/unbox bx)))
-
+; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
+; the `result-box` and `rev-brackets-box` we set up each time we make
+; a `loc-interpolation`.
+;
 (define/contract (hypertee-drop1 ht)
   (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
+  
+  (define (push-box! bx elem)
+    (set-box! bx (cons elem #/unbox bx)))
+  
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
   (struct-easy (loc-interpolation-uninitialized))
@@ -684,6 +689,10 @@
 ; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 ;
+; TODO MUTABLE: Stop using `set!` and `hash-set!` here. The variables
+; we `set!` are `rev-result`, `brackets`, `hist` and `root-bracket-i`,
+; and the hash we use `hash-set!` on is `interpolations`.
+;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
   (dissect ht (hypertee overall-degree closing-brackets)
@@ -807,6 +816,10 @@
     (hypertee overall-degree #/reverse rev-result)))
 
 
+; TODO MUTABLE: Stop using `set!` and `set-box!` here. The variable we
+; `set!` is `hist`, and the boxes we use `set-box!` on are the `state`
+; boxes we set up during the `list-map` at the beginning.
+;
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (dissect ht (hypertee overall-degree closing-brackets)
@@ -1075,6 +1088,11 @@
 ; if the hypertees have the same shape when certain holes of the
 ; higher-degree hypertee are removed -- namely, the holes of degree N
 ; or greater and the holes that don't match the given predicate.
+;
+; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
+; the `boxed-data` boxes we set up during the
+; `hypertee-map-all-degrees` at the beginning.
+;
 (define/contract
   (hypertee-zip-selective smaller bigger should-zip? func)
   (->
