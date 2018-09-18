@@ -816,9 +816,8 @@
       root-bracket-i)))
 
 
-; TODO MUTABLE: Stop using `set!` and `set-box!` here. The variable we
-; `set!` is `hist`, and the boxes we use `set-box!` on are the `state`
-; boxes we set up during the `list-map` at the beginning.
+; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
+; the `state` boxes we set up during the `list-map` at the beginning.
 ;
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
@@ -834,12 +833,13 @@
         #/w- hist (make-poppable-hyperstack-n d)
         #/list d #/list data #/box #/list rev-brackets hist)
         closing-bracket))
-  #/w- hist
-    (list (nothing)
-    #/make-poppable-hyperstack
-    #/olist-build overall-degree #/dissectfn _ #/nothing)
-  #/begin
-    (list-each result #/fn closing-bracket
+  #/dissect
+    (list-foldl
+      (list (nothing)
+        (make-poppable-hyperstack
+        #/olist-build overall-degree #/dissectfn _ #/nothing))
+      result
+    #/fn hist closing-bracket
       (dissect hist (list maybe-current-hole histories)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
       #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
@@ -867,22 +867,20 @@
           (error "Internal error: Went directly from one hole to another in progress")
         #/mat closing-bracket (list d #/list data state)
           (error "Internal error: Went directly from one hole to another's beginning")
-        #/begin
-          (set! hist (list (nothing) histories))
-          (update-hole-state! state))
+        #/begin (update-hole-state! state)
+        #/list (nothing) histories)
       #/mat maybe-restored-hole (just state)
         (mat closing-bracket (list d #/list data state)
           (error "Internal error: Went into two holes at once")
-        #/begin
-          (set! hist (list (just state) histories))
-          (update-hole-state! state))
+        #/begin (update-hole-state! state)
+        #/list (just state) histories)
       #/mat closing-bracket (list d #/list data state)
         ; NOTE: We don't need to `update-hole-state!` here because as
         ; far as this hole's state is concerned, this bracket is the
         ; opening bracket of the hole, not a closing bracket.
-        (set! hist (list (just state) histories))
+        (list (just state) histories)
       #/error "Internal error: Went directly from the root to the root without passing through a hole"))
-  #/dissect hist (list maybe-current-hole histories)
+    (list maybe-current-hole histories)
   #/expect (poppable-hyperstack-dimension histories) 0
     (error "Internal error: Ended hypertee-map-all-degrees without being in a zero-degree region")
   #/expect maybe-current-hole (just state)
