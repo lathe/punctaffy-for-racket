@@ -520,9 +520,12 @@
     (make-list (length closing-brackets) 0)
     (list #/list 0 hole-value)))
 
-; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
-; the `result-box` and `rev-brackets-box` we set up each time we make
-; a `loc-interpolation`.
+; NOTE MUTABLE: This uses `set-box!` on the `result-box` and
+; `rev-brackets-box` values we set up each time we make a
+; `loc-interpolation`. We could avoid this by replacing boxes with
+; meaningless numbers and managing an immutable table of
+; number-to-value associations, but it seems clearer to use object
+; allocation and mutation this way.
 ;
 (define/contract (hypertee-drop1 ht)
   (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
@@ -814,8 +817,11 @@
       root-bracket-i)))
 
 
-; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
-; the `state` boxes we set up during the `list-map` at the beginning.
+; NOTE MUTABLE: This uses `set-box!` on the `state` boxes we set up
+; during the `list-map` at the beginning. We could avoid this by
+; replacing boxes with meaningless numbers and managing an immutable
+; table of number-to-value associations, but it seems clearer to use
+; object allocation and mutation this way.
 ;
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
@@ -1085,9 +1091,11 @@
 ; higher-degree hypertee are removed -- namely, the holes of degree N
 ; or greater and the holes that don't match the given predicate.
 ;
-; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
-; the `boxed-data` boxes we set up during the
-; `hypertee-map-all-degrees` at the beginning.
+; NOTE MUTABLE: This uses `set-box!` on the `boxed-data` boxes we set
+; up during the `hypertee-map-all-degrees` at the beginning. We could
+; avoid this by replacing boxes with meaningless numbers and managing
+; an immutable table of number-to-value associations, but it seems
+; clearer to use object allocation and mutation this way.
 ;
 (define/contract
   (hypertee-zip-selective smaller bigger should-zip? func)

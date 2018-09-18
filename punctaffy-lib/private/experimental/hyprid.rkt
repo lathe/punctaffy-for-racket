@@ -241,8 +241,11 @@
 ;
 ; TODO: Test this.
 ;
-; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
-; the `state` boxes we set up each time we start an island or a lake.
+; NOTE MUTABLE: This uses `set-box!` on the `state` boxes we set up
+; each time we start an island or a lake. We could avoid this by
+; replacing boxes with meaningless numbers and managing an immutable
+; table of number-to-value associations, but it seems clearer to use
+; object allocation and mutation this way.
 ;
 (define/contract (hyprid-stripe-once h)
   (-> hyprid? hyprid?)
