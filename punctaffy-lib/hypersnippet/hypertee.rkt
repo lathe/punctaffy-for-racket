@@ -689,14 +689,10 @@
 ; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 ;
-; TODO MUTABLE: Stop using `set!` here. The variables we use it on are
-; `rev-result`, `brackets`, `interpolations`, `hist` and
-; `root-bracket-i`.
-;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
   (dissect ht (hypertee overall-degree closing-brackets)
-  #/w-
+  #/w-loop next
     rev-result (list)
     brackets closing-brackets
     interpolations (make-immutable-hasheq)
@@ -705,116 +701,119 @@
       #/make-poppable-hyperstack
       #/olist-build overall-degree #/dissectfn _ #/nothing)
     root-bracket-i 0
-    (define (pop-root-bracket!)
-      (expect brackets (cons bracket rest)
-        (nothing)
-      #/begin
-        (set! brackets rest)
-        (set! root-bracket-i (add1 root-bracket-i))
-        (just bracket)))
-    (define (pop-interpolation-bracket! i)
+    
+    (define (finish brackets interpolations rev-result)
+      (expect brackets (list)
+        (error "Internal error: Encountered the end of a hypertee join interpolation in a region of degree 0 before getting to the end of the root")
+      #/void)
+      (hash-kv-each interpolations #/fn i brackets
+        (expect brackets (list)
+          (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")
+        #/void))
+      (hypertee overall-degree #/reverse rev-result))
+    
+    (define (pop-root-bracket brackets root-bracket-i)
+      (expect brackets (cons bracket brackets)
+        (list brackets root-bracket-i #/nothing)
+        (list brackets (add1 root-bracket-i) #/just bracket)))
+    
+    (define (pop-interpolation-bracket interpolations i)
       (expect (hash-ref interpolations i) (cons bracket rest)
-        (nothing)
-      #/begin
-        (set! interpolations (hash-set interpolations i rest))
-        (just bracket)))
+        (list interpolations #/nothing)
+        (list (hash-set interpolations i rest) #/just bracket)))
+    
     (define (verify-bracket-degree d maybe-closing-bracket)
       (dissect maybe-closing-bracket (just closing-bracket)
       #/unless
         (equal? d #/hypertee-closing-bracket-degree closing-bracket)
         (error "Expected each interpolation of a hypertee join to be the right shape for its interpolation context")))
-    (while
-      (dissect hist (list maybe-interpolation-i histories)
-      #/mat maybe-interpolation-i (just interpolation-i)
-        
-        ; We read from the interpolation's closing bracket stream.
-        (expect (pop-interpolation-bracket! interpolation-i)
-          (just closing-bracket)
-          (expect (poppable-hyperstack-dimension histories) 0
-            (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
-            ; The interpolation has no more closing brackets, and
-            ; we're in a region of degree 0, so we end the loop.
-            #f)
-        #/w- d (hypertee-closing-bracket-degree closing-bracket)
-        #/expect (onum<? d #/poppable-hyperstack-dimension histories)
-          #t
-          (error "Internal error: A hypertee join interpolation had a closing bracket of degree not less than the current region's degree")
-        #/dissect
-          (poppable-hyperstack-pop histories
-          #/olist-build d #/dissectfn _ maybe-interpolation-i)
-          (list maybe-interpolation-i histories)
-        #/begin0 #t
-          (mat maybe-interpolation-i (nothing)
-            (begin
-              (verify-bracket-degree d #/pop-root-bracket!)
-              (mat closing-bracket (list d data)
-                (expect data (trivial)
-                  (error "A hypertee join interpolation had a hole of low degree where the value wasn't a trivial value")
-                #/void)
-              #/void))
-            (set! rev-result (cons closing-bracket rev-result)))
-          (set! hist (list maybe-interpolation-i histories)))
+    
+    (dissect hist (list maybe-interpolation-i histories)
+    #/mat maybe-interpolation-i (just interpolation-i)
       
-      ; We read from the root's closing bracket stream.
-      #/w- this-root-bracket-i root-bracket-i
-      #/expect (pop-root-bracket!) (just closing-bracket)
+      ; We read from the interpolation's closing bracket stream.
+      (dissect
+        (pop-interpolation-bracket interpolations interpolation-i)
+        (list interpolations maybe-bracket)
+      #/expect maybe-bracket (just closing-bracket)
         (expect (poppable-hyperstack-dimension histories) 0
-          (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
-          ; The root has no more closing brackets, and we're in a
-          ; region of degree 0, so we end the loop.
-          #f)
+          (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
+        ; The interpolation has no more closing brackets, and we're in
+        ; a region of degree 0, so we end the loop.
+        #/finish brackets interpolations rev-result)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
       #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
-        (error "Internal error: A hypertee join root had a closing bracket of degree not less than the current region's degree")
+        (error "Internal error: A hypertee join interpolation had a closing bracket of degree not less than the current region's degree")
       #/dissect
         (poppable-hyperstack-pop histories
         #/olist-build d #/dissectfn _ maybe-interpolation-i)
         (list maybe-interpolation-i histories)
-      #/begin0 #t
-      #/expect closing-bracket (list d data)
-        ; We resume an interpolation.
-        (expect maybe-interpolation-i (just i)
-          (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
+      #/w- hist (list maybe-interpolation-i histories)
+      #/mat maybe-interpolation-i (nothing)
+        (dissect (pop-root-bracket brackets root-bracket-i)
+          (list brackets root-bracket-i maybe-bracket)
         #/begin
-          (verify-bracket-degree d (pop-interpolation-bracket! i))
-          (set! hist (list maybe-interpolation-i histories)))
-      ; We begin an interpolation.
-      #/expect data (hypertee data-d data-closing-brackets)
-        (error "Expected each hypertee join interpolation to be a hypertee")
-      #/expect (equal? data-d overall-degree) #t
-        (error "Expected each hypertee join interpolation to have the same degree as the root")
-      #/begin
-        (set! interpolations
-          (hash-set interpolations this-root-bracket-i
-            data-closing-brackets))
-        (set! hist
-          (list (just this-root-bracket-i)
-          
-          ; We build a list of histories of length `overall-degree`,
-          ; since the hypertee we're interpolating into the root must
-          ; be of that degree.
-          ;
-          ; The lowest-degree holes correspond to the structure of the
-          ; hole this interpolation is being spliced into, so they
-          ; return us to the root's histories.
-          ;
-          ; The highest-degree holes are propagated through to the
-          ; result. They don't cause us to return to the root.
-          ;
-          #/poppable-hyperstack-promote histories overall-degree
-            (just this-root-bracket-i))))
+          (verify-bracket-degree d maybe-bracket)
+          (mat closing-bracket (list d data)
+            (expect data (trivial)
+              (error "A hypertee join interpolation had a hole of low degree where the value wasn't a trivial value")
+            #/void)
+          #/void)
+        #/next rev-result brackets interpolations hist root-bracket-i)
+        (next (cons closing-bracket rev-result) brackets
+          interpolations hist root-bracket-i))
+    
+    ; We read from the root's closing bracket stream.
+    #/w- this-root-bracket-i root-bracket-i
+    #/dissect (pop-root-bracket brackets root-bracket-i)
+      (list brackets root-bracket-i maybe-bracket)
+    #/expect maybe-bracket (just closing-bracket)
+      (expect (poppable-hyperstack-dimension histories) 0
+        (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
+      ; The root has no more closing brackets, and we're in a region
+      ; of degree 0, so we end the loop.
+      #/finish brackets interpolations rev-result)
+    #/w- d (hypertee-closing-bracket-degree closing-bracket)
+    #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
+      (error "Internal error: A hypertee join root had a closing bracket of degree not less than the current region's degree")
+    #/dissect
+      (poppable-hyperstack-pop histories
+      #/olist-build d #/dissectfn _ maybe-interpolation-i)
+      (list maybe-interpolation-i histories)
+    #/expect closing-bracket (list d data)
+      ; We resume an interpolation.
+      (expect maybe-interpolation-i (just i)
+        (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
+      #/dissect (pop-interpolation-bracket interpolations i)
+        (list interpolations maybe-bracket)
+      #/begin (verify-bracket-degree d maybe-bracket)
+      #/next rev-result brackets interpolations
+        (list maybe-interpolation-i histories)
+        root-bracket-i)
+    ; We begin an interpolation.
+    #/expect data (hypertee data-d data-closing-brackets)
+      (error "Expected each hypertee join interpolation to be a hypertee")
+    #/expect (equal? data-d overall-degree) #t
+      (error "Expected each hypertee join interpolation to have the same degree as the root")
+    #/next rev-result brackets
+      (hash-set interpolations this-root-bracket-i
+        data-closing-brackets)
+      (list (just this-root-bracket-i)
       
-      ; This while loop's body is intentionally left blank. Everything
-      ; was done in the condition.
-      (void))
-    (expect brackets (list)
-      (error "Internal error: Encountered the end of a hypertee join interpolation in a region of degree 0 before getting to the end of the root")
-    #/void)
-    (hash-kv-each interpolations #/fn i brackets
-      (expect brackets (list)
-        (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")
-      #/void))
-    (hypertee overall-degree #/reverse rev-result)))
+      ; We build a list of histories of length `overall-degree`, since
+      ; the hypertee we're interpolating into the root must be of that
+      ; degree.
+      ;
+      ; The lowest-degree holes correspond to the structure of the
+      ; hole this interpolation is being spliced into, so they return
+      ; us to the root's histories.
+      ;
+      ; The highest-degree holes are propagated through to the result.
+      ; They don't cause us to return to the root.
+      ;
+      #/poppable-hyperstack-promote histories overall-degree
+        (just this-root-bracket-i))
+      root-bracket-i)))
 
 
 ; TODO MUTABLE: Stop using `set!` and `set-box!` here. The variable we
