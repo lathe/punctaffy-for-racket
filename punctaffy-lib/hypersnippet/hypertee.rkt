@@ -954,63 +954,24 @@
     (void))
   (void))
 
-; TODO: Judging by the mutable state used in our hypertee algorithms,
-; if we ever want to use purer implementations, or even to generalize
-; the data to start with trees as the underlying syntax rather than
-; lists, we'll want to be able to accumulate information in reverse.
-; In fact, it seems like there may be an interesting higher-order
-; notion of "reverse" where the shape
+; TODO:
 ;
-;   A ~2( B ,( C D ) E ,( F G ) H ) I
+; See if we should define a higher-dimensional "reverse" operation. A
+; hypertee reversal could swap any hole with, as long as the hole was
+; otherwise of the same shape as the outside. More generally, we would
+; have to designate a hole H1, and in each of H1's holes H2, designate
+; another hole H3 of the same shape as H2. This could go recursively
+; (needing to designate holes H5, H7, etc.), except that H2 already
+; has a particular set of holes in spite of whatever we designate.
 ;
-; degree-0-reverses to
+; Given a designation of those things, we could look at the bracket
+; sequence and notice that we've split it up into bracket sequences
+; that can be reversed individually.
 ;
-;   I ~2( H ,( G F ) E ,( D C ) B ) A
-;
-; and degree-1-reverses to the client's choice of:
-;
-;   C ~2( B ,( A I ) H ,( G F ) E ) D
-;   D ~2( E ,( F G ) H ,( I A ) B ) C
-;   F ~2( E ,( D C ) B ,( A I ) H ) G
-;   G ~2( H ,( I A ) B ,( C D ) E ) F
-;
-; A possible structure-respecting implementation strategy is splitting
-; into degree-N stripes, choosing a lake, optionally
-; degree-N-minus-1-reversing the parts before and after that lake
-; (through some hole of the lake), and degree-N-minus-1-concatenating
-; them (using a degree-N-minus-1-reverse-onto operation).
-;
-; But... sometimes the lake has more than one island beyond it:
-;
-;   A ~3( ~2( ,( B C ) ,( D E ) ) ) F
-;
-; When we reverse that, should we get three roots back? Or are only
-; lakes that have one neighboring island (i.e. no islands beyond)
-; valid targets? Or should we instead target an arbitrary place in an
-; *island*, punching a hole so we can treat that hole as the root?
-; Perhaps there isn't a really elegant higher-degree reversal
-; operation after all.
-;
-; Besides, even if we accumulated data on one path through a tree,
-; we'd have to go back down partway to accumulate more data on another
-; branch. At that point, what our traversal accumulates looks just
-; like a sequence of brackets anyway. Or we could branch our
-; accumulation into multiple deteriministically concurrent uses of
-; monotonic states, but then the code will resemble the mutable boxes
-; we're using in these algorithms as it is. (TODO: We're almost to the
-; point of not even using mutable boxes. Update this comment once
-; that's true.) Maybe it doesn't get a whole lot more elegant than
-; what we're doing now.
-;
-; Wait... Degree-2-reversing into a degree-2 target should be
-; well-defined if we also pick one degree-1 sub-target beyond each of
-; its holes. That way, the shape of the target corresponds with the
-; low-degree shape of the result. Then degree-2-reversing consists
-; only of striping, removing the lake we're targeting, destriping each
-; part we just disconnected, degree-1-reversing each of them, striping
-; them again, and reconnecting them using the same lake shape in the
-; middle. (TODO: Rewrite this comment to incorporate this insight
-; earlier, and reconsider the implications on our algorithms.)
+; Is there any point to this operation? It's probably related to
+; adjoint functors, right? The original motivation for this was to
+; simplify our algorithms so they wouldn't have to use hyperstacks,
+; but it's not clear that would happen.
 
 ; This takes a hypertee and removes all holes which don't satisfy the
 ; given predicate.

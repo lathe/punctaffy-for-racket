@@ -99,15 +99,14 @@
 
 ; TODO: Turn this into a unit test. There was at one point (although
 ; not in any code that's been committed) a bug in `hypertee-fold`
-; which made the `c1` and `c2` holes disappear, because we were trying
-; to replace the `loc-interpolation` state's `rev-brackets` slot in a
-; pure way, rather than using a mutable box (`rev-brackets-box`).
+; which involved using a mix of mutation and pure code, and it made
+; the `c1` and `c2` holes disappear.
 ;
-; We're still using a similar kind of pure code to change a
-; `loc-interpolation-uninitialized` state into a `loc-interpolation`
-; state, so there's a good chance there's a similar bug lurking in
-; there, maybe for degree-3 holes. We should write tests like this
-; with degree-3 holes to check it out.
+; We're now using pure code throughout the hypertee implementation,
+; but it's still a bit like using mutation in some places since we
+; maintain hash tables that simulate mutable heaps. There may be a
+; similar bug still lurking in there, maybe for degree-3 holes. We
+; should write tests like this with degree-3 holes to check it out.
 ;
 #|
 (require punctaffy/hypersnippet/hypertee)

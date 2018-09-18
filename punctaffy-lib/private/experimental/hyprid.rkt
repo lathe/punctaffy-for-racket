@@ -28,7 +28,7 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list
-  list-each list-foldl list-map nat->maybe)
+  list-each list-foldl list-kv-map list-map nat->maybe)
 (require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
@@ -241,12 +241,6 @@
 ;
 ; TODO: Test this.
 ;
-; NOTE MUTABLE: This uses `set-box!` on the `state` boxes we set up
-; each time we start an island or a lake. We could avoid this by
-; replacing boxes with meaningless numbers and managing an immutable
-; table of number-to-value associations, but it seems clearer to use
-; object allocation and mutation this way.
-;
 (define/contract (hyprid-stripe-once h)
   (-> hyprid? hyprid?)
   
@@ -302,162 +296,184 @@
     (list d closing-brackets)
   #/expect (equal? d unstriped-degrees) #t
     (error "Internal error")
-  ; We begin a mutable state to place the root island's brackets in
-  ; and a mutable state for the overall history.
+  ; We begin a `stripe-states` entry to place the root island's
+  ; brackets in and a loop variable for the overall history.
   #/w- stripe-starting-state
     (w- rev-brackets (list)
     #/stripe-state rev-brackets
     #/make-poppable-hyperstack-n pred-unstriped-degrees)
-  #/w- root-island-state (box stripe-starting-state)
-  #/w- hist
-    (list-foldl
-      (list (history-info 'root-island #/just root-island-state)
-      #/make-poppable-hyperstack #/olist-build d #/dissectfn _
-        (history-info 'hole #/nothing))
-      closing-brackets
-    #/fn hist closing-bracket
-      
-      ; As we encounter lakes, we build mutable states to keep their
-      ; histories in, and so on for every island and lake at every
-      ; depth.
-      
-      (dissect hist
-        (list (history-info location-before maybe-state-before)
-          histories-before)
-      #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect
-        (onum<? d #/poppable-hyperstack-dimension histories-before)
-        #t
-        (error "Internal error")
-      #/dissect
-        (poppable-hyperstack-pop histories-before
-        #/olist-build d #/dissectfn _
-          (history-info location-before maybe-state-before))
-        (list (history-info location-after maybe-state-after)
-          histories-after)
-      #/if (equal? d pred-unstriped-degrees)
-        
-        ; If we've encountered a closing bracket of the highest degree
-        ; the original hypertee can support, we're definitely starting
-        ; a lake.
-        (expect (location-is-island? location-before) #t
-          (error "Internal error")
-        #/expect (eq? 'hole location-after) #t
-          (error "Internal error")
-        #/expect closing-bracket (list d data)
-          (error "Internal error")
-        #/w- rest-state (box stripe-starting-state)
-        #/dissect maybe-state-before (just state)
-        #/dissect (unbox state) (stripe-state rev-brackets hist)
-        #/begin
-          (set-box! state
-            (stripe-state
-              (cons
-                (list pred-pred-unstriped-degrees
-                #/unfinished-lake-cane data rest-state)
-                rev-brackets)
-              (poppable-hyperstack-pop-n
-                hist pred-pred-unstriped-degrees)))
-        #/list (history-info 'lake #/just rest-state)
-          histories-after)
-      
-      #/if (equal? d pred-pred-unstriped-degrees)
-        
-        ; If we've encountered a closing bracket of the highest degree
-        ; that a stripe in the result can support, we may be starting
-        ; an island or a non-lake.
-        (mat closing-bracket (list d data)
-          
-          ; This bracket is closing the original hypertee, so it must
-          ; be closing an island, so we're starting a non-lake.
-          (expect (location-is-island? location-before) #t
-            (error "Internal error")
-          #/expect (eq? 'hole location-after) #t
-            (error "Internal error")
-          #/dissect maybe-state-before (just state)
-          #/dissect (unbox state) (stripe-state rev-brackets hist)
-          #/begin
-            (set-box! state
-              (stripe-state
-                (cons (list d #/non-lake-cane data) rev-brackets)
-                (poppable-hyperstack-pop-n hist d)))
-          #/list (history-info 'non-lake #/nothing) histories-after)
-          
-          ; This bracket is closing an even higher-degree bracket,
-          ; which must have started a lake, so we're starting an
-          ; island.
-          (expect (eq? 'lake location-before) #t
-            (error "Internal error")
-          #/expect (eq? 'root-island location-after) #t
-            (error "Internal error")
-          #/w- new-state (box stripe-starting-state)
-          #/dissect maybe-state-before (just state)
-          #/dissect (unbox state) (stripe-state rev-brackets hist)
-          #/begin
-            (set-box! state
-              (stripe-state
-                (cons (list d new-state) rev-brackets)
-                (poppable-hyperstack-pop-n hist d)))
-          #/list (history-info 'inner-island #/just new-state)
-            histories-after))
-      
-      ; If we've encountered a closing bracket of low degree, we pass
-      ; it through to whatever island or lake we're departing from
-      ; (including any associated data in the bracket) and whatever
-      ; island or lake we're arriving at (excluding the data, since
-      ; this bracket must be closing some hole which was started there
-      ; earlier). In some circumstances, we need to associate a
-      ; trivial value with the bracket we record to the departure
-      ; island or lake, even if this bracket is not a hole-opener as
-      ; far as the original hypertee is concerned.
-      #/begin
-        (expect maybe-state-before (just state) (void)
-        #/dissect (unbox state) (stripe-state rev-brackets hist)
-        #/w- hist (poppable-hyperstack-pop-n hist d)
-        #/set-box! state
-          (stripe-state
-            (cons
-              (mat closing-bracket (list d data) closing-bracket
-              #/if (equal? d #/poppable-hyperstack-dimension hist)
-                (list d #/trivial)
-                d)
-              rev-brackets)
-            hist))
-        (expect maybe-state-after (just state) (void)
-        #/dissect (unbox state) (stripe-state rev-brackets hist)
-        #/set-box! state
-          (stripe-state
-            (cons d rev-brackets)
-            (poppable-hyperstack-pop-n hist d)))
-      #/list (history-info location-after maybe-state-after)
-        histories-after))
-  ; In the end, we build the root island by accessing its state to get
-  ; the brackets, arranging the brackets in the correct order, and
-  ; recursively assembling lakes and islands using their states the
-  ; same way.
-  #/w-loop assemble-island-from-state state root-island-state
-    (dissect (unbox state) (stripe-state rev-brackets hist)
-    #/dissect (poppable-hyperstack-dimension hist) 0
+  #/w- root-island-state 'root
+  #/w-loop next
     
-    ; TRIVIAL VALUE NOTE: This is where we put a trivial value into
-    ; the new layer of stripe data.
-    #/island-cane (trivial)
+    closing-brackets
+    (list-kv-map closing-brackets #/fn k v #/list k v)
     
-    #/hyprid pred-unstriped-degrees 0
-    #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
-    #/list-map (reverse rev-brackets) #/fn closing-bracket
-      (expect closing-bracket (list d data) closing-bracket
-      #/expect (equal? d pred-pred-unstriped-degrees) #t
-        closing-bracket
-      #/mat data (non-lake-cane data) closing-bracket
-      #/mat data (unfinished-lake-cane data rest-state)
-        (dissect (unbox rest-state) (stripe-state rev-brackets hist)
+    stripe-states
+    (hash-set (make-immutable-hasheq) root-island-state
+      stripe-starting-state)
+    
+    hist
+    (list (history-info 'root-island #/just root-island-state)
+    #/make-poppable-hyperstack #/olist-build d #/dissectfn _
+      (history-info 'hole #/nothing))
+    
+    (expect closing-brackets (cons closing-bracket closing-brackets)
+      ; In the end, we build the root island by accessing its state to
+      ; get the brackets, arranging the brackets in the correct order,
+      ; and recursively assembling lakes and islands using their
+      ; states the same way.
+      (w-loop assemble-island-from-state state root-island-state
+        (dissect (hash-ref stripe-states state)
+          (stripe-state rev-brackets hist)
         #/dissect (poppable-hyperstack-dimension hist) 0
-        #/list d #/lake-cane data
+        
+        ; TRIVIAL VALUE NOTE: This is where we put a trivial value
+        ; into the new layer of stripe data.
+        #/island-cane (trivial)
+        
+        #/hyprid pred-unstriped-degrees 0
         #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (list d data) closing-bracket
           #/expect (equal? d pred-pred-unstriped-degrees) #t
             closing-bracket
-          #/list d #/assemble-island-from-state data))
-      #/error "Internal error"))))
+          #/mat data (non-lake-cane data) closing-bracket
+          #/mat data (unfinished-lake-cane data rest-state)
+            (dissect (hash-ref stripe-states rest-state)
+              (stripe-state rev-brackets hist)
+            #/dissect (poppable-hyperstack-dimension hist) 0
+            #/list d #/lake-cane data
+            #/degree-and-closing-brackets->hypertee
+              pred-unstriped-degrees
+            #/list-map (reverse rev-brackets) #/fn closing-bracket
+              (expect closing-bracket (list d data) closing-bracket
+              #/expect (equal? d pred-pred-unstriped-degrees) #t
+                closing-bracket
+              #/list d #/assemble-island-from-state data))
+          #/error "Internal error")))
+    
+    ; As we encounter lakes, we build `stripe-states` entries to keep
+    ; their histories in, and so on for every island and lake at every
+    ; depth.
+    #/dissect closing-bracket (list new-i closing-bracket)
+    #/dissect hist
+      (list (history-info location-before maybe-state-before)
+        histories-before)
+    #/w- d (hypertee-closing-bracket-degree closing-bracket)
+    #/expect
+      (onum<? d #/poppable-hyperstack-dimension histories-before)
+      #t
+      (error "Internal error")
+    #/dissect
+      (poppable-hyperstack-pop histories-before
+      #/olist-build d #/dissectfn _
+        (history-info location-before maybe-state-before))
+      (list (history-info location-after maybe-state-after)
+        histories-after)
+    #/if (equal? d pred-unstriped-degrees)
+      
+      ; If we've encountered a closing bracket of the highest degree
+      ; the original hypertee can support, we're definitely starting a
+      ; lake.
+      (expect (location-is-island? location-before) #t
+        (error "Internal error")
+      #/expect (eq? 'hole location-after) #t
+        (error "Internal error")
+      #/expect closing-bracket (list d data)
+        (error "Internal error")
+      #/w- rest-state new-i
+      #/dissect maybe-state-before (just state)
+      #/dissect (hash-ref stripe-states state)
+        (stripe-state rev-brackets hist)
+      #/w- stripe-states
+        (hash-set stripe-states rest-state stripe-starting-state)
+      #/w- stripe-states
+        (hash-set stripe-states state
+          (stripe-state
+            (cons
+              (list pred-pred-unstriped-degrees
+              #/unfinished-lake-cane data rest-state)
+              rev-brackets)
+            (poppable-hyperstack-pop-n
+              hist pred-pred-unstriped-degrees)))
+      #/next closing-brackets stripe-states
+        (list (history-info 'lake #/just rest-state) histories-after))
+    
+    #/if (equal? d pred-pred-unstriped-degrees)
+      
+      ; If we've encountered a closing bracket of the highest degree
+      ; that a stripe in the result can support, we may be starting an
+      ; island or a non-lake.
+      (mat closing-bracket (list d data)
+        
+        ; This bracket is closing the original hypertee, so it must be
+        ; closing an island, so we're starting a non-lake.
+        (expect (location-is-island? location-before) #t
+          (error "Internal error")
+        #/expect (eq? 'hole location-after) #t
+          (error "Internal error")
+        #/dissect maybe-state-before (just state)
+        #/dissect (hash-ref stripe-states state)
+          (stripe-state rev-brackets hist)
+        #/next closing-brackets
+          (hash-set stripe-states state
+            (stripe-state
+              (cons (list d #/non-lake-cane data) rev-brackets)
+              (poppable-hyperstack-pop-n hist d)))
+          (list (history-info 'non-lake #/nothing) histories-after))
+        
+        ; This bracket is closing an even higher-degree bracket, which
+        ; must have started a lake, so we're starting an island.
+        (expect (eq? 'lake location-before) #t
+          (error "Internal error")
+        #/expect (eq? 'root-island location-after) #t
+          (error "Internal error")
+        #/w- new-state new-i
+        #/dissect maybe-state-before (just state)
+        #/dissect (hash-ref stripe-states state)
+          (stripe-state rev-brackets hist)
+        #/w- stripe-states
+          (hash-set stripe-states new-state stripe-starting-state)
+        #/w- stripe-states
+          (hash-set stripe-states state
+            (stripe-state
+              (cons (list d new-state) rev-brackets)
+              (poppable-hyperstack-pop-n hist d)))
+        #/next closing-brackets stripe-states
+          (list (history-info 'inner-island #/just new-state)
+            histories-after)))
+    
+    ; If we've encountered a closing bracket of low degree, we pass it
+    ; through to whatever island or lake we're departing from
+    ; (including any associated data in the bracket) and whatever
+    ; island or lake we're arriving at (excluding the data, since this
+    ; bracket must be closing some hole which was started there
+    ; earlier). In some circumstances, we need to associate a trivial
+    ; value with the bracket we record to the departure island or
+    ; lake, even if this bracket is not a hole-opener as far as the
+    ; original hypertee is concerned.
+    #/w- stripe-states
+      (expect maybe-state-before (just state) stripe-states
+      #/dissect (hash-ref stripe-states state)
+        (stripe-state rev-brackets hist)
+      #/w- hist (poppable-hyperstack-pop-n hist d)
+      #/hash-set stripe-states state
+        (stripe-state
+          (cons
+            (mat closing-bracket (list d data) closing-bracket
+            #/if (equal? d #/poppable-hyperstack-dimension hist)
+              (list d #/trivial)
+              d)
+            rev-brackets)
+          hist))
+    #/w- stripe-states
+      (expect maybe-state-after (just state) stripe-states
+      #/dissect (hash-ref stripe-states state)
+        (stripe-state rev-brackets hist)
+      #/hash-set stripe-states state
+        (stripe-state
+          (cons d rev-brackets)
+          (poppable-hyperstack-pop-n hist d)))
+    #/next closing-brackets stripe-states
+      (list (history-info location-after maybe-state-after)
+        histories-after))))
