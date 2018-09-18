@@ -27,7 +27,8 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/list list-each list-map nat->maybe)
+(require #/only-in lathe-comforts/list
+  list-each list-foldl list-map nat->maybe)
 (require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
@@ -237,6 +238,9 @@
 ;
 ; TODO: Test this.
 ;
+; TODO MUTABLE: Stop using `set-box!` here. The boxes we use it on are
+; the `state` boxes we set up each time we start an island or a lake.
+;
 (define/contract (hyprid-stripe-once h)
   (-> hyprid? hyprid?)
   
@@ -300,11 +304,12 @@
     #/make-poppable-hyperstack-n pred-unstriped-degrees)
   #/w- root-island-state (box stripe-starting-state)
   #/w- hist
-    (list (history-info 'root-island #/just root-island-state)
-    #/make-poppable-hyperstack #/olist-build d #/dissectfn _
-      (history-info 'hole #/nothing))
-  #/begin
-    (list-each closing-brackets #/fn closing-bracket
+    (list-foldl
+      (list (history-info 'root-island #/just root-island-state)
+      #/make-poppable-hyperstack #/olist-build d #/dissectfn _
+        (history-info 'hole #/nothing))
+      closing-brackets
+    #/fn hist closing-bracket
       
       ; As we encounter lakes, we build mutable states to keep their
       ; histories in, and so on for every island and lake at every
@@ -335,20 +340,19 @@
         #/expect closing-bracket (list d data)
           (error "Internal error")
         #/w- rest-state (box stripe-starting-state)
-        #/begin
-          (set! hist
-            (list (history-info 'lake #/just rest-state)
-              histories-after))
         #/dissect maybe-state-before (just state)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
-        #/set-box! state
-          (stripe-state
-            (cons
-              (list pred-pred-unstriped-degrees
-              #/unfinished-lake-cane data rest-state)
-              rev-brackets)
-            (poppable-hyperstack-pop-n
-              hist pred-pred-unstriped-degrees)))
+        #/begin
+          (set-box! state
+            (stripe-state
+              (cons
+                (list pred-pred-unstriped-degrees
+                #/unfinished-lake-cane data rest-state)
+                rev-brackets)
+              (poppable-hyperstack-pop-n
+                hist pred-pred-unstriped-degrees)))
+        #/list (history-info 'lake #/just rest-state)
+          histories-after)
       
       #/if (= d pred-pred-unstriped-degrees)
         
@@ -363,16 +367,14 @@
             (error "Internal error")
           #/expect (eq? 'hole location-after) #t
             (error "Internal error")
-          #/begin
-            (set! hist
-              (list (history-info 'non-lake #/nothing)
-                histories-after))
           #/dissect maybe-state-before (just state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
-          #/set-box! state
-            (stripe-state
-              (cons (list d #/non-lake-cane data) rev-brackets)
-              (poppable-hyperstack-pop-n hist d)))
+          #/begin
+            (set-box! state
+              (stripe-state
+                (cons (list d #/non-lake-cane data) rev-brackets)
+                (poppable-hyperstack-pop-n hist d)))
+          #/list (history-info 'non-lake #/nothing) histories-after)
           
           ; This bracket is closing an even higher-degree bracket,
           ; which must have started a lake, so we're starting an
@@ -382,16 +384,15 @@
           #/expect (eq? 'root-island location-after) #t
             (error "Internal error")
           #/w- new-state (box stripe-starting-state)
-          #/begin
-            (set! hist
-              (list (history-info 'inner-island #/just new-state)
-                histories-after))
           #/dissect maybe-state-before (just state)
           #/dissect (unbox state) (stripe-state rev-brackets hist)
-          #/set-box! state
-            (stripe-state
-              (cons (list d new-state) rev-brackets)
-              (poppable-hyperstack-pop-n hist d))))
+          #/begin
+            (set-box! state
+              (stripe-state
+                (cons (list d new-state) rev-brackets)
+                (poppable-hyperstack-pop-n hist d)))
+          #/list (history-info 'inner-island #/just new-state)
+            histories-after))
       
       ; If we've encountered a closing bracket of low degree, we pass
       ; it through to whatever island or lake we're departing from
@@ -403,9 +404,6 @@
       ; island or lake, even if this bracket is not a hole-opener as
       ; far as the original hypertee is concerned.
       #/begin
-        (set! hist
-          (list (history-info location-after maybe-state-after)
-            histories-after))
         (expect maybe-state-before (just state) (void)
         #/dissect (unbox state) (stripe-state rev-brackets hist)
         #/w- hist (poppable-hyperstack-pop-n hist d)
@@ -423,7 +421,9 @@
         #/set-box! state
           (stripe-state
             (cons d rev-brackets)
-            (poppable-hyperstack-pop-n hist d)))))
+            (poppable-hyperstack-pop-n hist d)))
+      #/list (history-info location-after maybe-state-after)
+        histories-after))
   ; In the end, we build the root island by accessing its state to get
   ; the brackets, arranging the brackets in the correct order, and
   ; recursively assembling lakes and islands using their states the

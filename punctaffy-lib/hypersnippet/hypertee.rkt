@@ -29,8 +29,7 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each)
-(require #/only-in lathe-comforts/list
-  list-bind list-each list-foldl list-map)
+(require #/only-in lathe-comforts/list list-bind list-foldl list-map)
 (require #/only-in lathe-comforts/maybe
   just maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
