@@ -1074,13 +1074,6 @@
 ; if the hypertees have the same shape when certain holes of the
 ; higher-degree hypertee are removed -- namely, the holes of degree N
 ; or greater and the holes that don't match the given predicate.
-;
-; NOTE MUTABLE: This uses `set-box!` on the `boxed-data` boxes we set
-; up during the `hypertee-map-all-degrees` at the beginning. We could
-; avoid this by replacing boxes with meaningless numbers and managing
-; an immutable table of number-to-value associations, but it seems
-; clearer to use object allocation and mutation this way.
-;
 (define/contract
   (hypertee-zip-selective smaller bigger should-zip? func)
   (->
@@ -1094,26 +1087,37 @@
   #/expect (onum<=? d-smaller d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/w- prepared-bigger
-    (hypertee-map-all-degrees bigger #/fn hole data
-      (if
+    (hypertee #/list-kv-map closing-brackets-bigger #/fn i bracket
+      (expect bracket (list d data) bracket
+      #/list d #/list data i))
+  #/w- prepared-bigger
+    (hypertee-map-all-degrees prepared-bigger #/fn hole data
+      (dissect data (list data i)
+      #/list data i
         (and
           (onum<? (hypertee-degree hole) d-smaller)
-          (should-zip? hole data))
-        (list #t (box data))
-        (list #f (box data))))
+          (should-zip? hole data))))
   #/w- filtered-bigger
     (hypertee-filter (hypertee-truncate d-smaller prepared-bigger)
     #/fn hole data
-      (dissect data (list should-zip boxed-data)
+      (dissect data (list data i should-zip)
         should-zip))
   #/maybe-map
     (hypertee-zip smaller filtered-bigger #/fn hole smaller bigger
-      (dissect bigger (list should-zip boxed-data)
-        (set-box! boxed-data (func hole smaller #/unbox boxed-data))))
-  #/dissectfn _
+      (dissect bigger (list data i #t)
+        (list (func hole smaller data) i)))
+  #/dissectfn (hypertee zipped-filtered-d zipped-filtered-brackets)
+  #/w- env
+    (list-foldl (make-immutable-hasheq) zipped-filtered-brackets
+    #/fn env bracket
+      (expect bracket (list d data) env
+      #/dissect data (list data i)
+      #/hash-set env i data))
   #/hypertee-map-all-degrees prepared-bigger #/fn hole data
-    (dissect data (list should-zip boxed-data)
-      (unbox boxed-data))))
+    (dissect data (list data i should-zip)
+    #/if should-zip
+      (hash-ref env i)
+      data)))
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when truncated to degree N.
