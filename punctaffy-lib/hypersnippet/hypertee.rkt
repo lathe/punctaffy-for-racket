@@ -689,9 +689,9 @@
 ; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 ;
-; TODO MUTABLE: Stop using `set!` and `hash-set!` here. The variables
-; we `set!` are `rev-result`, `brackets`, `hist` and `root-bracket-i`,
-; and the hash we use `hash-set!` on is `interpolations`.
+; TODO MUTABLE: Stop using `set!` here. The variables we use it on are
+; `rev-result`, `brackets`, `interpolations`, `hist` and
+; `root-bracket-i`.
 ;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
@@ -699,7 +699,7 @@
   #/w-
     rev-result (list)
     brackets closing-brackets
-    interpolations (make-hasheq)
+    interpolations (make-immutable-hasheq)
     hist
       (list (nothing)
       #/make-poppable-hyperstack
@@ -716,7 +716,7 @@
       (expect (hash-ref interpolations i) (cons bracket rest)
         (nothing)
       #/begin
-        (hash-set! interpolations i rest)
+        (set! interpolations (hash-set interpolations i rest))
         (just bracket)))
     (define (verify-bracket-degree d maybe-closing-bracket)
       (dissect maybe-closing-bracket (just closing-bracket)
@@ -784,8 +784,9 @@
       #/expect (equal? data-d overall-degree) #t
         (error "Expected each hypertee join interpolation to have the same degree as the root")
       #/begin
-        (hash-set! interpolations this-root-bracket-i
-          data-closing-brackets)
+        (set! interpolations
+          (hash-set interpolations this-root-bracket-i
+            data-closing-brackets))
         (set! hist
           (list (just this-root-bracket-i)
           
