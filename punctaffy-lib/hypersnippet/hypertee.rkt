@@ -622,7 +622,10 @@
     #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
 
 (define/contract (hypertee-fold first-nontrivial-d ht func)
-  (-> onum<=omega? hypertee? (-> onum<=omega? any/c hypertee? any/c)
+  (->
+    onum<=omega?
+    hypertee?
+    (-> onum<=omega? any/c hypertee<omega? any/c)
     any/c)
   (mat (hypertee-degree ht) 0
     ; TODO: Make this part of the contract instead.
@@ -671,7 +674,7 @@
 ;
 #;
 (define/contract (hypertee-map-all-degrees ht func)
-  (-> hypertee? hypertee?)
+  (-> hypertee? (-> hypertee<omega? any/c any/c) hypertee?)
   (mat (hypertee-degree ht) 0 ht
   #/hypertee-fold 0 ht #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
@@ -807,7 +810,7 @@
 
 
 (define/contract (hypertee-map-all-degrees ht func)
-  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
+  (-> hypertee? (-> hypertee<omega? any/c any/c) hypertee?)
   (dissect ht (hypertee overall-degree closing-brackets)
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for an `overall-degree` equal to `0`, but the loop ends
@@ -910,20 +913,21 @@
   (hypertee-map-pred-degree ht (hypertee-degree ht) func))
 
 (define/contract (hypertee-pure degree data hole)
-  (-> onum<=omega? any/c hypertee? hypertee?)
+  (-> onum<=omega? any/c hypertee<omega? hypertee?)
   (hypertee-promote degree #/hypertee-contour data hole))
 
 (define/contract (hypertee-plus1 data tails)
-  (-> any/c hypertee? hypertee?)
+  (-> any/c hypertee? hypertee<omega?)
   (hypertee-join-all-degrees #/hypertee-contour data tails))
 
 (define/contract (hypertee-bind-all-degrees ht hole-to-ht)
-  (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)
+  (-> hypertee? (-> hypertee<omega? any/c hypertee?) hypertee?)
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
 
 (define/contract (hypertee-bind-one-degree ht degree func)
-  (-> hypertee? onum<omega? (-> hypertee? any/c hypertee?) hypertee?)
+  (-> hypertee? onum<omega? (-> hypertee<omega? any/c hypertee?)
+    hypertee?)
   (hypertee-bind-all-degrees ht #/fn hole data
     (if (equal? degree #/hypertee-degree hole)
       (func hole data)

@@ -26,7 +26,8 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-kv-map list-map)
-(require #/only-in lathe-comforts/maybe just maybe/c nothing)
+(require #/only-in lathe-comforts/maybe
+  just maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
@@ -37,9 +38,10 @@
   make-pushable-hyperstack pushable-hyperstack-dimension
   pushable-hyperstack-pop pushable-hyperstack-push)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee hypertee? hypertee-contour
-  hypertee-degree hypertee-each-all-degrees hypertee-map-all-degrees
-  hypertee<omega? hypertee-zip-selective)
+  degree-and-closing-brackets->hypertee hypertee?
+  hypertee-bind-all-degrees hypertee-contour hypertee-degree
+  hypertee-each-all-degrees hypertee-map-all-degrees hypertee<omega?
+  hypertee-promote hypertee-pure hypertee-zip-selective)
 
 (provide
   (struct-out hypernest-bump)
@@ -54,7 +56,10 @@
   hypernest-promote
   hypernest<omega?
   hypertee->hypernest
-  hypernest-contour)
+  hypernest-contour
+  hypernest-pure
+  hypernest-bind-all-degrees
+  hypernest-bind-one-degree)
 
 
 ; ===== Hypernests ===================================================
@@ -302,7 +307,7 @@
   (-> hypertee? hypernest?)
   (w- d (hypertee-degree ht)
   #/mat d 0 (hypernest 0 #/nothing)
-  #/hypernest d #/just
+  #/hypernest d #/just #/hypertee-promote (onum-omega)
   #/hypertee-map-all-degrees #/fn hole data
     (hypernest-hole data)))
 
@@ -315,7 +320,7 @@
   (hypertee->hypernest #/hypertee-contour hole-value ht))
 
 
-; TODO: Implement operations analogous to these:
+; TODO IMPLEMENT: Implement operations analogous to these:
 ;
 ;   hypertee-drop1
 ;   hypertee-fold
@@ -324,10 +329,45 @@
 ;   hypertee-map-one-degree
 ;   hypertee-map-pred-degree
 ;   hypertee-map-highest-degree
-;   hypertee-pure
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-pure degree data hole)
+  (-> onum<=omega? any/c hypernest<omega? hypernest?)
+  (hypernest-promote degree #/hypernest-contour data hole))
+
+; TODO IMPLEMENT: Implement operations analogous to these:
+;
 ;   hypertee-plus1
-;   hypertee-bind-all-degrees
-;   hypertee-bind-one-degree
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-bind-all-degrees hn func)
+  (-> hypernest? (-> hypertee<omega? any/c hypernest?) hypernest?)
+  (dissect hn (hypernest d hypertees)
+  #/hypernest d #/maybe-map hypertees #/fn hypertees
+  #/hypertee-bind-all-degrees hypertees #/fn hole data
+    (expect data (hypernest-hole data)
+      (hypertee-pure (onum-omega) data hole)
+    #/expect (func hole data) (hypernest result-d result-hypertees)
+      (error "Expected the result of a hypernest-bind-all-degrees callback to be a hypernest")
+    #/expect (equal? d result-d) #t
+      (error "Expected the result of a hypernest-bind-all-degrees callback to be a hypernest of the same degree as the root")
+    #/dissect result-hypertees (just result-hypertees)
+      result-hypertees)))
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-bind-one-degree hn degree func)
+  (-> hypernest? onum<omega? (-> hypertee<omega? any/c hypernest?)
+    hypernest?)
+  (hypernest-bind-all-degrees hn #/fn hole data
+    (if (equal? degree #/hypertee-degree hole)
+      (func hole data)
+      (hypernest-pure (hypernest-degree hn) data hole))))
+
+; TODO IMPLEMENT: Implement operations analogous to these:
+;
 ;   hypertee-bind-pred-degree
 ;   hypertee-bind-highest-degree
 ;   hypertee-join-one-degree
