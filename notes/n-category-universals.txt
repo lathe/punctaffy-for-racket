@@ -1,0 +1,106 @@
+In "Higher-Dimensional Categories: an illustrated guide book," Eugenia Cheng and Aaron Lauda show diagrams for conditions under which an opetopic set qualifies as a weak n-category. (These are probably equivalent somehow to Palm's horn-filler conditions as described for opetopic omega-categories on nLab.)
+
+Here, we're exploring what that means in terms of our hypersnippet-shaped data structures and syntaxes. To work in plain text, we're using a notation like this, which is slightly more terse than the notation we're planning to develop in hypernest-macros.rkt and hypernest-qq.rkt:
+
+
+Notation:
+
+The notation (.../...) is short for (...(...)).
+
+We represent opening brackets of degree n>1 as "(<n".
+
+We represent opening brackets of degree 1 as "(<".
+
+We represent closing brackets of degree n>1 as "(n".
+
+We represent closing brackets of degree 1 as "(".
+
+We represent closing brackets of degree 0 as ")".
+
+When a bracket would begin a hypernest bump or hole, we follow it with "_".
+
+
+
+On page 60, they use an example we can transcribe like this:
+
+
+                      (<2 (  _) (  _) (  _) (  _) (  _))_
+
+A universal cell, like that one, imposes a factorisation that's a universal cell: (Given the second blank, derive a cell in the first and a universal cell filler.)
+
+   (<3       /2_/     /2_ (/ _) (/ _) (/ _) (/ _) (/ _))_
+
+A universal cell imposes that all its factorisations, like that one, are universal factorisations: (Given the third and fourth blanks and the target cell of the first blank, derive the first and second blanks and a universal cell filler.)
+
+(<4/3_/2/3_/2/2_/////2/2_ (//_) (//_) (//_) (//_) (//_))_
+
+
+
+The universal factorisations impose universal factorisations of their own, but this time instead of factoring out a cell that's snug to the target's target cell, we factor out a cell that's snug to the snug cell we factored out the first time. (If we begin at low dimensions where the snug cell is a globular shape, the snug cells we get by iterating this will all be n-globular.)
+
+In our notation, this next step of of factoring may not have a very evident connection to the factoring step we took above. Let's try again with a starting point of lesser degree so that it doesn't get too difficult:
+
+
+                              (<   )_
+
+A universal cell, like that one, imposes a factorisation that's a universal cell: (Given the second blank, derive a cell in the first and a universal cell filler.)
+
+        (<2 (              _) (   _))_
+
+A universal cell imposes that all its factorisations, like that one, are universal factorisations: (Given the third and fourth blanks and the target cell of the first blank, derive the first and second blanks and a universal cell filler.)
+
+   (<3  /2_ (     /2_/    /_) (  /_))_
+
+A universal factorisation imposes that all similar factorisations are universal factorisations: (Given the second and fourth blanks and the target cell of the first blank, derive the first and third blanks and a universal cell filler.)
+
+(<4/3_/2/2_ (/3_/2/2_//////_) (///_))_
+
+
+
+There are two purposes to this exploration: Putting the parens to the test, but also, exploring what weak n-categories for ordinal values of n greater than omega would be like.
+
+
+Usability report for the parens:
+
+It's pretty difficult to keep track of a degree-4 hyperstack in order to match up these parens by hand. An editor that could highlight matching brackets would be very valuable.
+
+
+Weak (omega + 1 + n)-categories:
+
+Our data structures like hypertees and hypernests generalize to greater ordinals in a straightforward way, but is that meaningful from a foundational perspective? The point of using higher categories is so that more of our statements can rely on isomorphism rather than equality, letting them generalize to contexts where equality isn't available. If we generalize to ordinals but we don't make a corresponding simplification to our metatheory, like somehow reducing the predicate "X is a universal cell," the horn-filler conditions, or our logical connectives themselves to the existence of certain omega-opetopes, that wouldn't necessarily be worth much.
+
+Is there really any way to reduce those concepts to opetopes? Even if we could, what logical connectives and predicates would we have left to express the existence of these opetopes in? (Could our bracket notation or hypernest operations be used to express opetopes and the Kan conditions in a simpler way than set theory and classical logic, if our notation were taken as a foundation rather than formalized in terms of those things...?)
+
+And is iterating these factorisations actually leading somewhere? The kind of infinitely large hypernest it approaches doesn't seem to be easy to represent in a way we can process one finite piece at a time. If it turns out we can't even *compute* with degree-(omega + 1) horn-filler conditions, or whatever weaker conditions they turn into at that point, then what good are they for?
+
+That infinite growth pattern is a bit difficult to understand from examples because of an explosion in the number of brackets. Is there anything we can do about that? Ooh, a labeled opening bracket that made labeled closing bracket bindings for all degrees at once could make it more pleasant the same way the weak opening paren "/" does:
+
+
+
+without labels:                                      (<   )_
+with labels:                                         (<   )_
+
+without labels:            (<2   (                _) (   _))_
+with labels:               (<2   (                _) (   _))_
+
+without labels:       (<3  /2_   (     /2_  //    _) (/  _))_
+with labels:          (<3:a/2_   (     /2=a_/=a   _) (=a _))_
+
+without labels:  (<4  /3_  /2/2_ (/3_  /2/2_//////_) (///_))_
+with labels:     (<4:a/3_  /2=a_ (/3=a_/2=a_/=a   _) (=a _))_
+
+
+Hmm, its improvement of the first example isn't as inspiring:
+
+
+without labels:                          (<2   (  _) (  _) (  _) (  _) (  _))_
+with labels:                             (<2   (  _) (  _) (  _) (  _) (  _))_
+
+without labels:       (<3       /2_  /   /2_   (/ _) (/ _) (/ _) (/ _) (/ _))_
+with labels:          (<3:a     /2  _/   /2  _ (=a_) (=a_) (=a_) (=a_) (=a_))_
+
+without labels:  (<4  /3  _/2/3_/2/2_/////2/2_ (//_) (//_) (//_) (//_) (//_))_
+with labels:     (<4:a/3:b_/2/3_/2=a_/=b /2=a_ (=a_) (=a_) (=a_) (=a_) (=a_))_
+
+
+That might be because these labeled unquotes excel on the globularly shaped cells, and we didn't iterate the universal factorisation condition more than once here to add globularly shaped dimensionality to the factored out cell.
