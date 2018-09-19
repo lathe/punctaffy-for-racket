@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; hypertee-macro.rkt
+; hypernest-macro.rkt
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 

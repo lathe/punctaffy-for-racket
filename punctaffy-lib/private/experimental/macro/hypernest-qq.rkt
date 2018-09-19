@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; qq.rkt
+; hypernest-qq.rkt
 ;
 ; A quasiquotation operator which allows for user-defined escape
 ; sequences which can generalize unquotation and nested
@@ -44,7 +44,7 @@
   (require #/only-in lathe-ordinals onum<? onum-omega)
   
   (require #/only-in
-    punctaffy/private/experimental/macro/hypertee-macro
+    punctaffy/private/experimental/macro/hypernest-macro
     
     ht-tag-1-other ht-tag-1-s-expr-stx ht-tag-2-list ht-tag-2-list*
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
