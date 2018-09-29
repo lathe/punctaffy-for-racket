@@ -61,6 +61,7 @@
   hypernest->maybe-hypertee
   hypernest-truncate-to-hypertee
   hypernest-contour
+  hypernest-zip
   (struct-out hypernest-drop1-result-zero)
   (struct-out hypernest-drop1-result-hole)
   (struct-out hypernest-drop1-result-bump)
@@ -538,6 +539,7 @@
 ;   hypertee-dv-all-all-degrees
 ;   hypertee-all-all-degrees
 ;   hypertee-dv-each-all-degrees
+;   hypertee-v-each-one-degree
 ;   hypertee-each-all-degrees
 ;   hypertee-filter
 ;   hypertee-truncate

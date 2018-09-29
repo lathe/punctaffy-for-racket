@@ -69,6 +69,7 @@
   hypertee-join-one-degree
   hypertee-dv-all-all-degrees
   hypertee-dv-each-all-degrees
+  hypertee-v-each-one-degree
   hypertee-each-all-degrees
   hypertee-uncontour
   hypertee-filter
@@ -1009,6 +1010,12 @@
     (body d data)
     #f)
   (void))
+
+(define/contract (hypertee-v-each-one-degree degree ht body)
+  (-> onum<omega? hypertee? (-> any/c any) void?)
+  (hypertee-dv-each-all-degrees ht #/fn d data
+    (when (equal? degree d)
+      (body data))))
 
 (define/contract (hypertee-each-all-degrees ht body)
   (-> hypertee? (-> hypertee? any/c any) void?)
