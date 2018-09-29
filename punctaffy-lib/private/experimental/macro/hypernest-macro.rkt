@@ -29,19 +29,19 @@
   just maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
-(require #/only-in lathe-ordinals onum-omega)
 
 (require #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hypernest? hypernest-bind-one-degree)
 
 (provide
   (struct-out hn-tag-1-s-expr-stx)
-  (struct-out hn-tag-1-other)
   (struct-out hn-tag-2-list)
   (struct-out hn-tag-2-list*)
   (struct-out hn-tag-2-vector)
   (struct-out hn-tag-2-prefab)
-  (struct-out hn-tag-2-other)
+  (struct-out hn-tag-unmatched-closing-bracket)
+  (struct-out hn-tag-nest)
+  (struct-out hn-tag-other)
   s-expr-stx->hn-expr
   simple-hn-builder-syntax)
 
@@ -165,25 +165,70 @@
     (just #/hn-builder-syntax-ref x)
     (nothing)))
 
-(define (one-hn . brackets)
-  (degree-and-brackets->hypernest 1 brackets))
+(define (n-hn degree . brackets)
+  (degree-and-brackets->hypernest degree brackets))
 
-(define (one-hn-append0 hns)
+(define (n-hn-append0 degree hns)
   ; When we call this, the elements of `hns` are degree-1 hypernests,
   ; and their degree-0 holes have trivial values as contents. We
   ; return their degree-0 concatenation.
-  (list-foldr hns (one-hn #/list 0 #/trivial) #/fn hn tail
-    (hypernest-bind-one-degree hn 0 #/fn hole data
+  (list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
+    (hypernest-bind-one-degree 0 hn #/fn hole data
       (dissect data (trivial)
         tail))))
 
+
+; Each of these tags can occur as a bump of the indicated degree. They
+; represent data that was carried over from the original
+; s-expression-shaped Racket syntax objects when they were converted
+; to hn-expressions. The `hn-tag-1-s-expr-stx` can potentially contain
+; an entire subtree in Racket syntax object form, but usually the
+; layers are broken up into separate `hn-tag-2-list` nodes. Instead,
+; an `hn-tag-1-s-expr-syntax` is usually used just for miscellaneous
+; atomic values occurring in the syntax, like symbols and datums.
+;
 (struct-easy (hn-tag-1-s-expr-stx stx) #:equal)
-(struct-easy (hn-tag-1-other val) #:equal)
 (struct-easy (hn-tag-2-list stx-example) #:equal)
 (struct-easy (hn-tag-2-list* stx-example) #:equal)
 (struct-easy (hn-tag-2-vector stx-example) #:equal)
 (struct-easy (hn-tag-2-prefab key stx-example) #:equal)
-(struct-easy (hn-tag-2-other val) #:equal)
+
+; The `hn-tag-unmatched-closing-bracket` tag can occur as a bump of
+; degree (N + 2) for any nonzero N. It represents a closing bracket of
+; degree N. It should be an empty contour of a single degree-(N + 1)
+; hole, which should contain the syntax that was parsed to create this
+; closing bracket. If that hole is removed, it should be an empty
+; contour of a single degree-N hole, which should contain the syntax
+; that lies beyond this closing bracket.
+;
+; These tags usually signify there's an unmatched bracket error, but
+; opening bracket syntaxes can specifically look for them and process
+; them to build things like `hn-tag-nest` values.
+;
+(struct-easy (hn-tag-unmatched-closing-bracket) #:equal)
+
+; The `hn-tag-nest` tag can occur as a bump of degree (N + 2) for any
+; nonzero N. It represents a labeled nested region of degree N. It
+; should be an empty contour of a single degree-(N + 1) hole, which
+; should contain the syntax that was parsed to create the brackets
+; around this nested region. If that hole is removed, it should be an
+; empty contour of a single degree-N hole, which should contain the
+; syntax that lies in the interior of this region.
+;
+; These are essentially supposed to represent bumps in the hypernest,
+; but they're represented in a slightly higher-dimensional format to
+; let us round-trip the bracket syntax back to s-expressions when
+; desired. If the preserved s-exprssion syntax (the degree-(N + 1)
+; hole and everything inside it) is removed from all of these, they
+; can be replaced with degree-N hypernest bumps.
+;
+(struct-easy (hn-tag-nest data) #:equal)
+
+; This is a value designated to let hn-expression users put custom
+; kinds of data into an hn-expression. It can occur as a bump or a
+; hole of any degree.
+(struct-easy (hn-tag-other val) #:equal)
+
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-1 hypernest. It performs a kind of macroexpansion on lists
@@ -252,15 +297,14 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-2 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (hypernest-bind-one-degree
-        (one-hn
+      (hypernest-bind-one-degree 1
+        (n-hn 1
           (list 'open 2 metadata)
             1 (list 1 #/trivial) 0 0
           0
         #/list 0 #/trivial)
-        1
       #/fn hole data
-        (one-hn-append0 elems)))
+        (n-hn-append0 1 elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)
@@ -305,7 +349,7 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-1 holes that a user-defined syntax
       ; introduces for a different reason).
-      (one-hn (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
+      (n-hn 1 (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
       #/list 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
@@ -320,7 +364,7 @@
 ;
 (define/contract (splicing-s-expr-stx->hn-expr stx)
   (-> syntax? hypernest?)
-  (one-hn-append0 #/list-map (syntax->list stx) #/fn elem
+  (n-hn-append0 1 #/list-map (syntax->list stx) #/fn elem
     (s-expr-stx->hn-expr elem)))
 
 

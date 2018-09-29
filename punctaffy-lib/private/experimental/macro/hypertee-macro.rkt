@@ -155,7 +155,7 @@
   ; hypertees, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
   (list-foldr hts (omega-ht #/list 0 #/trivial) #/fn ht tail
-    (hypertee-bind-one-degree ht 0 #/fn hole data
+    (hypertee-bind-one-degree 0 ht #/fn hole data
       (dissect data (trivial)
         tail))))
 
@@ -234,13 +234,12 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-2 hole around that, holding the given metadata. We
       ; return the degree-omega hypertee that results.
-      (hypertee-bind-one-degree
+      (hypertee-bind-one-degree 1
         (omega-ht
           (list 2 metadata)
             1 (list 1 #/trivial) 0 0
           0
         #/list 0 #/trivial)
-        1
       #/fn hole data
         (omega-ht-append0 elems)))
   

@@ -29,7 +29,8 @@
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
-  list-bind list-foldl list-kv-map list-map)
+  list-all list-any list-bind list-each list-foldl list-kv-map
+  list-map)
 (require #/only-in lathe-comforts/maybe
   just maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
@@ -52,6 +53,7 @@
   degree-and-closing-brackets->hypertee
   hypertee->degree-and-closing-brackets
   hypertee-promote
+  hypertee-set-degree
   hypertee<omega?
   hypertee-contour
   hypertee-drop1
@@ -65,7 +67,11 @@
   hypertee-bind-one-degree
   hypertee-bind-pred-degree
   hypertee-join-one-degree
+  hypertee-dv-all-all-degrees
+  hypertee-dv-each-all-degrees
   hypertee-each-all-degrees
+  hypertee-uncontour
+  hypertee-filter
   hypertee-truncate
   hypertee-zip-selective)
 
@@ -485,6 +491,19 @@
     (error "Expected ht to be a hypertee of degree no greater than new-degree")
   #/hypertee new-degree closing-brackets))
 
+; Takes a hypertee with no holes of degree N or greater and returns a
+; degree-N hypertee with the same holes.
+(define/contract (hypertee-set-degree new-degree ht)
+  (-> onum<=omega? hypertee? hypertee?)
+  (dissect ht (hypertee d closing-brackets)
+  #/begin
+    (unless (onum<=? d new-degree)
+      (list-each closing-brackets #/fn closing-bracket
+        (expect closing-bracket (list d data) (void)
+        #/unless (onum<? d new-degree)
+          (error "Expected ht to have no holes of degree new-degree or greater"))))
+  #/hypertee new-degree closing-brackets))
+
 (define/contract (hypertee<omega? v)
   (-> any/c boolean?)
   (and (hypertee? v) (onum<omega? #/hypertee-degree v)))
@@ -891,26 +910,26 @@
       (error "Internal error: Failed to exhaust the history of a hole while doing hypertee-map-all-degrees")
     #/list d (func (hypertee d #/reverse rev-brackets) data))))
 
-(define/contract (hypertee-map-one-degree ht degree func)
-  (-> hypertee? onum<omega? (-> hypertee? any/c any/c) hypertee?)
+(define/contract (hypertee-map-one-degree degree ht func)
+  (-> onum<omega? hypertee? (-> hypertee? any/c any/c) hypertee?)
   (hypertee-map-all-degrees ht #/fn hole data
     (if (equal? degree #/hypertee-degree hole)
       (func hole data)
       data)))
 
-(define/contract (hypertee-map-pred-degree ht degree func)
-  (-> hypertee? onum<=omega? (-> hypertee? any/c any/c) hypertee?)
+(define/contract (hypertee-map-pred-degree degree ht func)
+  (-> onum<=omega? hypertee? (-> hypertee? any/c any/c) hypertee?)
   
   ; If the degree is 0 or a limit ordinal, we have nothing to do,
   ; because no hole's degree has the given degree as its successor, so
   ; there are no holes to process.
   (expect (onum-pred-maybe degree) (just pred-degree) ht
   
-  #/hypertee-map-one-degree ht pred-degree func))
+  #/hypertee-map-one-degree pred-degree ht func))
 
 (define/contract (hypertee-map-highest-degree ht func)
   (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
-  (hypertee-map-pred-degree ht (hypertee-degree ht) func))
+  (hypertee-map-pred-degree (hypertee-degree ht) ht func))
 
 (define/contract (hypertee-pure degree data hole)
   (-> onum<=omega? any/c hypertee<omega? hypertee?)
@@ -925,40 +944,98 @@
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
 
-(define/contract (hypertee-bind-one-degree ht degree func)
-  (-> hypertee? onum<omega? (-> hypertee<omega? any/c hypertee?)
+(define/contract (hypertee-bind-one-degree degree ht func)
+  (-> onum<omega? hypertee? (-> hypertee<omega? any/c hypertee?)
     hypertee?)
   (hypertee-bind-all-degrees ht #/fn hole data
     (if (equal? degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-pure (hypertee-degree ht) data hole))))
 
-(define/contract (hypertee-bind-pred-degree ht degree func)
-  (-> hypertee? onum<=omega? (-> hypertee? any/c hypertee?) hypertee?)
+(define/contract (hypertee-bind-pred-degree degree ht func)
+  (-> onum<=omega? hypertee? (-> hypertee? any/c hypertee?) hypertee?)
   
   ; If the degree is 0 or a limit ordinal, we have nothing to do,
   ; because no hole's degree has the given degree as its successor, so
   ; there are no holes to process.
   (expect (onum-pred-maybe degree) (just pred-degree) ht
   
-  #/hypertee-bind-one-degree ht pred-degree func))
+  #/hypertee-bind-one-degree pred-degree ht func))
 
 (define/contract (hypertee-bind-highest-degree ht func)
   (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)
-  (hypertee-bind-pred-degree ht (hypertee-degree ht) func))
+  (hypertee-bind-pred-degree (hypertee-degree ht) ht func))
 
-(define/contract (hypertee-join-one-degree ht degree)
-  (-> hypertee? onum<omega? hypertee?)
-  (hypertee-bind-one-degree ht degree #/fn hole data
+(define/contract (hypertee-join-one-degree degree ht)
+  (-> onum<omega? hypertee? hypertee?)
+  (hypertee-bind-one-degree degree ht #/fn hole data
     data))
+
+(define/contract (hypertee-dv-any-all-degrees ht func)
+  (-> hypertee? (-> onum<omega? any/c any/c) any/c)
+  (dissect ht (hypertee degree closing-brackets)
+  #/list-any closing-brackets #/fn bracket
+    (expect bracket (list d data) #f
+    #/func d data)))
+
+(define/contract (hypertee-any-all-degrees ht func)
+  (-> hypertee? (-> hypertee? any/c any/c) any/c)
+  (hypertee-dv-any-all-degrees
+    (hypertee-map-all-degrees ht #/fn hole data
+      (list hole data))
+  #/fn d hole-and-data
+    (dissect hole-and-data (list hole data)
+    #/func hole data)))
+
+(define/contract (hypertee-dv-all-all-degrees ht func)
+  (-> hypertee? (-> onum<omega? any/c any/c) any/c)
+  (dissect ht (hypertee degree closing-brackets)
+  #/list-all closing-brackets #/fn bracket
+    (expect bracket (list d data) #t
+    #/func d data)))
+
+(define/contract (hypertee-all-all-degrees ht func)
+  (-> hypertee? (-> hypertee? any/c any/c) any/c)
+  (hypertee-dv-all-all-degrees
+    (hypertee-map-all-degrees ht #/fn hole data
+      (list hole data))
+  #/fn d hole-and-data
+    (dissect hole-and-data (list hole data)
+    #/func hole data)))
+
+(define/contract (hypertee-dv-each-all-degrees ht body)
+  (-> hypertee? (-> onum<omega? any/c any) void?)
+  (hypertee-dv-any-all-degrees ht #/fn d data #/begin
+    (body d data)
+    #f)
+  (void))
 
 (define/contract (hypertee-each-all-degrees ht body)
   (-> hypertee? (-> hypertee? any/c any) void?)
-  ; TODO: See if this can be more efficient.
-  (hypertee-map-all-degrees ht #/fn hole data #/begin
+  (hypertee-any-all-degrees ht #/fn hole data #/begin
     (body hole data)
-    (void))
+    #f)
   (void))
+
+(define/contract (hypertee-contour? v)
+  (-> any/c boolean?)
+  (and (hypertee? v)
+  #/expect (onum-pred-maybe #/hypertee-degree v)
+    (just expected-hole-degree)
+    #f
+  #/w-loop next expected-hole-degree expected-hole-degree v v
+    (dissect (hypertee-drop1 v) (just #/list data tails)
+    #/and (equal? expected-hole-degree #/hypertee-degree tails)
+    #/hypertee-dv-all-all-degrees tails #/fn d tail
+      (next d tail))))
+
+(define/contract (hypertee-uncontour ht)
+  (-> hypertee? #/maybe/c #/list/c any/c hypertee<omega?)
+  (expect (hypertee-contour? ht) #t (nothing)
+  #/dissect (hypertee-drop1 ht) (just #/list data tails)
+  #/just #/list data #/hypertee-map-all-degrees tails #/fn hole data
+    (dissect (hypertee-uncontour data) (just #/list hole-value ht)
+      hole-value)))
 
 ; TODO:
 ;

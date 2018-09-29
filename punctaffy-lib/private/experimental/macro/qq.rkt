@@ -68,7 +68,7 @@
     ; hypertees, and their degree-0 holes have trivial values as
     ; contents. We return their degree-0 concatenation.
     (list-foldr hts (omega-ht #/list 0 #/trivial) #/fn ht tail
-      (hypertee-bind-one-degree ht 0 #/fn hole data
+      (hypertee-bind-one-degree 0 ht #/fn hole data
         (dissect data (trivial)
           tail))))
   
@@ -135,30 +135,29 @@
       ; We make a hypertee with a single degree-2 hole (annotated with
       ; the body of the quasiquotation) and some degree-1 holes
       ; (annotated with the `s-expr-stx->ht-expr` expansions of the
-      ; interpolations) in its degree-1 holes.
-      #/w- intermediate
-        (hypertee-pure (onum-omega)
-          (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
-            (make-op-bracket stx)
-            (hypertee-map-one-degree body 1 #/fn hole data
-              (expect data
-                (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
-                  closing-bracket interpolation)
-                data
-              #/ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
-                closing-bracket)))
-          (hypertee-truncate 2
-          #/hypertee-bind-one-degree body 1 #/fn hole data
+      ; interpolations) in its degree-1 holes. Then we join on those
+      ; degree-1 holes so that those expansions become part of this
+      ; expansion directly.
+      #/hypertee-join-one-degree 1
+      #/hypertee-pure (onum-omega)
+        (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
+          (make-op-bracket stx)
+          (hypertee-map-one-degree 1 body #/fn hole data
             (expect data
               (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
                 closing-bracket interpolation)
-              (hypertee-promote (onum-omega) hole)
-            #/hypertee-pure (onum-omega)
-              (s-expr-stx->ht-expr interpolation)
-              hole)))
-      ; We join on those degree-1 holes so that those expansions
-      ; become part of this expansion directly.
-      #/hypertee-join-one-degree intermediate 1)))
+              data
+            #/ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
+              closing-bracket)))
+        (hypertee-truncate 2
+        #/hypertee-bind-one-degree 1 body #/fn hole data
+          (expect data
+            (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
+              closing-bracket interpolation)
+            (hypertee-promote (onum-omega) hole)
+          #/hypertee-pure (onum-omega)
+            (s-expr-stx->ht-expr interpolation)
+            hole)))))
   
   (define (my-quasiquote-ht-expr->stx ht-expr)
     (expect
@@ -224,7 +223,7 @@
             (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
               opening-bracket body-with-closing-brackets)
             (w- body-as-closing-bracket
-              (hypertee-bind-one-degree body-with-closing-brackets 1
+              (hypertee-bind-one-degree 1 body-with-closing-brackets
               #/fn hole data
                 (mat data
                   (ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
@@ -257,7 +256,7 @@
                   #/error "Internal error: Encountered unexpectedly high-dimensional structure when zipping bracket ends")))
             #/expect
               (zip-bracket-ends
-                (hypertee-map-one-degree tails 0 #/fn hole data
+                (hypertee-map-one-degree 0 tails #/fn hole data
                   (trivial))
                 body-as-closing-bracket
               #/fn tails-data

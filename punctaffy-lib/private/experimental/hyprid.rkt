@@ -44,7 +44,7 @@
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-pred-degree hypertee-closing-bracket-degree
   hypertee-contour hypertee-degree
-  hypertee->degree-and-closing-brackets hypertee-each-all-degrees
+  hypertee->degree-and-closing-brackets hypertee-dv-each-all-degrees
   hypertee-map-highest-degree hypertee-promote hypertee-pure)
 
 (provide
@@ -102,8 +102,8 @@
     (unless (hyprid? rest)
       (error "Expected rest to be a hyprid"))
     (w- d (hyprid-degree rest)
-    #/hyprid-each-lake-all-degrees rest #/fn hole-hypertee data
-      (when (equal? d #/onum-plus (hypertee-degree hole-hypertee) 1)
+    #/hyprid-dv-each-lake-all-degrees rest #/fn hole-degree data
+      (when (equal? d #/onum-plus hole-degree 1)
         (mat data (lake-cane data rest)
           (unless (equal? d #/hypertee-degree rest)
             (error "Expected data to be of the same degree as the island-cane if it was a lake-cane"))
@@ -117,16 +117,14 @@
     (unless (hypertee? rest)
       (error "Expected rest to be a hypertee"))
     (w- d (hypertee-degree rest)
-    #/hypertee-each-all-degrees rest #/fn hole data
-      (if (equal? d #/onum-plus (hypertee-degree hole) 1)
+    #/hypertee-dv-each-all-degrees rest #/fn hole-degree data
+      (if (equal? d #/onum-plus hole-degree 1)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
         #/unless (equal? d #/hyprid-degree rest)
           (error "Expected data to be an island-cane of the same degree")
-        #/hyprid-each-lake-all-degrees rest
-        #/fn hole-hypertee data
-          (unless
-            (equal? d #/onum-plus (hypertee-degree hole-hypertee) 1)
+        #/hyprid-dv-each-lake-all-degrees rest #/fn hole-degree data
+          (unless (equal? d #/onum-plus hole-degree 1)
           
           ; A root island is allowed to contain arbitrary values in
           ; its low-degree holes, but the low-degree holes of an
@@ -187,13 +185,12 @@
     #/hyprid unstriped-degrees-2 pred-striped-degrees-2 rest)
   #/expect (nat->maybe pred-striped-degrees)
     (just pred-pred-striped-degrees)
-    (hypertee-bind-pred-degree
+    (hypertee-bind-pred-degree unstriped-degrees
       (hypertee-promote succ-unstriped-degrees rest)
-      unstriped-degrees
     #/fn hole rest
       (mat rest (lake-cane data rest)
-        (hypertee-bind-pred-degree (hypertee-contour data rest)
-          unstriped-degrees
+        (hypertee-bind-pred-degree unstriped-degrees
+          (hypertee-contour data rest)
         #/fn hole rest
           (dissect
             (hyprid-destripe-once
@@ -227,9 +224,9 @@
   #/mat striped-degrees 0 striped-hypertee
   #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
-(define/contract (hyprid-each-lake-all-degrees h body)
-  (-> hyprid? (-> hypertee? any/c any) void?)
-  (hypertee-each-all-degrees (hyprid-fully-destripe h) body))
+(define/contract (hyprid-dv-each-lake-all-degrees h body)
+  (-> hyprid? (-> onum<omega? any/c any) void?)
+  (hypertee-dv-each-all-degrees (hyprid-fully-destripe h) body))
 
 ; This is the inverse of `hyprid-destripe-once`, taking a hyprid and
 ; returning a hyprid with one more striped degree and one fewer
