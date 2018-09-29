@@ -169,9 +169,9 @@
   (degree-and-brackets->hypernest degree brackets))
 
 (define (n-hn-append0 degree hns)
-  ; When we call this, the elements of `hns` are degree-1 hypernests,
-  ; and their degree-0 holes have trivial values as contents. We
-  ; return their degree-0 concatenation.
+  ; When we call this, the elements of `hns` are hypernests of degree
+  ; `degree`, and their degree-0 holes have trivial values as
+  ; contents. We return their degree-0 concatenation.
   (list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
     (hypernest-bind-one-degree 0 hn #/fn hole data
       (dissect data (trivial)

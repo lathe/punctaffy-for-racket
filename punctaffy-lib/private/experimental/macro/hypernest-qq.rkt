@@ -25,15 +25,16 @@
 
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
-(require #/for-syntax #/only-in lathe-comforts/list list-foldr)
+(require #/for-syntax #/only-in lathe-comforts/list
+  list-foldr list-map)
 (require #/for-syntax #/only-in lathe-comforts/maybe just)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest-contour hypernest-degree
-  hypernest-drop1 hypernest-drop1-result-bump
-  hypernest-drop1-result-hole hypernest-join-all-degrees
-  hypernest->maybe-hypertee hypernest-zip)
+  degree-and-brackets->hypernest hypernest-bind-one-degree
+  hypernest-contour hypernest-degree hypernest-drop1
+  hypernest-drop1-result-bump hypernest-drop1-result-hole
+  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-zip)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-map-all-degrees hypertee-uncontour
   hypertee-v-each-one-degree)
@@ -110,6 +111,15 @@
 
 (define-for-syntax (n-hn degree . brackets)
   (degree-and-brackets->hypernest degree brackets))
+
+(define-for-syntax (n-hn-append0 degree hns)
+  ; When we call this, the elements of `hns` are hypernests of degree
+  ; `degree`, and their degree-0 holes have trivial values as
+  ; contents. We return their degree-0 concatenation.
+  (list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
+    (hypernest-bind-one-degree 0 hn #/fn hole data
+      (dissect data (trivial)
+        tail))))
 
 
 (define-for-syntax (hn-expr->s-expr-stx-list hn)
@@ -211,13 +221,12 @@
         (list 'open 2 #/hn-tag-2-list stx-example)
         1
         
-        (list 1 #/list-foldr list-beginnings
-          (n-hn 2 #/list 0 #/trivial)
-        #/fn list-beginning rest
-          (hypernest-join-all-degrees #/n-hn 2
+        (list 1 #/n-hn-append0 2
+        #/list-map list-beginnings #/fn list-beginning
+          (n-hn 2
             (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
             0
-          #/list 0 rest))
+          #/list 0 #/trivial))
         0
         
         (list 'open 1 #/hn-tag-1-s-expr-stx #'list)
@@ -303,13 +312,12 @@
         (list 'open 2 #/hn-tag-2-list stx-example)
         1
         
-        (list 1 #/list-foldr list-beginnings
-          (n-hn 2 #/list 0 #/trivial)
-        #/fn list-beginning rest
-          (hypernest-join-all-degrees #/n-hn 2
+        (list 1 #/n-hn-append0 2
+        #/list-map list-beginnings #/fn list-beginning
+          (n-hn 2
             (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
             0
-          #/list 0 rest))
+          #/list 0 #/trivial))
         0
         
         (list 'open 1 #/hn-tag-1-s-expr-stx #'list)
