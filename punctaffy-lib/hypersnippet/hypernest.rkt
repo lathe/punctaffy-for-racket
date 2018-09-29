@@ -445,7 +445,11 @@
     #/hypertee-map-all-degrees tails #/fn hole tail
       (hypernest d #/just tail))
   #/dissect data (hypernest-bump data interior)
-  #/dissect (hypernest-zip tails #/hypernest d #/just interior)
+  #/dissect
+    (hypernest-zip
+      (hypertee-map-all-degrees tails #/fn hole tail
+        (hypernest d #/just tail))
+      (hypernest d #/just interior))
     (just interior)
   #/hypernest-drop1-result-bump data interior))
 
