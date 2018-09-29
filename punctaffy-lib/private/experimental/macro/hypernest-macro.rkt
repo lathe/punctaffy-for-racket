@@ -208,7 +208,7 @@
 (struct-easy (hn-tag-unmatched-closing-bracket) #:equal)
 
 ; The `hn-tag-nest` tag can occur as a bump of degree (N + 2) for any
-; nonzero N. It represents a labeled nested region of degree N. It
+; nonzero N. It represents an unlabeled nested region of degree N. It
 ; should be an empty contour of a single degree-(N + 1) hole, which
 ; should contain the syntax that was parsed to create the brackets
 ; around this nested region. If that hole is removed, it should be an
@@ -220,9 +220,12 @@
 ; let us round-trip the bracket syntax back to s-expressions when
 ; desired. If the preserved s-exprssion syntax (the degree-(N + 1)
 ; hole and everything inside it) is removed from all of these, they
-; can be replaced with degree-N hypernest bumps.
+; can be replaced with degree-N hypernest bumps. The value of these
+; bumps is something trivial; if we actually represented them as
+; bumps, we would probably use `(hn-tag-nest)` as the label for the
+; bumps themselves so that they could coexist with user-defined bumps.
 ;
-(struct-easy (hn-tag-nest data) #:equal)
+(struct-easy (hn-tag-nest) #:equal)
 
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a

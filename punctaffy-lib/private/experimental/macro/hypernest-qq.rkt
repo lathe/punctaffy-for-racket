@@ -45,8 +45,9 @@
   hypertee-uncontour)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-1-s-expr-stx hn-tag-2-list hn-tag-unmatched-closing-bracket
-  s-expr-stx->hn-expr simple-hn-builder-syntax)
+  hn-tag-1-s-expr-stx hn-tag-2-list hn-tag-nest
+  hn-tag-unmatched-closing-bracket s-expr-stx->hn-expr
+  simple-hn-builder-syntax)
 
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
@@ -196,7 +197,7 @@
       (next (onum-max first-nontrivial-d #/hypertee-degree hole)
         tail))))
 
-(define-syntax ^> #/simple-hn-builder-syntax #/fn stx
+(define-for-syntax (helper-for-^<-and-^> stx bump-value)
   (syntax-parse stx
     [op:id
       ; If this syntax transformer is used in an identifier position,
@@ -213,9 +214,9 @@
       (s-expr-stx->hn-expr interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
-  #/hypernest-pure-bump 1 (hn-tag-unmatched-closing-bracket)
+  #/hypernest-pure-bump 1 bump-value
   #/hypernest-contour
-    ; This is the syntax for the closing bracket.
+    ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree 1
     #/n-hn degree-plus-one
       (list 'open 2 #/hn-tag-2-list #/datum->syntax stx #/list)
@@ -241,11 +242,18 @@
       0
     #/list 0 #/trivial)
   #/hypertee-contour
-    ; This is everything beyond the closing bracket.
+    ; This is everything inside of the bracket.
     (hypernest-map-all-degrees interior-and-closing-brackets
     #/fn hole data
       (trivial))
-  ; This is everything on the near side of the closing bracket.
+  ; This is everything after the bracket's closing brackets. These
+  ; things are outside of the bracket.
   #/hypertee-map-all-degrees closing-brackets #/fn hole data
     (dissect data (list bracket-syntax tail)
       tail)))
+
+(define-syntax ^< #/simple-hn-builder-syntax #/fn stx
+  (helper-for-^<-and-^> stx #/hn-tag-nest))
+
+(define-syntax ^> #/simple-hn-builder-syntax #/fn stx
+  (helper-for-^<-and-^> stx #/hn-tag-unmatched-closing-bracket))
