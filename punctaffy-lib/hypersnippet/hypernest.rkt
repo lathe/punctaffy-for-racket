@@ -20,18 +20,20 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract/base -> any/c list/c listof or/c)
+(require #/only-in racket/contract/base
+  -> any any/c list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-each list-kv-map list-map)
 (require #/only-in lathe-comforts/maybe
-  just maybe/c maybe-map nothing)
+  just maybe? maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
-  onum<=? onum<? 0<onum<=omega? onum<=omega? onum<omega? onum-omega)
+  onum<=? onum<? onum-max 0<onum<=omega? onum<=omega? onum<omega?
+  onum-omega)
 (require #/only-in lathe-ordinals/olist olist-build)
 
 (require #/only-in punctaffy/hypersnippet/hyperstack
@@ -40,10 +42,12 @@
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-all-degrees hypertee-contour hypertee-degree
-  hypertee-drop1 hypertee-dv-all-all-degrees hypertee-each-all-degrees
-  hypertee-filter hypertee-map-all-degrees hypertee<omega?
-  hypertee-promote hypertee-pure hypertee-set-degree
-  hypertee-zip-selective)
+  hypertee-drop1 hypertee-dv-all-all-degrees
+  hypertee-dv-any-all-degrees hypertee-dv-each-all-degrees
+  hypertee-each-all-degrees hypertee-filter hypertee-get-hole-zero
+  hypertee-join-all-degrees hypertee-map-all-degrees hypertee<omega?
+  hypertee-plus1 hypertee-promote hypertee-pure hypertee-set-degree
+  hypertee-truncate hypertee-zip-selective)
 
 (provide
   (struct-out hypernest-bump)
@@ -56,6 +60,7 @@
   hypernest->degree-and-hypertees
   degree-and-brackets->hypernest
   hypernest-promote
+  hypernest-set-degree
   hypernest<omega?
   hypertee->hypernest
   hypernest->maybe-hypertee
@@ -68,11 +73,11 @@
   hypernest-drop1
   hypernest-map-all-degrees
   hypernest-pure
-  hypernest-pure-bump
   hypernest-bind-all-degrees
   hypernest-bind-one-degree
   hypernest-join-all-degrees
-  hypernest-join-one-degree)
+  hypernest-join-one-degree
+  hypernest-plus1)
 
 
 ; ===== Hypernests ===================================================
@@ -104,7 +109,8 @@
       (list/c onum<omega? any/c)
       (list/c 'open 0<onum<=omega? any/c))
     (maybe/c hypertee?))
-  (mat opening-degree 0
+  (begin (displayln "blah d1") (writeln opening-degree) (writeln hypernest-brackets)
+  #/mat opening-degree 0
     (expect hypernest-brackets (list)
       (error "Expected hypernest-brackets to be empty for a hypernest of degree zero")
     #/nothing)
@@ -112,7 +118,7 @@
   #/w- root-i 'root
   #/w-loop next
     
-    hypernest-brackets
+    hypernest-brackets-remaining
     (list-kv-map hypernest-brackets #/fn k v #/list k v)
     
     interiors (hash-set (make-immutable-hasheq) root-i (list))
@@ -123,8 +129,8 @@
       #/olist-build opening-degree #/dissectfn _ #/nothing))
     
     (dissect hist (list maybe-state histories)
-    #/expect hypernest-brackets
-      (cons hypernest-bracket hypernest-brackets)
+    #/expect hypernest-brackets-remaining
+      (cons hypernest-bracket hypernest-brackets-remaining)
       (expect (pushable-hyperstack-dimension histories) 0
         (error "Expected more closing brackets")
       #/expect maybe-state (nothing)
@@ -144,13 +150,14 @@
         (hash-update interiors state #/fn rev-brackets
           (cons (list d #/hypernest-bump bump-value new-i)
             rev-brackets))
-      #/next hypernest-brackets interiors
+      #/next hypernest-brackets-remaining interiors
         (list (just new-i)
           (pushable-hyperstack-push histories
           #/olist-build d #/dissectfn _ #/just state)))
     #/w- d (hypernest-bracket-degree bracket)
     #/expect (onum<? d #/pushable-hyperstack-dimension histories) #t
-      (error "Encountered a closing bracket of degree higher than the current region's degree")
+      (begin (displayln "blah d2") (writeln bracket) (writeln d) (writeln #/pushable-hyperstack-dimension histories)
+      #/error "Encountered a closing bracket of degree higher than the current region's degree")
     #/dissect
       (pushable-hyperstack-pop histories
       #/olist-build d #/dissectfn _ maybe-state)
@@ -163,7 +170,12 @@
               (cons bracket rev-brackets))
           #/mat popped-barrier 'push
             (mat bracket (list d hole-value)
-              (error "Expected a closing bracket that returned from a bump to have no associated data value")
+              (raise-arguments-error
+                'hypernest-brackets->hypernest-hypertees
+                "expected a closing bracket that returned from a bump to have no associated data value"
+                "opening-degree" opening-degree
+                "hypernest-brackets" hypernest-brackets
+                "bracket" bracket)
             #/hash-update interiors state #/fn rev-brackets
               (cons (list bracket #/hypernest-hole #/trivial)
                 rev-brackets))
@@ -189,9 +201,11 @@
           #/hash-update interiors restored-state #/fn rev-brackets
             (cons bracket rev-brackets))
           (error "Internal error: Went directly from a hole to another hole")))
-    #/next hypernest-brackets interiors
+    #/next hypernest-brackets-remaining interiors
       (list restored-maybe-state restored-history))))
 
+; TODO: Implement this.
+#;
 (define/contract
   (hypernest-hypertees->hypernest-brackets opening-degree hypertees)
   (-> onum<=omega? (maybe/c hypertee?)
@@ -199,7 +213,6 @@
       onum<omega?
       (list/c onum<omega? any/c)
       (list/c 'open 0<onum<=omega? any/c)))
-  ; TODO: Implement this.
   'TODO)
 
 (define/contract (assert-valid-hypernest-hypertees degree hypertees)
@@ -216,7 +229,13 @@
     (mat data (hypernest-hole hole-value)
       ; NOTE: We don't validate `hole-value`.
       (expect (onum<? (hypertee-degree hole) degree) #t
-        (error "Expected each of a hypernest's holes to be of degree less than its own")
+        (raise-arguments-error 'assert-valid-hypernest-hypertees
+          "expected each of a hypernest's holes to be of degree less than its own"
+          "degree" degree
+          "hole-degree" (hypertee-degree hole)
+          "hypertees" hypertees
+          "hole" hole
+          "data" data)
       #/void)
     #/mat data (hypernest-bump bump-value interior)
       ; NOTE: We don't validate `bump-value`.
@@ -242,7 +261,10 @@
           (just zipped)
           (error "Expected a bump's interior to have the same shape as the hypertee hole that contained it")
         #/void))
-    #/error "Expected a hypernest's hypertee holes to contain hypernest-bump and hypernest-hole values")))
+    #/raise-arguments-error 'assert-valid-hypernest-hypertees
+      "expected a hypernest's hypertee holes to contain hypernest-bump and hypernest-hole values"
+      "hypertees" hypertees
+      "data" data)))
 
 ; TODO: Give this a custom writer that uses a sequence-of-brackets
 ; representation.
@@ -293,6 +315,9 @@
   (dissect hn (hypernest d hypertees)
   #/list d hypertees))
 
+; TODO: Uncomment this once `hypernest-hypertees->hypernest-brackets`
+; has been implemented.
+#;
 (define/contract (hypernest->degree-and-brackets hn)
   (-> hypertee?
     (list/c onum<=omega?
@@ -309,21 +334,30 @@
   (-> onum<=omega? hypernest? hypernest?)
   (dissect hn (hypernest d hypertees)
   #/expect (onum<=? d new-degree) #t
-    (error "Expected hn to be a hypernest of degree no greater than new-degree")
+    (raise-arguments-error 'hypernest-promote
+      "expected hn to be a hypernest of degree no greater than new-degree"
+      "new-degree" new-degree
+      "hn" hn)
   #/hypernest new-degree hypertees))
 
 ; Takes a hypernest with no holes of degree N or greater and returns a
 ; degree-N hypernest with the same bumps and holes.
 (define/contract (hypernest-set-degree new-degree hn)
   (-> onum<=omega? hypernest? hypernest?)
-  (dissect hn (hypernest d closing-brackets)
+  (dissect hn (hypernest d hypertees)
   #/begin
     (unless (onum<=? d new-degree)
-      (list-each closing-brackets #/fn closing-bracket
-        (expect closing-bracket (list d data) (void)
+      (dissect hypertees (just hypertees)
+      #/hypertee-dv-each-all-degrees hypertees #/fn d data
+        (expect data (hypernest-hole data) (void)
         #/unless (onum<? d new-degree)
-          (error "Expected hn to have no holes of degree new-degree or greater"))))
-  #/hypernest new-degree closing-brackets))
+          (raise-arguments-error 'hypernest-set-degree
+            "expected hn to have no holes of degree new-degree or greater"
+            "hn" hn
+            "new-degree" new-degree
+            "hole-degree" d
+            "data" data))))
+  #/hypernest new-degree hypertees))
 
 (define/contract (hypernest<omega? v)
   (-> any/c boolean?)
@@ -334,7 +368,7 @@
   (w- d (hypertee-degree ht)
   #/mat d 0 (hypernest 0 #/nothing)
   #/hypernest d #/just #/hypertee-promote (onum-omega)
-  #/hypertee-map-all-degrees #/fn hole data
+  #/hypertee-map-all-degrees ht #/fn hole data
     (hypernest-hole data)))
 
 (define/contract (hypernest->maybe-hypertee hn)
@@ -358,7 +392,7 @@
   #/expect maybe-hypertees (just hypertees)
     (degree-and-closing-brackets->hypertee d #/list)
   #/hypertee-map-all-degrees
-    (hypertee-filter hypertees #/fn hole data
+    (hypertee-filter (hypertee-truncate d hypertees) #/fn hole data
       (mat data (hypernest-hole data) #t #f))
   #/fn hole data
     (dissect data (hypernest-hole data)
@@ -371,22 +405,6 @@
 (define/contract (hypernest-contour hole-value ht)
   (-> any/c hypertee<omega? hypernest?)
   (hypertee->hypernest #/hypertee-contour hole-value ht))
-
-; Takes a hypernest of any nonzero degree N and returns a hypernest of
-; degree N+1 with all the same degree-less-than-N holes as well as a
-; single degree-N bump with the contents of the original hypernest.
-(define/contract (hypernest-contour-bump bump-value hn)
-  (-> any/c hypertee<omega? hypernest?)
-  (dissect hn (hypernest d maybe-hypertees)
-  #/expect maybe-hypertees (just hypertees)
-    (error "Expected the bump to have a nonzero degree")
-  #/hypernest d #/just
-  #/hypertee-contour
-    (hypernest-bump bump-value
-      (hypertee-map-all-degrees hypertees #/fn hole data
-        (expect data (hypernest-hole data) data
-        #/hypernest-hole #/trivial)))
-  #/hypernest-truncate-to-hypertee hn))
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypernest
 ; if they have the same holes when certain holes of the hypernest are
@@ -404,21 +422,23 @@
   #/expect (onum<=? (hypertee-degree smaller) d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/expect maybe-hypertees (just hypertees) bigger
-  #/hypernest d-bigger
-  #/just #/hypertee-zip-selective smaller hypertees
-    (fn hole data
-      (expect data (hypernest-hole data) #f
-      #/should-zip? hole data))
-    (fn hole smaller-data bigger-data
-      (dissect bigger-data (hypernest-hole bigger-data)
-      #/func smaller-data bigger-data))))
+  #/maybe-map
+    (hypertee-zip-selective smaller hypertees
+      (fn hole data
+        (expect data (hypernest-hole data) #f
+        #/should-zip? hole data))
+      (fn hole smaller-data bigger-data
+        (dissect bigger-data (hypernest-hole bigger-data)
+        #/hypernest-hole #/func hole smaller-data bigger-data)))
+  #/fn zipped
+  #/hypernest d-bigger #/just zipped))
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypernest
 ; if they have the same holes when truncated to degree N.
 (define/contract (hypernest-zip-low-degrees smaller bigger func)
   (-> hypertee? hypernest? (-> hypertee? any/c any/c any/c)
     (maybe/c hypernest?))
-  (hypertee-zip-selective smaller bigger (fn hole data #t) func))
+  (hypernest-zip-selective smaller bigger (fn hole data #t) func))
 
 (define/contract (hypernest-zip ht hn func)
   (-> hypertee? hypernest? (-> hypertee? any/c any/c any/c)
@@ -437,6 +457,20 @@
       (istruct/c hypernest-drop1-result-zero)
       (istruct/c hypernest-drop1-result-hole any/c hypertee?)
       (istruct/c hypernest-drop1-result-bump any/c hypernest?)))
+  
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (void) #;(displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (void) #;(displayln #/format "\\~a" tagline)
+    ))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
   (dissect hn (hypernest d maybe-hypertees)
   #/expect maybe-hypertees (just hypertees)
     (hypernest-drop1-result-zero)
@@ -447,10 +481,22 @@
       (hypernest d #/just tail))
   #/dissect data (hypernest-bump data interior)
   #/dissect
-    (hypernest-zip
-      (hypertee-map-all-degrees tails #/fn hole tail
-        (hypernest d #/just tail))
-      (hypernest d #/just interior))
+    (blah "e1"
+    #/hypernest-zip
+      (blah "e2"
+      #/hypertee-map-all-degrees tails #/fn hole tail
+        (w- root-hole-degree (hypertee-degree hole)
+        #/hypernest (onum-max d root-hole-degree) #/just
+        #/hypertee-map-all-degrees tail #/fn hole data
+          (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+            data
+          #/dissect data (trivial)
+          #/hypernest-hole #/trivial)))
+      (blah "e3" interior
+      #/hypernest (hypertee-degree tails) #/just interior)
+    #/fn hole tail interior-data
+      (dissect interior-data (trivial)
+        tail))
     (just interior)
   #/hypernest-drop1-result-bump data interior))
 
@@ -479,13 +525,13 @@
   (-> onum<=omega? any/c hypertee<omega? hypernest?)
   (hypernest-promote degree #/hypernest-contour data hole))
 
-(define/contract (hypernest-pure-bump degree data bump)
-  (-> onum<=omega? any/c hypernest<omega? hypernest?)
-  (hypernest-promote degree #/hypernest-contour-bump data bump))
-
-; TODO IMPLEMENT: Implement operations analogous to these:
-;
-;   hypertee-plus1
+(define/contract (hypernest-get-hole-zero hn)
+  (-> hypernest? maybe?)
+  (dissect hn (hypernest degree maybe-hypertees)
+  #/maybe-map maybe-hypertees #/fn hypertees
+  #/dissect (hypertee-get-hole-zero hypertees)
+    (just #/hypernest-hole data)
+    data))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -493,15 +539,62 @@
   (-> hypernest? (-> hypertee<omega? any/c hypernest?) hypernest?)
   (dissect hn (hypernest d hypertees)
   #/hypernest d #/maybe-map hypertees #/fn hypertees
+  
+  ; We do this in two stages, the second of which is a
+  ; `hypertee-join-all-degrees` call. For the most part we could avoid
+  ; that second stage, but we need to smuggle some low-degree bumps
+  ; through this `hypertee-bind-all-degrees` call. It's expecting all
+  ; the low-degree holes to contain trivial values, so what we do is
+  ; replace those low-degree `hypernest-bump`-containing holes with
+  ; holes of degree just high enough (`root-hole-degree`) to avoid
+  ; this. In those holes, we put hypertees with the original holes in
+  ; them.
+  ;
+  ; Since we're wrapping all the interpolations' low-degree bumps in
+  ; large-degree holes, we also have to wrap all the interpolations'
+  ; high-degree bumps, all the interpolations' high-degree holes, and
+  ; all the root's bumps. We wrap these things with holes of the same
+  ; degree, and to do that, we we use the function called `wrap`
+  ; below.
+  ;
+  ; (The interpolations' low-degree holes need to contain trivial
+  ; values, so we process them differently.)
+  ;
+  #/hypertee-join-all-degrees
   #/hypertee-bind-all-degrees hypertees #/fn hole data
-    (expect data (hypernest-hole data)
-      (hypertee-pure (onum-omega) data hole)
-    #/expect (func hole data) (hypernest result-d result-hypertees)
+    (w- wrap
+      (fn hole data
+        (hypertee-pure (onum-omega)
+          (hypertee-pure (onum-omega) data hole)
+          hole))
+    #/expect data (hypernest-hole data) (wrap hole data)
+    #/w- func-result (func hole data)
+    #/expect func-result (hypernest result-d maybe-result-hypertees)
       (error "Expected the result of a hypernest-bind-all-degrees callback to be a hypernest")
     #/expect (equal? d result-d) #t
       (error "Expected the result of a hypernest-bind-all-degrees callback to be a hypernest of the same degree as the root")
-    #/dissect result-hypertees (just result-hypertees)
-      result-hypertees)))
+    #/dissect maybe-result-hypertees (just result-hypertees)
+    #/w- root-hole-degree (hypertee-degree hole)
+    #/hypertee-bind-all-degrees result-hypertees #/fn hole data
+      (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+        (wrap hole data)
+      #/expect data (hypernest-hole data)
+        
+        ; This is where we wrap a bump in a large hole so that the
+        ; outer `hypertee-bind-all-degrees` call won't complain that
+        ; some of the low-degree bumps of the interpolated hypertees
+        ; are `hypernest-bump` values instead of trivial values.
+        ;
+        (hypertee-pure (onum-omega)
+          (hypertee-pure (onum-omega) data hole)
+        #/hypertee-promote root-hole-degree hole)
+      #/expect data (trivial)
+        (raise-arguments-error 'hypernest-bind-all-degrees
+          "a hypernest bind interpolation had a hole of low degree where the value wasn't a trivial value"
+          "hn" hn
+          "func-result" func-result
+          "data" data)
+      #/hypertee-pure (onum-omega) (trivial) hole))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -532,14 +625,146 @@
   (hypernest-bind-one-degree degree hn #/fn hole data
     data))
 
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-dv-any-all-degrees hn func)
+  (-> hypernest? (-> onum<omega? any/c any/c) any/c)
+  (dissect hn (hypernest degree maybe-hypertees)
+  #/expect maybe-hypertees (just hypertees) #f
+  #/hypertee-dv-any-all-degrees hypertees #/fn d data
+    (expect data (hypernest-hole data) #f
+    #/func d data)))
+
 ; TODO IMPLEMENT: Implement operations analogous to these:
 ;
-;   hypertee-dv-any-all-degrees
+;   hypertee-v-any-one-degree
 ;   hypertee-any-all-degrees
 ;   hypertee-dv-all-all-degrees
 ;   hypertee-all-all-degrees
-;   hypertee-dv-each-all-degrees
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-dv-each-all-degrees hn body)
+  (-> hypernest? (-> onum<omega? any/c any) void?)
+  (hypernest-dv-any-all-degrees hn #/fn d data #/begin
+    (body d data)
+    #f)
+  (void))
+
+; TODO IMPLEMENT: Implement operations analogous to these:
+;
 ;   hypertee-v-each-one-degree
 ;   hypertee-each-all-degrees
+
+(define/contract (hypernest-plus1 drop1-result)
+  (->
+    (or/c
+      (istruct/c hypernest-drop1-result-zero)
+      (istruct/c hypernest-drop1-result-hole any/c hypertee?)
+      (istruct/c hypernest-drop1-result-bump any/c hypernest?))
+    hypernest?)
+  
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (displayln #/format "\\~a" tagline)))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
+  (blah "g1"
+  #/mat drop1-result (hypernest-drop1-result-zero)
+    (hypernest 0 #/nothing)
+  #/mat drop1-result (hypernest-drop1-result-hole data tails)
+    (blah "g2"
+    #/expect (hypertee-get-hole-zero tails) (just tail0)
+      (degree-and-brackets->hypernest 1 #/list #/list 0 data)
+    #/begin
+      (hypertee-dv-each-all-degrees tails #/fn d tail
+        (unless (hypernest? tail)
+          (error "Expected tails to be a hypertee with hypernests in all its holes")))
+    #/w- degree (hypernest-degree tail0)
+    #/begin
+      (hypertee-dv-each-all-degrees tails #/fn d tail
+        (unless (equal? degree #/hypernest-degree tail)
+          (error "Expected tails to be a hypertee with hypernests of the same degree in all its holes")))
+    #/begin
+      (hypertee-dv-each-all-degrees tails #/fn d tail
+        (hypernest-dv-each-all-degrees tail #/fn d2 data
+          (when (onum<? d2 d)
+          #/expect data (trivial)
+            (raise-arguments-error 'assert-valid-hypernest-hypertees
+              "expected tails to be a hypertee containing hypernests such that a hypernest in a hole of degree N contained only trivial values at degrees less than N"
+              "tails" tails
+              "tails-hole-degree" d
+              "tail" tail
+              "tail-hole-degree" d2
+              "data" data)
+          #/void)))
+    #/expect (onum<? (hypertee-degree tails) degree) #t
+      (error "Expected tails to be a hypertee containing hypernests of greater degree")
+    #/hypernest degree #/just
+    #/hypernest-join-all-degrees #/hypertee-pure (onum-omega)
+      (hypernest-pure (onum-omega) (hypernest-hole data)
+      #/hypertee-map-all-degrees tails #/fn hole tail
+        (trivial))
+      tails)
+  #/dissect drop1-result (hypernest-drop1-result-bump data tails)
+    (blah "g3"
+    #/expect (hypernest-get-hole-zero tails) (just tail0)
+      (error "Expected tails to be a hypernest of nonzero degree")
+    #/begin
+      (hypernest-dv-each-all-degrees tails #/fn d tail
+        (unless (hypernest? tail)
+          (error "Expected tails to be a hypernest with hypernests in all its holes")))
+    #/w- degree (hypernest-degree tail0)
+    #/begin
+      (hypernest-dv-each-all-degrees tails #/fn d tail
+        (unless (equal? (onum-max degree d) (hypernest-degree tail))
+          (error "Expected tails to be a hypernest containing hypernests that were each of the overall degree or of the same degree as the hole they were in, whichever was greater")))
+    #/begin
+      (hypernest-dv-each-all-degrees tails #/fn d tail
+        (hypernest-dv-each-all-degrees tail #/fn d2 data
+          (when (onum<? d2 d)
+          #/expect data (trivial)
+            (raise-arguments-error 'assert-valid-hypernest-hypertees
+              "expected tails to be a hypernest containing hypernests such that a hypernest in a hole of degree N contained only trivial values at degrees less than N"
+              "tails" tails
+              "tails-hole-degree" d
+              "tail" tail
+              "tail-hole-degree" d2
+              "data" data)
+          #/void)))
+    #/w- trivial-tails
+      (hypernest-map-all-degrees tails #/fn hole tail
+        (trivial))
+    #/w- truncated-tails (hypernest-truncate-to-hypertee tails)
+    #/blah "g3.1"
+    #/hypernest-set-degree degree
+    #/blah "g3.2"
+    #/hypernest-join-all-degrees
+    #/blah "g4"
+    #/hypernest (onum-omega) #/just
+    #/blah "g5"
+    #/hypertee-pure (onum-omega)
+      (hypernest-hole
+      #/hypernest (onum-omega) #/just
+      #/hypertee-pure (onum-omega)
+        (hypernest-bump data
+        #/dissect trivial-tails (hypernest _ #/just tails-hypertees)
+          tails-hypertees)
+      #/hypertee-map-all-degrees truncated-tails #/fn hole tail
+        (hypernest-hole #/trivial))
+    #/hypertee-map-all-degrees truncated-tails #/fn hole tail
+      (hypernest-hole #/hypernest-promote (onum-omega) tail))))
+
+; TODO IMPLEMENT: Implement operations analogous to these:
+;
+;   hypertee-contour?
+;   hypertee-uncontour
 ;   hypertee-filter
 ;   hypertee-truncate

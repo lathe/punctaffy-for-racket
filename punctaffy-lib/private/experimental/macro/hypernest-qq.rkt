@@ -46,6 +46,9 @@
 (require #/for-syntax #/only-in syntax/parse syntax-parse)
 
 
+(provide my-quasiquote)
+
+
 ; (TODO: Update this comment. We now define ^< and ^> in
 ; hypernest-bracket.rkt.)
 ;

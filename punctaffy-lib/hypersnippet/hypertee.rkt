@@ -32,7 +32,7 @@
   list-all list-any list-bind list-each list-foldl list-kv-map
   list-map)
 (require #/only-in lathe-comforts/maybe
-  just maybe/c maybe-map nothing)
+  just maybe? maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
@@ -63,10 +63,13 @@
   hypertee-map-one-degree
   hypertee-map-highest-degree
   hypertee-pure
+  hypertee-get-hole-zero
+  hypertee-plus1
   hypertee-bind-all-degrees
   hypertee-bind-one-degree
   hypertee-bind-pred-degree
   hypertee-join-one-degree
+  hypertee-dv-any-all-degrees
   hypertee-dv-all-all-degrees
   hypertee-dv-each-all-degrees
   hypertee-v-each-one-degree
@@ -489,7 +492,10 @@
   (-> onum<=omega? hypertee? hypertee?)
   (dissect ht (hypertee d closing-brackets)
   #/expect (onum<=? d new-degree) #t
-    (error "Expected ht to be a hypertee of degree no greater than new-degree")
+    (raise-arguments-error 'hypertee-promote
+      "expected ht to be a hypertee of degree no greater than new-degree"
+      "new-degree" new-degree
+      "ht" ht)
   #/hypertee new-degree closing-brackets))
 
 ; Takes a hypertee with no holes of degree N or greater and returns a
@@ -674,7 +680,7 @@
     #/if (onum<? d first-nontrivial-d)
       (dissect suffix (trivial)
       ; TODO: See if this is correct.
-      #/hypertee-plus1 (trivial) tails)
+      #/hypertee-plus1 #/just #/list (trivial) tails)
     #/expect
       (and
         (hypertee? suffix)
@@ -700,10 +706,10 @@
     (w- d (hypertee-degree tails)
     #/if (onum<? d first-nontrivial-d)
       (dissect data (trivial)
-      #/hypertee-plus1 (trivial) tails)
+      #/hypertee-plus1 #/just #/list (trivial) tails)
     #/w- hole
       (hypertee-map-all-degrees tails #/fn hole data #/trivial)
-    #/hypertee-plus1 (func hole data) tails)))
+    #/hypertee-plus1 #/just #/list (func hole data) tails)))
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is another degree-N hypertee to be interpolated. In those
@@ -742,7 +748,12 @@
     (define (verify-bracket-degree d closing-bracket)
       (unless
         (equal? d #/hypertee-closing-bracket-degree closing-bracket)
-        (error "Expected each interpolation of a hypertee join to be the right shape for its interpolation context")))
+        (begin (displayln "blah j1") (writeln ht)
+        #/raise-arguments-error 'hypertee-join-all-degrees
+          "expected each interpolation of a hypertee join to be the right shape for its interpolation context"
+          "expected-closing-bracket-degree" d
+          "actual-closing-bracket" closing-bracket
+          "ht" ht)))
     
     (dissect hist (list maybe-interpolation-i histories)
     #/mat maybe-interpolation-i (just interpolation-i)
@@ -769,10 +780,16 @@
         (dissect root-brackets
           (cons (list root-bracket-i root-bracket) root-brackets)
         #/begin
+;          (displayln "blah j2") (writeln #/map cadr root-brackets)
           (verify-bracket-degree d root-bracket)
           (mat closing-bracket (list d data)
             (expect data (trivial)
-              (error "A hypertee join interpolation had a hole of low degree where the value wasn't a trivial value")
+              ; TODO: Make more of the errors like this one.
+              (raise-arguments-error 'hypertee-join-all-degrees
+                "a hypertee join interpolation had a hole of low degree where the value wasn't a trivial value"
+                "ht" ht
+                "closing-bracket" closing-bracket
+                "data" data)
             #/void)
           #/void)
         #/next root-brackets interpolations hist rev-result)
@@ -800,15 +817,24 @@
         (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
       #/dissect (pop-interpolation-bracket interpolations i)
         (list interpolations #/just interpolation-bracket)
+;      #/begin (displayln "blah j3")
       #/begin (verify-bracket-degree d interpolation-bracket)
       #/next root-brackets interpolations
         (list maybe-interpolation-i histories)
         rev-result)
     ; We begin an interpolation.
     #/expect data (hypertee data-d data-closing-brackets)
-      (error "Expected each hypertee join interpolation to be a hypertee")
+      (raise-arguments-error 'hypertee-join-all-degrees
+        "expected each hypertee join interpolation to be a hypertee"
+        "ht" ht
+        "closing-bracket" closing-bracket
+        "data" data)
     #/expect (equal? data-d overall-degree) #t
-      (error "Expected each hypertee join interpolation to have the same degree as the root")
+      (raise-arguments-error 'hypertee-join-all-degrees
+        "expected each hypertee join interpolation to have the same degree as the root"
+        "ht" ht
+        "closing-bracket" closing-bracket
+        "data" data)
     #/next root-brackets
       (hash-set interpolations root-bracket-i data-closing-brackets)
       (list (just root-bracket-i)
@@ -936,9 +962,12 @@
   (-> onum<=omega? any/c hypertee<omega? hypertee?)
   (hypertee-promote degree #/hypertee-contour data hole))
 
-(define/contract (hypertee-plus1 data tails)
-  (-> any/c hypertee? hypertee<omega?)
-  (hypertee-join-all-degrees #/hypertee-contour data tails))
+(define/contract (hypertee-get-hole-zero ht)
+  (-> hypertee? maybe?)
+  (dissect ht (hypertee degree closing-brackets)
+  #/mat degree 0 (nothing)
+  #/dissect (reverse closing-brackets) (cons (list 0 data) _)
+  #/just data))
 
 (define/contract (hypertee-bind-all-degrees ht hole-to-ht)
   (-> hypertee? (-> hypertee<omega? any/c hypertee?) hypertee?)
@@ -978,6 +1007,13 @@
   #/list-any closing-brackets #/fn bracket
     (expect bracket (list d data) #f
     #/func d data)))
+
+; TODO: See if we'll use this.
+(define/contract (hypertee-v-any-one-degree degree ht func)
+  (-> onum<omega? hypertee? (-> any/c any/c) any/c)
+  (hypertee-dv-any-all-degrees ht #/fn d data
+    (and (equal? degree d)
+    #/func data)))
 
 (define/contract (hypertee-any-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) any/c)
@@ -1023,6 +1059,36 @@
     (body hole data)
     #f)
   (void))
+
+(define/contract (hypertee-plus1 drop1-result)
+  (-> (maybe/c #/list/c any/c hypertee?) hypertee?)
+  (expect drop1-result (just drop1-result) (hypertee 0 #/list)
+  #/dissect drop1-result (list data tails)
+  #/expect (hypertee-get-hole-zero tails) (just tail0)
+    (hypertee 1 #/list #/list 0 data)
+  #/begin
+    (hypertee-dv-each-all-degrees tails #/fn d tail
+      (unless (hypertee? tail)
+        (error "Expected tails to be a hypertee with hypertees in its holes")))
+  #/w- degree (hypertee-degree tail0)
+  #/begin
+    (hypertee-dv-each-all-degrees tails #/fn d tail
+      (unless (equal? degree #/hypertee-degree tail)
+        (error "Expected tails to be a hypertee with hypertees of uniform degree in its holes")))
+  #/begin
+    (hypertee-dv-each-all-degrees tails #/fn d tail
+      (hypertee-dv-each-all-degrees tail #/fn d2 data
+        (when (onum<? d2 d)
+        #/expect data (trivial)
+          (error "Expected tails to be a hypertee containing hypertees such that a hypertee in a hole of degree N contained only trivial values at degrees less than N")
+        #/void)))
+  #/expect (onum<? (hypertee-degree tails) degree) #t
+    (error "Expected tails to be a hypertee containing hypertees of greater degree")
+  #/hypertee-join-all-degrees #/hypertee-pure degree
+    (hypertee-pure degree data
+    #/hypertee-map-all-degrees tails #/fn hole tail
+      (trivial))
+    tails))
 
 (define/contract (hypertee-contour? v)
   (-> any/c boolean?)

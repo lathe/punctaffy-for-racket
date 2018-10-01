@@ -31,7 +31,8 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest? hypernest-bind-one-degree)
+  degree-and-brackets->hypernest hypernest? hypernest-bind-one-degree
+  hypernest-promote hypernest-set-degree)
 
 (provide
   (struct-out hn-tag-1-s-expr-stx)
@@ -243,7 +244,21 @@
 ;
 (define/contract (s-expr-stx->hn-expr stx)
   (-> syntax? hypernest?)
-  (mat
+  
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (displayln #/format "\\~a" tagline)))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
+  (blah "a1"
+  #/mat
     (syntax-parse stx
       [ (op:id arg ...)
         (maybe-bind (syntax-local-maybe #'op) #/fn op
@@ -282,7 +297,9 @@
     ; `s-expr-stx->hn-expr` reports that it has broken its own
     ; contract.
     ;
-    (proc op stx)
+    (blah "a2"
+    #/proc op stx)
+  #/blah "a3"
   #/w- process-list
     (fn elems
       (list-map elems #/fn elem #/s-expr-stx->hn-expr elem))
@@ -300,25 +317,32 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-2 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (hypernest-bind-one-degree 1
-        (n-hn 1
+      (blah "b1"
+      #/hypernest-set-degree 1
+      #/hypernest-bind-one-degree 1
+        (blah "b2"
+        #/n-hn 2
           (list 'open 2 metadata)
             1 (list 1 #/trivial) 0 0
           0
         #/list 0 #/trivial)
       #/fn hole data
-        (n-hn-append0 1 elems)))
+        (blah "b3"
+        #/hypernest-promote 2
+        #/n-hn-append0 1 elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)
-    (dissect (improper-list->list-and-tail s) (list elems tail)
+    (blah "a4"
+    #/dissect (improper-list->list-and-tail s) (list elems tail)
     #/w- elems (process-list elems)
     #/mat tail (list)
       ; The metadata we pass in here represents the `list` operation,
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypernest-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      (make-list-layer (hn-tag-2-list stx-example) elems)
+      (blah "a5"
+      #/make-list-layer (hn-tag-2-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped.
     ; Usually it'll be wrapped up as an atom. However, it could still
@@ -328,19 +352,24 @@
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
-      (make-list-layer (hn-tag-2-list* stx-example)
+      (blah "a6"
+      #/make-list-layer (hn-tag-2-list* stx-example)
       #/append elems #/list tail))
   
   ; We traverse into prefab structs.
+  #/blah "a7"
   #/w- key (prefab-struct-key s)
   #/if key
-    (make-list-layer (hn-tag-2-prefab key stx-example)
+    (blah "a8"
+    #/make-list-layer (hn-tag-2-prefab key stx-example)
     #/process-list #/cdr #/vector->list #/struct->vector s)
   
+  #/blah "a9"
   #/syntax-parse stx
     ; We traverse into vectors.
     [ #(elem ...)
-      (w- elems (process-list #/syntax->list #'(elem ...))
+      (blah "a10"
+      #/w- elems (process-list #/syntax->list #'(elem ...))
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
@@ -352,7 +381,8 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-1 holes that a user-defined syntax
       ; introduces for a different reason).
-      (n-hn 1 (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
+      (blah "a11"
+      #/n-hn 1 (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
       #/list 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
