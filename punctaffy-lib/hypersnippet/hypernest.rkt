@@ -447,9 +447,9 @@
     (error "Expected the hypertee and the hypernest to have the same degree")
   #/hypernest-zip-low-degrees ht hn func))
 
-(struct-easy (hypernest-drop1-result-zero))
-(struct-easy (hypernest-drop1-result-hole data tails))
-(struct-easy (hypernest-drop1-result-bump data tails))
+(struct-easy (hypernest-drop1-result-zero) #:equal)
+(struct-easy (hypernest-drop1-result-hole data tails) #:equal)
+(struct-easy (hypernest-drop1-result-bump data tails) #:equal)
 
 (define/contract (hypernest-drop1 hn)
   (-> hypernest?
@@ -463,22 +463,33 @@
       (apply string-append " blah"
         (list-map args #/fn arg
           (format " ~a" arg)))
-    #/begin (void) #;(displayln #/format "/~a" tagline)
+    #/begin (displayln #/format "/~a" tagline)
     #/begin0 (body)
-    #/begin (void) #;(displayln #/format "\\~a" tagline)
-    ))
+    #/begin (displayln #/format "\\~a" tagline)))
   
   (define-syntax-rule (blah arg ... body)
     (blah-fn (list arg ...) (lambda () body)))
   
-  (dissect hn (hypernest d maybe-hypertees)
+  (blah "e0"
+  #/dissect hn (hypernest d maybe-hypertees)
   #/expect maybe-hypertees (just hypertees)
     (hypernest-drop1-result-zero)
   #/dissect (hypertee-drop1 hypertees) (just #/list data tails)
+  #/blah "e0.1"
   #/mat data (hypernest-hole data)
-    (hypernest-drop1-result-hole data
+    (blah "e0.2"
+    #/hypernest-drop1-result-hole data
     #/hypertee-map-all-degrees tails #/fn hole tail
-      (hypernest d #/just tail))
+      (w- root-hole-degree (hypertee-degree hole)
+      ; We build a hypernest out of the tail, replacing the tail's
+      ; low-degree holes, which contain `(trivial)`, with
+      ; `(hypernest-hole #/trivial)`.
+      #/hypernest d #/just
+      #/hypertee-map-all-degrees tail #/fn hole data
+        (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+          data
+        #/dissect data (trivial)
+        #/hypernest-hole #/trivial)))
   #/dissect data (hypernest-bump data interior)
   #/dissect
     (blah "e1"
@@ -707,9 +718,9 @@
           #/void)))
     #/expect (onum<? (hypertee-degree tails) degree) #t
       (error "Expected tails to be a hypertee containing hypernests of greater degree")
-    #/hypernest degree #/just
-    #/hypernest-join-all-degrees #/hypertee-pure (onum-omega)
-      (hypernest-pure (onum-omega) (hypernest-hole data)
+    #/blah "g2.1"
+    #/hypernest-join-all-degrees #/hypernest-pure degree
+      (hypernest-pure degree data
       #/hypertee-map-all-degrees tails #/fn hole tail
         (trivial))
       tails)
