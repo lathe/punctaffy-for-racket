@@ -23,6 +23,7 @@
 (require rackunit)
 
 (require #/only-in lathe-comforts fn)
+(require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/hypertee)
@@ -30,57 +31,90 @@
 ; (We provide nothing from this module.)
 
 
-(define make-ht degree-and-closing-brackets->hypertee)
+(define (n-ht degree . brackets)
+  (degree-and-closing-brackets->hypertee degree brackets))
 
 
-(make-ht 0 #/list)
-(make-ht 1 #/list (list 0 'a))
-(make-ht 2 #/list
-  (list 1 'a)
-  0 (list 0 'a))
-(make-ht 3 #/list
-  (list 2 'a)
-  1 (list 1 'a) 0 0 0 (list 0 'a))
-(make-ht 4 #/list
-  (list 3 'a)
-  2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a))
-(make-ht 5 #/list
-  (list 4 'a)
-  3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
-  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a))
+(define sample-0 (n-ht 0))
+(define sample-closing-1 (n-ht 1 (list 0 'a)))
+(define sample-closing-2
+  (n-ht 2
+    (list 1 'a)
+    0 (list 0 'a)))
+(define sample-closing-3
+  (n-ht 3
+    (list 2 'a)
+    1 (list 1 'a) 0 0 0 (list 0 'a)))
+(define sample-closing-4
+  (n-ht 4
+    (list 3 'a)
+    2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a)))
+(define sample-closing-5
+  (n-ht 5
+    (list 4 'a)
+    3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a)))
+
+
+(define (check-drop1-round-trip sample)
+  (check-equal? (hypertee-plus1 #/hypertee-drop1 sample) sample))
+
+(check-drop1-round-trip sample-0)
+(check-drop1-round-trip sample-closing-1)
+(check-drop1-round-trip sample-closing-2)
+
+(check-equal?
+  (hypertee-drop1 sample-closing-3)
+  (just #/list 'a
+    ; TODO: We basically just transcribed this from the result of
+    ; `(hypernest-drop1 sample-closing-3)` in test-hypernest.rkt. Make
+    ; sure it's correct.
+    (n-ht 2
+      (list 1 #/n-ht 3
+        (list 1 'a)
+        0
+      #/list 0 #/trivial)
+      0
+    #/list 0 #/n-ht 3 #/list 0 'a)))
+
+(check-drop1-round-trip sample-closing-3)
+(check-drop1-round-trip sample-closing-4)
+
+; TODO NOW: This test is failing. Fix it.
+(check-drop1-round-trip sample-closing-5)
 
 
 (check-equal?
-  (hypertee-join-all-degrees #/make-ht 2 #/list
-    (list 1 #/make-ht 2 #/list
+  (hypertee-join-all-degrees #/n-ht 2
+    (list 1 #/n-ht 2
       (list 0 #/trivial))
     0
-    (list 1 #/make-ht 2 #/list
+    (list 1 #/n-ht 2
       (list 0 #/trivial))
     0
-    (list 0 #/hypertee-pure 2 'a #/make-ht 0 #/list))
-  (make-ht 2 #/list
+    (list 0 #/hypertee-pure 2 'a #/n-ht 0))
+  (n-ht 2
     (list 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
 
 (check-equal?
-  (hypertee-join-all-degrees #/make-ht 2 #/list
-    (list 1 #/make-ht 2 #/list
+  (hypertee-join-all-degrees #/n-ht 2
+    (list 1 #/n-ht 2
       (list 1 'a)
       0
       (list 1 'a)
       0
       (list 0 #/trivial))
     0
-    (list 1 #/make-ht 2 #/list
+    (list 1 #/n-ht 2
       (list 1 'a)
       0
       (list 1 'a)
       0
       (list 0 #/trivial))
     0
-    (list 0 #/hypertee-pure 2 'a #/make-ht 0 #/list))
-  (make-ht 2 #/list
+    (list 0 #/hypertee-pure 2 'a #/n-ht 0))
+  (n-ht 2
     (list 1 'a)
     0
     (list 1 'a)
@@ -93,22 +127,22 @@
   "Joining hypertees to make a hypertee with more holes than any of the parts on its own")
 
 (check-equal?
-  (hypertee-join-all-degrees #/make-ht 2 #/list
-    (list 1 #/hypertee-pure 2 'a #/make-ht 1 #/list
+  (hypertee-join-all-degrees #/n-ht 2
+    (list 1 #/hypertee-pure 2 'a #/n-ht 1
       (list 0 #/trivial))
     0
-    (list 1 #/make-ht 2 #/list
+    (list 1 #/n-ht 2
       (list 1 'a)
       0
       (list 0 #/trivial))
     0
-    (list 1 #/make-ht 2 #/list
+    (list 1 #/n-ht 2
       (list 1 'a)
       0
       (list 0 #/trivial))
     0
-    (list 0 #/hypertee-pure 2 'a #/make-ht 0 #/list))
-  (make-ht 2 #/list
+    (list 0 #/hypertee-pure 2 'a #/n-ht 0))
+  (n-ht 2
     (list 1 'a)
     0
     (list 1 'a)
@@ -119,14 +153,14 @@
   "Joining hypertees where one of the nonzero-degree holes in the root is just a hole rather than an interpolation")
 
 (check-equal?
-  (hypertee-join-all-degrees #/make-ht 3 #/list
+  (hypertee-join-all-degrees #/n-ht 3
     
     ; This is propagated to the result.
-    (list 1 #/hypertee-pure 3 'a #/make-ht 1 #/list
+    (list 1 #/hypertee-pure 3 'a #/n-ht 1
       (list 0 #/trivial))
     0
     
-    (list 2 #/make-ht 3 #/list
+    (list 2 #/n-ht 3
       
       ; This is propagated to the result.
       (list 2 'a)
@@ -151,12 +185,12 @@
     0
     
     ; This is propagated to the result.
-    (list 1 #/hypertee-pure 3 'a #/make-ht 1 #/list
+    (list 1 #/hypertee-pure 3 'a #/n-ht 1
       (list 0 #/trivial))
     0
     
-    (list 0 #/hypertee-pure 3 'a #/make-ht 0 #/list))
-  (make-ht 3 #/list
+    (list 0 #/hypertee-pure 3 'a #/n-ht 0))
+  (n-ht 3
     (list 1 'a)
     0
     (list 2 'a)
