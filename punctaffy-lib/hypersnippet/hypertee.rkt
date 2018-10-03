@@ -420,7 +420,7 @@
 (define/contract
   (assert-valid-hypertee-brackets opening-degree closing-brackets)
   (-> onum<=omega? list? void?)
-  (expect
+  (w- final-region-degree
     (poppable-hyperstack-dimension #/list-foldl
       (make-poppable-hyperstack-n opening-degree)
       closing-brackets
@@ -443,8 +443,12 @@
             (error "Expected a closing bracket that began a hole to be annotated with a data value")
           #/void))
         restored-history))
-    0
-    (error "Expected more closing brackets")
+  #/expect final-region-degree 0
+    (raise-arguments-error 'degree-and-closing-brackets->hypertee
+      "expected more closing brackets"
+      "opening-degree" opening-degree
+      "closing-brackets" closing-brackets
+      "final-region-degree" final-region-degree)
   #/void))
 
 
@@ -546,12 +550,30 @@
 (define/contract (hypertee-drop1 ht)
   (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
   
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (displayln #/format "\\~a" tagline)))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
   (struct-easy (loc-interpolation-uninitialized))
   (struct-easy (loc-interpolation i d))
   
-  (dissect ht (hypertee d-root closing-brackets)
+  (struct-easy
+    (interpolation-state-in-progress
+      rev-brackets interpolation-hyperstack))
+  (struct-easy (interpolation-state-finished result))
+  
+  (blah "h1"
+  #/dissect ht (hypertee d-root closing-brackets)
   #/expect closing-brackets (cons first rest) (nothing)
   #/dissect first (list d-dropped data-dropped)
   #/just #/list data-dropped
@@ -566,7 +588,7 @@
     (poppable-hyperstack-pop stack
     #/olist-build d-dropped #/dissectfn _
       (loc-interpolation-uninitialized))
-    (list (loc-outside) stack)
+    (list popped-barrier (loc-outside) stack)
   #/w-loop next
     root-brackets (list-kv-map rest #/fn k v #/list k v)
     interpolations (make-immutable-hasheq)
@@ -575,12 +597,34 @@
     
     (define (push-interpolation-bracket interpolations i bracket)
       (dissect (hash-ref interpolations i)
-        (list rev-brackets maybe-result)
+        (interpolation-state-in-progress
+          rev-brackets interpolation-hyperstack)
       #/hash-set interpolations i
-        (list (cons bracket rev-brackets) maybe-result)))
+        (interpolation-state-in-progress
+          (cons bracket rev-brackets)
+          (poppable-hyperstack-pop-n interpolation-hyperstack
+            (hypertee-closing-bracket-degree bracket)))))
     
-    (expect root-brackets (cons root-bracket root-brackets)
-      (dissect hist (list (loc-outside) stack)
+    (define
+      (push-interpolation-bracket-and-possibly-finish
+        interpolations i bracket)
+      (w- interpolations
+        (push-interpolation-bracket interpolations i bracket)
+      #/dissect (hash-ref interpolations i)
+        (interpolation-state-in-progress
+          rev-brackets interpolation-hyperstack)
+      #/hash-set interpolations i
+        (mat (poppable-hyperstack-dimension interpolation-hyperstack)
+          0
+          (interpolation-state-finished
+          #/hypertee d-root #/reverse rev-brackets)
+          (interpolation-state-in-progress
+            rev-brackets interpolation-hyperstack))))
+    
+    (blah "h2"
+    #/expect root-brackets (cons root-bracket root-brackets)
+      (blah "h3"
+      #/dissect hist (list (loc-outside) stack)
       #/dissect (poppable-hyperstack-dimension stack) 0
       ; We look up all the indexes stored in `rev-result` and make a
       ; hypertee out of it.
@@ -588,26 +632,30 @@
       #/list-map rev-result #/fn bracket
         (expect bracket (list d i) bracket
         #/dissect (hash-ref interpolations i)
-          (list rev-brackets #/just tail)
+          (interpolation-state-finished tail)
         #/list d tail))
     #/dissect root-bracket (list new-i closing-bracket)
     #/dissect hist (list loc stack)
     #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
-    #/w- pop
-      (fn loc
-        (poppable-hyperstack-pop stack
-        #/olist-build d-bracket #/dissectfn _ loc))
-    #/dissect (pop loc) (list tentative-new-loc tentative-new-stack)
+    #/dissect
+      (poppable-hyperstack-pop stack
+      #/olist-build d-bracket #/dissectfn _ loc)
+      (list popped-barrier tentative-new-loc tentative-new-stack)
+    #/blah "h3.1" loc tentative-new-loc
     #/mat loc (loc-outside)
-      (dissect tentative-new-loc (loc-interpolation i d)
+      (blah "h4"
+      #/dissect tentative-new-loc (loc-interpolation i d)
       #/next root-brackets
         (push-interpolation-bracket interpolations i closing-bracket)
         (list tentative-new-loc tentative-new-stack)
         rev-result)
     #/mat loc (loc-dropped)
-      (mat tentative-new-loc (loc-interpolation-uninitialized)
+      (blah "h5"
+      #/mat tentative-new-loc (loc-interpolation-uninitialized)
         (next root-brackets
-          (hash-set interpolations new-i (list (list) (nothing)))
+          (hash-set interpolations new-i
+            (interpolation-state-in-progress (list)
+              (make-poppable-hyperstack-n d-root)))
           (list
             (loc-interpolation new-i closing-bracket)
             tentative-new-stack)
@@ -619,30 +667,20 @@
           (list tentative-new-loc tentative-new-stack)
           (cons closing-bracket rev-result)))
     #/mat loc (loc-interpolation i d)
-      (dissect (hash-ref interpolations i)
-        (list rev-brackets maybe-result)
+      (blah "h6"
       #/mat tentative-new-loc (loc-outside)
-        (w- rev-brackets (cons closing-bracket rev-brackets)
+        (blah "h7"
         #/next root-brackets
-          (hash-set interpolations i
-            (list
-              rev-brackets
-              (mat (poppable-hyperstack-dimension tentative-new-stack)
-                0
-                (just #/hypertee d-root #/reverse rev-brackets)
-                maybe-result)))
+          (push-interpolation-bracket-and-possibly-finish
+            interpolations i closing-bracket)
           (list tentative-new-loc tentative-new-stack)
           rev-result)
       #/dissect tentative-new-loc (loc-dropped)
-        (w- rev-brackets
-          (cons (list closing-bracket #/trivial) rev-brackets)
+        (blah "h9"
         #/next root-brackets
-          (hash-set interpolations i
-            (list
-              rev-brackets
-              (mat d-bracket 0
-                (just #/hypertee d-root #/reverse rev-brackets)
-                maybe-result)))
+          (push-interpolation-bracket-and-possibly-finish
+            interpolations i
+            (list closing-bracket #/trivial))
           (list tentative-new-loc tentative-new-stack)
           (cons closing-bracket rev-result)))
     #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
@@ -774,7 +812,7 @@
       #/dissect
         (poppable-hyperstack-pop histories
         #/olist-build d #/dissectfn _ maybe-interpolation-i)
-        (list maybe-interpolation-i histories)
+        (list popped-barrier maybe-interpolation-i histories)
       #/w- hist (list maybe-interpolation-i histories)
       #/mat maybe-interpolation-i (nothing)
         (dissect root-brackets
@@ -810,7 +848,7 @@
     #/dissect
       (poppable-hyperstack-pop histories
       #/olist-build d #/dissectfn _ maybe-interpolation-i)
-      (list maybe-interpolation-i histories)
+      (list popped-barrier maybe-interpolation-i histories)
     #/expect closing-bracket (list d data)
       ; We resume an interpolation.
       (expect maybe-interpolation-i (just i)
@@ -888,7 +926,7 @@
       #/dissect
         (poppable-hyperstack-pop histories
         #/olist-build d #/dissectfn _ maybe-current-hole)
-        (list maybe-restored-hole histories)
+        (list popped-barrier maybe-restored-hole histories)
       #/w- update-hole-state
         (fn hole-states i
           (dissect (hash-ref hole-states i) (list rev-brackets hist)

@@ -97,7 +97,7 @@
 (check-drop1-round-trip sample-closing-3)
 (check-drop1-round-trip sample-closing-4)
 
-; TODO NOW: This test is failing. Fix it.
+; TODO NOW: This test is causing an error. Fix it.
 (check-drop1-round-trip sample-closing-5)
 
 (check-drop1-round-trip sample-opening-1)

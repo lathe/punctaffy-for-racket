@@ -365,7 +365,9 @@
       (poppable-hyperstack-pop histories-before
       #/olist-build d #/dissectfn _
         (history-info location-before maybe-state-before))
-      (list (history-info location-after maybe-state-after)
+      (list
+        popped-barrier
+        (history-info location-after maybe-state-after)
         histories-after)
     #/if (equal? d pred-unstriped-degrees)
       

@@ -54,7 +54,7 @@
 (define/contract (make-poppable-hyperstack elems)
   (-> olist<=e0? poppable-hyperstack?)
   (poppable-hyperstack #/olist-map elems #/fn elem
-    (list elem #/olist-zero)))
+    (list 'root elem #/olist-zero)))
 
 (define/contract (poppable-hyperstack-dimension h)
   (-> poppable-hyperstack? onum<=e0?)
@@ -68,9 +68,15 @@
       [i (h) (onum</c #/poppable-hyperstack-dimension h)])
     [_ any/c])
   (dissect h (poppable-hyperstack olist)
-  #/dissect (olist-ref-and-call olist i) (list elem olist-suffix)
+  #/dissect (olist-ref-and-call olist i)
+    (list barrier elem olist-suffix)
     elem))
 
+; TODO: See if we'll ever use the `popped-barrier` result of this
+; procedure. We've added it just for consistency with
+; `pushable-hyperstack-pop`, but aside from being somewhat informative
+; during debugging, it hasn't been used yet.
+;
 (define/contract (poppable-hyperstack-pop h elems-to-push)
   (->i ([h poppable-hyperstack?] [elems-to-push olist<e0?])
     
@@ -79,14 +85,15 @@
       (olist-length elems-to-push)
       (poppable-hyperstack-dimension h))
     
-    [_ (list/c any/c poppable-hyperstack?)])
+    [_ (list/c (or/c 'root 'pop) any/c poppable-hyperstack?)])
   (dissect h (poppable-hyperstack olist)
   #/w- i (olist-length elems-to-push)
-  #/dissect (olist-ref-and-call olist i) (list elem olist-suffix)
+  #/dissect (olist-ref-and-call olist i)
+    (list popped-barrier elem olist-suffix)
   #/dissect (olist-drop i #/olist-tails olist) (just #/list tails _)
-  #/list elem #/poppable-hyperstack #/olist-plus
+  #/list popped-barrier elem #/poppable-hyperstack #/olist-plus
     (olist-zip-map elems-to-push tails #/fn elem tail
-      (list elem tail))
+      (list 'pop elem tail))
     olist-suffix))
 
 (define/contract (poppable-hyperstack-promote h dimension elem)
@@ -95,7 +102,8 @@
   #/expect (onum-drop (olist-length olist) dimension) (just excess) h
   #/poppable-hyperstack
   #/olist-plus olist #/olist-build excess #/dissectfn _
-    (list elem #/olist-zero)))
+    ; TODO: See if the value `'root` is correct here.
+    (list 'root elem #/olist-zero)))
 
 (define/contract (make-poppable-hyperstack-n dimension)
   (-> onum<=e0? poppable-hyperstack?)
@@ -111,7 +119,7 @@
   (dissect
     (poppable-hyperstack-pop h
     #/olist-build i #/dissectfn _ #/trivial)
-    (list elem rest)
+    (list popped-barrier elem rest)
     rest))
 
 
