@@ -82,6 +82,19 @@
 (check-drop1-round-trip sample-closing-5)
 
 
+(define (check-identity-map sample)
+  (check-equal?
+    (hypertee-map-all-degrees sample #/fn hole data data)
+    sample))
+
+(check-identity-map sample-0)
+(check-identity-map sample-closing-1)
+(check-identity-map sample-closing-2)
+(check-identity-map sample-closing-3)
+(check-identity-map sample-closing-4)
+(check-identity-map sample-closing-5)
+
+
 (check-equal?
   (hypertee-join-all-degrees #/n-ht 2
     (list 1 #/n-ht 2

@@ -96,32 +96,5 @@
 
 (check-drop1-round-trip sample-closing-3)
 (check-drop1-round-trip sample-closing-4)
-
-; TODO NOW: This test is causing an error. Fix it.
 (check-drop1-round-trip sample-closing-5)
-
 (check-drop1-round-trip sample-opening-1)
-
-
-#|
-#hasheq(
-  (0 . ((0 #<hypernest-hole: #<trivial:>>)))
-  (4 . ((0 #<hypernest-hole: #<trivial:>>)))
-  (2 . (
-    (0 #<hypernest-hole: #<trivial:>>)
-    0
-    (1 #<hypernest-hole: #<trivial:>>)
-  ))
-  (root . (
-    (0 #<hypernest-hole: a>)
-    0
-    (0 #<hypernest-hole: #<trivial:>>)
-    0
-    (1 #<hypernest-bump: a 4>)
-    1
-    (2 #<hypernest-bump: a 2>)
-    0
-    (1 #<hypernest-bump: a 0>)
-  ))
-)
-|#

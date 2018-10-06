@@ -41,6 +41,7 @@
   poppable-hyperstack-promote
   
   make-poppable-hyperstack-n
+  poppable-hyperstack-pop-n-with-barrier
   poppable-hyperstack-pop-n
   
   make-pushable-hyperstack
@@ -74,8 +75,9 @@
 
 ; TODO: See if we'll ever use the `popped-barrier` result of this
 ; procedure. We've added it just for consistency with
-; `pushable-hyperstack-pop`, but aside from being somewhat informative
-; during debugging, it hasn't been used yet.
+; `pushable-hyperstack-pop`, the only place we've used it so far is
+; the place we use `poppable-hyperstack-pop-n-with-barrier`. It has
+; also provided a little bit more information during debugging.
 ;
 (define/contract (poppable-hyperstack-pop h elems-to-push)
   (->i ([h poppable-hyperstack?] [elems-to-push olist<e0?])
@@ -110,16 +112,26 @@
   (make-poppable-hyperstack
   #/olist-build dimension #/dissectfn _ #/trivial))
 
+(define/contract (poppable-hyperstack-pop-n-with-barrier h i)
+  (->i
+    (
+      [h poppable-hyperstack?]
+      [i (h) (onum</c #/poppable-hyperstack-dimension h)])
+    [_ (list/c (or/c 'root 'pop) poppable-hyperstack?)])
+  (dissect
+    (poppable-hyperstack-pop h
+    #/olist-build i #/dissectfn _ #/trivial)
+    (list popped-barrier elem rest)
+  #/list popped-barrier rest))
+
 (define/contract (poppable-hyperstack-pop-n h i)
   (->i
     (
       [h poppable-hyperstack?]
       [i (h) (onum</c #/poppable-hyperstack-dimension h)])
     [_ poppable-hyperstack?])
-  (dissect
-    (poppable-hyperstack-pop h
-    #/olist-build i #/dissectfn _ #/trivial)
-    (list popped-barrier elem rest)
+  (dissect (poppable-hyperstack-pop-n-with-barrier h i)
+    (list popped-barrier rest)
     rest))
 
 

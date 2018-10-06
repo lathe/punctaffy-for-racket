@@ -485,8 +485,10 @@
       ; low-degree holes, which contain `(trivial)`, with
       ; `(hypernest-hole #/trivial)`.
       #/hypernest d #/just
+      #/blah "e0.3"
       #/hypertee-map-all-degrees tail #/fn hole data
-        (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+        (blah "e0.4"
+        #/expect (onum<? (hypertee-degree hole) root-hole-degree) #t
           data
         #/dissect data (trivial)
         #/hypernest-hole #/trivial)))

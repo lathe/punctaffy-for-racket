@@ -43,7 +43,8 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   make-poppable-hyperstack make-poppable-hyperstack-n
   poppable-hyperstack-dimension poppable-hyperstack-pop
-  poppable-hyperstack-pop-n poppable-hyperstack-promote)
+  poppable-hyperstack-pop-n poppable-hyperstack-pop-n-with-barrier
+  poppable-hyperstack-promote)
 
 (provide
   hypertee-closing-bracket-degree
@@ -435,12 +436,15 @@
       #/w- restored-history
         (poppable-hyperstack-pop-n histories closing-degree)
       #/begin
-        (when
+        (if
           (equal? closing-degree
           #/poppable-hyperstack-dimension restored-history)
           ; NOTE: We don't validate `hole-value`.
           (expect closing-bracket (list closing-degree hole-value)
             (error "Expected a closing bracket that began a hole to be annotated with a data value")
+          #/void)
+          (mat closing-bracket (list closing-degree hole-value)
+            (error "Expected a closing bracket that did not begin a hole to have no data value annotation")
           #/void))
         restored-history))
   #/expect final-region-degree 0
@@ -596,14 +600,18 @@
     rev-result (list)
     
     (define (push-interpolation-bracket interpolations i bracket)
-      (dissect (hash-ref interpolations i)
+      (w- d (hypertee-closing-bracket-degree bracket)
+      #/dissect (hash-ref interpolations i)
         (interpolation-state-in-progress
           rev-brackets interpolation-hyperstack)
+      #/dissect
+        (poppable-hyperstack-pop-n-with-barrier
+          interpolation-hyperstack d)
+        (list popped-barrier interpolation-hyperstack)
       #/hash-set interpolations i
         (interpolation-state-in-progress
-          (cons bracket rev-brackets)
-          (poppable-hyperstack-pop-n interpolation-hyperstack
-            (hypertee-closing-bracket-degree bracket)))))
+          (cons (mat popped-barrier 'root bracket d) rev-brackets)
+          interpolation-hyperstack)))
     
     (define
       (push-interpolation-bracket-and-possibly-finish
@@ -678,7 +686,8 @@
       #/dissect tentative-new-loc (loc-dropped)
         (blah "h9"
         #/next root-brackets
-          (push-interpolation-bracket-and-possibly-finish
+          (blah "h10"
+          #/push-interpolation-bracket-and-possibly-finish
             interpolations i
             (list closing-bracket #/trivial))
           (list tentative-new-loc tentative-new-stack)
@@ -895,7 +904,21 @@
 
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee<omega? any/c any/c) hypertee?)
-  (dissect ht (hypertee overall-degree closing-brackets)
+  
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (displayln #/format "\\~a" tagline)))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
+  (blah "i1" ht
+  #/dissect ht (hypertee overall-degree closing-brackets)
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for an `overall-degree` equal to `0`, but the loop ends
   ; with a `maybe-current-hole` of `(nothing)`.
