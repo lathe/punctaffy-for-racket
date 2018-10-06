@@ -75,7 +75,10 @@
 
 
 (define (check-drop1-round-trip sample)
-  (check-equal? (hypernest-plus1 #/hypernest-drop1 sample) sample))
+  (check-equal?
+    (hypernest-plus1 (hypernest-degree sample)
+    #/hypernest-drop1 sample)
+    sample))
 
 (check-drop1-round-trip sample-0)
 (check-drop1-round-trip sample-closing-1)

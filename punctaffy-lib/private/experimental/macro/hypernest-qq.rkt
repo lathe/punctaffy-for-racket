@@ -36,12 +36,13 @@
   hypernest-drop1-result-bump hypernest-drop1-result-hole
   hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-zip)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-degree hypertee-map-all-degrees hypertee-uncontour
+  hypertee-degree hypertee-map-all-degrees hypertee-promote
+  hypertee-set-degree-maybe hypertee-uncontour
   hypertee-v-each-one-degree)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-1-s-expr-stx hn-tag-2-list hn-tag-2-list* hn-tag-2-prefab
-  hn-tag-2-vector hn-tag-nest s-expr-stx->hn-expr)
+  hn-tag-3-s-expr-stx hn-tag-4-list hn-tag-4-list* hn-tag-4-prefab
+  hn-tag-4-vector hn-tag-nest s-expr-stx->hn-expr)
 
 (require #/for-syntax #/only-in syntax/parse syntax-parse)
 
@@ -134,38 +135,42 @@
       (error "Expected an hn-expr with a trivial value in its degree-0 hole")
     #/list)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
-  #/mat data (hn-tag-1-s-expr-stx stx)
-    (expect (hypernest-degree tails) 1
-      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree other than 1")
+  #/mat data (hn-tag-3-s-expr-stx stx)
+    (expect (hypernest-degree tails) 3
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
-      (error "Encountered an hn-tag-1-s-expr-stx bump with bumps in it")
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
+    #/expect (hypertee-set-degree-maybe 1 tails) (just tails)
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree-2 or degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (error "Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour")
+      (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
     #/cons stx #/hn-expr->s-expr-stx-list tail)
   #/w- process-listlike
     (fn stx-example list->whatever
-      (expect (hypernest-degree tails) 2
-        (error "Encountered a list-like hn-tag-2-... bump with a degree other than 2")
+      (expect (hypernest-degree tails) 4
+        (error "Encountered a list-like hn-tag-4-... bump with a degree other than 4")
       #/expect (hypernest->maybe-hypertee tails) (just tails)
-        (error "Encountered a list-like hn-tag-2-... bump with bumps in it")
+        (error "Encountered a list-like hn-tag-4-... bump with a bump in it")
+      #/expect (hypertee-set-degree-maybe 2 tails) (just tails)
+        (error "Encountered a list-like hn-tag-4-... bump with a degree-3 or degree-2 hole in it")
       #/expect (hypertee-uncontour tails)
         (just #/list elems tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour")
+        (error "Encountered a list-like hn-tag-4-... bump which wasn't a contour")
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour of a contour")
+        (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
       #/cons
         (datum->syntax stx-example
         #/list->whatever #/hn-expr->s-expr-stx-list elems)
         (hn-expr->s-expr-stx-list tail)))
-  #/mat data (hn-tag-2-list stx-example)
+  #/mat data (hn-tag-4-list stx-example)
     (process-listlike stx-example #/fn lst lst)
-  #/mat data (hn-tag-2-list* stx-example)
+  #/mat data (hn-tag-4-list* stx-example)
     (process-listlike stx-example #/fn lst #/apply list* lst)
-  #/mat data (hn-tag-2-vector stx-example)
+  #/mat data (hn-tag-4-vector stx-example)
     (process-listlike stx-example #/fn lst #/list->vector lst)
-  #/mat data (hn-tag-2-prefab key stx-example)
+  #/mat data (hn-tag-4-prefab key stx-example)
     (process-listlike stx-example #/fn lst
       (apply make-prefab-struct key lst))
   #/mat data (hn-tag-nest)
@@ -196,43 +201,48 @@
   #/mat dropped (hypernest-drop1-result-hole data tails)
     (hypernest-contour data #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
-  #/mat data (hn-tag-1-s-expr-stx stx)
-    (expect (hypernest-degree tails) 1
-      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree other than 1")
+  #/mat data (hn-tag-3-s-expr-stx stx)
+    (expect (hypernest-degree tails) 3
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
-      (error "Encountered an hn-tag-1-s-expr-stx bump with bumps in it")
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
+    #/expect (hypertee-set-degree-maybe 1 tails) (just tails)
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree-2 or degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (error "Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour")
+      (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
     #/hypernest-join-all-degrees
-    #/hypernest-contour (hn-tag-1-s-expr-stx #`'#,stx)
+    #/hypernest-contour (hn-tag-3-s-expr-stx #`'#,stx)
+    #/hypertee-promote 3
     #/process-tails tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
-      (expect (hypernest-degree tails) 2
-        (error "Encountered a list-like hn-tag-2-... bump with a degree other than 2")
+      (expect (hypernest-degree tails) 4
+        (error "Encountered a list-like hn-tag-4-... bump with a degree other than 4")
       #/expect (hypernest->maybe-hypertee tails) (just tails)
-        (error "Encountered a list-like hn-tag-2-... bump with bumps in it")
+        (error "Encountered a list-like hn-tag-4-... bump with a bump in it")
+      #/expect (hypertee-set-degree-maybe 2 tails) (just tails)
+        (error "Encountered a list-like hn-tag-4-... bump with a degree-3 or degree-2 hole in it")
       #/expect (hypertee-uncontour tails)
         (just #/list elems tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour")
+        (error "Encountered a list-like hn-tag-4-... bump which wasn't a contour")
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour of a contour")
+        (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
       #/hypernest-join-all-degrees
       #/n-hn 2
-        (list 'open 2 #/hn-tag-2-list stx-example)
+        (list 'open 4 #/hn-tag-4-list stx-example)
         1
         
         (list 1 #/n-hn-append0 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn 2
-            (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
+            (list 'open 3 #/hn-tag-3-s-expr-stx list-beginning)
             0
           #/list 0 #/trivial))
         0
         
-        (list 'open 1 #/hn-tag-1-s-expr-stx #'list)
+        (list 'open 3 #/hn-tag-3-s-expr-stx #'list)
         0
         
         (list 1 #/hn-expr-2->s-expr-generator elems)
@@ -241,13 +251,13 @@
         0
         0
       #/list 0 #/hn-expr-2->s-expr-generator tail))
-  #/mat data (hn-tag-2-list stx-example)
+  #/mat data (hn-tag-4-list stx-example)
     (process-listlike stx-example #/list #'list)
-  #/mat data (hn-tag-2-list* stx-example)
+  #/mat data (hn-tag-4-list* stx-example)
     (process-listlike stx-example #/list #'list*)
-  #/mat data (hn-tag-2-vector stx-example)
+  #/mat data (hn-tag-4-vector stx-example)
     (process-listlike stx-example #/list #'vector)
-  #/mat data (hn-tag-2-prefab key stx-example)
+  #/mat data (hn-tag-4-prefab key stx-example)
     (process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
   #/mat data (hn-tag-nest)
@@ -278,52 +288,57 @@
   #/mat dropped (hypernest-drop1-result-hole data tails)
     (hypernest-contour data #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
-  #/mat data (hn-tag-1-s-expr-stx stx)
-    (expect (hypernest-degree tails) 1
-      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree other than 1")
+  #/mat data (hn-tag-3-s-expr-stx stx)
+    (expect (hypernest-degree tails) 3
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
-      (error "Encountered an hn-tag-1-s-expr-stx bump with bumps in it")
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
+    #/expect (hypertee-set-degree-maybe 1 tails) (just tails)
+      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree-2 or degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (error "Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour")
+      (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
     #/hypernest-join-all-degrees
-    #/hypernest-contour (hn-tag-1-s-expr-stx #`#'#,stx)
+    #/hypernest-contour (hn-tag-3-s-expr-stx #`#'#,stx)
+    #/hypertee-promote 3
     #/process-tails tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
-      (expect (hypernest-degree tails) 2
-        (error "Encountered a list-like hn-tag-2-... bump with a degree other than 2")
+      (expect (hypernest-degree tails) 4
+        (error "Encountered a list-like hn-tag-4-... bump with a degree other than 4")
       #/expect (hypernest->maybe-hypertee tails) (just tails)
-        (error "Encountered a list-like hn-tag-2-... bump with bumps in it")
+        (error "Encountered a list-like hn-tag-4-... bump with a bump in it")
+      #/expect (hypertee-set-degree-maybe 2 tails) (just tails)
+        (error "Encountered a list-like hn-tag-4-... bump with a degree-3 or degree-2 hole in it")
       #/expect (hypertee-uncontour tails)
         (just #/list elems tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour")
+        (error "Encountered a list-like hn-tag-4-... bump which wasn't a contour")
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour of a contour")
+        (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
       #/hypernest-join-all-degrees
       #/n-hn 2
-        (list 'open 2 #/hn-tag-2-list stx-example)
+        (list 'open 4 #/hn-tag-4-list stx-example)
         1
         
-        (list 'open 1 #/hn-tag-1-s-expr-stx #'datum->syntax)
+        (list 'open 3 #/hn-tag-3-s-expr-stx #'datum->syntax)
         0
         
-        (list 'open 1 #/hn-tag-1-s-expr-stx #`#'#,stx-example)
+        (list 'open 3 #/hn-tag-3-s-expr-stx #`#'#,stx-example)
         0
         
-        (list 'open 2 #/hn-tag-2-list stx-example)
+        (list 'open 4 #/hn-tag-4-list stx-example)
         1
         
         (list 1 #/n-hn-append0 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn 2
-            (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
+            (list 'open 3 #/hn-tag-3-s-expr-stx list-beginning)
             0
           #/list 0 #/trivial))
         0
         
-        (list 'open 1 #/hn-tag-1-s-expr-stx #'list)
+        (list 'open 3 #/hn-tag-3-s-expr-stx #'list)
         0
         
         (list 1 #/hn-expr-2->s-expr-stx-generator elems)
@@ -335,13 +350,13 @@
         0
         0
       #/list 0 #/hn-expr-2->s-expr-stx-generator tail))
-  #/mat data (hn-tag-2-list stx-example)
+  #/mat data (hn-tag-4-list stx-example)
     (process-listlike stx-example #/list #'list)
-  #/mat data (hn-tag-2-list* stx-example)
+  #/mat data (hn-tag-4-list* stx-example)
     (process-listlike stx-example #/list #'list*)
-  #/mat data (hn-tag-2-vector stx-example)
+  #/mat data (hn-tag-4-vector stx-example)
     (process-listlike stx-example #/list #'vector)
-  #/mat data (hn-tag-2-prefab key stx-example)
+  #/mat data (hn-tag-4-prefab key stx-example)
     (process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
   #/mat data (hn-tag-nest)

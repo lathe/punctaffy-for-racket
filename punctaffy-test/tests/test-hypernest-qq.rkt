@@ -37,27 +37,34 @@
 ; design of hn-expressions themselves (so a fix would need to correct
 ; the `punctaffy/private/experimental/macro/hypernest-bracket` and
 ; `punctaffy/private/experimental/macro/hypernest-qq` modules).
+;
+; Right now we're taking an approach where we represent expressions
+; using degree-3 regions and list-like operations using degree-4
+; regions. This makes it possible for them to reside inside a
+; `hn-tag-nest` region without being confused with closing brackets
+; bounding the region.
+;
+; To illustrate in more detail, the problem we avoid that way is that
+; if we have one `hn-tag-nest` representing a degree-2 snippet of the
+; code (encoded as a degree-4 bump) and inside its degree-2 region we
+; have a degree-1 snippet of code represented as a degree-1 bump, then
+; the first hypertee in the representation of this hypernest will have
+; a degree-1 hole (the inner bump) inside a degree-2 region, which is
+; treated (whether we like it or not) as a hole in that region rather
+; than as a bump. Bumping all the degree-1 snippets up to degree 3
+; lets us avoid this.
+;
+; We shouldn't really have to think about that when we're using
+; hypernests, so there's probably a representation format that fits
+; the hypernest format better. Here's an approach that could work:
 ; Instead of representing `hn-tag-nest` as contour-of-contour-shaped
-; bumps with empty interiors, we need to represent them with... well,
-; interiors of some sort. Probably as bumps with interiors according
-; to the brackets they represent, and with data annotations that are
-; appropriately shaped hypernest values that encode the bracket's
-; original syntax.
+; bumps with empty interiors, we could represent them with bumps whose
+; interiors correspond to the interiors of the brackets they represent
+; and whose data annotations contain are appropriately shaped
+; hypernest values which encode the brackets' original syntax.
 ;
-; The problem we solve that way is that if we have one `hn-tag-nest`
-; representing a degree-2 snippet of the code (hence encoded as a
-; degree-4 bump right now) and inside its degree-2 region it has an
-; `hn-tag-nest` that represents a degree-1 snippet of code (encoded as
-; a degree-3 bump), that degree-3 bump is... Wait...
-;
-; There may be an easier way. Instead of using a degree-2 bump to
-; represent a degree-2 `hn-tag-nest`, we could keep using a degree-4
-; bump as long as we use a *degree-3* bump to represent an
-; `hn-tag-1-s-expr-stx` occurrence and a *degree-4* bump to represent
-; an `hn-tag-2-list` occurrence.
-;
-; Huh. If we do that, doesn't that mean we could encode the
-; hn-expression as a hypertee after all?
+; On the other hand, if we are able to get this working with that
+; degree-3 approach, do we really need hypernests at all?
 
 (check-equal?
   (my-quasiquote #/^< 2

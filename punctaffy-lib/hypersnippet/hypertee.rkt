@@ -55,6 +55,7 @@
   degree-and-closing-brackets->hypertee
   hypertee->degree-and-closing-brackets
   hypertee-promote
+  hypertee-set-degree-maybe
   hypertee-set-degree
   hypertee<omega?
   hypertee-contour
@@ -519,18 +520,28 @@
       "ht" ht)
   #/hypertee new-degree closing-brackets))
 
+; Takes a hypertee and returns a `just` of a degree-N hypertee with
+; the same holes if possible. If this isn't possible (because some
+; holes in the original are of degree N or greater), this returns
+; `(nothing)`.
+(define/contract (hypertee-set-degree-maybe new-degree ht)
+  (-> onum<=omega? hypertee? #/maybe/c hypertee?)
+  (dissect ht (hypertee d closing-brackets)
+  #/if
+    (or (onum<=? d new-degree)
+    #/list-all closing-brackets #/fn closing-bracket
+      (expect closing-bracket (list d data) #t
+      #/onum<? d new-degree))
+    (just #/hypertee new-degree closing-brackets)
+    (nothing)))
+
 ; Takes a hypertee with no holes of degree N or greater and returns a
 ; degree-N hypertee with the same holes.
 (define/contract (hypertee-set-degree new-degree ht)
   (-> onum<=omega? hypertee? hypertee?)
-  (dissect ht (hypertee d closing-brackets)
-  #/begin
-    (unless (onum<=? d new-degree)
-      (list-each closing-brackets #/fn closing-bracket
-        (expect closing-bracket (list d data) (void)
-        #/unless (onum<? d new-degree)
-          (error "Expected ht to have no holes of degree new-degree or greater"))))
-  #/hypertee new-degree closing-brackets))
+  (expect (hypertee-set-degree-maybe new-degree ht) (just result)
+    (error "Expected ht to have no holes of degree new-degree or greater")
+    result))
 
 (define/contract (hypertee<omega? v)
   (-> any/c boolean?)
@@ -740,7 +751,8 @@
     #/if (onum<? d first-nontrivial-d)
       (dissect suffix (trivial)
       ; TODO: See if this is correct.
-      #/hypertee-plus1 #/just #/list (trivial) tails)
+      #/hypertee-plus1 (hypertee-degree ht)
+      #/just #/list (trivial) tails)
     #/expect
       (and
         (hypertee? suffix)
@@ -766,10 +778,12 @@
     (w- d (hypertee-degree tails)
     #/if (onum<? d first-nontrivial-d)
       (dissect data (trivial)
-      #/hypertee-plus1 #/just #/list (trivial) tails)
+      #/hypertee-plus1 (hypertee-degree ht)
+      #/just #/list (trivial) tails)
     #/w- hole
       (hypertee-map-all-degrees tails #/fn hole data #/trivial)
-    #/hypertee-plus1 #/just #/list (func hole data) tails)))
+    #/hypertee-plus1 (hypertee-degree ht)
+    #/just #/list (func hole data) tails)))
 
 (struct-easy (hypertee-join-selective-interpolation ht) #:equal)
 (struct-easy (hypertee-join-selective-non-interpolation data) #:equal)
@@ -810,6 +824,17 @@
         (expect interpolation-brackets (list)
           (error "Internal error: Encountered the end of a hypertee join root before getting to the end of its interpolations")
         #/void))
+      
+      ; NOTE: It's possible for this to throw errors, particularly if
+      ; some of the things we've joined together include annotated
+      ; holes in places where holes of that degree shouldn't be
+      ; annotated (because they're closing another hole). Despite the
+      ; fact that the errors this raises aren't associated with
+      ; `hypertee-dv-join-all-degrees-selective` or caught earlier
+      ; during this process, I've found them to be surprisingly
+      ; helpful since it's easy to modify this code to log the fully
+      ; constructed list of brackets.
+      ;
       (hypertee overall-degree #/reverse rev-result))
     
     (define (pop-interpolation-bracket interpolations i)
@@ -1197,21 +1222,22 @@
     #f)
   (void))
 
-(define/contract (hypertee-plus1 drop1-result)
-  (-> (maybe/c #/list/c any/c hypertee?) hypertee?)
-  (expect drop1-result (just drop1-result) (hypertee 0 #/list)
+(define/contract (hypertee-plus1 degree drop1-result)
+  (-> onum<=omega? (maybe/c #/list/c any/c hypertee?) hypertee?)
+  (expect drop1-result (just drop1-result)
+    (expect degree 0
+      (error "Expected the degree to be zero since the drop1-result was nothing")
+    #/hypertee 0 #/list)
+  #/mat degree 0
+    (error "Expected the degree to be nonzero since the drop1-result wasn't nothing")
   #/dissect drop1-result (list data tails)
-  #/expect (hypertee-get-hole-zero tails) (just tail0)
-    (hypertee 1 #/list #/list 0 data)
+  #/expect (onum<? (hypertee-degree tails) degree) #t
+    (error "Expected tails to be a hypertee with degree less than the given degree")
   #/begin
     (hypertee-dv-each-all-degrees tails #/fn d tail
-      (unless (hypertee? tail)
-        (error "Expected tails to be a hypertee with hypertees in its holes")))
-  #/w- degree (hypertee-degree tail0)
-  #/begin
-    (hypertee-dv-each-all-degrees tails #/fn d tail
-      (unless (equal? degree #/hypertee-degree tail)
-        (error "Expected tails to be a hypertee with hypertees of uniform degree in its holes")))
+      (unless
+        (and (hypertee? tail) (equal? degree #/hypertee-degree tail))
+        (error "Expected tails to be a hypertee with hypertees of the given degree in its holes")))
   #/begin
     (hypertee-dv-each-all-degrees tails #/fn d tail
       (hypertee-dv-each-all-degrees tail #/fn d2 data
@@ -1219,8 +1245,6 @@
         #/expect data (trivial)
           (error "Expected tails to be a hypertee containing hypertees such that a hypertee in a hole of degree N contained only trivial values at degrees less than N")
         #/void)))
-  #/expect (onum<? (hypertee-degree tails) degree) #t
-    (error "Expected tails to be a hypertee containing hypertees of greater degree")
   #/hypertee-join-all-degrees #/hypertee-pure degree
     (hypertee-pure degree data
     #/hypertee-map-all-degrees tails #/fn hole tail
@@ -1244,7 +1268,11 @@
   (expect (hypertee-contour? ht) #t (nothing)
   #/dissect (hypertee-drop1 ht) (just #/list data tails)
   #/just #/list data #/hypertee-map-all-degrees tails #/fn hole data
-    (dissect (hypertee-uncontour data) (just #/list hole-value ht)
+    (dissect
+      (hypertee-uncontour #/hypertee-set-degree
+        (onum-plus (hypertee-degree hole) 1)
+        data)
+      (just #/list hole-value ht)
       hole-value)))
 
 ; TODO:

@@ -57,7 +57,9 @@
 
 
 (define (check-drop1-round-trip sample)
-  (check-equal? (hypertee-plus1 #/hypertee-drop1 sample) sample))
+  (check-equal?
+    (hypertee-plus1 (hypertee-degree sample) #/hypertee-drop1 sample)
+    sample))
 
 (check-drop1-round-trip sample-0)
 (check-drop1-round-trip sample-closing-1)
@@ -93,6 +95,19 @@
 (check-identity-map sample-closing-3)
 (check-identity-map sample-closing-4)
 (check-identity-map sample-closing-5)
+
+
+(define (check-contour-round-trip sample)
+  (check-equal?
+    (hypertee-uncontour #/hypertee-contour 'b sample)
+    (just #/list 'b sample)))
+
+(check-contour-round-trip sample-0)
+(check-contour-round-trip sample-closing-1)
+(check-contour-round-trip sample-closing-2)
+(check-contour-round-trip sample-closing-3)
+(check-contour-round-trip sample-closing-4)
+(check-contour-round-trip sample-closing-5)
 
 
 (check-equal?

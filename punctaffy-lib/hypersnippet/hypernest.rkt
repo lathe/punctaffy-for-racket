@@ -635,8 +635,9 @@
 ;   hypertee-v-each-one-degree
 ;   hypertee-each-all-degrees
 
-(define/contract (hypernest-plus1 drop1-result)
+(define/contract (hypernest-plus1 degree drop1-result)
   (->
+    onum<=omega?
     (or/c
       (istruct/c hypernest-drop1-result-zero)
       (istruct/c hypernest-drop1-result-hole any/c hypertee?)
@@ -657,26 +658,32 @@
   
   (blah "g1"
   #/mat drop1-result (hypernest-drop1-result-zero)
-    (hypernest 0 #/nothing)
+    (expect degree 0
+      (error "Expected the degree to be zero since the drop1-result was a hypernest-drop1-result-zero")
+    #/hypernest 0 #/nothing)
+  #/mat degree 0
+    (error "Expected the degree to be nonzero since the drop1-result wasn't a hypernest-drop1-result-zero")
   #/mat drop1-result (hypernest-drop1-result-hole data tails)
     (blah "g2"
-    #/expect (hypertee-get-hole-zero tails) (just tail0)
-      (degree-and-brackets->hypernest 1 #/list #/list 0 data)
+    #/expect (onum<? (hypertee-degree tails) degree) #t
+      (raise-arguments-error 'hypernest-plus1
+        "expected tails to be a hypertee with degree less than the given degree"
+        "tails" tails
+        "tails-degree" (hypertee-degree tails)
+        "degree" degree)
     #/begin
       (hypertee-dv-each-all-degrees tails #/fn d tail
-        (unless (hypernest? tail)
-          (error "Expected tails to be a hypertee with hypernests in all its holes")))
-    #/w- degree (hypernest-degree tail0)
-    #/begin
-      (hypertee-dv-each-all-degrees tails #/fn d tail
-        (unless (equal? degree #/hypernest-degree tail)
+        (unless
+          (and
+            (hypernest? tail)
+            (equal? degree #/hypernest-degree tail))
           (error "Expected tails to be a hypertee with hypernests of the same degree in all its holes")))
     #/begin
       (hypertee-dv-each-all-degrees tails #/fn d tail
         (hypernest-dv-each-all-degrees tail #/fn d2 data
           (when (onum<? d2 d)
           #/expect data (trivial)
-            (raise-arguments-error 'assert-valid-hypernest-hypertees
+            (raise-arguments-error 'hypernest-plus1
               "expected tails to be a hypertee containing hypernests such that a hypernest in a hole of degree N contained only trivial values at degrees less than N"
               "tails" tails
               "tails-hole-degree" d
@@ -684,8 +691,6 @@
               "tail-hole-degree" d2
               "data" data)
           #/void)))
-    #/expect (onum<? (hypertee-degree tails) degree) #t
-      (error "Expected tails to be a hypertee containing hypernests of greater degree")
     #/blah "g2.1"
     #/hypernest-join-all-degrees #/hypernest-pure degree
       (hypernest-pure degree data
@@ -694,23 +699,27 @@
       tails)
   #/dissect drop1-result (hypernest-drop1-result-bump data tails)
     (blah "g3"
-    #/expect (hypernest-get-hole-zero tails) (just tail0)
-      (error "Expected tails to be a hypernest of nonzero degree")
+    #/mat degree 0
+      (error "Expected degree to be nonzero since drop1-result was a hypernest-drop1-result-bump")
     #/begin
       (hypernest-dv-each-all-degrees tails #/fn d tail
         (unless (hypernest? tail)
           (error "Expected tails to be a hypernest with hypernests in all its holes")))
-    #/w- degree (hypernest-degree tail0)
     #/begin
       (hypernest-dv-each-all-degrees tails #/fn d tail
         (unless (equal? (onum-max degree d) (hypernest-degree tail))
-          (error "Expected tails to be a hypernest containing hypernests that were each of the overall degree or of the same degree as the hole they were in, whichever was greater")))
+          (raise-arguments-error 'hypernest-plus1
+            "expected tails to be a hypernest containing hypernests that were each of the overall degree or of the same degree as the hole they were in, whichever was greater"
+            "overall-degree" degree
+            "tails" tails
+            "tails-hole-degree" d
+            "tail" tail)))
     #/begin
       (hypernest-dv-each-all-degrees tails #/fn d tail
         (hypernest-dv-each-all-degrees tail #/fn d2 data
           (when (onum<? d2 d)
           #/expect data (trivial)
-            (raise-arguments-error 'assert-valid-hypernest-hypertees
+            (raise-arguments-error 'hypernest-plus1
               "expected tails to be a hypernest containing hypernests such that a hypernest in a hole of degree N contained only trivial values at degrees less than N"
               "tails" tails
               "tails-hole-degree" d
