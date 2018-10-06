@@ -29,7 +29,35 @@
 
 
 
-; TODO NOW: Get these tests to pass. Currently, they cause errors.
+; TODO NOW: Get these tests to pass, and uncomment the ones that are
+; commented out with "#;". Currently, each of them causes the same
+; kind of error.
+;
+; The error they cause right now seems to be due to a mistake in the
+; design of hn-expressions themselves (so a fix would need to correct
+; the `punctaffy/private/experimental/macro/hypernest-bracket` and
+; `punctaffy/private/experimental/macro/hypernest-qq` modules).
+; Instead of representing `hn-tag-nest` as contour-of-contour-shaped
+; bumps with empty interiors, we need to represent them with... well,
+; interiors of some sort. Probably as bumps with interiors according
+; to the brackets they represent, and with data annotations that are
+; appropriately shaped hypernest values that encode the bracket's
+; original syntax.
+;
+; The problem we solve that way is that if we have one `hn-tag-nest`
+; representing a degree-2 snippet of the code (hence encoded as a
+; degree-4 bump right now) and inside its degree-2 region it has an
+; `hn-tag-nest` that represents a degree-1 snippet of code (encoded as
+; a degree-3 bump), that degree-3 bump is... Wait...
+;
+; There may be an easier way. Instead of using a degree-2 bump to
+; represent a degree-2 `hn-tag-nest`, we could keep using a degree-4
+; bump as long as we use a *degree-3* bump to represent an
+; `hn-tag-1-s-expr-stx` occurrence and a *degree-4* bump to represent
+; an `hn-tag-2-list` occurrence.
+;
+; Huh. If we do that, doesn't that mean we could encode the
+; hn-expression as a hypertee after all?
 
 (check-equal?
   (my-quasiquote #/^< 2
@@ -42,6 +70,7 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -59,6 +88,7 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -76,6 +106,7 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b

@@ -445,10 +445,19 @@
           #/poppable-hyperstack-dimension restored-history)
           ; NOTE: We don't validate `hole-value`.
           (expect closing-bracket (list closing-degree hole-value)
-            (error "Expected a closing bracket that began a hole to be annotated with a data value")
+            (raise-arguments-error 'degree-and-closing-brackets->hypertee
+              "expected a closing bracket that began a hole to be annotated with a data value"
+              "opening-degree" opening-degree
+              "closing-brackets" closing-brackets
+              "closing-bracket" closing-bracket)
           #/void)
           (mat closing-bracket (list closing-degree hole-value)
-            (error "Expected a closing bracket that did not begin a hole to have no data value annotation")
+            (begin (displayln "blah k1") (writeln closing-brackets)
+            #/raise-arguments-error 'degree-and-closing-brackets->hypertee
+              "expected a closing bracket that did not begin a hole to have no data value annotation"
+              "opening-degree" opening-degree
+              "closing-brackets" closing-brackets
+              "closing-bracket" closing-bracket)
           #/void))
         restored-history))
   #/expect final-region-degree 0
@@ -919,16 +928,19 @@
       #/olist-build d #/dissectfn _ state)
       (list popped-barrier state histories)
     #/expect closing-bracket (list d data)
-      ; We resume an interpolation in the root.
-      (expect state (state-in-interpolation i)
-        (error "Internal error: A hypertee join root had a closing bracket that did not begin a hole but did not resume an interpolation either")
-      #/dissect (pop-interpolation-bracket interpolations i)
-        (list interpolations #/just interpolation-bracket)
-;      #/begin (displayln "blah j3")
-      #/begin (verify-bracket-degree d interpolation-bracket)
-      #/next root-brackets interpolations
-        (list state histories)
-        rev-result)
+      (w- hist (list state histories)
+      #/mat state (state-in-root)
+        ; We just moved out of a non-interpolation of the root, so
+        ; we're still in the root.
+        (next root-brackets interpolations hist
+          (cons closing-bracket rev-result))
+      #/dissect state (state-in-interpolation i)
+        ; We resume an interpolation in the root.
+        (dissect (pop-interpolation-bracket interpolations i)
+          (list interpolations #/just interpolation-bracket)
+;        #/begin (displayln "blah j3")
+        #/begin (verify-bracket-degree d interpolation-bracket)
+        #/next root-brackets interpolations hist rev-result))
     ; We begin an interpolation in the root.
     #/expect data (hypertee data-d data-closing-brackets)
       (raise-arguments-error 'hypertee-dv-join-all-degrees-selective
