@@ -26,7 +26,7 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/list list-each list-kv-map list-map)
+(require #/only-in lathe-comforts/list list-kv-map list-map)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
@@ -40,13 +40,14 @@
   make-pushable-hyperstack pushable-hyperstack-dimension
   pushable-hyperstack-pop pushable-hyperstack-push)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee hypertee?
-  hypertee-bind-all-degrees hypertee-contour hypertee-degree
-  hypertee-drop1 hypertee-dv-all-all-degrees
+  degree-and-closing-brackets->hypertee hypertee? hypertee-contour
+  hypertee-degree hypertee-drop1 hypertee-dv-all-all-degrees
   hypertee-dv-any-all-degrees hypertee-dv-each-all-degrees
-  hypertee-each-all-degrees hypertee-filter hypertee-get-hole-zero
-  hypertee-join-all-degrees hypertee-map-all-degrees hypertee<omega?
-  hypertee-plus1 hypertee-promote hypertee-pure hypertee-set-degree
+  hypertee-dv-join-all-degrees-selective hypertee-each-all-degrees
+  hypertee-filter hypertee-get-hole-zero
+  hypertee-join-selective-interpolation
+  hypertee-join-selective-non-interpolation hypertee-map-all-degrees
+  hypertee<omega? hypertee-promote hypertee-pure hypertee-set-degree
   hypertee-truncate hypertee-zip-selective)
 
 (provide
@@ -73,9 +74,9 @@
   hypernest-drop1
   hypernest-map-all-degrees
   hypernest-pure
+  hypernest-join-all-degrees
   hypernest-bind-all-degrees
   hypernest-bind-one-degree
-  hypernest-join-all-degrees
   hypernest-join-one-degree
   hypernest-plus1)
 
@@ -516,6 +517,7 @@
 ; TODO IMPLEMENT: Implement operations analogous to these:
 ;
 ;   hypertee-fold
+;   hypertee-dv-join-all-degrees-selective
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -546,68 +548,44 @@
     (just #/hypernest-hole data)
     data))
 
+; TODO IMPLEMENT: Implement operations analogous to these:
+;
+;   hypertee-bind-pred-degree
+;   hypertee-bind-highest-degree
+
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-bind-all-degrees hn func)
+(define/contract (hypernest-join-all-degrees hn)
+  (-> hypernest? hypernest?)
+  (dissect hn (hypernest d maybe-hypertees)
+  #/hypernest d #/maybe-map maybe-hypertees #/fn hypertees
+    (hypertee-dv-join-all-degrees-selective
+    #/hypertee-map-all-degrees hypertees #/fn hole data
+      (w- root-hole-degree (hypertee-degree hole)
+      #/expect data (hypernest-hole interpolation)
+        (hypertee-join-selective-non-interpolation data)
+      #/expect interpolation
+        (hypernest interpolation-d maybe-hypertees)
+        (error "Expected each interpolation to be a hypernest")
+      #/expect (equal? d interpolation-d) #t
+        (error "Expected each interpolation to be a hypernest of the same degree as the root")
+      #/dissect maybe-hypertees (just hypertees)
+      #/hypertee-join-selective-interpolation
+      #/hypertee-map-all-degrees hypertees #/fn hole data
+        (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+          (hypertee-join-selective-non-interpolation data)
+        #/expect data (hypernest-hole data)
+          (hypertee-join-selective-non-interpolation data)
+        #/expect data (trivial)
+          (error "Expected each low-degree hole of each interpolation to contain a trivial value")
+        #/hypertee-join-selective-interpolation #/trivial)))))
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-bind-all-degrees hn hole-to-hn)
   (-> hypernest? (-> hypertee<omega? any/c hypernest?) hypernest?)
-  (dissect hn (hypernest d hypertees)
-  #/hypernest d #/maybe-map hypertees #/fn hypertees
-  
-  ; We do this in two stages, the second of which is a
-  ; `hypertee-join-all-degrees` call. For the most part we could avoid
-  ; that second stage, but we need to smuggle some low-degree bumps
-  ; through this `hypertee-bind-all-degrees` call. It's expecting all
-  ; the low-degree holes to contain trivial values, so what we do is
-  ; replace those low-degree `hypernest-bump`-containing holes with
-  ; holes of degree just high enough (`root-hole-degree`) to avoid
-  ; this. In those holes, we put hypertees with the original holes in
-  ; them.
-  ;
-  ; Since we're wrapping all the interpolations' low-degree bumps in
-  ; large-degree holes, we also have to wrap all the interpolations'
-  ; high-degree bumps, all the interpolations' high-degree holes, and
-  ; all the root's bumps. We wrap these things with holes of the same
-  ; degree, and to do that, we we use the function called `wrap`
-  ; below.
-  ;
-  ; (The interpolations' low-degree holes need to contain trivial
-  ; values, so we process them differently.)
-  ;
-  #/hypertee-join-all-degrees
-  #/hypertee-bind-all-degrees hypertees #/fn hole data
-    (w- wrap
-      (fn hole data
-        (hypertee-pure (onum-omega)
-          (hypertee-pure (onum-omega) data hole)
-          hole))
-    #/expect data (hypernest-hole data) (wrap hole data)
-    #/w- func-result (func hole data)
-    #/expect func-result (hypernest result-d maybe-result-hypertees)
-      (error "Expected the result of a hypernest-bind-all-degrees callback to be a hypernest")
-    #/expect (equal? d result-d) #t
-      (error "Expected the result of a hypernest-bind-all-degrees callback to be a hypernest of the same degree as the root")
-    #/dissect maybe-result-hypertees (just result-hypertees)
-    #/w- root-hole-degree (hypertee-degree hole)
-    #/hypertee-bind-all-degrees result-hypertees #/fn hole data
-      (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
-        (wrap hole data)
-      #/expect data (hypernest-hole data)
-        
-        ; This is where we wrap a bump in a large hole so that the
-        ; outer `hypertee-bind-all-degrees` call won't complain that
-        ; some of the low-degree bumps of the interpolated hypertees
-        ; are `hypernest-bump` values instead of trivial values.
-        ;
-        (hypertee-pure (onum-omega)
-          (hypertee-pure (onum-omega) data hole)
-        #/hypertee-promote root-hole-degree hole)
-      #/expect data (trivial)
-        (raise-arguments-error 'hypernest-bind-all-degrees
-          "a hypernest bind interpolation had a hole of low degree where the value wasn't a trivial value"
-          "hn" hn
-          "func-result" func-result
-          "data" data)
-      #/hypertee-pure (onum-omega) (trivial) hole))))
+  (hypernest-join-all-degrees
+  #/hypernest-map-all-degrees hn hole-to-hn))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -618,18 +596,6 @@
     (if (equal? degree #/hypertee-degree hole)
       (func hole data)
       (hypernest-pure (hypernest-degree hn) data hole))))
-
-; TODO IMPLEMENT: Implement operations analogous to these:
-;
-;   hypertee-bind-pred-degree
-;   hypertee-bind-highest-degree
-
-; TODO IMPLEMENT: Implement operations analogous to this, but for
-; bumps instead of holes.
-(define/contract (hypernest-join-all-degrees hn)
-  (-> hypernest? hypernest?)
-  (hypernest-bind-all-degrees hn #/fn hole data
-    data))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.

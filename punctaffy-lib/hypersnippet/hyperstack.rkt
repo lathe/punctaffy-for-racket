@@ -38,7 +38,6 @@
   make-poppable-hyperstack
   poppable-hyperstack-dimension
   poppable-hyperstack-pop
-  poppable-hyperstack-promote
   
   make-poppable-hyperstack-n
   poppable-hyperstack-pop-n-with-barrier
@@ -97,15 +96,6 @@
     (olist-zip-map elems-to-push tails #/fn elem tail
       (list 'pop elem tail))
     olist-suffix))
-
-(define/contract (poppable-hyperstack-promote h dimension elem)
-  (-> poppable-hyperstack? onum<=e0? any/c poppable-hyperstack?)
-  (dissect h (poppable-hyperstack olist)
-  #/expect (onum-drop (olist-length olist) dimension) (just excess) h
-  #/poppable-hyperstack
-  #/olist-plus olist #/olist-build excess #/dissectfn _
-    ; TODO: See if the value `'root` is correct here.
-    (list 'root elem #/olist-zero)))
 
 (define/contract (make-poppable-hyperstack-n dimension)
   (-> onum<=e0? poppable-hyperstack?)
