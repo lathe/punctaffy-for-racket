@@ -453,8 +453,7 @@
               "closing-bracket" closing-bracket)
           #/void)
           (mat closing-bracket (list closing-degree hole-value)
-            (begin (displayln "blah k1") (writeln closing-brackets)
-            #/raise-arguments-error 'degree-and-closing-brackets->hypertee
+            (raise-arguments-error 'degree-and-closing-brackets->hypertee
               "expected a closing bracket that did not begin a hole to have no data value annotation"
               "opening-degree" opening-degree
               "closing-brackets" closing-brackets
@@ -578,18 +577,6 @@
 (define/contract (hypertee-drop1 ht)
   (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
   
-  (define (blah-fn args body)
-    (w- tagline
-      (apply string-append " blah"
-        (list-map args #/fn arg
-          (format " ~a" arg)))
-    #/begin (displayln #/format "/~a" tagline)
-    #/begin0 (body)
-    #/begin (displayln #/format "\\~a" tagline)))
-  
-  (define-syntax-rule (blah arg ... body)
-    (blah-fn (list arg ...) (lambda () body)))
-  
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
   (struct-easy (loc-interpolation-uninitialized))
@@ -600,8 +587,7 @@
       rev-brackets interpolation-hyperstack))
   (struct-easy (interpolation-state-finished result))
   
-  (blah "h1"
-  #/dissect ht (hypertee d-root closing-brackets)
+  (dissect ht (hypertee d-root closing-brackets)
   #/expect closing-brackets (cons first rest) (nothing)
   #/dissect first (list d-dropped data-dropped)
   #/just #/list data-dropped
@@ -653,10 +639,8 @@
           (interpolation-state-in-progress
             rev-brackets interpolation-hyperstack))))
     
-    (blah "h2"
-    #/expect root-brackets (cons root-bracket root-brackets)
-      (blah "h3"
-      #/dissect hist (list (loc-outside) stack)
+    (expect root-brackets (cons root-bracket root-brackets)
+      (dissect hist (list (loc-outside) stack)
       #/dissect (poppable-hyperstack-dimension stack) 0
       ; We look up all the indexes stored in `rev-result` and make a
       ; hypertee out of it.
@@ -673,17 +657,14 @@
       (poppable-hyperstack-pop stack
       #/olist-build d-bracket #/dissectfn _ loc)
       (list popped-barrier tentative-new-loc tentative-new-stack)
-    #/blah "h3.1" loc tentative-new-loc
     #/mat loc (loc-outside)
-      (blah "h4"
-      #/dissect tentative-new-loc (loc-interpolation i d)
+      (dissect tentative-new-loc (loc-interpolation i d)
       #/next root-brackets
         (push-interpolation-bracket interpolations i closing-bracket)
         (list tentative-new-loc tentative-new-stack)
         rev-result)
     #/mat loc (loc-dropped)
-      (blah "h5"
-      #/mat tentative-new-loc (loc-interpolation-uninitialized)
+      (mat tentative-new-loc (loc-interpolation-uninitialized)
         (next root-brackets
           (hash-set interpolations new-i
             (interpolation-state-in-progress (list)
@@ -699,19 +680,15 @@
           (list tentative-new-loc tentative-new-stack)
           (cons closing-bracket rev-result)))
     #/mat loc (loc-interpolation i d)
-      (blah "h6"
-      #/mat tentative-new-loc (loc-outside)
-        (blah "h7"
-        #/next root-brackets
+      (mat tentative-new-loc (loc-outside)
+        (next root-brackets
           (push-interpolation-bracket-and-possibly-finish
             interpolations i closing-bracket)
           (list tentative-new-loc tentative-new-stack)
           rev-result)
       #/dissect tentative-new-loc (loc-dropped)
-        (blah "h9"
-        #/next root-brackets
-          (blah "h10"
-          #/push-interpolation-bracket-and-possibly-finish
+        (next root-brackets
+          (push-interpolation-bracket-and-possibly-finish
             interpolations i
             (list closing-bracket #/trivial))
           (list tentative-new-loc tentative-new-stack)
@@ -845,8 +822,7 @@
     (define (verify-bracket-degree d closing-bracket)
       (unless
         (equal? d #/hypertee-closing-bracket-degree closing-bracket)
-        (begin (displayln "blah j1") (writeln ht)
-        #/raise-arguments-error
+        (raise-arguments-error
           'hypertee-dv-join-all-degrees-selective
           "expected each interpolation of a hypertee join to be the right shape for its interpolation context"
           "expected-closing-bracket-degree" d
@@ -897,7 +873,6 @@
         (dissect root-brackets
           (cons (list root-bracket-i root-bracket) root-brackets)
         #/begin
-;          (displayln "blah j2") (writeln #/map cadr root-brackets)
           (verify-bracket-degree d root-bracket)
           (mat closing-bracket (list d data)
             (expect data (trivial)
@@ -963,7 +938,6 @@
         ; We resume an interpolation in the root.
         (dissect (pop-interpolation-bracket interpolations i)
           (list interpolations #/just interpolation-bracket)
-;        #/begin (displayln "blah j3")
         #/begin (verify-bracket-degree d interpolation-bracket)
         #/next root-brackets interpolations hist rev-result))
     ; We begin an interpolation in the root.
@@ -986,22 +960,7 @@
 
 (define/contract (hypertee-map-all-degrees ht func)
   (-> hypertee? (-> hypertee<omega? any/c any/c) hypertee?)
-  
-  (define (blah-fn args body)
-    (w- tagline
-      (apply string-append " blah"
-        (list-map args #/fn arg
-          (format " ~a" arg)))
-    #/begin (void) ;(displayln #/format "/~a" tagline)
-    #/begin0 (body)
-    #/begin (void) ;(displayln #/format "\\~a" tagline)
-    ))
-  
-  (define-syntax-rule (blah arg ... body)
-    (blah-fn (list arg ...) (lambda () body)))
-  
-  (blah "i1" ht
-  #/dissect ht (hypertee overall-degree closing-brackets)
+  (dissect ht (hypertee overall-degree closing-brackets)
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for an `overall-degree` equal to `0`, but the loop ends
   ; with a `maybe-current-hole` of `(nothing)`.

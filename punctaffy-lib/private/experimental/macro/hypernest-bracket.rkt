@@ -70,40 +70,23 @@
 
 (define-for-syntax (unmatched-brackets->holes opening-degree hn-expr)
   
-  (define (blah-fn args body)
-    (w- tagline
-      (apply string-append " blah"
-        (list-map args #/fn arg
-          (format " ~a" arg)))
-    #/begin (displayln #/format "/~a" tagline)
-    #/begin0 (body)
-    #/begin (displayln #/format "\\~a" tagline)))
-  
-  (define-syntax-rule (blah arg ... body)
-    (blah-fn (list arg ...) (lambda () body)))
-  
   (define (assert-has-opening-degree v)
     (begin0 v
     #/unless (equal? opening-degree #/hypernest-degree v)
-      (blah "f0" v
-      #/error "Expected the result to have degree opening-degree")))
+      (error "Expected the result to have degree opening-degree")))
   
-  (blah "f1" opening-degree hn-expr
-  #/expect (hypernest-degree hn-expr) 1
+  (expect (hypernest-degree hn-expr) 1
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w- hn-expr (hypernest-promote opening-degree hn-expr)
   #/w-loop next first-nontrivial-d 1 hn-expr hn-expr
-    (blah "f2"
-    #/w- dropped (hypernest-drop1 hn-expr)
+    (w- dropped (hypernest-drop1 hn-expr)
     #/mat dropped (hypernest-drop1-result-hole data tails)
-      (blah "f3" data tails
-      #/assert-has-opening-degree
+      (assert-has-opening-degree
       #/hypernest-plus1 opening-degree
       #/hypernest-drop1-result-hole data
       #/hypertee-map-all-degrees tails #/fn hole tail
         (next (onum-max first-nontrivial-d #/hypertee-degree hole)
           tail))
-    #/blah "f4"
     #/dissect dropped
       (hypernest-drop1-result-bump
         data interior-and-bracket-and-tails)
@@ -114,20 +97,16 @@
           #/fn hole tail
             (next (onum-max first-nontrivial-d #/hypertee-degree hole)
               tail))
-        #/blah "f5" opening-degree interior-and-bracket-and-tails
-          mapped
         #/assert-has-opening-degree
         #/hypernest-plus1 opening-degree
         #/hypernest-drop1-result-bump data mapped))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
-    #/blah "f6"
     #/w- bump-degree-plus-two
       (hypernest-degree interior-and-bracket-and-tails)
     #/expect
       (onum<? bump-degree-plus-two #/onum-plus opening-degree 2)
       #t
       (ignore)
-    #/blah "f7"
     #/expect (onum-pred-maybe bump-degree-plus-two)
       (just bump-degree-plus-one)
       (error "Internal error: Encountered a degree-0 bump")
@@ -166,7 +145,6 @@
 ;          bracket-interior-data))
 ;      (just zipped-bracket)
 ;      (error "Internal error: Expected bracket-syntax and bracket-interior-and-tails to be of compatible shapes since bracket-syntax was a tail of an hn-tag-unmatched-closing-bracket bump and this tail was located in the contour of bracket-interior-and-tails")
-    #/blah "f8" opening-degree tails
     #/assert-has-opening-degree
     #/hypernest-plus1 opening-degree #/hypernest-drop1-result-hole
       (list bracket-syntax bracket-interior)
@@ -177,37 +155,20 @@
 
 
 (define-for-syntax (helper-for-^<-and-^> stx bump-value)
-  
-  (define (blah-fn args body)
-    (w- tagline
-      (apply string-append " blah"
-        (list-map args #/fn arg
-          (format " ~a" arg)))
-    #/begin (displayln #/format "/~a" tagline)
-    #/begin0 (body)
-    #/begin (displayln #/format "\\~a" tagline)))
-  
-  (define-syntax-rule (blah arg ... body)
-    (blah-fn (list arg ...) (lambda () body)))
-  
-  (blah 0
-  #/syntax-parse stx
+  (syntax-parse stx
     [op:id
       ; If this syntax transformer is used in an identifier position,
       ; we just expand as though the identifier isn't bound to a
       ; syntax transformer at all.
-      (blah 1
-      #/n-hn 1 (list 3 #/hn-tag-3-s-expr-stx stx) 0
+      (n-hn 1 (list 3 #/hn-tag-3-s-expr-stx stx) 0
       #/list 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree (syntax-e #'degree-stx)
   #/w- degree-plus-one (onum-plus degree 1)
   #/w- interior-and-closing-brackets
-    (blah 2
-    #/unmatched-brackets->holes degree #/blah "2.0.1" #/n-hn-append0 1
+    (unmatched-brackets->holes degree #/n-hn-append0 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (blah 2.1 #/s-expr-stx->hn-expr interpolation))
-  #/blah 3
+      (s-expr-stx->hn-expr interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
   #/hypernest-plus1 degree
@@ -215,7 +176,6 @@
   #/hypernest-contour
     ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree 1
-    #/blah 4
     #/n-hn degree-plus-one
       (list 'open 4 #/hn-tag-4-list #/datum->syntax stx #/list)
       1
@@ -226,19 +186,14 @@
       0
       
       (list 1
-      #/blah 5
       #/hypernest-join-all-degrees
-      #/blah 6
       #/hypernest-contour
         (hypernest-contour (trivial)
-        #/blah 7
         #/hypertee-map-all-degrees closing-brackets #/fn hole data
           (trivial))
-      #/blah 8
       #/hypertee-map-all-degrees closing-brackets #/fn hole data
         (mat (hypertee-degree hole) 0
           (dissect data (trivial)
-          #/blah 9
           #/degree-and-brackets->hypernest degree-plus-one #/list
           #/list 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
