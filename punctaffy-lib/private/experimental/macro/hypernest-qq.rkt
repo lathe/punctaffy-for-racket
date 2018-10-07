@@ -34,7 +34,8 @@
   degree-and-brackets->hypernest hypernest-bind-one-degree
   hypernest-contour hypernest-degree hypernest-drop1
   hypernest-drop1-result-bump hypernest-drop1-result-hole
-  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-zip)
+  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
+  hypernest-set-degree hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-map-all-degrees hypertee-promote
   hypertee-set-degree-maybe hypertee-uncontour
@@ -127,8 +128,11 @@
 
 
 (define-for-syntax (hn-expr->s-expr-stx-list hn)
-  (expect (hypernest-degree hn) 1
-    (error "Expected an hn-expr of degree 1")
+  (begin (displayln "blah n1") (writeln hn)
+  #/expect (hypernest-degree hn) 1
+    (raise-arguments-error 'hn-expr->s-expr-stx-list
+      "expected an hn-expr of degree 1"
+      "hn" hn)
   #/w- dropped (hypernest-drop1 hn)
   #/mat dropped (hypernest-drop1-result-hole data tails)
     (expect data (trivial)
@@ -191,7 +195,21 @@
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
 (define-for-syntax (hn-expr-2->s-expr-generator hn)
-  (expect (hypernest-degree hn) 2
+  
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (displayln #/format "\\~a" tagline)))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
+  (blah "m1" hn
+  #/expect (hypernest-degree hn) 2
     (error "Expected an hn-expr of degree 2")
   #/w- dropped (hypernest-drop1 hn)
   #/w- process-tails
@@ -199,10 +217,13 @@
       (hypertee-map-all-degrees tails #/fn hole tail
         (hn-expr-2->s-expr-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
-    (hypernest-contour data #/process-tails tails)
+    (blah "m2" data tails
+    #/hypernest-plus1 2 #/hypernest-drop1-result-hole data
+    #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
   #/mat data (hn-tag-3-s-expr-stx stx)
-    (expect (hypernest-degree tails) 3
+    (blah "m3"
+    #/expect (hypernest-degree tails) 3
       (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
       (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
@@ -211,8 +232,11 @@
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
-    #/hypernest-join-all-degrees
-    #/hypernest-contour (hn-tag-3-s-expr-stx #`'#,stx)
+    #/blah "m3.1" tails
+    #/blah "m3.2" (process-tails tails)
+    #/hypernest-plus1 2 #/hypernest-drop1-result-bump
+      (hn-tag-3-s-expr-stx #`'#,stx)
+    #/hypertee->hypernest
     #/hypertee-promote 3
     #/process-tails tails)
   #/w- process-listlike
@@ -252,16 +276,21 @@
         0
       #/list 0 #/hn-expr-2->s-expr-generator tail))
   #/mat data (hn-tag-4-list stx-example)
-    (process-listlike stx-example #/list #'list)
+    (blah "m4"
+    #/process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-4-list* stx-example)
-    (process-listlike stx-example #/list #'list*)
+    (blah "m5"
+    #/process-listlike stx-example #/list #'list*)
   #/mat data (hn-tag-4-vector stx-example)
-    (process-listlike stx-example #/list #'vector)
+    (blah "m6"
+    #/process-listlike stx-example #/list #'vector)
   #/mat data (hn-tag-4-prefab key stx-example)
-    (process-listlike stx-example
+    (blah "m7"
+    #/process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
   #/mat data (hn-tag-nest)
-    (expect (hypernest->maybe-hypertee tails) (just tails)
+    (blah "m8"
+    #/expect (hypernest->maybe-hypertee tails) (just tails)
       (error "Encountered an hn-tag-nest bump with bumps in it")
     #/expect (hypertee-uncontour tails)
       (just #/list bracket-syntax tails-tails)
@@ -286,7 +315,8 @@
       (hypertee-map-all-degrees tails #/fn hole tail
         (hn-expr-2->s-expr-stx-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
-    (hypernest-contour data #/process-tails tails)
+    (hypernest-plus1 2 #/hypernest-drop1-result-hole data
+    #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
   #/mat data (hn-tag-3-s-expr-stx stx)
     (expect (hypernest-degree tails) 3
@@ -298,8 +328,9 @@
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
-    #/hypernest-join-all-degrees
-    #/hypernest-contour (hn-tag-3-s-expr-stx #`#'#,stx)
+    #/hypernest-plus1 2 #/hypernest-drop1-result-bump
+      (hn-tag-3-s-expr-stx #`#'#,stx)
+    #/hypertee->hypernest
     #/hypertee-promote 3
     #/process-tails tails)
   #/w- process-listlike
@@ -412,7 +443,18 @@
         tail))
     (just zipped)
   #/expect
-    (hn-expr->s-expr-stx-list #/hypernest-join-all-degrees zipped)
+    (hn-expr->s-expr-stx-list
+    
+    ; TODO: I can't place why right now, but it feels odd to use
+    ; `hypernest-set-degree` here. Is there another way we can end up
+    ; with a degree-1 hypernest here, like using `hypernest-plus1`?
+    ; Shouldn't the `tails` we zip above be degree-1 hypernests, and
+    ; if so, how is `hypernest-join-all-degrees` accepting them when
+    ; the root is degree-2?
+    ;
+    #/hypernest-set-degree 1
+    
+    #/hypernest-join-all-degrees zipped)
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")
     result))

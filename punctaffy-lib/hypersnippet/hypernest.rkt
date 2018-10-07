@@ -555,9 +555,30 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
+(define call-no 0)
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dissect hn (hypernest d maybe-hypertees)
+  
+  (define (blah-fn args body)
+    (w- tagline
+      (apply string-append " blah"
+        (list-map args #/fn arg
+          (format " ~a" arg)))
+    #/begin (displayln #/format "/~a" tagline)
+    #/begin0 (body)
+    #/begin (displayln #/format "\\~a" tagline)))
+  
+  (define-syntax-rule (blah arg ... body)
+    (blah-fn (list arg ...) (lambda () body)))
+  
+  (begin
+    (set! call-no (add1 call-no))
+    (displayln "***** blah l1")
+    (writeln call-no)
+;    (when (equal? 39 call-no)
+;      (error "blah"))
+  #/blah "l2" hn
+  #/dissect hn (hypernest d maybe-hypertees)
   #/hypernest d #/maybe-map maybe-hypertees #/fn hypertees
     (hypertee-dv-join-all-degrees-selective
     #/hypertee-map-all-degrees hypertees #/fn hole data
@@ -566,9 +587,17 @@
         (hypertee-join-selective-non-interpolation data)
       #/expect interpolation
         (hypernest interpolation-d maybe-hypertees)
-        (error "Expected each interpolation to be a hypernest")
+        (raise-arguments-error 'hypernest-join-all-degrees
+          "expected each interpolation to be a hypernest"
+          "hn" hn
+          "root-hole" hole
+          "interpolation" interpolation)
       #/expect (equal? d interpolation-d) #t
-        (error "Expected each interpolation to be a hypernest of the same degree as the root")
+        (raise-arguments-error 'hypernest-join-all-degrees
+          "expected each interpolation to be a hypernest of the same degree as the root"
+          "hn" hn
+          "root-hole" hole
+          "interpolation" interpolation)
       #/dissect maybe-hypertees (just hypertees)
       #/hypertee-join-selective-interpolation
       #/hypertee-map-all-degrees hypertees #/fn hole data
