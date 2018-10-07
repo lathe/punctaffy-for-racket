@@ -33,13 +33,8 @@
 ;
 ; Get these tests to pass, and uncomment the ones that are commented
 ; out with "#;". The last time we tested them all, each of them caused
-; the same kind of error. Now, the first one doesn't cause an error,
-; but it does still fail:
-;
-;   actual:     '(#<procedure:list> a b (#<procedure:list> c d 9))
-;   expected:   '(a b (c d 9))
-;
-; (We haven't tried the others lately.)
+; the same kind of error. Now, the first one succeeds. We haven't
+; tried the others lately.
 ;
 ;
 ; The error they caused at that point in time seemed to be due to a

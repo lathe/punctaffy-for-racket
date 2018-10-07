@@ -266,9 +266,6 @@
           #/list 0 #/trivial))
         0
         
-        (list 'open 3 #/hn-tag-3-s-expr-stx #'list)
-        0
-        
         (list 1 #/hn-expr-2->s-expr-generator elems)
         0
         
@@ -367,9 +364,6 @@
             (list 'open 3 #/hn-tag-3-s-expr-stx list-beginning)
             0
           #/list 0 #/trivial))
-        0
-        
-        (list 'open 3 #/hn-tag-3-s-expr-stx #'list)
         0
         
         (list 1 #/hn-expr-2->s-expr-stx-generator elems)
