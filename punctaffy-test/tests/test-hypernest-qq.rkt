@@ -29,17 +29,18 @@
 
 
 
-; TODO NOW:
+; TODO NOW: Remove the debug logging we put in while working on
+; getting these tests to pass.
+
+; TODO: Find some way to optimize these tests. We can probably start
+; by replacing occurrences of `hyper{tee,nest}-{map,bind}-...` with
+; variations that don't require the hole shapes to be computed, since
+; we often don't rely on those hole shapes in the computation.
+
+; TODO:
 ;
-; Get these tests to pass, and uncomment the ones that are commented
-; out with "#;". The last time we tested them all, each of them caused
-; the same kind of error. Now, the first two succeed, and the third
-; one raises an error. We haven't tried the fourth one lately.
-;
-;
-; The error they caused at that point in time seemed to be due to a
-; mistake in the design of hn-expressions themselves (so a fix needed
-; to correct the
+; These tests used to cause an error error due to a mistake in the
+; design of hn-expressions themselves (so a fix needed to correct the
 ; `punctaffy/private/experimental/macro/hypernest-bracket` and
 ; `punctaffy/private/experimental/macro/hypernest-qq` modules).
 ;
@@ -71,6 +72,8 @@
 ; On the other hand, if we are able to get this working with that
 ; degree-3 approach, do we really need hypernests at all?
 
+
+; This one seems to take about 1.5 minutes to run (on my machine).
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -82,6 +85,7 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
+; This one seems to take about 4 minutes to run (on my machine).
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -99,7 +103,7 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-#;
+; This one seems to take about 6 minutes to run (on my machine).
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -117,7 +121,7 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
-#;
+; This one seems to take about 6 minutes to run (on my machine).
 (check-equal?
   (my-quasiquote #/^< 2
     (a b

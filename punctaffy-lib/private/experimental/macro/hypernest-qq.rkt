@@ -35,12 +35,12 @@
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest-bind-one-degree
-  hypernest-contour hypernest-degree hypernest-drop1
-  hypernest-drop1-result-bump hypernest-drop1-result-hole
-  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
-  hypernest-promote hypernest-set-degree hypernest-zip
-  hypertee->hypernest)
+  degree-and-brackets->hypernest hypernest-bind-all-degrees
+  hypernest-bind-one-degree hypernest-contour hypernest-degree
+  hypernest-drop1 hypernest-drop1-result-bump
+  hypernest-drop1-result-hole hypernest-join-all-degrees
+  hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
+  hypernest-set-degree hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-map-all-degrees hypertee-promote
   hypertee-set-degree-maybe hypertee-uncontour
@@ -187,14 +187,7 @@
       (error "Encountered an hn-tag-nest bump which wasn't a contour")
     #/expect (hypertee-uncontour tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
-    #/hn-expr->s-expr-stx-list
-    #/dlog "blah b0"
-    #/hypernest-join-all-degrees
-    #/hypernest-contour
-      (hypernest-contour (trivial)
-      #/hypertee-map-all-degrees tails-tails #/fn hole data
-        (trivial))
-      tails-tails)
+    #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
 (define-for-syntax (hn-expr-2->s-expr-generator hn)
@@ -279,12 +272,13 @@
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr-2->s-expr-generator
     #/dlog "blah b2.2"
-    #/hypernest-join-all-degrees
-    #/hypernest-contour
-      (hypernest-contour (trivial)
-      #/hypertee-map-all-degrees tails-tails #/fn hole data
-        (trivial))
-      tails-tails)
+    ; We concatenate everything inside this `hn-tag-nest`, *including*
+    ; the bracket syntax, so that the bracket syntax is included in
+    ; the quoted part of the result.
+    #/hypernest-set-degree 2
+    #/hypernest-bind-all-degrees (hypertee->hypernest tails)
+    #/fn hole tail
+      (hypernest-promote 4 tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
 (define-for-syntax (hn-expr-2->s-expr-stx-generator hn)
@@ -381,12 +375,13 @@
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr-2->s-expr-stx-generator
     #/dlog "blah b4.2"
-    #/hypernest-join-all-degrees
-    #/hypernest-contour
-      (hypernest-contour (trivial)
-      #/hypertee-map-all-degrees tails-tails #/fn hole data
-        (trivial))
-      tails-tails)
+    ; We concatenate everything inside this `hn-tag-nest`, *including*
+    ; the bracket syntax, so that the bracket syntax is included in
+    ; the quoted part of the result.
+    #/hypernest-set-degree 2
+    #/hypernest-bind-all-degrees (hypertee->hypernest tails)
+    #/fn hole tail
+      (hypernest-promote 4 tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 
 (define-syntax (my-quasiquote stx)
