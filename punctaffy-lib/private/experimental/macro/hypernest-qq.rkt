@@ -33,14 +33,14 @@
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest-bind-all-degrees
-  hypernest-bind-one-degree hypernest-contour hypernest-degree
-  hypernest-drop1 hypernest-drop1-result-bump
-  hypernest-drop1-result-hole hypernest-join-all-degrees
+  degree-and-brackets->hypernest hypernest-bind-one-degree
+  hypernest-contour hypernest-degree hypernest-drop1
+  hypernest-drop1-result-bump hypernest-drop1-result-hole
+  hypernest-dv-bind-all-degrees hypernest-join-all-degrees
   hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
   hypernest-set-degree hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-degree hypertee-map-all-degrees hypertee-promote
+  hypertee-degree hypertee-dv-map-all-degrees hypertee-promote
   hypertee-set-degree-maybe hypertee-uncontour
   hypertee-v-each-one-degree)
 (require #/for-syntax #/only-in
@@ -194,7 +194,7 @@
   #/w- dropped (hypernest-drop1 hn)
   #/w- process-tails
     (fn tails
-      (hypertee-map-all-degrees tails #/fn hole tail
+      (hypertee-dv-map-all-degrees tails #/fn d tail
         (hn-expr-2->s-expr-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
     (hypernest-plus1 2 #/hypernest-drop1-result-hole data
@@ -270,8 +270,8 @@
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
     #/hypernest-set-degree 2
-    #/hypernest-bind-all-degrees (hypertee->hypernest tails)
-    #/fn hole tail
+    #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
+    #/fn d tail
       (hypernest-promote 4 tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
@@ -281,7 +281,7 @@
   #/w- dropped (hypernest-drop1 hn)
   #/w- process-tails
     (fn tails
-      (hypertee-map-all-degrees tails #/fn hole tail
+      (hypertee-dv-map-all-degrees tails #/fn d tail
         (hn-expr-2->s-expr-stx-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
     (hypernest-plus1 2 #/hypernest-drop1-result-hole data
@@ -369,8 +369,8 @@
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
     #/hypernest-set-degree 2
-    #/hypernest-bind-all-degrees (hypertee->hypernest tails)
-    #/fn hole tail
+    #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
+    #/fn d tail
       (hypernest-promote 4 tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 

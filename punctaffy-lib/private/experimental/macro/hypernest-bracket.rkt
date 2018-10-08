@@ -38,11 +38,11 @@
   degree-and-brackets->hypernest hypernest-bind-one-degree
   hypernest-contour hypernest-degree hypernest-drop1
   hypernest-drop1-result-bump hypernest-drop1-result-hole
-  hypernest-join-all-degrees hypernest-join-one-degree
-  hypernest-map-all-degrees hypernest->maybe-hypertee
+  hypernest-dv-map-all-degrees hypernest-join-all-degrees
+  hypernest-join-one-degree hypernest->maybe-hypertee
   hypernest-plus1 hypernest-promote hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-contour hypertee-degree hypertee-map-all-degrees
+  hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
@@ -76,19 +76,17 @@
     #/mat dropped (hypernest-drop1-result-hole data tails)
       (hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
       #/hypernest-drop1-result-hole data
-      #/hypertee-map-all-degrees tails #/fn hole tail
-        (next (onum-max first-nontrivial-d #/hypertee-degree hole)
-          tail))
+      #/hypertee-dv-map-all-degrees tails #/fn d tail
+        (next (onum-max first-nontrivial-d d) tail))
     #/dissect dropped
       (hypernest-drop1-result-bump
         data interior-and-bracket-and-tails)
     #/w- ignore
       (fn
         (w- mapped
-          (hypernest-map-all-degrees interior-and-bracket-and-tails
-          #/fn hole tail
-            (next (onum-max first-nontrivial-d #/hypertee-degree hole)
-              tail))
+          (hypernest-dv-map-all-degrees interior-and-bracket-and-tails
+          #/fn d tail
+            (next (onum-max first-nontrivial-d d) tail))
         #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
         #/hypernest-drop1-result-bump data mapped))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
@@ -125,9 +123,9 @@
     ; commented-out code.
 ;    #/expect
 ;      (hypernest-zip
-;        (hypertee-map-all-degrees bracket-interior-and-tails
-;        #/fn hole data
-;          (if (equal? bump-degree-plus-one #/hypertee-degree hole)
+;        (hypertee-dv-map-all-degrees bracket-interior-and-tails
+;        #/fn d data
+;          (if (equal? bump-degree-plus-one d)
 ;            data
 ;            (trivial)))
 ;        bracket-syntax
@@ -139,9 +137,8 @@
     #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
     #/hypernest-drop1-result-hole
       (list bracket-syntax bracket-interior)
-    #/hypertee-map-all-degrees tails #/fn hole tail
-      (next (onum-max first-nontrivial-d #/hypertee-degree hole)
-        tail))))
+    #/hypertee-dv-map-all-degrees tails #/fn d tail
+      (next (onum-max first-nontrivial-d d) tail))))
 
 
 
@@ -180,10 +177,10 @@
       #/hypernest-join-all-degrees
       #/hypernest-contour
         (hypernest-contour (trivial)
-        #/hypertee-map-all-degrees closing-brackets #/fn hole data
+        #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
           (trivial))
-      #/hypertee-map-all-degrees closing-brackets #/fn hole data
-        (mat (hypertee-degree hole) 0
+      #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
+        (mat d 0
           (dissect data (trivial)
           #/degree-and-brackets->hypernest degree-plus-one #/list
           #/list 0 #/trivial)
@@ -198,13 +195,13 @@
     #/list 0 #/trivial)
   #/hypertee-contour
     ; This is everything inside of the bracket.
-    (hypernest-map-all-degrees interior-and-closing-brackets
-    #/fn hole data
+    (hypernest-dv-map-all-degrees interior-and-closing-brackets
+    #/fn d data
       (trivial))
   ; This is everything after the bracket's closing brackets. These
   ; things are outside of the bracket.
-  #/hypertee-map-all-degrees closing-brackets #/fn hole data
-    (mat (hypertee-degree hole) 0
+  #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
+    (mat d 0
       (dissect data (trivial)
       #/n-hn 1 #/list 0 #/trivial)
     #/dissect data (list bracket-syntax tail)

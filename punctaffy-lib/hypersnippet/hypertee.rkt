@@ -60,6 +60,9 @@
   hypertee<omega?
   hypertee-contour
   hypertee-drop1
+  hypertee-dv-map-all-degrees
+  hypertee-v-map-one-degree
+  hypertee-v-map-highest-degree
   hypertee-fold
   (struct-out hypertee-join-selective-interpolation)
   (struct-out hypertee-join-selective-non-interpolation)
@@ -695,6 +698,34 @@
           (cons closing-bracket rev-result)))
     #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
 
+(define/contract (hypertee-dv-map-all-degrees ht func)
+  (-> hypertee? (-> onum<omega? any/c any/c) hypertee?)
+  (dissect ht (hypertee degree closing-brackets)
+  #/hypertee degree #/list-map closing-brackets #/fn bracket
+    (expect bracket (list d data) bracket
+    #/list d #/func d data)))
+
+(define/contract (hypertee-v-map-one-degree degree ht func)
+  (-> onum<omega? hypertee? (-> any/c any/c) hypertee?)
+  (hypertee-dv-map-all-degrees ht #/fn hole-degree data
+    (if (equal? degree hole-degree)
+      (func data)
+      data)))
+
+(define/contract (hypertee-v-map-pred-degree degree ht func)
+  (-> onum<=omega? hypertee? (-> any/c any/c) hypertee?)
+  
+  ; If the degree is 0 or a limit ordinal, we have nothing to do. No
+  ; hole's degree has the given degree as its successor, so there are
+  ; no holes to process.
+  (expect (onum-pred-maybe degree) (just pred-degree) ht
+  
+  #/hypertee-v-map-one-degree pred-degree ht func))
+
+(define/contract (hypertee-v-map-highest-degree ht func)
+  (-> hypertee? (-> any/c any/c) hypertee?)
+  (hypertee-v-map-pred-degree (hypertee-degree ht) ht func))
+
 (define/contract (hypertee-fold first-nontrivial-d ht func)
   (->
     onum<=omega?
@@ -706,10 +737,8 @@
     (error "Expected ht to be a hypertee of degree greater than 0")
   #/dissect (hypertee-drop1 ht) (just #/list data tails)
   #/func first-nontrivial-d data
-  #/hypertee-map-all-degrees tails #/fn hole tail
-    (hypertee-fold
-      (onum-max first-nontrivial-d #/hypertee-degree hole)
-      tail
+  #/hypertee-dv-map-all-degrees tails #/fn hole-degree tail
+    (hypertee-fold (onum-max first-nontrivial-d hole-degree) tail
       func)))
 
 ; TODO: See if we can simplify the implementation of
@@ -758,7 +787,7 @@
       #/hypertee-plus1 (hypertee-degree ht)
       #/just #/list (trivial) tails)
     #/w- hole
-      (hypertee-map-all-degrees tails #/fn hole data #/trivial)
+      (hypertee-dv-map-all-degrees tails #/fn d data #/trivial)
     #/hypertee-plus1 (hypertee-degree ht)
     #/just #/list (func hole data) tails)))
 
@@ -1050,9 +1079,9 @@
 (define/contract (hypertee-map-pred-degree degree ht func)
   (-> onum<=omega? hypertee? (-> hypertee? any/c any/c) hypertee?)
   
-  ; If the degree is 0 or a limit ordinal, we have nothing to do,
-  ; because no hole's degree has the given degree as its successor, so
-  ; there are no holes to process.
+  ; If the degree is 0 or a limit ordinal, we have nothing to do. No
+  ; hole's degree has the given degree as its successor, so there are
+  ; no holes to process.
   (expect (onum-pred-maybe degree) (just pred-degree) ht
   
   #/hypertee-map-one-degree pred-degree ht func))
@@ -1082,11 +1111,11 @@
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
   (hypertee-dv-join-all-degrees-selective
-  #/hypertee-map-all-degrees ht #/fn hole data
-    (w- root-hole-degree (hypertee-degree hole)
-    #/hypertee-join-selective-interpolation
-    #/hypertee-map-all-degrees data #/fn hole data
-      (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+  #/hypertee-dv-map-all-degrees ht #/fn root-hole-degree data
+    (hypertee-join-selective-interpolation
+    #/hypertee-dv-map-all-degrees data
+    #/fn interpolation-hole-degree data
+      (expect (onum<? interpolation-hole-degree root-hole-degree) #t
         (hypertee-join-selective-non-interpolation data)
       #/hypertee-join-selective-interpolation data))))
 
@@ -1206,7 +1235,7 @@
         #/void)))
   #/hypertee-join-all-degrees #/hypertee-pure degree
     (hypertee-pure degree data
-    #/hypertee-map-all-degrees tails #/fn hole tail
+    #/hypertee-dv-map-all-degrees tails #/fn d tail
       (trivial))
     tails))
 
@@ -1226,11 +1255,9 @@
   (-> hypertee? #/maybe/c #/list/c any/c hypertee<omega?)
   (expect (hypertee-contour? ht) #t (nothing)
   #/dissect (hypertee-drop1 ht) (just #/list data tails)
-  #/just #/list data #/hypertee-map-all-degrees tails #/fn hole data
+  #/just #/list data #/hypertee-dv-map-all-degrees tails #/fn d data
     (dissect
-      (hypertee-uncontour #/hypertee-set-degree
-        (onum-plus (hypertee-degree hole) 1)
-        data)
+      (hypertee-uncontour #/hypertee-set-degree (onum-plus d 1) data)
       (just #/list hole-value ht)
       hole-value)))
 
@@ -1359,7 +1386,7 @@
       (expect bracket (list d data) env
       #/dissect data (list data i)
       #/hash-set env i data))
-  #/hypertee-map-all-degrees prepared-bigger #/fn hole data
+  #/hypertee-dv-map-all-degrees prepared-bigger #/fn d data
     (dissect data (list data i should-zip)
     #/if should-zip
       (hash-ref env i)

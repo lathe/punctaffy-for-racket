@@ -52,8 +52,8 @@
   (require #/only-in punctaffy/hypersnippet/hypertee
     degree-and-closing-brackets->hypertee hypertee?
     hypertee-bind-one-degree hypertee-degree hypertee-drop1
-    hypertee-fold hypertee-join-one-degree hypertee-map-one-degree
-    hypertee-promote hypertee-pure hypertee-truncate
+    hypertee-fold hypertee-join-one-degree hypertee-promote
+    hypertee-pure hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
   
   (provide #/all-defined-out)
@@ -142,7 +142,7 @@
       #/hypertee-pure (onum-omega)
         (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
           (make-op-bracket stx)
-          (hypertee-map-one-degree 1 body #/fn hole data
+          (hypertee-v-map-one-degree 1 body #/fn data
             (expect data
               (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
                 closing-bracket interpolation)
@@ -256,7 +256,7 @@
                   #/error "Internal error: Encountered unexpectedly high-dimensional structure when zipping bracket ends")))
             #/expect
               (zip-bracket-ends
-                (hypertee-map-one-degree 0 tails #/fn hole data
+                (hypertee-v-map-one-degree 0 tails #/fn data
                   (trivial))
                 body-as-closing-bracket
               #/fn tails-data

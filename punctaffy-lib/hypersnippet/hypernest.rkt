@@ -43,8 +43,8 @@
   degree-and-closing-brackets->hypertee hypertee? hypertee-contour
   hypertee-degree hypertee-drop1 hypertee-dv-all-all-degrees
   hypertee-dv-any-all-degrees hypertee-dv-each-all-degrees
-  hypertee-dv-join-all-degrees-selective hypertee-each-all-degrees
-  hypertee-filter hypertee-get-hole-zero
+  hypertee-dv-join-all-degrees-selective hypertee-dv-map-all-degrees
+  hypertee-each-all-degrees hypertee-filter hypertee-get-hole-zero
   hypertee-join-selective-interpolation
   hypertee-join-selective-non-interpolation hypertee-map-all-degrees
   hypertee<omega? hypertee-promote hypertee-pure hypertee-set-degree
@@ -72,9 +72,11 @@
   (struct-out hypernest-drop1-result-hole)
   (struct-out hypernest-drop1-result-bump)
   hypernest-drop1
+  hypernest-dv-map-all-degrees
   hypernest-map-all-degrees
   hypernest-pure
   hypernest-join-all-degrees
+  hypernest-dv-bind-all-degrees
   hypernest-bind-all-degrees
   hypernest-bind-one-degree
   hypernest-join-one-degree
@@ -367,7 +369,7 @@
   (w- d (hypertee-degree ht)
   #/mat d 0 (hypernest 0 #/nothing)
   #/hypernest d #/just #/hypertee-promote (onum-omega)
-  #/hypertee-map-all-degrees ht #/fn hole data
+  #/hypertee-dv-map-all-degrees ht #/fn d data
     (hypernest-hole data)))
 
 (define/contract (hypernest->maybe-hypertee hn)
@@ -381,7 +383,7 @@
     #t
     (nothing)
   #/just #/hypertee-set-degree d
-  #/hypertee-map-all-degrees hypertees #/fn hole data
+  #/hypertee-dv-map-all-degrees hypertees #/fn d data
     (dissect data (hypernest-hole data)
       data)))
 
@@ -390,10 +392,10 @@
   (dissect hn (hypernest d maybe-hypertees)
   #/expect maybe-hypertees (just hypertees)
     (degree-and-closing-brackets->hypertee d #/list)
-  #/hypertee-map-all-degrees
+  #/hypertee-dv-map-all-degrees
     (hypertee-filter (hypertee-truncate d hypertees) #/fn hole data
       (mat data (hypernest-hole data) #t #f))
-  #/fn hole data
+  #/fn d data
     (dissect data (hypernest-hole data)
       data)))
 
@@ -462,25 +464,27 @@
   #/dissect (hypertee-drop1 hypertees) (just #/list data tails)
   #/mat data (hypernest-hole data)
     (hypernest-drop1-result-hole data
-    #/hypertee-map-all-degrees tails #/fn hole tail
-      (w- root-hole-degree (hypertee-degree hole)
+    #/hypertee-dv-map-all-degrees tails #/fn root-hole-degree tail
       ; We build a hypernest out of the tail, replacing the tail's
       ; low-degree holes, which contain `(trivial)`, with
       ; `(hypernest-hole #/trivial)`.
-      #/hypernest d #/just
-      #/hypertee-map-all-degrees tail #/fn hole data
-        (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+      (hypernest d #/just
+      #/hypertee-dv-map-all-degrees tail
+      #/fn interpolation-hole-degree data
+        (expect (onum<? interpolation-hole-degree root-hole-degree) #t
           data
         #/dissect data (trivial)
         #/hypernest-hole #/trivial)))
   #/dissect data (hypernest-bump data interior)
   #/dissect
     (hypernest-zip
-      (hypertee-map-all-degrees tails #/fn hole tail
-        (w- root-hole-degree (hypertee-degree hole)
-        #/hypernest (onum-max d root-hole-degree) #/just
-        #/hypertee-map-all-degrees tail #/fn hole data
-          (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+      (hypertee-dv-map-all-degrees tails #/fn root-hole-degree tail
+        (hypernest (onum-max d root-hole-degree) #/just
+        #/hypertee-dv-map-all-degrees tail
+        #/fn interpolation-hole-degree data
+          (expect
+            (onum<? interpolation-hole-degree root-hole-degree)
+            #t
             data
           #/dissect data (trivial)
           #/hypernest-hole #/trivial)))
@@ -491,8 +495,20 @@
     (just interior)
   #/hypernest-drop1-result-bump data interior))
 
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract (hypernest-dv-map-all-degrees hn func)
+  (-> hypernest? (-> onum<omega? any/c any/c) hypernest?)
+  (dissect hn (hypernest d maybe-hypertees)
+  #/expect maybe-hypertees (just hypertees) hn
+  #/hypernest d #/just
+  #/hypertee-dv-map-all-degrees hypertees #/fn hole-degree data
+    (expect data (hypernest-hole data) data
+    #/hypernest-hole #/func hole-degree data)))
+
 ; TODO IMPLEMENT: Implement operations analogous to these:
 ;
+;   hypertee-v-map-one-degree
 ;   hypertee-fold
 ;   hypertee-dv-join-all-degrees-selective
 
@@ -537,33 +553,45 @@
   (dissect hn (hypernest d maybe-hypertees)
   #/hypernest d #/maybe-map maybe-hypertees #/fn hypertees
     (hypertee-dv-join-all-degrees-selective
-    #/hypertee-map-all-degrees hypertees #/fn hole data
-      (w- root-hole-degree (hypertee-degree hole)
-      #/expect data (hypernest-hole interpolation)
+    #/hypertee-dv-map-all-degrees hypertees #/fn root-hole-degree data
+      (expect data (hypernest-hole interpolation)
         (hypertee-join-selective-non-interpolation data)
       #/expect interpolation
         (hypernest interpolation-d maybe-hypertees)
         (raise-arguments-error 'hypernest-join-all-degrees
           "expected each interpolation to be a hypernest"
           "hn" hn
-          "root-hole" hole
+          "root-hole-degree" root-hole-degree
           "interpolation" interpolation)
       #/expect (equal? d interpolation-d) #t
         (raise-arguments-error 'hypernest-join-all-degrees
           "expected each interpolation to be a hypernest of the same degree as the root"
           "hn" hn
-          "root-hole" hole
+          "root-hole-degree" root-hole-degree
           "interpolation" interpolation)
       #/dissect maybe-hypertees (just hypertees)
       #/hypertee-join-selective-interpolation
-      #/hypertee-map-all-degrees hypertees #/fn hole data
-        (expect (onum<? (hypertee-degree hole) root-hole-degree) #t
+      #/hypertee-dv-map-all-degrees hypertees
+      #/fn interpolation-hole-degree data
+        (expect (onum<? interpolation-hole-degree root-hole-degree) #t
           (hypertee-join-selective-non-interpolation data)
         #/expect data (hypernest-hole data)
           (hypertee-join-selective-non-interpolation data)
         #/expect data (trivial)
           (error "Expected each low-degree hole of each interpolation to contain a trivial value")
         #/hypertee-join-selective-interpolation #/trivial)))))
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+;
+; TODO IMPLEMENT: See if we should implement a corresponding
+; `hypertee-dv-bind-all-degrees`. Would it actually be more efficient
+; at all?
+;
+(define/contract (hypernest-dv-bind-all-degrees hn dv-to-hn)
+  (-> hypernest? (-> onum<omega? any/c hypernest?) hypernest?)
+  (hypernest-join-all-degrees
+  #/hypernest-dv-map-all-degrees hn dv-to-hn))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -663,7 +691,7 @@
           #/void)))
     #/hypernest-join-all-degrees #/hypernest-pure degree
       (hypernest-pure degree data
-      #/hypertee-map-all-degrees tails #/fn hole tail
+      #/hypertee-dv-map-all-degrees tails #/fn d tail
         (trivial))
       tails)
   #/dissect drop1-result (hypernest-drop1-result-bump data tails)
@@ -696,7 +724,7 @@
               "data" data)
           #/void)))
     #/w- trivial-tails
-      (hypernest-map-all-degrees tails #/fn hole tail
+      (hypernest-dv-map-all-degrees tails #/fn d tail
         (trivial))
     #/w- truncated-tails (hypernest-truncate-to-hypertee tails)
     #/hypernest-set-degree degree
@@ -709,9 +737,9 @@
         (hypernest-bump data
         #/dissect trivial-tails (hypernest _ #/just tails-hypertees)
           tails-hypertees)
-      #/hypertee-map-all-degrees truncated-tails #/fn hole tail
+      #/hypertee-dv-map-all-degrees truncated-tails #/fn d tail
         (hypernest-hole #/trivial))
-    #/hypertee-map-all-degrees truncated-tails #/fn hole tail
+    #/hypertee-dv-map-all-degrees truncated-tails #/fn d tail
       (hypernest-hole #/hypernest-promote (onum-omega) tail))))
 
 ; TODO IMPLEMENT: Implement operations analogous to these:

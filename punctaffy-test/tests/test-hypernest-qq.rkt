@@ -29,11 +29,6 @@
 
 
 
-; TODO: Find some way to optimize these tests. We can probably start
-; by replacing occurrences of `hyper{tee,nest}-{map,bind}-...` with
-; variations that don't require the hole shapes to be computed, since
-; we often don't rely on those hole shapes in the computation.
-
 ; TODO:
 ;
 ; These tests used to cause an error error due to a mistake in the
@@ -70,11 +65,13 @@
 ; that degree-3 approach, do we really need hypernests at all?
 
 
-; Altogether, these seem to take about 13 minutes and 33 seconds to
-; run (on my machine).
+; Altogether, these tests seem to take about 11 minutes and 54 seconds
+; to run (on my machine).
+;
+; TODO: See if there's some way to optimize them.
 
-; This one seems to take about 1 minute and 17 seconds to run (on my
-; machine).
+
+; This one seems to take about 49 seconds to run (on my machine).
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -86,7 +83,7 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; This one seems to take about 3 minutes and 7 seconds to run (on my
+; This one seems to take about 2 minutes and 49 seconds to run (on my
 ; machine).
 (check-equal?
   (my-quasiquote #/^< 2
@@ -105,7 +102,7 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; This one seems to take about 4 minutes and 25 seconds to run (on my
+; This one seems to take about 3 minutes and 46 seconds to run (on my
 ; machine).
 (check-equal?
   (my-quasiquote #/^< 2
@@ -124,7 +121,7 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; This one seems to take about 5 minutes and 6 seconds to run (on my
+; This one seems to take about 4 minutes and 3 seconds to run (on my
 ; machine).
 (check-equal?
   (my-quasiquote #/^< 2
