@@ -23,6 +23,10 @@
 
 (require #/for-syntax racket/base)
 
+(require #/for-syntax #/only-in syntax/parse syntax-parse)
+
+(require #/for-syntax lathe-debugging)
+
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -35,7 +39,8 @@
   hypernest-contour hypernest-degree hypernest-drop1
   hypernest-drop1-result-bump hypernest-drop1-result-hole
   hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
-  hypernest-set-degree hypernest-zip hypertee->hypernest)
+  hypernest-promote hypernest-set-degree hypernest-zip
+  hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-map-all-degrees hypertee-promote
   hypertee-set-degree-maybe hypertee-uncontour
@@ -44,8 +49,6 @@
   punctaffy/private/experimental/macro/hypernest-macro
   hn-tag-3-s-expr-stx hn-tag-4-list hn-tag-4-list* hn-tag-4-prefab
   hn-tag-4-vector hn-tag-nest s-expr-stx->hn-expr)
-
-(require #/for-syntax #/only-in syntax/parse syntax-parse)
 
 
 (provide my-quasiquote)
@@ -185,6 +188,7 @@
     #/expect (hypertee-uncontour tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr->s-expr-stx-list
+    #/dlog "blah b0"
     #/hypernest-join-all-degrees
     #/hypernest-contour
       (hypernest-contour (trivial)
@@ -202,7 +206,8 @@
       (hypertee-map-all-degrees tails #/fn hole tail
         (hn-expr-2->s-expr-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
-    (hypernest-plus1 2 #/hypernest-drop1-result-hole data
+    (dlog "blah b1"
+    #/hypernest-plus1 2 #/hypernest-drop1-result-hole data
     #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
   #/mat data (hn-tag-3-s-expr-stx stx)
@@ -215,6 +220,7 @@
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
+    #/dlog "blah b2"
     #/hypernest-plus1 2 #/hypernest-drop1-result-bump
       (hn-tag-3-s-expr-stx #`'#,stx)
     #/hypertee->hypernest
@@ -234,6 +240,7 @@
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
         (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
+      #/dlog "blah b2.1"
       #/hypernest-join-all-degrees
       #/n-hn 2
         (list 'open 4 #/hn-tag-4-list stx-example)
@@ -271,6 +278,7 @@
     #/expect (hypertee-uncontour tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr-2->s-expr-generator
+    #/dlog "blah b2.2"
     #/hypernest-join-all-degrees
     #/hypernest-contour
       (hypernest-contour (trivial)
@@ -288,7 +296,8 @@
       (hypertee-map-all-degrees tails #/fn hole tail
         (hn-expr-2->s-expr-stx-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
-    (hypernest-plus1 2 #/hypernest-drop1-result-hole data
+    (dlog "blah b3"
+    #/hypernest-plus1 2 #/hypernest-drop1-result-hole data
     #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
   #/mat data (hn-tag-3-s-expr-stx stx)
@@ -301,6 +310,7 @@
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
+    #/dlog "blah b4"
     #/hypernest-plus1 2 #/hypernest-drop1-result-bump
       (hn-tag-3-s-expr-stx #`#'#,stx)
     #/hypertee->hypernest
@@ -320,6 +330,7 @@
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
         (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
+      #/dlog "blah b4.1"
       #/hypernest-join-all-degrees
       #/n-hn 2
         (list 'open 4 #/hn-tag-4-list stx-example)
@@ -369,6 +380,7 @@
     #/expect (hypertee-uncontour tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr-2->s-expr-stx-generator
+    #/dlog "blah b4.2"
     #/hypernest-join-all-degrees
     #/hypernest-contour
       (hypernest-contour (trivial)
@@ -410,20 +422,15 @@
     (hypernest-zip tails (hn-expr-2->s-expr-generator quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
+      #/dlog "blah b4.2.1" hole tail
+      #/dissect (hypernest-degree tail) 1
+      #/hypernest-promote 2
         tail))
     (just zipped)
   #/expect
     (hn-expr->s-expr-stx-list
-    
-    ; TODO: I can't place why right now, but it feels odd to use
-    ; `hypernest-set-degree` here. Is there another way we can end up
-    ; with a degree-1 hypernest here, like using `hypernest-plus1`?
-    ; Shouldn't the `tails` we zip above be degree-1 hypernests, and
-    ; if so, how is `hypernest-join-all-degrees` accepting them when
-    ; the root is degree-2?
-    ;
     #/hypernest-set-degree 1
-    
+    #/dlog "blah b4.3"
     #/hypernest-join-all-degrees zipped)
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")

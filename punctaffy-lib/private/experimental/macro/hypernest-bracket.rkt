@@ -22,6 +22,11 @@
 
 (require #/for-syntax racket/base)
 
+(require #/for-syntax #/only-in syntax/parse
+  exact-positive-integer id syntax-parse)
+
+(require #/for-syntax lathe-debugging)
+
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w- w-loop)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -47,9 +52,6 @@
   hn-tag-unmatched-closing-bracket s-expr-stx->hn-expr
   simple-hn-builder-syntax)
 
-(require #/for-syntax #/only-in syntax/parse
-  exact-positive-integer id syntax-parse)
-
 
 (provide ^< ^>)
 
@@ -69,20 +71,14 @@
 
 
 (define-for-syntax (unmatched-brackets->holes opening-degree hn-expr)
-  
-  (define (assert-has-opening-degree v)
-    (begin0 v
-    #/unless (equal? opening-degree #/hypernest-degree v)
-      (error "Expected the result to have degree opening-degree")))
-  
-  (expect (hypernest-degree hn-expr) 1
+  (dlog "blah a0"  ; opening-degree hn-expr
+  #/expect (hypernest-degree hn-expr) 1
     (error "Expected hn-expr to be a hypernest of degree 1")
-  #/w- hn-expr (hypernest-promote opening-degree hn-expr)
   #/w-loop next first-nontrivial-d 1 hn-expr hn-expr
     (w- dropped (hypernest-drop1 hn-expr)
     #/mat dropped (hypernest-drop1-result-hole data tails)
-      (assert-has-opening-degree
-      #/hypernest-plus1 opening-degree
+      (dlog "blah a1"  ; opening-degree hn-expr tails
+      #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
       #/hypernest-drop1-result-hole data
       #/hypertee-map-all-degrees tails #/fn hole tail
         (next (onum-max first-nontrivial-d #/hypertee-degree hole)
@@ -97,8 +93,8 @@
           #/fn hole tail
             (next (onum-max first-nontrivial-d #/hypertee-degree hole)
               tail))
-        #/assert-has-opening-degree
-        #/hypernest-plus1 opening-degree
+        #/dlog "blah a2"
+        #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
         #/hypernest-drop1-result-bump data mapped))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
     #/w- bump-degree-plus-two
@@ -145,8 +141,9 @@
 ;          bracket-interior-data))
 ;      (just zipped-bracket)
 ;      (error "Internal error: Expected bracket-syntax and bracket-interior-and-tails to be of compatible shapes since bracket-syntax was a tail of an hn-tag-unmatched-closing-bracket bump and this tail was located in the contour of bracket-interior-and-tails")
-    #/assert-has-opening-degree
-    #/hypernest-plus1 opening-degree #/hypernest-drop1-result-hole
+    #/dlog "blah a3" bracket-interior
+    #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
+    #/hypernest-drop1-result-hole
       (list bracket-syntax bracket-interior)
     #/hypertee-map-all-degrees tails #/fn hole tail
       (next (onum-max first-nontrivial-d #/hypertee-degree hole)
@@ -171,11 +168,13 @@
       (s-expr-stx->hn-expr interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
-  #/hypernest-plus1 degree
+  #/dlog "blah a4"
+  #/hypernest-plus1 1
   #/hypernest-drop1-result-bump bump-value
   #/hypernest-contour
     ; This is the syntax for the bracket itself.
-    (hypernest-join-one-degree 1
+    (dlog "blah a4.1" degree-plus-one
+    #/hypernest-join-one-degree 1
     #/n-hn degree-plus-one
       (list 'open 4 #/hn-tag-4-list #/datum->syntax stx #/list)
       1
@@ -186,6 +185,7 @@
       0
       
       (list 1
+      #/dlog "blah a4.2"
       #/hypernest-join-all-degrees
       #/hypernest-contour
         (hypernest-contour (trivial)
@@ -207,19 +207,21 @@
     #/list 0 #/trivial)
   #/hypertee-contour
     ; This is everything inside of the bracket.
-    (hypernest-map-all-degrees interior-and-closing-brackets
+    (dlog "blah a4.3"
+      (hypernest-map-all-degrees interior-and-closing-brackets
+      #/fn hole data
+        (trivial))
+    #/hypernest-map-all-degrees interior-and-closing-brackets
     #/fn hole data
       (trivial))
   ; This is everything after the bracket's closing brackets. These
   ; things are outside of the bracket.
   #/hypertee-map-all-degrees closing-brackets #/fn hole data
-    ; TODO: See if we really need this `hypernest-promote` call.
-    (hypernest-promote degree
-    #/mat (hypertee-degree hole) 0
+    (mat (hypertee-degree hole) 0
       (dissect data (trivial)
-      #/degree-and-brackets->hypernest degree #/list
-      #/list 0 #/trivial)
+      #/n-hn 1 #/list 0 #/trivial)
     #/dissect data (list bracket-syntax tail)
+    #/dlog "blah a4.4" hole tail
       tail)))
 
 (define-syntax ^< #/simple-hn-builder-syntax #/fn stx
