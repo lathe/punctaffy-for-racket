@@ -25,8 +25,6 @@
 
 (require #/for-syntax #/only-in syntax/parse syntax-parse)
 
-(require #/for-syntax lathe-debugging)
-
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -199,8 +197,7 @@
       (hypertee-map-all-degrees tails #/fn hole tail
         (hn-expr-2->s-expr-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
-    (dlog "blah b1"
-    #/hypernest-plus1 2 #/hypernest-drop1-result-hole data
+    (hypernest-plus1 2 #/hypernest-drop1-result-hole data
     #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
   #/mat data (hn-tag-3-s-expr-stx stx)
@@ -213,7 +210,6 @@
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
-    #/dlog "blah b2"
     #/hypernest-plus1 2 #/hypernest-drop1-result-bump
       (hn-tag-3-s-expr-stx #`'#,stx)
     #/hypertee->hypernest
@@ -233,7 +229,6 @@
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
         (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
-      #/dlog "blah b2.1"
       #/hypernest-join-all-degrees
       #/n-hn 2
         (list 'open 4 #/hn-tag-4-list stx-example)
@@ -271,7 +266,6 @@
     #/expect (hypertee-uncontour tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr-2->s-expr-generator
-    #/dlog "blah b2.2"
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
@@ -290,8 +284,7 @@
       (hypertee-map-all-degrees tails #/fn hole tail
         (hn-expr-2->s-expr-stx-generator tail)))
   #/mat dropped (hypernest-drop1-result-hole data tails)
-    (dlog "blah b3"
-    #/hypernest-plus1 2 #/hypernest-drop1-result-hole data
+    (hypernest-plus1 2 #/hypernest-drop1-result-hole data
     #/process-tails tails)
   #/dissect dropped (hypernest-drop1-result-bump data tails)
   #/mat data (hn-tag-3-s-expr-stx stx)
@@ -304,7 +297,6 @@
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
-    #/dlog "blah b4"
     #/hypernest-plus1 2 #/hypernest-drop1-result-bump
       (hn-tag-3-s-expr-stx #`#'#,stx)
     #/hypertee->hypernest
@@ -324,7 +316,6 @@
       #/expect (hypertee-uncontour tails-tails)
         (just #/list tail tails-tails-tails)
         (error "Internal error: Encountered a list-like hn-tag-4-... bump which wasn't a contour of a contour of a twice-promoted hole")
-      #/dlog "blah b4.1"
       #/hypernest-join-all-degrees
       #/n-hn 2
         (list 'open 4 #/hn-tag-4-list stx-example)
@@ -374,7 +365,6 @@
     #/expect (hypertee-uncontour tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/hn-expr-2->s-expr-stx-generator
-    #/dlog "blah b4.2"
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
@@ -417,7 +407,6 @@
     (hypernest-zip tails (hn-expr-2->s-expr-generator quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
-      #/dlog "blah b4.2.1" hole tail
       #/dissect (hypernest-degree tail) 1
       #/hypernest-promote 2
         tail))
@@ -425,7 +414,6 @@
   #/expect
     (hn-expr->s-expr-stx-list
     #/hypernest-set-degree 1
-    #/dlog "blah b4.3"
     #/hypernest-join-all-degrees zipped)
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")

@@ -24,8 +24,6 @@
   -> any any/c list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-kv-map list-map)
@@ -572,7 +570,6 @@
 (define/contract (hypernest-bind-all-degrees hn hole-to-hn)
   (-> hypernest? (-> hypertee<omega? any/c hypernest?) hypernest?)
   (hypernest-join-all-degrees
-  #/dlog "blah d1"  ; hn
   #/hypernest-map-all-degrees hn hole-to-hn))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
@@ -679,8 +676,7 @@
     #/begin
       (hypernest-dv-each-all-degrees tails #/fn d tail
         (unless (equal? (onum-max degree d) (hypernest-degree tail))
-          (dlog "blah d2" tail
-          #/raise-arguments-error 'hypernest-plus1
+          (raise-arguments-error 'hypernest-plus1
             "expected tails to be a hypernest containing hypernests that were each of the overall degree or of the same degree as the hole they were in, whichever was greater"
             "overall-degree" degree
             "tails" tails

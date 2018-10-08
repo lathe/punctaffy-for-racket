@@ -23,8 +23,6 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in syntax/parse id syntax-parse)
 
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
@@ -304,7 +302,6 @@
       ; degree-2 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
       (hypernest-set-degree 1
-      #/dlog "blah c1"
       #/hypernest-bind-one-degree 1
         (n-hn 2
           (list 'open 4 metadata)
@@ -312,8 +309,7 @@
           0
         #/list 0 #/trivial)
       #/fn hole data
-        (dlog "blah c2"
-        #/hypernest-promote 2
+        (hypernest-promote 2
         #/n-hn-append0 1 elems)))
   
   ; We traverse into proper and improper lists.
