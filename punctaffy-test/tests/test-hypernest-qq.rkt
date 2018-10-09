@@ -66,7 +66,9 @@
 
 
 ; Altogether, these commented-out tests seem to take about 11 minutes
-; and 54 seconds to run (on my machine).
+; and 54 seconds to run (on my machine). They take about 55 seconds if
+; `assert-valid-hypertee-brackets` and
+; `assert-valid-hypernest-hypertees` are no-ops.
 ;
 ; TODO: See if there's some way to optimize them. Let's uncomment them
 ; if we can get them down to 3 minutes or less.
@@ -74,7 +76,10 @@
 #|
 
 
-; This one seems to take about 49 seconds to run (on my machine).
+; This one seems to take about 49 seconds to run (on my machine). It
+; takes about 25 seconds if `assert-valid-hypertee-brackets` is a
+; no-op. It takes about 11 seconds if that and
+; `assert-valid-hypernest-hypertees` are no-ops.
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -87,7 +92,9 @@
   "The new quasiquote works a lot like the original")
 
 ; This one seems to take about 2 minutes and 49 seconds to run (on my
-; machine).
+; machine). It takes about 1 minute and 14 seconds if
+; `assert-valid-hypertee-brackets` is a no-op. It takes about 27
+; seconds if that and `assert-valid-hypernest-hypertees` are no-ops.
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -106,7 +113,9 @@
   "The new quasiquote works on data that looks roughly similar to nesting")
 
 ; This one seems to take about 3 minutes and 46 seconds to run (on my
-; machine).
+; machine). It takes about 28 seconds if
+; `assert-valid-hypertee-brackets` and
+; `assert-valid-hypernest-hypertees` are no-ops.
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -125,7 +134,9 @@
   "The new quasiquote supports nesting")
 
 ; This one seems to take about 4 minutes and 3 seconds to run (on my
-; machine).
+; machine). It takes about 28 seconds if
+; `assert-valid-hypertee-brackets` and
+; `assert-valid-hypernest-hypertees` are no-ops.
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
