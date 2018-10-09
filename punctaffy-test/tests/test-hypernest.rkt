@@ -26,62 +26,78 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/hypernest)
+(require punctaffy/hypersnippet/hypertee)
 
 ; (We provide nothing from this module.)
 
 
-(define make-hn degree-and-brackets->hypernest)
+(define (n-ht degree . brackets)
+  (degree-and-closing-brackets->hypertee degree brackets))
+
+(define (n-hn degree . brackets)
+  (degree-and-brackets->hypernest degree brackets))
 
 
 ; NOTE: These are the same as some of the hypertee tests in
 ; test-hypertee.rkt.
-(make-hn 0 #/list)
-(make-hn 1 #/list (list 0 'a))
-(make-hn 2 #/list
-  (list 1 'a)
-  0 (list 0 'a))
-(make-hn 3 #/list
-  (list 2 'a)
-  1 (list 1 'a) 0 0 0 (list 0 'a))
-(make-hn 4 #/list
-  (list 3 'a)
-  2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a))
-(make-hn 5 #/list
-  (list 4 'a)
-  3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
-  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a))
+(define sample-0 (n-hn 0))
+(define sample-closing-1 (n-hn 1 (list 0 'a)))
+(define sample-closing-2
+  (n-hn 2
+    (list 1 'a)
+    0 (list 0 'a)))
+(define sample-closing-3
+  (n-hn 3
+    (list 2 'a)
+    1 (list 1 'a) 0 0 0 (list 0 'a)))
+(define sample-closing-4
+  (n-hn 4
+    (list 3 'a)
+    2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a)))
+(define sample-closing-5
+  (n-hn 5
+    (list 4 'a)
+    3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a)))
 
 
-(make-hn 1 #/list
-  (list 'open 1 'a)
-  0
-  (list 'open 2 'a)
-  1
-  (list 'open 1 'a)
-  0
-  0
-  0
-  (list 0 'a))
-
-#|
-#hasheq(
-  (0 . ((0 #<hypernest-hole: #<trivial:>>)))
-  (4 . ((0 #<hypernest-hole: #<trivial:>>)))
-  (2 . (
-    (0 #<hypernest-hole: #<trivial:>>)
+(define sample-opening-1
+  (n-hn 1
+    (list 'open 1 'a)
     0
-    (1 #<hypernest-hole: #<trivial:>>)
-  ))
-  (root . (
-    (0 #<hypernest-hole: a>)
-    0
-    (0 #<hypernest-hole: #<trivial:>>)
-    0
-    (1 #<hypernest-bump: a 4>)
+    (list 'open 2 'a)
     1
-    (2 #<hypernest-bump: a 2>)
+    (list 'open 1 'a)
     0
-    (1 #<hypernest-bump: a 0>)
-  ))
-)
-|#
+    0
+    0
+    (list 0 'a)))
+
+
+(define (check-drop1-round-trip sample)
+  (check-equal?
+    (hypernest-plus1 (hypernest-degree sample)
+    #/hypernest-drop1 sample)
+    sample))
+
+(check-drop1-round-trip sample-0)
+(check-drop1-round-trip sample-closing-1)
+(check-drop1-round-trip sample-closing-2)
+
+(check-equal?
+  (hypernest-drop1 sample-closing-3)
+  (hypernest-drop1-result-hole 'a
+    ; TODO: We basically just transcribed this from the result of
+    ; `(hypernest-drop1 sample-closing-3)`. Make sure it's correct.
+    (n-ht 2
+      (list 1 #/n-hn 3
+        (list 1 'a)
+        0
+      #/list 0 #/trivial)
+      0
+    #/list 0 #/n-hn 3 #/list 0 'a)))
+
+(check-drop1-round-trip sample-closing-3)
+(check-drop1-round-trip sample-closing-4)
+(check-drop1-round-trip sample-closing-5)
+(check-drop1-round-trip sample-opening-1)

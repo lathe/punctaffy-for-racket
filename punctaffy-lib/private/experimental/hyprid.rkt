@@ -45,7 +45,8 @@
   hypertee-bind-pred-degree hypertee-closing-bracket-degree
   hypertee-contour hypertee-degree
   hypertee->degree-and-closing-brackets hypertee-dv-each-all-degrees
-  hypertee-map-highest-degree hypertee-promote hypertee-pure)
+  hypertee-map-highest-degree hypertee-promote hypertee-pure
+  hypertee-v-map-highest-degree)
 
 (provide
   ; TODO: See if there's anything more abstract we can export in place
@@ -159,10 +160,10 @@
     (mat rest (lake-cane data rest)
       (lake-cane
         (func
-          (hypertee-map-highest-degree rest #/fn hole rest
+          (hypertee-v-map-highest-degree rest #/fn rest
             (trivial))
           data)
-      #/hypertee-map-highest-degree rest #/fn hole rest
+      #/hypertee-v-map-highest-degree rest #/fn rest
         (dissect
           (hyprid-map-lakes-highest-degree
             (hyprid unstriped-degrees striped-degrees rest)
@@ -207,7 +208,7 @@
   #/fn hole-hypertee rest
     (mat rest (lake-cane data rest)
       (lake-cane data
-      #/hypertee-map-highest-degree rest #/fn hole rest
+      #/hypertee-v-map-highest-degree rest #/fn rest
         (dissect
           (hyprid-destripe-once
           #/hyprid unstriped-degrees striped-degrees rest)
@@ -280,7 +281,7 @@
     #/fn hole-hypertee rest
       (mat rest (lake-cane data rest)
         (lake-cane data
-        #/hypertee-map-highest-degree rest #/fn hole rest
+        #/hypertee-v-map-highest-degree rest #/fn rest
           (dissect
             (hyprid-stripe-once
             #/hyprid unstriped-degrees striped-degrees rest)
@@ -365,7 +366,9 @@
       (poppable-hyperstack-pop histories-before
       #/olist-build d #/dissectfn _
         (history-info location-before maybe-state-before))
-      (list (history-info location-after maybe-state-after)
+      (list
+        popped-barrier
+        (history-info location-after maybe-state-after)
         histories-after)
     #/if (equal? d pred-unstriped-degrees)
       
