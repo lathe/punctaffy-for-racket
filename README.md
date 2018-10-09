@@ -1,6 +1,6 @@
 # Punctaffy
 
-[![Travis build](https://travis-ci.org/lathe/punctaffy.svg?branch=master)](https://travis-ci.org/lathe/punctaffy)
+[![Travis build](https://travis-ci.org/lathe/punctaffy-for-racket.svg?branch=master)](https://travis-ci.org/lathe/punctaffy-for-racket)
 
 Punctaffy is a library for dealing with structured data with a higher-degree concept of "nesting" than usual. Its main use is for programming languages' syntax, where we structure lexical regions according to the intervals that mark their beginnings and ends. Higher degrees correspond to making degree-N+1 intervals that begin at one degree-N interval and end at another degree-N interval inside it.
 
