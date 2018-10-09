@@ -65,10 +65,13 @@
 ; that degree-3 approach, do we really need hypernests at all?
 
 
-; Altogether, these tests seem to take about 11 minutes and 54 seconds
-; to run (on my machine).
+; Altogether, these commented-out tests seem to take about 11 minutes
+; and 54 seconds to run (on my machine).
 ;
-; TODO: See if there's some way to optimize them.
+; TODO: See if there's some way to optimize them. Let's uncomment them
+; if we can get them down to 3 minutes or less.
+;
+#|
 
 
 ; This one seems to take about 49 seconds to run (on my machine).
@@ -145,6 +148,9 @@
           i j))
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
+
+
+|#
 
 
 ; TODO: Turn this into a unit test. There was at one point (although
