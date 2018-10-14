@@ -86,7 +86,9 @@
   hypertee-uncontour
   hypertee-filter
   hypertee-truncate
-  hypertee-zip-selective)
+  hypertee-dv-fold-map-any-all-degrees
+  hypertee-zip-selective
+  hypertee-zip-low-degrees)
 
 
 ; ===== Hypertees ====================================================
@@ -510,11 +512,13 @@
   (dissect ht (hypertee d closing-brackets)
   #/list d closing-brackets))
 
-; Takes a hypertee of any degree N and upgrades it to any degree N or
-; greater, while leaving its holes the way they are.
+; Takes a hypertee of any nonzero degree N and upgrades it to any
+; degree N or greater, while leaving its holes the way they are.
 (define/contract (hypertee-promote new-degree ht)
   (-> onum<=omega? hypertee? hypertee?)
   (dissect ht (hypertee d closing-brackets)
+  #/mat d 0
+    (error "Expected ht to be a hypertee of nonzero degree")
   #/expect (onum<=? d new-degree) #t
     (raise-arguments-error 'hypertee-promote
       "expected ht to be a hypertee of degree no greater than new-degree"
@@ -522,13 +526,15 @@
       "ht" ht)
   #/hypertee new-degree closing-brackets))
 
-; Takes a hypertee and returns a `just` of a degree-N hypertee with
-; the same holes if possible. If this isn't possible (because some
-; holes in the original are of degree N or greater), this returns
-; `(nothing)`.
+; Takes a nonzero-degree hypertee and returns a `just` of a degree-N
+; hypertee with the same holes if possible. If this isn't possible
+; (because some holes in the original are of degree N or greater),
+; this returns `(nothing)`.
 (define/contract (hypertee-set-degree-maybe new-degree ht)
   (-> onum<=omega? hypertee? #/maybe/c hypertee?)
   (dissect ht (hypertee d closing-brackets)
+  #/mat d 0
+    (error "Expected ht to be a hypertee of nonzero degree")
   #/if
     (or (onum<=? d new-degree)
     #/list-all closing-brackets #/fn closing-bracket
@@ -537,8 +543,8 @@
     (just #/hypertee new-degree closing-brackets)
     (nothing)))
 
-; Takes a hypertee with no holes of degree N or greater and returns a
-; degree-N hypertee with the same holes.
+; Takes a nonzero-degree hypertee with no holes of degree N or greater
+; and returns a degree-N hypertee with the same holes.
 (define/contract (hypertee-set-degree new-degree ht)
   (-> onum<=omega? hypertee? hypertee?)
   (expect (hypertee-set-degree-maybe new-degree ht) (just result)
@@ -1210,15 +1216,15 @@
     #f)
   (void))
 
-(define/contract (hypertee-plus1 degree drop1-result)
+(define/contract (hypertee-plus1 degree coil)
   (-> onum<=omega? (maybe/c #/list/c any/c hypertee?) hypertee?)
-  (expect drop1-result (just drop1-result)
+  (expect coil (just coil)
     (expect degree 0
-      (error "Expected the degree to be zero since the drop1-result was nothing")
+      (error "Expected the degree to be zero since the coil was nothing")
     #/hypertee 0 #/list)
   #/mat degree 0
-    (error "Expected the degree to be nonzero since the drop1-result wasn't nothing")
-  #/dissect drop1-result (list data tails)
+    (error "Expected the degree to be nonzero since the coil wasn't nothing")
+  #/dissect coil (list data tails)
   #/expect (onum<? (hypertee-degree tails) degree) #t
     (error "Expected tails to be a hypertee with degree less than the given degree")
   #/begin
@@ -1341,6 +1347,34 @@
   #/fn hole data
     (dissect data (list a b)
     #/func hole a b)))
+
+; TODO: See if we should add this to Lathe Comforts.
+(define/contract (list-fold-map-any state lst on-elem)
+  (-> any/c list? (-> any/c any/c #/list/c any/c #/maybe/c any/c)
+    (list/c any/c #/maybe/c list?))
+  (w-loop next state state lst lst rev-result (list)
+    (expect lst (cons elem lst)
+      (list state #/just #/reverse rev-result)
+    #/dissect (on-elem state elem) (list state maybe-elem)
+    #/expect maybe-elem (just elem) (list state #/nothing)
+    #/next state lst (cons elem rev-result))))
+
+(define/contract
+  (hypertee-dv-fold-map-any-all-degrees state ht on-hole)
+  (->
+    any/c
+    hypertee?
+    (-> any/c onum<omega? any/c #/list/c any/c #/maybe/c any/c)
+    (list/c any/c #/maybe/c hypertee?))
+  (dissect ht (hypertee d closing-brackets)
+  #/dissect
+    (list-fold-map-any state closing-brackets #/fn state bracket
+      (expect bracket (list d data) (list state #/just bracket)
+      #/dissect (on-hole state d data) (list state maybe-data)
+      #/expect maybe-data (just data) (list state #/nothing)
+      #/list state #/just #/list d data))
+    (list state #/just closing-brackets)
+  #/list state #/just #/hypertee d closing-brackets))
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when certain holes of the

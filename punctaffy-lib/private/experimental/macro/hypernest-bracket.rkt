@@ -36,11 +36,11 @@
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hypernest-bind-one-degree
-  hypernest-contour hypernest-degree hypernest-drop1
-  hypernest-drop1-result-bump hypernest-drop1-result-hole
-  hypernest-dv-map-all-degrees hypernest-join-all-degrees
-  hypernest-join-one-degree hypernest->maybe-hypertee
-  hypernest-plus1 hypernest-promote hypernest-truncate-to-hypertee)
+  hypernest-coil-bump hypernest-coil-hole hypernest-contour
+  hypernest-degree hypernest-drop1 hypernest-dv-map-all-degrees
+  hypernest-join-all-degrees hypernest-join-one-degree
+  hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
+  hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
@@ -73,25 +73,27 @@
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w-loop next first-nontrivial-d 1 hn-expr hn-expr
     (w- dropped (hypernest-drop1 hn-expr)
-    #/mat dropped (hypernest-drop1-result-hole data tails)
-      (hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
-      #/hypernest-drop1-result-hole data
+    #/mat dropped (hypernest-coil-hole d data tails)
+      (hypernest-plus1 #/hypernest-coil-hole
+        (onum-max opening-degree first-nontrivial-d)
+        data
       #/hypertee-dv-map-all-degrees tails #/fn d tail
         (next (onum-max first-nontrivial-d d) tail))
     #/dissect dropped
-      (hypernest-drop1-result-bump
-        data interior-and-bracket-and-tails)
+      (hypernest-coil-bump overall-degree data bump-degree-plus-two
+        interior-and-bracket-and-tails)
     #/w- ignore
       (fn
         (w- mapped
           (hypernest-dv-map-all-degrees interior-and-bracket-and-tails
           #/fn d tail
             (next (onum-max first-nontrivial-d d) tail))
-        #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
-        #/hypernest-drop1-result-bump data mapped))
+        #/hypernest-plus1 #/hypernest-coil-bump
+          (onum-max opening-degree first-nontrivial-d)
+          data
+          bump-degree-plus-two
+          mapped))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
-    #/w- bump-degree-plus-two
-      (hypernest-degree interior-and-bracket-and-tails)
     #/expect
       (onum<? bump-degree-plus-two #/onum-plus opening-degree 2)
       #t
@@ -134,8 +136,8 @@
 ;          bracket-interior-data))
 ;      (just zipped-bracket)
 ;      (error "Internal error: Expected bracket-syntax and bracket-interior-and-tails to be of compatible shapes since bracket-syntax was a tail of an hn-tag-unmatched-closing-bracket bump and this tail was located in the contour of bracket-interior-and-tails")
-    #/hypernest-plus1 (onum-max opening-degree first-nontrivial-d)
-    #/hypernest-drop1-result-hole
+    #/hypernest-plus1 #/hypernest-coil-hole
+      (onum-max opening-degree first-nontrivial-d)
       (list bracket-syntax bracket-interior)
     #/hypertee-dv-map-all-degrees tails #/fn d tail
       (next (onum-max first-nontrivial-d d) tail))))
@@ -153,14 +155,14 @@
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree (syntax-e #'degree-stx)
   #/w- degree-plus-one (onum-plus degree 1)
+  #/w- degree-plus-two (onum-plus degree 2)
   #/w- interior-and-closing-brackets
     (unmatched-brackets->holes degree #/n-hn-append0 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
       (s-expr-stx->hn-expr interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
-  #/hypernest-plus1 1
-  #/hypernest-drop1-result-bump bump-value
+  #/hypernest-plus1 #/hypernest-coil-bump 1 bump-value degree-plus-two
   #/hypernest-contour
     ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree 1
