@@ -29,7 +29,6 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
-(require #/only-in lathe-comforts/list list-kv-map)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe-bind maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
@@ -131,10 +130,6 @@
       (list/c 'open onum<=omega? any/c))
     hypernest?)
   
-  (struct-easy (part-state-hypertee-zero))
-  (struct-easy
-    (part-state-hypertee-hole
-      first-nontrivial-d parents data tails-hypertee-i))
   (struct-easy (part-state-hypernest-zero))
   (struct-easy
     (part-state-hypernest-hole
@@ -143,15 +138,20 @@
     (part-state-hypernest-bump
       first-nontrivial-d parents data bump-degree tails-hypernest-i))
   
-  (w- root-i 'root
+  (struct-easy (part-state-hypertee-zero))
+  (struct-easy
+    (part-state-hypertee-hole
+      first-nontrivial-d parents data tails-hypertee-i))
+  
+  (dlog "blah a0" opening-degree hypernest-brackets
+  #/w- root-i 'root
   #/w-loop next
     
-    hypernest-brackets-remaining
-    (list-kv-map hypernest-brackets #/fn k v #/list k v)
-    
+    hypernest-brackets-remaining hypernest-brackets
     parts (make-immutable-hasheq)
     in-hypernest #t
     current-i root-i
+    new-i 0
     first-nontrivial-d 0
     parents (olist-build opening-degree #/dissectfn _ #/nothing)
     
@@ -167,7 +167,8 @@
             (part-state-hypertee-zero)))
       #/let ()
         (define (get-part i)
-          (w- part (hash-ref parts i)
+          (dlogr "blah b1 get-part" i
+          #/w- part (hash-ref parts i)
           #/mat part (part-state-hypernest-zero)
             (hypernest-careful #/hypernest-coil-zero)
           #/mat part
@@ -175,7 +176,9 @@
               first-nontrivial-d parents data tails-hypertee-i)
             (hypernest-careful
             #/hypernest-coil-hole (olist-length parents) data
-            #/get-part tails-hypertee-i)
+            #/hypertee-dv-map-all-degrees (get-part tails-hypertee-i)
+            #/fn d tail
+              (get-part tail))
           #/mat part
             (part-state-hypernest-bump
               first-nontrivial-d parents data bump-degree
@@ -183,18 +186,36 @@
             (hypernest-careful
             #/hypernest-coil-bump (olist-length parents) data
               bump-degree
-            #/get-part tails-hypernest-i)
+            #/hypernest-dv-map-all-degrees
+              (get-part tails-hypernest-i)
+            #/fn d data
+              (if
+                (and
+                  (onum<=? first-nontrivial-d d)
+                  (onum<? d bump-degree))
+                (get-part data)
+                data))
           #/mat part (part-state-hypertee-zero)
-            (hypertee-plus1 #/nothing)
+            (hypertee-plus1 0 #/nothing)
           #/mat part
-            (part-state-hypernest-hole
+            (part-state-hypertee-hole
               first-nontrivial-d parents data tails-hypertee-i)
-            (hypertee-plus1
-            #/just #/list data #/get-part tails-hypertee-i)
+            (dlog "blah b2" (olist-length parents) (hypertee-degree #/get-part tails-hypertee-i)
+            #/hypertee-plus1 (olist-length parents)
+            #/just #/list data
+            #/hypertee-dv-map-all-degrees (get-part tails-hypertee-i)
+            #/fn d tail
+              (get-part tail))
           #/error "Internal error: Encountered an unrecognized part state"))
       #/get-part root-i)
-    #/dissect hypernest-bracket (list new-i bracket)
-    #/mat bracket (list 'open bracket-d bump-value)
+    #/dlog "blah a0.1" hypernest-bracket (olist-length parents)
+    
+    ; TODO NOW: We're writing to `parts` all wrong. Sometimes we're
+    ; going to need to write more than one `parts` node per bracket we
+    ; encounter. We've illustrated the way we need to do this in
+    ; notes/2018-10-16-hypernest-brackets-to-adt.md.
+    
+    #/mat hypernest-bracket (list 'open bracket-d bump-value)
       (expect in-hypernest #t
         (error "Encountered a bump inside a hole")
       #/next
@@ -204,10 +225,11 @@
             first-nontrivial-d parents bump-value bracket-d new-i))
         #t
         new-i
+        (add1 new-i)
         (onum-max first-nontrivial-d bracket-d)
-        (olist-replace-first-n bracket-d current-i parents))
+        (olist-replace-first-n bracket-d (just current-i) parents))
     #/dissect
-      (mat bracket (list bracket-d hole-value)
+      (mat hypernest-bracket (list bracket-d hole-value)
         (expect (onum<? bracket-d current-d) #t
           (error "Encountered a closing bracket of degree too high for where it occurred")
         #/expect (onum<=? first-nontrivial-d bracket-d) #t
@@ -215,11 +237,8 @@
         #/list bracket-d hole-value)
         (expect (onum<? bracket first-nontrivial-d) #t
           (error "Encountered an unannotated closing bracket of degree too high for where it occurred")
-        #/list bracket (trivial)))
+        #/list hypernest-bracket (trivial)))
       (list bracket-d hole-value)
-    #/w- parent-i (olist-ref-and-call parents bracket-d)
-    ; TODO NOW: Figure out what to do when `parent-i` is `(nothing)`.
-    #/w- parent (dlog "blah a1" #/hash-ref parts parent-i)
     #/w- parts
       (hash-set parts current-i
         (if in-hypernest
@@ -227,30 +246,33 @@
             first-nontrivial-d parents hole-value new-i)
           (part-state-hypertee-hole
             first-nontrivial-d parents hole-value new-i)))
+    #/w- next2
+      (fn in-hypernest restored-first-nontrivial-d restored-parents
+        (next hypernest-brackets-remaining parts in-hypernest new-i
+          (add1 new-i)
+          (onum-max restored-first-nontrivial-d bracket-d)
+          (olist-replace-first-n bracket-d (just current-i)
+            restored-parents)))
+    #/w- maybe-parent-i (olist-ref-and-call parents bracket-d)
+    #/mat maybe-parent-i (nothing)
+      (next2 #f bracket-d (olist-zero))
+    #/dissect maybe-parent-i (just parent-i)
+    #/w- parent (hash-ref parts parent-i)
     #/mat parent
       (part-state-hypernest-hole
         restored-first-nontrivial-d restored-parents data
         tails-hypertee-i)
-      (next hypernest-brackets-remaining parts #t new-i
-        (onum-max restored-first-nontrivial-d bracket-d)
-        (olist-replace-first-n bracket-d current-i
-          restored-parents))
+      (next2 #f restored-first-nontrivial-d restored-parents)
     #/mat parent
       (part-state-hypernest-bump
         restored-first-nontrivial-d restored-parents data
         bump-degree tails-hypernest-i)
-      (next hypernest-brackets-remaining parts #t new-i
-        (onum-max restored-first-nontrivial-d bracket-d)
-        (olist-replace-first-n bracket-d current-i
-          restored-parents))
+      (next2 #t restored-first-nontrivial-d restored-parents)
     #/dissect parent
-      (part-state-hypernest-hole
+      (part-state-hypertee-hole
         restored-first-nontrivial-d restored-parents data
         tails-hypertee-i)
-      (next hypernest-brackets-remaining parts #f new-i
-        (onum-max restored-first-nontrivial-d bracket-d)
-        (olist-replace-first-n bracket-d current-i
-          restored-parents)))))
+      (next2 #f restored-first-nontrivial-d restored-parents))))
 
 ; TODO: Implement this.
 #;
@@ -425,7 +447,7 @@
   (-> hypernest? #/maybe/c hypertee?)
   (dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
-    (just #/hypertee-plus1 #/nothing)
+    (just #/hypertee-plus1 0 #/nothing)
   #/mat coil (hypernest-coil-hole d data tails)
     (dissect
       (hypertee-dv-fold-map-any-all-degrees (trivial) tails
@@ -433,7 +455,7 @@
         (list state #/hypernest->maybe-hypertee tail))
       (list (trivial) maybe-tails)
     #/maybe-map maybe-tails #/fn tails
-    #/hypertee-plus1 #/just #/list d tails)
+    #/hypertee-plus1 d #/just #/list data tails)
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (nothing)))
@@ -442,9 +464,9 @@
   (-> hypernest? hypertee?)
   (dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
-    (hypertee-plus1 #/nothing)
+    (hypertee-plus1 0 #/nothing)
   #/mat coil (hypernest-coil-hole d data tails)
-    (hypertee-plus1 #/just #/list d
+    (hypertee-plus1 d #/just #/list data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
       (hypernest-truncate-to-hypertee tail))
   #/dissect coil
