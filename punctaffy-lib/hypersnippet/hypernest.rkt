@@ -34,7 +34,8 @@
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
-  onum<=? onum<? onum-max 0<onum<=omega? onum<=omega? onum<omega?)
+  onum<=? onum<? onum-max 0<onum<=omega? onum<=omega? onum<omega?
+  onum-plus)
 (require #/only-in lathe-ordinals/olist
   olist-build olist-drop olist-length olist-plus olist-ref-and-call
   olist-zero)
@@ -120,6 +121,28 @@
   (assert-valid-hypernest-coil coil)
   (hypernest coil))
 
+#|
+in 1
+  pending 'p3, but only for cascading, and nothing cascades here yet:
+    ht 1
+      ht 2
+        hn 3
+          any
+          any
+          trivial
+        hn 3
+          any
+          any
+          any
+  pending 'p4 for 0:
+    ht 1
+      hn 3
+        any
+        any
+        trivial, cascading to 'p3
+read z4:0
+  write (hth 1 'p5 'p6) to 'p4
+|#
 (define/contract
   (degree-and-brackets->hypernest opening-degree hypernest-brackets)
   (->
@@ -130,20 +153,28 @@
       (list/c 'open onum<=omega? any/c))
     hypernest?)
   
-  (struct-easy (part-state-hypernest-zero))
   (struct-easy
-    (part-state-hypernest-hole
-      first-nontrivial-d parents data tails-hypertee-i))
+    (pending-h
+      is-hypernest
+      first-cascading-or-nontrivial-d
+      first-nontrivial-d
+      cascading-or-nontrivial-pendings))
+  (struct-easy (pending-any))
+  (struct-easy
+    (pending-trivial-cascade part-i first-nontrivial-d d pending))
+  
+  (struct-easy (part-state-hypernest-zero))
+  (struct-easy (part-state-hypernest-hole d data tails-hypertee-i))
   (struct-easy
     (part-state-hypernest-bump
-      first-nontrivial-d parents data bump-degree tails-hypernest-i))
+      first-nontrivial-d d data bump-degree tails-hypernest-i))
   
   (struct-easy (part-state-hypertee-zero))
-  (struct-easy
-    (part-state-hypertee-hole
-      first-nontrivial-d parents data tails-hypertee-i))
+  (struct-easy (part-state-hypertee-hole d data tails-hypertee-i))
   
   (dlog "blah a0" opening-degree hypernest-brackets
+  #/mat opening-degree 0
+    (hypernest-careful #/hypernest-coil-zero)
   #/w- root-i 'root
   #/w-loop next
     
@@ -153,18 +184,13 @@
     current-i root-i
     new-i 0
     first-nontrivial-d 0
-    parents (olist-build opening-degree #/dissectfn _ #/nothing)
+    pendings (olist-build opening-degree #/dissectfn _ #/pending-any)
     
-    (w- current-d (olist-length parents)
+    (w- current-d (olist-length pendings)
     #/expect hypernest-brackets-remaining
       (cons hypernest-bracket hypernest-brackets-remaining)
       (expect current-d 0
         (error "Expected more closing brackets")
-      #/w- parts
-        (hash-set parts current-i
-          (if in-hypernest
-            (part-state-hypernest-zero)
-            (part-state-hypertee-zero)))
       #/let ()
         (define (get-part i)
           (dlogr "blah b1 get-part" i
@@ -172,20 +198,16 @@
           #/mat part (part-state-hypernest-zero)
             (hypernest-careful #/hypernest-coil-zero)
           #/mat part
-            (part-state-hypernest-hole
-              first-nontrivial-d parents data tails-hypertee-i)
-            (hypernest-careful
-            #/hypernest-coil-hole (olist-length parents) data
+            (part-state-hypernest-hole d data tails-hypertee-i)
+            (hypernest-careful #/hypernest-coil-hole d data
             #/hypertee-dv-map-all-degrees (get-part tails-hypertee-i)
             #/fn d tail
               (get-part tail))
           #/mat part
             (part-state-hypernest-bump
-              first-nontrivial-d parents data bump-degree
-              tails-hypernest-i)
+              first-nontrivial-d d data bump-degree tails-hypernest-i)
             (hypernest-careful
-            #/hypernest-coil-bump (olist-length parents) data
-              bump-degree
+            #/hypernest-coil-bump d data bump-degree
             #/hypernest-dv-map-all-degrees
               (get-part tails-hypernest-i)
             #/fn d data
@@ -198,23 +220,34 @@
           #/mat part (part-state-hypertee-zero)
             (hypertee-plus1 0 #/nothing)
           #/mat part
-            (part-state-hypertee-hole
-              first-nontrivial-d parents data tails-hypertee-i)
-            (dlog "blah b2" (olist-length parents) (hypertee-degree #/get-part tails-hypertee-i)
-            #/hypertee-plus1 (olist-length parents)
-            #/just #/list data
+            (part-state-hypertee-hole d data tails-hypertee-i)
+            (dlog "blah b2" d (hypertee-degree #/get-part tails-hypertee-i)
+            #/hypertee-plus1 d #/just #/list data
             #/hypertee-dv-map-all-degrees (get-part tails-hypertee-i)
             #/fn d tail
               (get-part tail))
           #/error "Internal error: Encountered an unrecognized part state"))
       #/get-part root-i)
-    #/dlog "blah a0.1" hypernest-bracket (olist-length parents)
+    #/dlog "blah a0.1" hypernest-bracket current-d
     
     ; TODO NOW: We're writing to `parts` all wrong. Sometimes we're
     ; going to need to write more than one `parts` node per bracket we
     ; encounter. We've illustrated the way we need to do this in
     ; notes/2018-10-16-hypernest-brackets-to-adt.md.
     
+    #/w- build-new-pendings
+      (fn bracket-d body
+        ; TODO: See if we can use `olist-tails` instead of using
+        ; `olist-drop` over and over here. It might be an
+        ; optimization.
+        (olist-build bracket-d #/fn d
+          (w- first-nontrivial-d (onum-max first-nontrivial-d d)
+          #/body d first-nontrivial-d
+            (expect (olist-drop d pendings)
+              (just #/list noncascading-pendings
+                cascading-or-nontrivial-pendings)
+              (olist-zero)
+              cascading-or-nontrivial-pendings))))
     #/mat hypernest-bracket (list 'open bracket-d bump-value)
       (expect in-hypernest #t
         (error "Encountered a bump inside a hole")
@@ -222,57 +255,108 @@
         hypernest-brackets-remaining
         (hash-set parts current-i
           (part-state-hypernest-bump
-            first-nontrivial-d parents bump-value bracket-d new-i))
+            first-nontrivial-d current-d bump-value bracket-d new-i))
         #t
         new-i
         (add1 new-i)
         (onum-max first-nontrivial-d bracket-d)
-        (olist-replace-first-n bracket-d (just current-i) parents))
+        (olist-plus
+          (build-new-pendings bracket-d
+          #/fn d first-nontrivial-d cascading-or-nontrivial-pendings
+            (pending-h #t d first-nontrivial-d
+              cascading-or-nontrivial-pendings))
+          (expect (olist-drop bracket-d pendings)
+            (just #/list dropped high-degree-pendings)
+            (olist-zero)
+            high-degree-pendings)))
     #/dissect
       (mat hypernest-bracket (list bracket-d hole-value)
         (expect (onum<? bracket-d current-d) #t
           (error "Encountered a closing bracket of degree too high for where it occurred")
         #/expect (onum<=? first-nontrivial-d bracket-d) #t
           (error "Encountered an annotated closing bracket of degree too low for where it occurred")
-        #/list bracket-d hole-value)
-        (expect (onum<? bracket first-nontrivial-d) #t
+        #/list bracket-d hole-value #f)
+        (expect (onum<? hypernest-bracket first-nontrivial-d) #t
           (error "Encountered an unannotated closing bracket of degree too high for where it occurred")
-        #/list hypernest-bracket (trivial)))
-      (list bracket-d hole-value)
-    #/w- parts
-      (hash-set parts current-i
-        (if in-hypernest
-          (part-state-hypernest-hole
-            first-nontrivial-d parents hole-value new-i)
-          (part-state-hypertee-hole
-            first-nontrivial-d parents hole-value new-i)))
-    #/w- next2
-      (fn in-hypernest restored-first-nontrivial-d restored-parents
-        (next hypernest-brackets-remaining parts in-hypernest new-i
-          (add1 new-i)
-          (onum-max restored-first-nontrivial-d bracket-d)
-          (olist-replace-first-n bracket-d (just current-i)
-            restored-parents)))
-    #/w- maybe-parent-i (olist-ref-and-call parents bracket-d)
-    #/mat maybe-parent-i (nothing)
-      (next2 #f bracket-d (olist-zero))
-    #/dissect maybe-parent-i (just parent-i)
-    #/w- parent (hash-ref parts parent-i)
-    #/mat parent
-      (part-state-hypernest-hole
-        restored-first-nontrivial-d restored-parents data
-        tails-hypertee-i)
-      (next2 #f restored-first-nontrivial-d restored-parents)
-    #/mat parent
-      (part-state-hypernest-bump
-        restored-first-nontrivial-d restored-parents data
-        bump-degree tails-hypernest-i)
-      (next2 #t restored-first-nontrivial-d restored-parents)
-    #/dissect parent
-      (part-state-hypertee-hole
-        restored-first-nontrivial-d restored-parents data
-        tails-hypertee-i)
-      (next2 #f restored-first-nontrivial-d restored-parents))))
+        #/list hypernest-bracket (trivial) #t))
+      (list bracket-d hole-value pending-should-be-trivial)
+    #/w- pending (olist-ref-and-call pendings bracket-d)
+    #/if pending-should-be-trivial
+      (expect pending
+        (pending-trivial-cascade
+          restored-i
+          restored-first-nontrivial-d
+          restored-d
+          restored-pending)
+        (error "Internal error: Expected a pending-trivial-cascade pending type for a hole of lower degree than the first nontrivial degree")
+        ; TODO NOW: Implement this.
+        'TODO)
+    #/mat pending
+      (pending-trivial-cascade
+        restored-i
+        restored-first-nontrivial-d
+        restored-d
+        restored-pending)
+      (error "Internal error: Encountered a pending-trivial-cascade pending type for a hole of degree no lower than the first nontrivial degree")
+    #/mat pending (pending-any)
+      (next
+        hypernest-brackets-remaining
+        (hash-set parts current-i
+          (if in-hypernest
+            (part-state-hypernest-hole current-d hole-value new-i)
+            (part-state-hypertee-hole current-d hole-value new-i)))
+        #f
+        new-i
+        (add1 new-i)
+        0
+        (build-new-pendings bracket-d
+        #/fn d first-nontrivial-d cascading-or-nontrivial-pendings
+          (pending-h in-hypernest d first-nontrivial-d
+            cascading-or-nontrivial-pendings)))
+    #/dissect pending
+      (pending-h
+        restored-in-hypernest
+        restored-first-cascading-or-nontrivial-d
+        restored-first-nontrivial-d
+        restored-cascading-or-nontrivial-pendings)
+      (w- restored-d
+        (onum-plus restored-first-cascading-or-nontrivial-d
+          (olist-length restored-cascading-or-nontrivial-pendings))
+      #/w- interpolation-i new-i
+      #/w- new-i (add1 new-i)
+      #/w- tails-i new-i
+      #/w- new-i (add1 new-i)
+      #/w- parts
+        (hash-set parts current-i
+          (if in-hypernest
+            (part-state-hypernest-hole
+              current-d interpolation-i tails-i)
+            (part-state-hypertee-hole
+              current-d interpolation-i tails-i)))
+      #/w- parts
+        (expect restored-d 0 parts
+        #/hash-set parts interpolation-i
+          (if restored-in-hypernest
+            ; NOTE: We could just call `(part-state-hypernest-zero)`
+            ; here, but we expect this to be an impossible case.
+            (error "Internal error: Part of a hypernest was somehow a degree-0 hypernest even though the hypernest wasn't degree-0 itself")
+            (part-state-hypertee-zero)))
+      #/w- parts
+        (expect bracket-d 0 parts
+        #/hash-set parts tails-i (part-state-hypertee-zero))
+      #/next
+        hypernest-brackets-remaining
+        parts
+        restored-in-hypernest
+        interpolation-i
+        new-i
+        restored-first-nontrivial-d
+        ; TODO NOW: Build these pendings properly. This is just copied
+        ; and pasted from an unrelated case above.
+        (build-new-pendings bracket-d
+        #/fn d first-nontrivial-d cascading-or-nontrivial-pendings
+          (pending-h in-hypernest d first-nontrivial-d
+            cascading-or-nontrivial-pendings))))))
 
 ; TODO: Implement this.
 #;
