@@ -520,19 +520,19 @@ something we could easily derive at this point in the document.
     (p2:hnh 4 'a
       (p4:hth 2
         (p5:hnh 4 (trivial)
-          (p7:hth 1 (p19:hnh 4 (trivial) (p21:htz)) (p20:htz)))
+          (p7:hth 1 (p19:hnh 4 (trivial) (p23:htz)) (p20:htz)))
         (p6:hth 1
-          (p22:hth 2 (p24:hnh 4 (trivial) (p26:htz)) (p25:htz))
-          (p23:htz))))
+          (p24:hth 2 (p26:hnh 4 (trivial) (p28:htz)) (p27:htz))
+          (p25:htz))))
     (p3:hth 2
       (p8:hth 3
         (p10:hnh 4 'a
           (p12:hth 1 (p13:hnh 4 (trivial) (p15:htz)) (p14:htz)))
         (p11:hth 1 (p16:hth 3 (trivial) (p18:htz)) (p17:htz)))
       (p9:hth 1
-        (p27:hth 2 (p29:hth 3 (p31:hnh 4 'a (p33:htz)) (p32:htz))
+        (p21:hth 2 (p29:hth 3 (p31:hnh 4 'a (p33:htz)) (p32:htz))
           (p30:htz))
-        (p28:htz)))))
+        (p22:htz)))))
 ```
 
 Now to start the stepp-by-step algorithm, processing one bracket at a
@@ -574,7 +574,7 @@ in 4
         hn 4: t,a,a,a
         hn 4: t,t,a,a
 read (list 2 'a)
-  write (hth 4 'a 'p4) to 'p2
+  write (hnh 4 'a 'p4) to 'p2
 
 in 2
   pending 'p3, but only for cascading, and nothing cascades here yet:
@@ -633,12 +633,12 @@ in 4
           any
           any
 read 1
-  write (hth 4 (trivial) 'p7) to 'p5
+  write (hnh 4 (trivial) 'p7) to 'p5
   this cascades, so
   write (hth 2 'p8 'p9) to 'p3
 ```
 
-We take a break here to note that we're doing something new in this step (and hence something with a high likelihood of incorrectness we've yet to uncover). Fortunately, after this step, the rest of the steps work themselves out in familiar ways.
+We take a break here to note that we're doing something new in this step (and hence something with a high likelihood of incorrectness we've yet to uncover). After this step, there's one more step that's tricky later on, but we'll describe it here.
 
 The new thing here is that we're writing a degree-1 hole in a way that cascades. Before, the only times we cascaded were when we wrote a degree-0 hole.
 
@@ -652,7 +652,13 @@ We're writing to `'p3`, so after this, all the places we *would* cascade to `'p3
 
 It turns out the order we want to cascade through these new variables is `'p8`, `'p7`, `'p9`. After all, `'p9` in this example doesn't cascade to anything else, so it must be last; and we need `'p8` to be first because it's the one variable that has the dimension that corresponds to the dimension of the region we've arrived at.
 
-So what we do is this: To make `'p7` lead to `'p9`, we deeply replace "`cascading to 'p3`" in the type of every variable (including in the type of `'p6`) with "`cascading to 'p9`". To make `'p8` lead to `'p7`, we simply use "`cascading to 'p7`" in the appropriate place in the type of `'p8` (where we would usually use "`cascading to 'p9`" if this write hadn't come from a cascade).
+So what we do is this: To make `'p7` lead to `'p9`, we deeply replace "`cascading to 'p3`" in the type of every variable (including in the type of `'p6`) with "`cascading to whatever 'p9 becomes`". To make `'p8` lead to `'p7`, we use "`cascading to 'p7 while updating 'p9`" in the appropriate place in the type of `'p8` (where we would usually use "`cascading to 'p9`" if this write hadn't come from a cascade).
+
+Well, that describes the notation we use, but what do the phrases "`cascading to whatever 'p9 becomes`" and "`cascading to 'p7 while updating 'p9`" actually mean?
+
+Later on, when we reach the moment where we need to cascade "`to 'p7 while updating 'p9`", what happens is that we advance **both** `'p7` and `'p9`. When we advance `'p9` this way, we create the variable that we really wanted the "`cascading to whatever 'p9 becomes`" pieces to cascade to in the first place, so we replace those phrases to use the new variable (namely "`cascading to 'p21`").
+
+(TODO NOW: What happens when the "`cascading to 'p7 while updating 'p9`" step itself writes a hole of degree greater than 0? In that case we'll have five variables we need to cascade in order, right? And then we'll need to use the three-way phrase "`cascading to <var> while updating <var> and <var>`", right?)
 
 Now back to following the step-by-step algorithm.
 
@@ -662,28 +668,28 @@ in 3
     ht 1
       ht 2
         hn 4
-          trivial, cascading to 'p9
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
+          trivial, cascading to whatever 'p9 becomes
           any
           any
         hn 4
           trivial
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
           any
           any
   pending 'p7, but only for cascading, and 'p8 cascades here for 0:
     ht 1
       hn 4
         trivial, cascading to 'p6
-        trivial, cascading to 'p9
+        trivial, cascading to whatever 'p9 becomes
         any
         any
   pending 'p8 for 0, 1, 2:
     ht 3
-      trivial, cascading to 'p7
+      trivial, cascading to 'p7 while updating 'p9
       hn 4: t,a,a,a
       hn 4: t,t,a,a
-  pending 'p9, but only for cascading, and nothing cascades here yet:
+  pending 'p9, but only for cascading, and 'p8 updates this for 0:
     ht 1
       ht 2
         ht 3
@@ -702,20 +708,20 @@ in 4
     ht 1
       ht 2
         hn 4
-          trivial, cascading to 'p9
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
+          trivial, cascading to whatever 'p9 becomes
           any
           any
         hn 4
           trivial
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
           any
           any
   pending 'p7, but only for cascading, and nothing cascades here yet:
     ht 1
       hn 4
         trivial, cascading to 'p6
-        trivial, cascading to 'p9
+        trivial, cascading to whatever 'p9 becomes
         any
         any
   pending 'p9, but only for cascading, and nothing cascades here yet:
@@ -738,7 +744,7 @@ in 4
   pending 'p11, but only for cascading, and 'p10 cascades here for 0:
     ht 1
       ht 3
-        trivial, cascading to 'p7
+        trivial, cascading to 'p7 while updating 'p9
         hn 4: t,a,a,a
         hn 4: t,t,a,a
 read (list 1 'a)
@@ -749,20 +755,20 @@ in 1
     ht 1
       ht 2
         hn 4
-          trivial, cascading to 'p9
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
+          trivial, cascading to whatever 'p9 becomes
           any
           any
         hn 4
           trivial
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
           any
           any
   pending 'p7, but only for cascading, and nothing cascades here yet:
     ht 1
       hn 4
         trivial, cascading to 'p6
-        trivial, cascading to 'p9
+        trivial, cascading to whatever 'p9 becomes
         any
         any
   pending 'p9, but only for cascading, and nothing cascades here yet:
@@ -779,7 +785,7 @@ in 1
   pending 'p11, but only for cascading, and nothing cascades here yet:
     ht 1
       ht 3
-        trivial, cascading to 'p7
+        trivial, cascading to 'p7 while updating 'p9
         hn 4: t,a,a,a
         hn 4: t,t,a,a
   pending 'p12 for 0:
@@ -798,20 +804,20 @@ in 4
     ht 1
       ht 2
         hn 4
-          trivial, cascading to 'p9
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
+          trivial, cascading to whatever 'p9 becomes
           any
           any
         hn 4
           trivial
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
           any
           any
   pending 'p7, but only for cascading, and nothing cascades here yet:
     ht 1
       hn 4
         trivial, cascading to 'p6
-        trivial, cascading to 'p9
+        trivial, cascading to whatever 'p9 becomes
         any
         any
   pending 'p9, but only for cascading, and nothing cascades here yet:
@@ -828,7 +834,7 @@ in 4
   pending 'p11, but only for cascading, and 'p13 cascades here for 0:
     ht 1
       ht 3
-        trivial, cascading to 'p7
+        trivial, cascading to 'p7 while updating 'p9
         hn 4: t,a,a,a
         hn 4: t,t,a,a
   pending 'p13 for 0, 1, 2, 3:
@@ -849,23 +855,23 @@ in 3
     ht 1
       ht 2
         hn 4
-          trivial, cascading to 'p9
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
+          trivial, cascading to whatever 'p9 becomes
           any
           any
         hn 4
           trivial
-          trivial, cascading to 'p9
+          trivial, cascading to whatever 'p9 becomes
           any
           any
   pending 'p7, but only for cascading, and 'p16 cascades here for 0:
     ht 1
       hn 4
         trivial, cascading to 'p6
-        trivial, cascading to 'p9
+        trivial, cascading to whatever 'p9 becomes
         any
         any
-  pending 'p9, but only for cascading, and nothing cascades here yet:
+  pending 'p9, but only for cascading, and 'p16 updates this for 0:
     ht 1
       ht 2
         ht 3
@@ -878,7 +884,7 @@ in 3
           hn 4: t,t,a,a
   pending 'p16 for 0, 1, 2:
     ht 3
-      trivial, cascading to 'p7
+      trivial, cascading to 'p7 while updating 'p9
       hn 4: t,a,a,a
       hn 4: t,t,a,a
 read 0
@@ -887,100 +893,30 @@ read 0
   this cascades, so
   write (hth 1 'p19 'p20) to 'p7
     write (htz) to 'p20
+  write (hth 1 'p21 'p22) to 'p9
+    write (htz) to 'p22
 
 in 4
-  pending 'p6, but only for cascading, and 'p19 cascades here for 1:
+  pending 'p6, but only for cascading, and 'p19 cascades here for 0:
     ht 1
       ht 2
         hn 4
-          trivial, cascading to 'p9
-          trivial, cascading to 'p9
+          trivial, cascading to 'p21
+          trivial, cascading to 'p21
           any
           any
         hn 4
           trivial
-          trivial, cascading to 'p9
+          trivial, cascading to 'p21
           any
           any
-  pending 'p9, but only for cascading, and 'p19 cascades here for 0:
-    ht 1
-      ht 2
-        ht 3
-          hn 4: a,a,a,a
-          hn 4: t,a,a,a
-          hn 4: t,t,a,a
-        ht 3
-          trivial
-          hn 4: t,a,a,a
-          hn 4: t,t,a,a
   pending 'p19 for 0, 1, 2, 3:
     hn 4
       trivial, cascading to 'p6
-      trivial, cascading to 'p9
+      trivial, cascading to 'p21
       any
       any
-read 0
-  write (hnh 4 (trivial) 'p21) to 'p19
-    write (htz) to 'p21
-  this cascades, so
-  write (hth 1 'p22 'p23) to 'p6
-    write (htz) to 'p23
-
-in 2
-  pending 'p9, but only for cascading, and nothing cascades here yet:
-    ht 1
-      ht 2
-        ht 3
-          hn 4: a,a,a,a
-          hn 4: t,a,a,a
-          hn 4: t,t,a,a
-        ht 3
-          trivial
-          hn 4: t,a,a,a
-          hn 4: t,t,a,a
-  pending 'p22 for 0, 1:
-    ht 2
-      hn 4
-        trivial, cascading to 'p9
-        trivial, cascading to 'p9
-        any
-        any
-      hn 4
-        trivial
-        trivial, cascading to 'p9
-        any
-        any
-read 0
-  write (hth 2 'p24 'p25) to 'p22
-    write (htz) to 'p25
-
-in 4
-  pending 'p9, but only for cascading, and nothing cascades here yet:
-    ht 1
-      ht 2
-        ht 3
-          hn 4: a,a,a,a
-          hn 4: t,a,a,a
-          hn 4: t,t,a,a
-        ht 3
-          trivial
-          hn 4: t,a,a,a
-          hn 4: t,t,a,a
-  pending 'p24 for 0, 1, 2, 3:
-    hn 4
-      trivial, cascading to 'p9
-      trivial, cascading to 'p9
-      any
-      any
-read 0
-  write (hnh 4 (trivial) 'p26) to 'p24
-    write (htz) to 'p26
-  this cascades, so
-  write (hth 1 'p27 'p28) to 'p9
-    write (htz) to 'p28
-
-in 2
-  pending 'p27 for 0, 1:
+  pending 'p21, but only for cascading, and 'p19 cascades here for 1:
     ht 2
       ht 3
         hn 4: a,a,a,a
@@ -991,7 +927,61 @@ in 2
         hn 4: t,a,a,a
         hn 4: t,t,a,a
 read 0
-  write (hth 2 'p29 'p30) to 'p27
+  write (hnh 4 (trivial) 'p23) to 'p19
+    write (htz) to 'p23
+  this cascades, so
+  write (hth 1 'p24 'p25) to 'p6
+    write (htz) to 'p25
+
+in 2
+  pending 'p21, but only for cascading, and nothing cascades here yet:
+    ht 2
+      ht 3
+        hn 4: a,a,a,a
+        hn 4: t,a,a,a
+        hn 4: t,t,a,a
+      ht 3
+        trivial
+        hn 4: t,a,a,a
+        hn 4: t,t,a,a
+  pending 'p24 for 0, 1:
+    ht 2
+      hn 4
+        trivial, cascading to 'p21
+        trivial, cascading to 'p21
+        any
+        any
+      hn 4
+        trivial
+        trivial, cascading to 'p21
+        any
+        any
+read 0
+  write (hth 2 'p26 'p27) to 'p24
+    write (htz) to 'p27
+
+in 4
+  pending 'p21, but only for cascading, and nothing cascades here yet:
+    ht 2
+      ht 3
+        hn 4: a,a,a,a
+        hn 4: t,a,a,a
+        hn 4: t,t,a,a
+      ht 3
+        trivial
+        hn 4: t,a,a,a
+        hn 4: t,t,a,a
+  pending 'p26 for 0, 1:
+    hn 4
+      trivial, cascading to 'p21
+      trivial, cascading to 'p21
+      any
+      any
+read 0
+  write (hnh 4 (trivial) 'p28) to 'p26
+    write (htz) to 'p28
+  this cascades, so
+  write (hth 2 'p29 'p30) to 'p21
     write (htz) to 'p30
 
 in 3
