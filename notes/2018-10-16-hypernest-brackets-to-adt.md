@@ -658,8 +658,6 @@ Well, that describes the notation we use, but what do the phrases "`cascading to
 
 Later on, when we reach the moment where we need to cascade "`to 'p7 while updating 'p9`", what happens is that we advance **both** `'p7` and `'p9`. When we advance `'p9` this way, we create the variable that we really wanted the "`cascading to whatever 'p9 becomes`" pieces to cascade to in the first place, so we replace those phrases to use the new variable (namely "`cascading to 'p21`").
 
-(TODO NOW: What happens when the "`cascading to 'p7 while updating 'p9`" step itself writes a hole of degree greater than 0? In that case we'll have five variables we need to cascade in order, right? And then we'll need to use the three-way phrase "`cascading to <var> while updating <var> and <var>`", right?)
-
 Now back to following the step-by-step algorithm.
 
 ```
@@ -1005,3 +1003,11 @@ in 0
 reach end
   write nothing
 ```
+
+---
+
+All right, but that doesn't clarify every situation.
+
+In particular, what happens when the "`cascading to 'p7 while updating 'p9`" step itself writes a hole of degree greater than 0? In that case we'll have five variables we need to cascade in order, right? And then we'll need to use the three-way phrase "`cascading to <var> while updating <var> and <var>`", right?
+
+It seems like there's too much bookkeeping here. With this amount of bookkeeping, we could more easily implement a version of `degree-and-brackets->hypernest` which collects several lists of brackets and then makes recursive calls to itself to process those brackets. So that's the approach we're pursuing instead.
