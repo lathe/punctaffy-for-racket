@@ -135,6 +135,7 @@
       (list/c 'open onum<=omega? any/c))
     hypernest?)
   
+  (struct-easy (parent-same-part))
   (struct-easy (parent-new-part))
   (struct-easy (parent-part i))
   
@@ -147,7 +148,7 @@
       rev-brackets
       stack))
   
-  (dlog "blah a0" opening-degree hypernest-brackets
+  (dlog "blah a1" opening-degree hypernest-brackets
   #/mat opening-degree 0
     (expect hypernest-brackets (list)
       (error "Expected hypernest-brackets to be empty since opening-degree was zero")
@@ -161,7 +162,8 @@
         (fn root-part
           (hypernest-careful #/hypernest-coil-bump
             opening-degree data bump-degree root-part))
-        (part-state #t 0 bump-degree opening-degree (list)
+        (part-state #t 0 bump-degree opening-degree
+          (list)
           (make-pushable-hyperstack
           #/olist-build opening-degree #/dissectfn _
             (parent-new-part))))
@@ -181,7 +183,8 @@
     parts (hash-set (make-immutable-hasheq) root-i root-part)
     current-i root-i
     new-i 0
-    (dissect (hash-ref parts current-i)
+    (dlog "blah a1.1" parts
+    #/dissect (hash-ref parts current-i)
       (part-state
         current-is-hypernest
         current-first-nontrivial-degree
@@ -192,11 +195,13 @@
     #/w- current-d (pushable-hyperstack-dimension current-stack)
     #/expect hypernest-brackets-remaining
       (cons hypernest-bracket hypernest-brackets-remaining)
-      (expect current-d 0
+      (dlog "blah a2" current-i parts
+      #/expect current-d 0
         (error "Expected more closing brackets")
       #/let ()
         (define (get-part i)
-          (dissect (hash-ref parts i)
+          (dlogr "blah a2.1" i parts
+          #/dissect (hash-ref parts i)
             (part-state
               is-hypernest
               first-nontrivial-degree
@@ -226,7 +231,7 @@
             #/fn d data
               (get-subpart d data))))
       #/finish #/get-part root-i)
-    #/dlog "blah a0.1" hypernest-bracket current-d
+    #/dlog "blah a3" hypernest-bracket current-d
     
     #/mat hypernest-bracket (list 'open bump-degree bump-value)
       (expect current-is-hypernest #t
@@ -248,19 +253,41 @@
     #/dissect
       (mat hypernest-bracket (list hole-degree hole-value)
         (expect (onum<? hole-degree current-d) #t
-          (error "Encountered a closing bracket of degree too high for where it occurred")
+          (raise-arguments-error 'degree-and-brackets->hypernest
+            "encountered a closing bracket of degree too high for where it occurred"
+            "current-d" current-d
+            "hypernest-bracket" hypernest-bracket
+            "hypernest-brackets-remaining"
+            hypernest-brackets-remaining
+            "hypernest-brackets" hypernest-brackets)
         #/expect
           (onum<=? current-first-non-interpolation-degree hole-degree)
           #t
-          (error "Encountered an annotated closing bracket of degree too low for where it occurred")
+          (raise-arguments-error 'degree-and-brackets->hypernest
+            "encountered an annotated closing bracket of degree too low for where it occurred"
+            "current-d" current-d
+            "current-first-non-interpolation-degree"
+            current-first-non-interpolation-degree
+            "hypernest-bracket" hypernest-bracket
+            "hypernest-brackets-remaining"
+            hypernest-brackets-remaining
+            "hypernest-brackets" hypernest-brackets)
         #/list hole-degree hole-value)
         (expect
           (onum<?
             hypernest-bracket
             current-first-non-interpolation-degree)
           #t
-          (error "Encountered an unannotated closing bracket of degree too high for where it occurred")
-        #/list hypernest-bracket (trivial) #t))
+          (raise-arguments-error 'degree-and-brackets->hypernest
+            "encountered an unannotated closing bracket of degree too high for where it occurred"
+            "current-d" current-d
+            "current-first-non-interpolation-degree"
+            current-first-non-interpolation-degree
+            "hypernest-bracket" hypernest-bracket
+            "hypernest-brackets-remaining"
+            hypernest-brackets-remaining
+            "hypernest-brackets" hypernest-brackets)
+        #/list hypernest-bracket (trivial)))
       (list hole-degree hole-value)
     #/dissect
       (pushable-hyperstack-pop current-stack
@@ -269,9 +296,25 @@
         current-popped-barrier
         current-parent
         current-updated-stack)
+    #/mat current-parent (parent-same-part)
+      (w- parts
+        (hash-set parts current-i
+          (part-state
+            current-is-hypernest
+            current-first-nontrivial-degree
+            current-first-non-interpolation-degree
+            current-overall-degree
+            (cons hypernest-bracket current-rev-brackets)
+            current-updated-stack))
+      #/next hypernest-brackets-remaining parts current-i new-i)
     #/mat current-parent (parent-new-part)
-      (w- parent-i new-i
+      (mat hypernest-bracket (list hole-degree hole-value)
+        ; TODO: Is this really an internal error, or is there some way
+        ; to cause it with an incorrect sequence of input brackets?
+        (error "Internal error: Expected the beginning of an interpolation to be unannotated")
+      #/w- parent-i new-i
       #/w- new-i (add1 new-i)
+      #/dlog "blah a4" current-i parent-i
       #/w- parts
         (hash-set parts current-i
           (part-state
@@ -279,17 +322,20 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons (list hole-degree hole-value) current-rev-brackets)
+            (cons (list hole-degree parent-i) current-rev-brackets)
             current-updated-stack))
       #/w- parts
         (hash-set parts parent-i
-          (part-state #f hole-degree hole-degree hole-degree (list)
+          (part-state #t hole-degree hole-degree opening-degree (list)
             (make-pushable-hyperstack
-            #/olist-build hole-degree #/dissectfn _
-              (parent-part parent-i))))
+            #/olist-build current-overall-degree #/fn d
+              (if (onum<? d hole-degree)
+                (parent-part current-i)
+                (parent-same-part)))))
       #/next hypernest-brackets-remaining parts parent-i new-i)
     #/dissect current-parent (parent-part parent-i)
-      (dissect (hash-ref parts parent-i)
+      (dlog "blah a5" current-i parent-i
+      #/dissect (hash-ref parts parent-i)
         (part-state
           parent-is-hypernest
           parent-first-nontrivial-degree
@@ -324,7 +370,7 @@
             parent-first-nontrivial-degree
             parent-first-non-interpolation-degree
             parent-overall-degree
-            (cons hole-degree current-rev-brackets)
+            (cons hole-degree parent-rev-brackets)
             parent-updated-stack))
       #/next hypernest-brackets-remaining parts parent-i new-i))))
 
@@ -673,11 +719,12 @@
         (fn #/hypertee-dv-map-all-degrees tails #/fn d tail #/trivial)
         data)
     #/hypertee-dv-map-all-degrees tails #/fn tails-hole-d tail
-      (hypernest-dv-map-all-degrees tail #/fn tail-hole-d data
+      (hypernest-dgv-map-all-degrees tail
+      #/fn tail-hole-d get-tail-hole data
         (if (onum<? tail-hole-d tails-hole-d)
           (dissect data (trivial)
           #/trivial)
-        #/func tail-hole-d data)))
+        #/func tail-hole-d get-tail-hole data)))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (hypernest-careful

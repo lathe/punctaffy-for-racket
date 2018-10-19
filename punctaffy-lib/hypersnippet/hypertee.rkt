@@ -518,7 +518,9 @@
   (-> onum<=omega? hypertee? hypertee?)
   (dissect ht (hypertee d closing-brackets)
   #/mat d 0
-    (error "Expected ht to be a hypertee of nonzero degree")
+    (raise-arguments-error 'hypertee-promote
+      "expected ht to be a hypertee of nonzero degree"
+      "ht" ht)
   #/expect (onum<=? d new-degree) #t
     (raise-arguments-error 'hypertee-promote
       "expected ht to be a hypertee of degree no greater than new-degree"
@@ -534,7 +536,9 @@
   (-> onum<=omega? hypertee? #/maybe/c hypertee?)
   (dissect ht (hypertee d closing-brackets)
   #/mat d 0
-    (error "Expected ht to be a hypertee of nonzero degree")
+    (raise-arguments-error 'hypertee-set-degree-maybe
+      "expected ht to be a hypertee of nonzero degree"
+      "ht" ht)
   #/if
     (or (onum<=? d new-degree)
     #/list-all closing-brackets #/fn closing-bracket
@@ -1294,6 +1298,8 @@
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (should-keep? hole data)
       (hypertee-pure d data hole)
+    #/mat (hypertee-degree hole) 0
+      (error "Expected should-keep? to accept the degree-zero hole")
       (hypertee-promote d hole))))
 
 ; This takes a hypertee, removes all holes of degree equal to or
@@ -1305,6 +1311,10 @@
   (dissect ht (hypertee d closing-brackets)
   #/expect (onum<=? new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
+  #/mat new-degree 0
+    ; NOTE: Since `hypertee-filter` can't filter out the degree-zero
+    ; hole, we treat truncation to degree zero as a special case.
+    (hypertee 0 #/list)
   #/dissect
     (hypertee-filter ht #/fn hole data
       (onum<? (hypertee-degree hole) new-degree))
