@@ -146,8 +146,7 @@
       first-nontrivial-degree
       first-non-interpolation-degree
       overall-degree
-      rev-brackets
-      stack))
+      rev-brackets))
   
   (dlog "blah a1" opening-degree hypernest-brackets
   #/mat opening-degree 0
@@ -157,31 +156,38 @@
   #/expect hypernest-brackets (cons first-bracket hypernest-brackets)
     (error "Expected hypernest-brackets to be nonempty since opening-degree was nonzero")
   #/w- root-i 'root
+  #/w- stack
+    (make-pushable-hyperstack
+    #/olist-build opening-degree #/dissectfn _
+      (parent-same-part))
   #/dissect
     (mat first-bracket (list 'open bump-degree data)
       (list
         (fn root-part
           (hypernest-careful #/hypernest-coil-bump
             opening-degree data bump-degree root-part))
-        (part-state #t 0 bump-degree opening-degree
-          (list)
-          (make-pushable-hyperstack
-          #/olist-build opening-degree #/dissectfn _
-            (parent-new-part))))
+        (part-state #t 0 bump-degree opening-degree (list))
+        (pushable-hyperstack-push stack
+        #/olist-build bump-degree #/dissectfn _
+          (parent-new-part)))
     #/mat first-bracket (list hole-degree data)
-      (list
+      (dissect
+        (pushable-hyperstack-pop stack
+        #/olist-build hole-degree #/dissectfn _
+          (parent-new-part))
+        (list 'root (parent-same-part) stack)
+      #/list
         (fn root-part
           (hypernest-careful #/hypernest-coil-hole
             opening-degree data root-part))
-        (part-state #f 0 hole-degree hole-degree (list)
-          (make-pushable-hyperstack
-          #/olist-build hole-degree #/dissectfn _
-            (parent-new-part))))
+        (part-state #f 0 hole-degree hole-degree (list))
+        stack)
     #/error "Expected the first bracket of a hypernest to be annotated")
-    (list finish root-part)
+    (list finish root-part stack)
   #/w-loop next
     hypernest-brackets-remaining hypernest-brackets
     parts (hash-set (make-immutable-hasheq) root-i root-part)
+    stack stack
     current-i root-i
     new-i 0
     (dlog "blah a1.1"
@@ -192,24 +198,21 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            current-rev-brackets
-            current-stack)
+            current-rev-brackets)
         #/list
           current-is-hypernest
           current-first-nontrivial-degree
           current-first-non-interpolation-degree
           current-overall-degree
-          (reverse current-rev-brackets)
-          (pushable-hyperstack-dimension current-stack)))
+          (reverse current-rev-brackets)))
     #/dissect (hash-ref parts current-i)
       (part-state
         current-is-hypernest
         current-first-nontrivial-degree
         current-first-non-interpolation-degree
         current-overall-degree
-        current-rev-brackets
-        current-stack)
-    #/w- current-d (pushable-hyperstack-dimension current-stack)
+        current-rev-brackets)
+    #/w- current-d (pushable-hyperstack-dimension stack)
     #/expect hypernest-brackets-remaining
       (cons hypernest-bracket hypernest-brackets-remaining)
       (dlog "blah a2" current-i parts
@@ -224,10 +227,7 @@
               first-nontrivial-degree
               first-non-interpolation-degree
               overall-degree
-              rev-brackets
-              stack)
-          #/expect (pushable-hyperstack-dimension stack) 0
-            (error "Internal error: A part of a hypernest was incomplete at the end")
+              rev-brackets)
           #/w- get-subpart
             (fn d data
               (if
@@ -248,7 +248,7 @@
             #/fn d data
               (get-subpart d data))))
       #/finish #/get-part root-i)
-    #/dlog "blah a3" hypernest-bracket current-d
+    #/dlog "blah a3" hypernest-bracket current-d current-i
     
     #/mat hypernest-bracket (list 'open bump-degree bump-value)
       (expect current-is-hypernest #t
@@ -261,10 +261,10 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons hypernest-bracket current-rev-brackets)
-            (pushable-hyperstack-push current-stack
-            #/olist-build bump-degree #/dissectfn _
-              (parent-part current-i))))
+            (cons hypernest-bracket current-rev-brackets)))
+        (pushable-hyperstack-push stack
+        #/olist-build bump-degree #/dissectfn _
+          (parent-part current-i))
         current-i
         new-i)
     #/dissect
@@ -307,13 +307,11 @@
         #/list hypernest-bracket (trivial)))
       (list hole-degree hole-value)
     #/dissect
-      (pushable-hyperstack-pop current-stack
+      (pushable-hyperstack-pop stack
       #/olist-build hole-degree #/dissectfn _ #/parent-part current-i)
-      (list
-        current-popped-barrier
-        current-parent
-        current-updated-stack)
-    #/mat current-parent (parent-same-part)
+      (list popped-barrier parent updated-stack)
+    #/dlog "blah a3.1" parent
+    #/mat parent (parent-same-part)
       (w- parts
         (hash-set parts current-i
           (part-state
@@ -321,10 +319,14 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons hypernest-bracket current-rev-brackets)
-            current-updated-stack))
-      #/next hypernest-brackets-remaining parts current-i new-i)
-    #/mat current-parent (parent-new-part)
+            (cons hypernest-bracket current-rev-brackets)))
+      #/next
+        hypernest-brackets-remaining
+        parts
+        updated-stack
+        current-i
+        new-i)
+    #/mat parent (parent-new-part)
       (mat hypernest-bracket (list hole-degree hole-value)
         ; TODO: Is this really an internal error, or is there some way
         ; to cause it with an incorrect sequence of input brackets?
@@ -339,18 +341,18 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons (list hole-degree parent-i) current-rev-brackets)
-            current-updated-stack))
+            (cons (list hole-degree parent-i) current-rev-brackets)))
       #/w- parts
         (hash-set parts parent-i
-          (part-state #t hole-degree hole-degree opening-degree (list)
-            (make-pushable-hyperstack
-            #/olist-build current-overall-degree #/fn d
-              (if (onum<? d hole-degree)
-                (parent-part current-i)
-                (parent-same-part)))))
-      #/next hypernest-brackets-remaining parts parent-i new-i)
-    #/dissect current-parent (parent-part parent-i)
+          (part-state #t hole-degree hole-degree opening-degree
+            (list)))
+      #/next
+        hypernest-brackets-remaining
+        parts
+        updated-stack
+        parent-i
+        new-i)
+    #/dissect parent (parent-part parent-i)
       (dlog "blah a5" current-i parent-i
       #/dissect (hash-ref parts parent-i)
         (part-state
@@ -358,16 +360,7 @@
           parent-first-nontrivial-degree
           parent-first-non-interpolation-degree
           parent-overall-degree
-          parent-rev-brackets
-          parent-stack)
-      #/dissect
-        (pushable-hyperstack-pop parent-stack
-        #/olist-build hole-degree #/dissectfn _
-          (parent-part current-i))
-        (list
-          parent-popped-barrier
-          parent-parent
-          parent-updated-stack)
+          parent-rev-brackets)
       #/w- parts
         (hash-set parts current-i
           (part-state
@@ -376,7 +369,7 @@
             current-first-non-interpolation-degree
             current-overall-degree
             (cons
-              (dlogr "blah a5.1" current-first-nontrivial-degree current-first-non-interpolation-degree current-popped-barrier parent-popped-barrier
+              (dlogr "blah a5.1" current-first-nontrivial-degree current-first-non-interpolation-degree popped-barrier
               ; TODO NOW: This commented-out line is an alternative
               ; that seems to be equivalent for tests at dimensions 4
               ; and less. However, this condition seems to be wrong
@@ -390,11 +383,7 @@
                   (onum<? hole-degree current-first-non-interpolation-degree))
                 hole-degree
               #/list hole-degree hole-value)
-              current-rev-brackets)
-            current-updated-stack))
-      ; TODO: Figure out what we should do with `parent-parent` here.
-      ; Maybe we should have a `(parent-restore)` parent struct and
-      ; verify that it's an instance of that.
+              current-rev-brackets)))
       #/w- parts
         (hash-set parts parent-i
           (part-state
@@ -402,9 +391,13 @@
             parent-first-nontrivial-degree
             parent-first-non-interpolation-degree
             parent-overall-degree
-            (cons hole-degree parent-rev-brackets)
-            parent-updated-stack))
-      #/next hypernest-brackets-remaining parts parent-i new-i))))
+            (cons hole-degree parent-rev-brackets)))
+      #/next
+        hypernest-brackets-remaining
+        parts
+        updated-stack
+        parent-i
+        new-i))))
 
 ; TODO: Implement this.
 #;
