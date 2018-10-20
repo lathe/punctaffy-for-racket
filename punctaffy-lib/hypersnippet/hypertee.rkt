@@ -806,13 +806,13 @@
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is either a `hypertee-join-selective-interpolation`
-; containing another degree-N hypertee to be interpolated or, if M is
-; nonzero, possibly a `hypertee-join-selective-non-interpolation`. In
-; those interpolated hypertees, each value of a hole of degree L is
-; either a `hypertee-join-selective-non-interpolation` or, if L is
-; less than M, possibly a `hypertee-join-selective-interpolation` of a
-; `trivial` value. This returns a single degree-N hypertee which has
-; holes for all the non-interpolations of the interpolations and the
+; containing another degree-N hypertee to be interpolated or a
+; `hypertee-join-selective-non-interpolation`. In those interpolated
+; hypertees, each value of a hole of degree L is either a
+; `hypertee-join-selective-non-interpolation` or, if L is less than M,
+; possibly a `hypertee-join-selective-interpolation` of a `trivial`
+; value. This returns a single degree-N hypertee which has holes for
+; all the non-interpolations of the interpolations and the
 ; non-interpolations of the root.
 ;
 (define/contract (hypertee-join-all-degrees-selective ht)
@@ -944,9 +944,7 @@
     #/mat closing-bracket
       (list d #/hypertee-join-selective-non-interpolation data)
       ; We begin a non-interpolation in the root.
-      (mat d 0
-        (error "Expected the degree-zero hole of the hypertee join root to contain a hypertee-join-selective-interpolation")
-      #/w- histories
+      (w- histories
         (pushable-hyperstack-push histories
         #/olist-build d #/dissectfn _ state)
       #/w- hist (list state histories)

@@ -285,3 +285,25 @@
     0
     (list 0 'a))
   "Joining hypertees selectively works when there's a degree-1 non-interpolation in the root")
+
+(check-equal?
+  (hypertee-join-all-degrees-selective #/n-ht 2
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 1 #/htnonterp 'a)
+    0
+    (list 0 #/htnonterp 'a))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypertees selectively works when there's a degree-0 non-interpolation in the root")
