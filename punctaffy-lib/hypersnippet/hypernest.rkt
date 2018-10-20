@@ -24,8 +24,6 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -810,17 +808,11 @@
 ; bumps instead of holes.
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dlog "blah a1" hn
-  #/dissect hn (hypernest coil)
-  #/dlog "blah a1.1"
+  (dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
-    (dlog "blah a2" hn
-    #/hypernest-careful #/hypernest-coil-zero)
-  #/dlog "blah a2.1"
+    (hypernest-careful #/hypernest-coil-zero)
   #/dissect (hypernest-get-hole-zero hn) (just interpolation0)
-  #/dlog "blah a2.3"
   #/w- result-degree (hypernest-degree interpolation0)
-  #/dlog "blah a2.4"
   #/expect (hypernest? interpolation0) #t
     (raise-arguments-error 'hypernest-join-all-degrees
       "expected the degree-0 interpolation to be a hypernest"
@@ -830,8 +822,7 @@
     ; TODO: Make sure the recursive calls to
     ; `hypernest-join-all-degrees` we make here always terminate. If
     ; they don't, we need to take a different approach.
-    (dlog "blah a3"
-    #/w- root-hole-degree (hypertee-degree tails)
+    (w- root-hole-degree (hypertee-degree tails)
     #/expect (hypernest? interpolation) #t
       (raise-arguments-error 'hypernest-join-all-degrees
         "expected each interpolation to be a hypernest"
@@ -847,12 +838,10 @@
         "root-hole-degree" root-hole-degree
         "interpolation" interpolation
         "degree-zero-interpolation" interpolation0)
-    #/dlog "blah a3.1" tails interpolation
     #/expect
       (hypernest-zip-low-degrees tails interpolation
       #/fn tails-hole tail interpolation-data
-        (dlog "blah a3.2"
-        #/expect interpolation-data (trivial)
+        (expect interpolation-data (trivial)
           (error "Expected each low-degree hole of each interpolation to contain a trivial value")
         #/hypernest-join-all-degrees
         #/hypernest-map-all-degrees tail #/fn tail-hole tail-data
@@ -870,7 +859,6 @@
         ; holes contain trivial values here.
         "root-hole-degree" (hypertee-degree tails)
         "interpolation" interpolation)
-    #/dlog "blah a3.3" interpolation
     #/hypernest-join-all-degrees
     #/hypernest-map-all-degrees interpolation #/fn hole data
       (if (onum<? (hypertee-degree hole) root-hole-degree)
@@ -881,8 +869,7 @@
     ; TODO: Make sure the recursive calls to
     ; `hypernest-join-all-degrees` we make here always terminate. If
     ; they don't, we need to take a different approach.
-    (dlog "blah a4" hn
-    #/hypernest-careful
+    (hypernest-careful
     #/hypernest-coil-bump overall-degree data bump-degree
     #/hypernest-join-all-degrees
     #/hypernest-map-all-degrees tails #/fn tails-hole data
