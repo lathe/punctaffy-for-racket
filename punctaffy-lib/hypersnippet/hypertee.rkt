@@ -812,7 +812,6 @@
 ; either a `hypertee-join-selective-non-interpolation` or, if L is
 ; less than M, possibly a `hypertee-join-selective-interpolation` of a
 ; `trivial` value. This returns a single degree-N hypertee which has
-; holes for all the interpolations of the interpolations, as well as
 ; holes for all the non-interpolations of the interpolations and the
 ; non-interpolations of the root.
 ;
