@@ -768,7 +768,112 @@
 ;
 ;   hypertee-v-map-one-degree
 ;   hypertee-fold
-;   hypertee-join-all-degrees-selective
+
+(struct-easy (hypernest-join-selective-interpolation val) #:equal)
+(struct-easy (hypernest-join-selective-non-interpolation val) #:equal)
+
+; This takes a hypernest of degree N where each hole value of each
+; degree M is either a `hypernest-join-selective-interpolation`
+; containing another degree-N hypernest to be interpolated or a
+; `hypernest-join-selective-non-interpolation`. In those interpolated
+; hypernests, each value of a hole of degree L is either a
+; `hypernest-join-selective-non-interpolation` or, if L is less than
+; M, possibly a `hypernest-join-selective-interpolation` of a
+; `trivial` value. This returns a single degree-N hypernest which has
+; holes for all the non-interpolations of the interpolations and the
+; non-interpolations of the root.
+;
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+;
+(define/contract (hypernest-join-all-degrees-selective hn)
+  (-> hypernest? hypernest?)
+  (dlog "blah a1" hn ; (hypernest-degree hn)
+  #/dissect hn (hypernest coil)
+  #/mat coil (hypernest-coil-zero)
+    (hypernest-careful #/hypernest-coil-zero)
+  #/w- result-degree (hypernest-degree hn)
+  #/mat coil (hypernest-coil-hole overall-degree data tails)
+    (mat data (hypernest-join-selective-interpolation interpolation)
+      ; TODO: Make sure the recursive calls to
+      ; `hypernest-join-all-degrees-selective` we make here always
+      ; terminate. If they don't, we need to take a different
+      ; approach.
+      (w- root-hole-degree (hypertee-degree tails)
+      #/expect (hypernest? interpolation) #t
+        (raise-arguments-error 'hypernest-join-all-degrees-selective
+          "expected each interpolation to be a hypernest"
+          "hn" hn
+          "root-hole-degree" root-hole-degree
+          "interpolation" interpolation)
+      #/expect (equal? result-degree (hypernest-degree interpolation))
+        #t
+        (raise-arguments-error 'hypernest-join-all-degrees-selective
+          "expected every interpolation to have the same degree as the root hypernest"
+          "hn" hn
+          "root-hole-degree" root-hole-degree
+          "interpolation" interpolation)
+      #/expect
+        (hypernest-zip-selective tails interpolation
+          (fn hole data
+            (mat data (hypernest-join-selective-interpolation _)
+              #t
+              #f))
+        #/fn tails-hole tail interpolation-data
+          (expect interpolation-data
+            (hypernest-join-selective-interpolation #/trivial)
+            (error "Expected each low-degree hole of each interpolation to contain an interpolation of a trivial value")
+          #/hypernest-join-selective-interpolation
+          #/hypernest-join-all-degrees-selective
+          #/hypernest-dv-map-all-degrees tail
+          #/fn tail-hole-degree tail-data
+            (if (onum<? tail-hole-degree (hypertee-degree tails-hole))
+              (dissect tail-data (trivial)
+              #/hypernest-join-selective-non-interpolation #/trivial)
+              tail-data)))
+        (just interpolation)
+        (raise-arguments-error 'hypernest-join-all-degrees-selective
+          "expected each interpolation to have the right shape for the hole it occurred in"
+          "hn" hn
+          ; TODO: See if we should display `tails` transformed so its
+          ; holes contain trivial values here.
+          "root-hole-degree" (hypertee-degree tails)
+          "interpolation" interpolation)
+      #/hypernest-join-all-degrees-selective interpolation)
+    #/mat data (hypernest-join-selective-non-interpolation data)
+      (hypernest-careful
+      #/hypernest-coil-hole overall-degree data
+      #/hypertee-dv-map-all-degrees tails #/fn tails-hole-degree tail
+        (hypernest-join-all-degrees-selective
+        #/hypernest-dv-map-all-degrees tail #/fn tail-hole-degree data
+          (if (onum<? tail-hole-degree tails-hole-degree)
+            (dissect data (trivial)
+            #/hypernest-join-selective-non-interpolation data)
+            data)))
+    #/raise-arguments-error 'hypernest-join-all-degrees-selective
+      "expected each of the root's hole values to be a hypernest-join-selective-interpolation or a hypernest-join-selective-non-interpolation"
+      "hn" hn
+      ; TODO: See if we should display `tails` transformed so its
+      ; holes contain trivial values here.
+      "root-hole-degree" (hypertee-degree tails)
+      "data" data)
+  #/dissect coil
+    (hypernest-coil-bump overall-degree data bump-degree tails)
+    ; TODO: Make sure the recursive calls to
+    ; `hypernest-join-all-degrees-selective` we make here always
+    ; terminate. If they don't, we need to take a different approach.
+    (hypernest-careful
+    #/hypernest-coil-bump overall-degree data bump-degree
+    #/hypernest-join-all-degrees-selective
+    #/hypernest-dv-map-all-degrees tails #/fn tails-hole-degree data
+      (expect (onum<? tails-hole-degree bump-degree) #t data
+      #/hypernest-join-selective-interpolation
+      #/hypernest-join-all-degrees-selective
+      #/hypernest-dv-map-all-degrees data #/fn tail-hole-degree data
+        (if (onum<? tail-hole-degree tails-hole-degree)
+          (dissect data (trivial)
+          #/hypernest-join-selective-non-interpolation #/trivial)
+          data)))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -806,86 +911,28 @@
 ;   hypertee-bind-pred-degree
 ;   hypertee-bind-highest-degree
 
+; This takes a hypernest of degree N where each hole value of each
+; degree M is another degree-N hypernest to be interpolated. In those
+; interpolated hypertees, the values of holes of degree less than M
+; must be `trivial` values. This returns a single degree-N hypernest
+; which has holes for all the degree-M-or-greater holes of the
+; interpolations of each degree M.
+;
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
+;
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dlog "blah a1" hn ; (hypernest-degree hn)
-  #/dissect hn (hypernest coil)
-  #/mat coil (hypernest-coil-zero)
-    (hypernest-careful #/hypernest-coil-zero)
-  #/dissect (hypernest-get-hole-zero hn) (just interpolation0)
-  #/w- result-degree (hypernest-degree interpolation0)
-  #/expect (hypernest? interpolation0) #t
-    (raise-arguments-error 'hypernest-join-all-degrees
-      "expected the degree-0 interpolation to be a hypernest"
-      "hn" hn
-      "interpolation0" interpolation0)
-  #/mat coil (hypernest-coil-hole d interpolation tails)
-    ; TODO: Make sure the recursive calls to
-    ; `hypernest-join-all-degrees` we make here always terminate. If
-    ; they don't, we need to take a different approach.
-    (w- root-hole-degree (hypertee-degree tails)
-    #/expect (hypernest? interpolation) #t
-      (raise-arguments-error 'hypernest-join-all-degrees
-        "expected each interpolation to be a hypernest"
-        "hn" hn
-        "root-hole-degree" root-hole-degree
-        "interpolation" interpolation)
-    #/expect
-      (equal? result-degree (hypernest-degree interpolation))
-      #t
-      (raise-arguments-error 'hypernest-join-all-degrees
-        "expected every interpolation to have the same degree as the degree-0 interpolation"
-        "hn" hn
-        "root-hole-degree" root-hole-degree
-        "interpolation" interpolation
-        "degree-zero-interpolation" interpolation0)
-    #/expect
-      (hypernest-zip-low-degrees tails interpolation
-      #/fn tails-hole tail interpolation-data
-        (expect interpolation-data (trivial)
-          (error "Expected each low-degree hole of each interpolation to contain a trivial value")
-        #/hypernest-join-all-degrees
-        #/hypernest-map-all-degrees tail #/fn tail-hole tail-data
-          (if
-            (onum<?
-              (hypertee-degree tail-hole)
-              (hypertee-degree tails-hole))
-            (hypernest-pure result-degree tail-data tail-hole)
-            tail-data)))
-      (just interpolation)
-      (raise-arguments-error 'hypernest-join-all-degrees
-        "expected each interpolation to have the right shape for the hole it occurred in"
-        "hn" hn
-        ; TODO: See if we should display `tails` transformed so its
-        ; holes contain trivial values here.
-        "root-hole-degree" (hypertee-degree tails)
-        "interpolation" interpolation)
-    #/hypernest-join-all-degrees
-    #/hypernest-map-all-degrees interpolation #/fn hole data
-      (if (onum<? (hypertee-degree hole) root-hole-degree)
-        data
-        (hypernest-pure result-degree data hole)))
-  #/dissect coil
-    (hypernest-coil-bump overall-degree data bump-degree tails)
-    ; TODO: Make sure the recursive calls to
-    ; `hypernest-join-all-degrees` we make here always terminate. If
-    ; they don't, we need to take a different approach.
-    (hypernest-careful
-    #/hypernest-coil-bump overall-degree data bump-degree
-    #/hypernest-join-all-degrees
-    #/hypernest-map-all-degrees tails #/fn tails-hole data
-      (w- tails-hole-degree (hypertee-degree tails-hole)
-      #/expect (onum<? tails-hole-degree bump-degree) #t data
-      #/hypernest-pure result-degree
-        (hypernest-join-all-degrees
-        #/hypernest-map-all-degrees data #/fn tail-hole data
-          (if (onum<? (hypertee-degree tail-hole) tails-hole-degree)
-            (dissect data (trivial)
-            #/hypernest-pure result-degree (trivial) tail-hole)
-            data))
-        tails-hole))))
+  (hypernest-join-all-degrees-selective
+  #/hypernest-dv-map-all-degrees hn #/fn root-hole-degree data
+    (expect (hypernest? data) #t
+      (error "Expected each interpolation of a hypernest join to be a hypernest")
+    #/hypernest-join-selective-interpolation
+    #/hypernest-dv-map-all-degrees data
+    #/fn interpolation-hole-degree data
+      (expect (onum<? interpolation-hole-degree root-hole-degree) #t
+        (hypernest-join-selective-non-interpolation data)
+      #/hypernest-join-selective-interpolation data))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.

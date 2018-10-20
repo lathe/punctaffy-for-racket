@@ -801,8 +801,8 @@
     #/hypertee-plus1 (hypertee-degree ht)
     #/just #/list (func hole data) tails)))
 
-(struct-easy (hypertee-join-selective-interpolation ht) #:equal)
-(struct-easy (hypertee-join-selective-non-interpolation data) #:equal)
+(struct-easy (hypertee-join-selective-interpolation val) #:equal)
+(struct-easy (hypertee-join-selective-non-interpolation val) #:equal)
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is either a `hypertee-join-selective-interpolation`
@@ -1118,7 +1118,9 @@
   (-> hypertee? hypertee?)
   (hypertee-join-all-degrees-selective
   #/hypertee-dv-map-all-degrees ht #/fn root-hole-degree data
-    (hypertee-join-selective-interpolation
+    (expect (hypertee? data) #t
+      (error "Expected each interpolation of a hypertee join to be a hypertee")
+    #/hypertee-join-selective-interpolation
     #/hypertee-dv-map-all-degrees data
     #/fn interpolation-hole-degree data
       (expect (onum<? interpolation-hole-degree root-hole-degree) #t
