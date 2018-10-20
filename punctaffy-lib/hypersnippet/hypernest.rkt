@@ -24,11 +24,13 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
 (require #/only-in lathe-comforts/maybe
-  just maybe? maybe-bind maybe/c maybe-map nothing)
+  just maybe? maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
@@ -666,9 +668,10 @@
     (maybe/c hypernest?))
   (expect (onum<=? (hypertee-degree smaller) (hypernest-degree bigger)) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
-  #/w- bigger
+  #/dissect
     (hypernest-dv-fold-map-any-all-degrees 0 bigger #/fn i d data
       (list (add1 i) #/just #/list i data))
+    (list _ #/just bigger)
   #/maybe-map
     (hypertee-zip-selective
       smaller
@@ -681,7 +684,7 @@
         #/list i #/func hole smaller-data bigger-data)))
   #/fn zipped
   #/dissect
-    (hypernest-dv-fold-map-any-all-degrees
+    (hypertee-dv-fold-map-any-all-degrees
       (make-immutable-hasheq)
       zipped
     #/fn hash d entry
@@ -790,11 +793,12 @@
   #/mat coil (hypernest-coil-zero)
     (nothing)
   #/mat coil (hypernest-coil-hole d data tails)
-    (maybe-bind (hypertee-get-hole-zero tails) #/fn tail
+    (expect (hypertee-get-hole-zero tails) (just tail)
+      (just data)
     #/hypernest-get-hole-zero tail)
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
-    (maybe-bind (hypernest-get-hole-zero tails) #/fn tail
+    (dissect (hypernest-get-hole-zero tails) (just tail)
     #/hypernest-get-hole-zero tail)))
 
 ; TODO IMPLEMENT: Implement operations analogous to these:
@@ -806,12 +810,17 @@
 ; bumps instead of holes.
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dissect hn (hypernest coil)
+  (dlog "blah a1" hn
+  #/dissect hn (hypernest coil)
+  #/dlog "blah a1.1"
   #/mat coil (hypernest-coil-zero)
-    (hypernest-careful #/hypernest-coil-zero)
-  #/dissect (hypertee-get-hole-zero hn) (just tail0)
-  #/dissect (hypernest-get-hole-zero tail0) (just interpolation0)
+    (dlog "blah a2" hn
+    #/hypernest-careful #/hypernest-coil-zero)
+  #/dlog "blah a2.1"
+  #/dissect (hypernest-get-hole-zero hn) (just interpolation0)
+  #/dlog "blah a2.3"
   #/w- result-degree (hypernest-degree interpolation0)
+  #/dlog "blah a2.4"
   #/expect (hypernest? interpolation0) #t
     (raise-arguments-error 'hypernest-join-all-degrees
       "expected the degree-0 interpolation to be a hypernest"
@@ -821,11 +830,13 @@
     ; TODO: Make sure the recursive calls to
     ; `hypernest-join-all-degrees` we make here always terminate. If
     ; they don't, we need to take a different approach.
-    (expect (hypernest? interpolation) #t
+    (dlog "blah a3"
+    #/w- root-hole-degree (hypertee-degree tails)
+    #/expect (hypernest? interpolation) #t
       (raise-arguments-error 'hypernest-join-all-degrees
         "expected each interpolation to be a hypernest"
         "hn" hn
-        "root-hole-degree" (hypertee-degree tails)
+        "root-hole-degree" root-hole-degree
         "interpolation" interpolation)
     #/expect
       (equal? result-degree (hypernest-degree interpolation))
@@ -833,13 +844,15 @@
       (raise-arguments-error 'hypernest-join-all-degrees
         "expected every interpolation to have the same degree as the degree-0 interpolation"
         "hn" hn
-        "root-hole-degree" (hypertee-degree tails)
+        "root-hole-degree" root-hole-degree
         "interpolation" interpolation
         "degree-zero-interpolation" interpolation0)
+    #/dlog "blah a3.1" tails interpolation
     #/expect
-      (hypernest-zip tails interpolation
+      (hypernest-zip-low-degrees tails interpolation
       #/fn tails-hole tail interpolation-data
-        (expect interpolation-data (trivial)
+        (dlog "blah a3.2"
+        #/expect interpolation-data (trivial)
           (error "Expected each low-degree hole of each interpolation to contain a trivial value")
         #/hypernest-join-all-degrees
         #/hypernest-map-all-degrees tail #/fn tail-hole tail-data
@@ -857,13 +870,19 @@
         ; holes contain trivial values here.
         "root-hole-degree" (hypertee-degree tails)
         "interpolation" interpolation)
-    #/hypernest-join-all-degrees interpolation)
+    #/dlog "blah a3.3" interpolation
+    #/hypernest-join-all-degrees
+    #/hypernest-map-all-degrees interpolation #/fn hole data
+      (if (onum<? (hypertee-degree hole) root-hole-degree)
+        data
+        (hypernest-pure result-degree data hole)))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     ; TODO: Make sure the recursive calls to
     ; `hypernest-join-all-degrees` we make here always terminate. If
     ; they don't, we need to take a different approach.
-    (hypernest-careful
+    (dlog "blah a4" hn
+    #/hypernest-careful
     #/hypernest-coil-bump overall-degree data bump-degree
     #/hypernest-join-all-degrees
     #/hypernest-map-all-degrees tails #/fn tails-hole data
