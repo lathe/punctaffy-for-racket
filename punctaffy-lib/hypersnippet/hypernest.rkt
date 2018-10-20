@@ -43,7 +43,8 @@
 
 (require #/only-in punctaffy/hypersnippet/hyperstack
   make-pushable-hyperstack pushable-hyperstack-dimension
-  pushable-hyperstack-pop pushable-hyperstack-push)
+  pushable-hyperstack-peek-elem pushable-hyperstack-pop
+  pushable-hyperstack-push)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-all-degrees hypertee-contour hypertee-degree
@@ -138,7 +139,7 @@
   
   (struct-easy (parent-same-part))
   (struct-easy (parent-new-part))
-  (struct-easy (parent-part i))
+  (struct-easy (parent-part i should-annotate))
   
   (struct-easy
     (part-state
@@ -264,7 +265,7 @@
             (cons hypernest-bracket current-rev-brackets)))
         (pushable-hyperstack-push stack
         #/olist-build bump-degree #/dissectfn _
-          (parent-part current-i))
+          (parent-part current-i #f))
         current-i
         new-i)
     #/dissect
@@ -306,13 +307,14 @@
             "hypernest-brackets" hypernest-brackets)
         #/list hypernest-bracket (trivial)))
       (list hole-degree hole-value)
-    #/dissect
-      (pushable-hyperstack-pop stack
-      #/olist-build hole-degree #/dissectfn _ #/parent-part current-i)
-      (list popped-barrier parent updated-stack)
+    #/w- parent (pushable-hyperstack-peek-elem stack hole-degree)
     #/dlog "blah a3.1" parent
     #/mat parent (parent-same-part)
-      (w- parts
+      (dissect
+        (pushable-hyperstack-pop stack
+        #/olist-build hole-degree #/dissectfn _ #/parent-same-part)
+        (list _ _ updated-stack)
+      #/w- parts
         (hash-set parts current-i
           (part-state
             current-is-hypernest
@@ -327,7 +329,12 @@
         current-i
         new-i)
     #/mat parent (parent-new-part)
-      (mat hypernest-bracket (list hole-degree hole-value)
+      (dissect
+        (pushable-hyperstack-pop stack
+        #/olist-build hole-degree #/dissectfn _
+          (parent-part current-i #t))
+        (list _ _ updated-stack)
+      #/mat hypernest-bracket (list hole-degree hole-value)
         ; TODO: Is this really an internal error, or is there some way
         ; to cause it with an incorrect sequence of input brackets?
         (error "Internal error: Expected the beginning of an interpolation to be unannotated")
@@ -352,8 +359,13 @@
         updated-stack
         parent-i
         new-i)
-    #/dissect parent (parent-part parent-i)
+    #/dissect parent (parent-part parent-i should-annotate)
       (dlog "blah a5" current-i parent-i
+      #/dissect
+        (pushable-hyperstack-pop stack
+        #/olist-build hole-degree #/dissectfn _
+          (parent-part current-i #f))
+        (list _ _ updated-stack)
       #/dissect (hash-ref parts parent-i)
         (part-state
           parent-is-hypernest
@@ -368,19 +380,10 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons
-              (dlogr "blah a5.1" current-first-nontrivial-degree current-first-non-interpolation-degree popped-barrier
-              ; TODO NOW: This commented-out line is an alternative
-              ; that seems to be equivalent for tests at dimensions 4
-              ; and less. However, this condition seems to be wrong
-              ; either way; it makes us write some brackets of the
-              ; form `(list 0 (trivial))` when we should write `0`.
-              ; See if we can fix it.
-;              #/mat current-i 'root
-              #/if
-                (and
-                  (onum<=? current-first-nontrivial-degree hole-degree)
-                  (onum<? hole-degree current-first-non-interpolation-degree))
+            (dissect hole-value (trivial)
+            #/cons
+              (dlogr "blah a5.1" current-first-nontrivial-degree current-first-non-interpolation-degree should-annotate
+              #/if (not should-annotate)
                 hole-degree
               #/list hole-degree hole-value)
               current-rev-brackets)))
