@@ -66,7 +66,7 @@
   hypertee-fold
   (struct-out hypertee-join-selective-interpolation)
   (struct-out hypertee-join-selective-non-interpolation)
-  hypertee-dv-join-all-degrees-selective
+  hypertee-join-all-degrees-selective
   hypertee-map-all-degrees
   hypertee-map-one-degree
   hypertee-map-highest-degree
@@ -816,7 +816,7 @@
 ; holes for all the non-interpolations of the interpolations and the
 ; non-interpolations of the root.
 ;
-(define/contract (hypertee-dv-join-all-degrees-selective ht)
+(define/contract (hypertee-join-all-degrees-selective ht)
   (-> hypertee? hypertee?)
   
   (struct-easy (state-in-root))
@@ -846,10 +846,10 @@
       ; holes in places where holes of that degree shouldn't be
       ; annotated (because they're closing another hole). Despite the
       ; fact that the errors this raises aren't associated with
-      ; `hypertee-dv-join-all-degrees-selective` or caught earlier
-      ; during this process, I've found them to be surprisingly
-      ; helpful since it's easy to modify this code to log the fully
-      ; constructed list of brackets.
+      ; `hypertee-join-all-degrees-selective` or caught earlier during
+      ; this process, I've found them to be surprisingly helpful since
+      ; it's easy to modify this code to log the fully constructed
+      ; list of brackets.
       ;
       (hypertee overall-degree #/reverse rev-result))
     
@@ -861,8 +861,7 @@
     (define (verify-bracket-degree d closing-bracket)
       (unless
         (equal? d #/hypertee-closing-bracket-degree closing-bracket)
-        (raise-arguments-error
-          'hypertee-dv-join-all-degrees-selective
+        (raise-arguments-error 'hypertee-join-all-degrees-selective
           "expected each interpolation of a hypertee join to be the right shape for its interpolation context"
           "expected-closing-bracket-degree" d
           "actual-closing-bracket" closing-bracket
@@ -917,7 +916,7 @@
             (expect data (trivial)
               ; TODO: Make more of the errors like this one.
               (raise-arguments-error
-                'hypertee-dv-join-all-degrees-selective
+                'hypertee-join-all-degrees-selective
                 "a hypertee join interpolation had an interpolation of low degree where the value wasn't a trivial value"
                 "ht" ht
                 "closing-bracket" closing-bracket
@@ -961,7 +960,7 @@
       #/list d data)
     #/w- d (hypertee-closing-bracket-degree closing-bracket)
     #/expect (onum<? d #/pushable-hyperstack-dimension histories) #t
-      (error "Internal error: A hypertee join root had a closing bracket of degree not less than the current region's degree")
+      (error "Internal error: Expected the next closing bracket of a hypertee join root to be of a degree less than the current region's degree")
     #/dissect
       (pushable-hyperstack-pop histories
       #/olist-build d #/dissectfn _ state)
@@ -981,13 +980,13 @@
         #/next root-brackets interpolations hist rev-result))
     ; We begin an interpolation in the root.
     #/expect data (hypertee data-d data-closing-brackets)
-      (raise-arguments-error 'hypertee-dv-join-all-degrees-selective
+      (raise-arguments-error 'hypertee-join-all-degrees-selective
         "expected each hypertee join interpolation to be a hypertee"
         "ht" ht
         "closing-bracket" closing-bracket
         "data" data)
     #/expect (equal? data-d overall-degree) #t
-      (raise-arguments-error 'hypertee-dv-join-all-degrees-selective
+      (raise-arguments-error 'hypertee-join-all-degrees-selective
         "expected each hypertee join interpolation to have the same degree as the root"
         "ht" ht
         "closing-bracket" closing-bracket
@@ -1120,7 +1119,7 @@
 ;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
-  (hypertee-dv-join-all-degrees-selective
+  (hypertee-join-all-degrees-selective
   #/hypertee-dv-map-all-degrees ht #/fn root-hole-degree data
     (hypertee-join-selective-interpolation
     #/hypertee-dv-map-all-degrees data

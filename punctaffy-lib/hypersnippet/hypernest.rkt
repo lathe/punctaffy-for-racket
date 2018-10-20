@@ -24,6 +24,8 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -766,7 +768,7 @@
 ;
 ;   hypertee-v-map-one-degree
 ;   hypertee-fold
-;   hypertee-dv-join-all-degrees-selective
+;   hypertee-join-all-degrees-selective
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -808,7 +810,8 @@
 ; bumps instead of holes.
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dissect hn (hypernest coil)
+  (dlog "blah a1" hn ; (hypernest-degree hn)
+  #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypernest-careful #/hypernest-coil-zero)
   #/dissect (hypernest-get-hole-zero hn) (just interpolation0)
