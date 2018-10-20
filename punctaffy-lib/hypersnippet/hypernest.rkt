@@ -72,6 +72,9 @@
   hypernest-zip
   hypernest-drop1
   hypernest-dv-map-all-degrees
+  (struct-out hypernest-join-selective-interpolation)
+  (struct-out hypernest-join-selective-non-interpolation)
+  hypernest-join-all-degrees-selective
   hypernest-map-all-degrees
   hypernest-pure
   hypernest-join-all-degrees

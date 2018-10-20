@@ -98,3 +98,123 @@
 (check-drop1-round-trip sample-closing-4)
 (check-drop1-round-trip sample-closing-5)
 (check-drop1-round-trip sample-opening-1)
+
+
+; TODO: Put a similar test in test-hypertee.rkt.
+(check-equal?
+  (hypernest-join-all-degrees #/n-hn 2
+    (list 0 #/hypernest-pure 2 'a #/n-ht 0))
+  (n-hn 2
+    (list 0 'a))
+  "Joining hypernests to cancel out a simple degree-0 hole")
+
+; TODO: Put a similar test in test-hypertee.rkt.
+(check-equal?
+  (hypernest-join-all-degrees #/n-hn 2
+    (list 1 #/n-hn 2
+      (list 0 #/trivial))
+    0
+    (list 0 #/hypernest-pure 2 'a #/n-ht 0))
+  (n-hn 2
+    (list 0 'a))
+  "Joining hypernests to cancel out a single simple degree-1 hole")
+
+; TODO NOW: There are several commented-out tests after this. Get them
+; all working.
+
+#;
+(check-equal?
+  (hypernest-join-all-degrees #/n-hn 2
+    (list 1 #/n-hn 2
+      (list 0 #/trivial))
+    0
+    (list 1 #/n-hn 2
+      (list 0 #/trivial))
+    0
+    (list 0 #/hypernest-pure 2 'a #/n-ht 0))
+  (n-hn 2
+    (list 0 'a))
+  "Joining hypernests to cancel out simple degree-1 holes")
+
+
+(define (hnterp val)
+  (hypernest-join-selective-interpolation val))
+
+(define (hnnonterp val)
+  (hypernest-join-selective-non-interpolation val))
+
+#;
+(check-equal?
+  (hypernest-join-all-degrees-selective #/n-hn 2
+    (list 1 #/hnterp #/n-hn 2
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 0 #/hnterp #/trivial))
+    0
+    (list 1 #/hnterp #/n-hn 2
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 0 #/hnterp #/trivial))
+    0
+    (list 0 #/hnterp #/hypernest-pure 2 (hnnonterp 'a) #/n-ht 0))
+  (n-hn 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypernests selectively when there isn't any selectiveness being exercised")
+
+#;
+(check-equal?
+  (hypernest-join-all-degrees-selective #/n-hn 2
+    (list 1 #/hnterp #/n-hn 2
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 0 #/hnterp #/trivial))
+    0
+    (list 1 #/hnnonterp 'a)
+    0
+    (list 0 #/hnterp #/hypernest-pure 2 (hnnonterp 'a) #/n-ht 0))
+  (n-hn 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypernests selectively when there's a degree-1 non-interpolation in the root")
+
+#;
+(check-equal?
+  (hypernest-join-all-degrees-selective #/n-hn 2
+    (list 1 #/hnterp #/n-hn 2
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 1 #/hnnonterp 'a)
+      0
+      (list 0 #/hnterp #/trivial))
+    0
+    (list 1 #/hnnonterp 'a)
+    0
+    (list 0 #/hnnonterp 'a))
+  (n-hn 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypernests selectively when there's a degree-0 non-interpolation in the root")
