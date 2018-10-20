@@ -25,6 +25,7 @@
 (require #/only-in racket/contract/region define/contract)
 
 (require lathe-debugging)
+(require #/only-in lathe-comforts/hash hash-kv-map)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
@@ -183,7 +184,23 @@
     parts (hash-set (make-immutable-hasheq) root-i root-part)
     current-i root-i
     new-i 0
-    (dlog "blah a1.1" parts
+    (dlog "blah a1.1"
+      (hash-kv-map parts #/fn k v
+        (dissect v
+          (part-state
+            current-is-hypernest
+            current-first-nontrivial-degree
+            current-first-non-interpolation-degree
+            current-overall-degree
+            current-rev-brackets
+            current-stack)
+        #/list
+          current-is-hypernest
+          current-first-nontrivial-degree
+          current-first-non-interpolation-degree
+          current-overall-degree
+          (reverse current-rev-brackets)
+          (pushable-hyperstack-dimension current-stack)))
     #/dissect (hash-ref parts current-i)
       (part-state
         current-is-hypernest
@@ -346,7 +363,7 @@
       #/dissect
         (pushable-hyperstack-pop parent-stack
         #/olist-build hole-degree #/dissectfn _
-          (parent-part parent-i))
+          (parent-part current-i))
         (list
           parent-popped-barrier
           parent-parent
@@ -358,7 +375,22 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons (list hole-degree hole-value) current-rev-brackets)
+            (cons
+              (dlogr "blah a5.1" current-first-nontrivial-degree current-first-non-interpolation-degree current-popped-barrier parent-popped-barrier
+              ; TODO NOW: This commented-out line is an alternative
+              ; that seems to be equivalent for tests at dimensions 4
+              ; and less. However, this condition seems to be wrong
+              ; either way; it makes us write some brackets of the
+              ; form `(list 0 (trivial))` when we should write `0`.
+              ; See if we can fix it.
+;              #/mat current-i 'root
+              #/if
+                (and
+                  (onum<=? current-first-nontrivial-degree hole-degree)
+                  (onum<? hole-degree current-first-non-interpolation-degree))
+                hole-degree
+              #/list hole-degree hole-value)
+              current-rev-brackets)
             current-updated-stack))
       ; TODO: Figure out what we should do with `parent-parent` here.
       ; Maybe we should have a `(parent-restore)` parent struct and
