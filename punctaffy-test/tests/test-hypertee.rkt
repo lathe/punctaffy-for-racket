@@ -227,3 +227,61 @@
     0
     (list 0 'a))
   "Joining hypertees where one of the interpolations is degree 2 with its own degree-1 hole")
+
+
+(define (htterp val)
+  (hypertee-join-selective-interpolation val))
+
+(define (htnonterp val)
+  (hypertee-join-selective-non-interpolation val))
+
+(check-equal?
+  (hypertee-join-all-degrees-selective #/n-ht 2
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 0 #/htterp #/hypertee-pure 2 (htnonterp 'a) #/n-ht 0))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypertees selectively works when there isn't any selectiveness being exercised")
+
+(check-equal?
+  (hypertee-join-all-degrees-selective #/n-ht 2
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 1 #/htnonterp 'a)
+    0
+    (list 0 #/htterp #/hypertee-pure 2 (htnonterp 'a) #/n-ht 0))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypertees selectively works when there's a degree-1 non-interpolation in the root")
