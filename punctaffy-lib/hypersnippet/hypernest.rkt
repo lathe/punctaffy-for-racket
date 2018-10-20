@@ -24,6 +24,7 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require racket/pretty)
 (require lathe-debugging)
 
 (require #/only-in lathe-comforts
@@ -788,32 +789,45 @@
 ;
 (define/contract (hypernest-join-all-degrees-selective hn)
   (-> hypernest? hypernest?)
-  (dlog "blah a1" hn ; (hypernest-degree hn)
+  (dlog "blah a1" ; hn
+  #/begin (pretty-print hn)  ; blah
   #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypernest-careful #/hypernest-coil-zero)
   #/w- result-degree (hypernest-degree hn)
+  #/w- verify-hole-value
+    (fn root-hole-degree data
+      (mat data (hypernest-join-selective-interpolation interpolation)
+        (expect (hypernest? interpolation) #t
+          (raise-arguments-error 'hypernest-join-all-degrees-selective
+            "expected each interpolation to be a hypernest"
+            "hn" hn
+            "root-hole-degree" root-hole-degree
+            "interpolation" interpolation)
+        #/expect
+          (equal? result-degree (hypernest-degree interpolation))
+          #t
+          (raise-arguments-error 'hypernest-join-all-degrees-selective
+            "expected every interpolation to have the same degree as the root hypernest"
+            "hn" hn
+            "root-hole-degree" root-hole-degree
+            "interpolation" interpolation)
+        #/void)
+      #/mat data (hypernest-join-selective-non-interpolation _) (void)
+      #/raise-arguments-error 'hypernest-join-all-degrees-selective
+        "expected each of the root's hole values to be a hypernest-join-selective-interpolation or a hypernest-join-selective-non-interpolation"
+        "hn" hn
+        ; TODO: See if we should display a full hole shape here.
+        "root-hole-degree" root-hole-degree
+        "data" data))
   #/mat coil (hypernest-coil-hole overall-degree data tails)
-    (mat data (hypernest-join-selective-interpolation interpolation)
+    (begin (verify-hole-value (hypertee-degree tails) data)
+    #/mat data (hypernest-join-selective-interpolation interpolation)
       ; TODO: Make sure the recursive calls to
       ; `hypernest-join-all-degrees-selective` we make here always
       ; terminate. If they don't, we need to take a different
       ; approach.
-      (w- root-hole-degree (hypertee-degree tails)
-      #/expect (hypernest? interpolation) #t
-        (raise-arguments-error 'hypernest-join-all-degrees-selective
-          "expected each interpolation to be a hypernest"
-          "hn" hn
-          "root-hole-degree" root-hole-degree
-          "interpolation" interpolation)
-      #/expect (equal? result-degree (hypernest-degree interpolation))
-        #t
-        (raise-arguments-error 'hypernest-join-all-degrees-selective
-          "expected every interpolation to have the same degree as the root hypernest"
-          "hn" hn
-          "root-hole-degree" root-hole-degree
-          "interpolation" interpolation)
-      #/expect
+      (expect
         (hypernest-zip-selective tails interpolation
           (fn hole data
             (mat data (hypernest-join-selective-interpolation _)
@@ -824,12 +838,15 @@
             (hypernest-join-selective-interpolation #/trivial)
             (error "Expected each low-degree hole of each interpolation to contain an interpolation of a trivial value")
           #/hypernest-join-selective-interpolation
+          #/dlog "blah a2"
           #/hypernest-join-all-degrees-selective
           #/hypernest-dv-map-all-degrees tail
           #/fn tail-hole-degree tail-data
-            (if (onum<? tail-hole-degree (hypertee-degree tails-hole))
+            (dlog "blah a2.1" tail-hole-degree (hypertee-degree tails-hole) tail-data
+            #/if (onum<? tail-hole-degree (hypertee-degree tails-hole))
               (dissect tail-data (trivial)
-              #/hypernest-join-selective-non-interpolation #/trivial)
+              #/hypernest-join-selective-non-interpolation
+              #/hypernest-join-selective-interpolation #/trivial)
               tail-data)))
         (just interpolation)
         (raise-arguments-error 'hypernest-join-all-degrees-selective
@@ -839,24 +856,19 @@
           ; holes contain trivial values here.
           "root-hole-degree" (hypertee-degree tails)
           "interpolation" interpolation)
+      #/dlog "blah a3"
       #/hypernest-join-all-degrees-selective interpolation)
-    #/mat data (hypernest-join-selective-non-interpolation data)
+    #/dissect data (hypernest-join-selective-non-interpolation data)
       (hypernest-careful
       #/hypernest-coil-hole overall-degree data
       #/hypertee-dv-map-all-degrees tails #/fn tails-hole-degree tail
-        (hypernest-join-all-degrees-selective
+        (dlog "blah a4"
+        #/hypernest-join-all-degrees-selective
         #/hypernest-dv-map-all-degrees tail #/fn tail-hole-degree data
           (if (onum<? tail-hole-degree tails-hole-degree)
             (dissect data (trivial)
-            #/hypernest-join-selective-non-interpolation data)
-            data)))
-    #/raise-arguments-error 'hypernest-join-all-degrees-selective
-      "expected each of the root's hole values to be a hypernest-join-selective-interpolation or a hypernest-join-selective-non-interpolation"
-      "hn" hn
-      ; TODO: See if we should display `tails` transformed so its
-      ; holes contain trivial values here.
-      "root-hole-degree" (hypertee-degree tails)
-      "data" data)
+            #/hypernest-join-selective-interpolation #/trivial)
+            data))))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     ; TODO: Make sure the recursive calls to
@@ -864,15 +876,31 @@
     ; terminate. If they don't, we need to take a different approach.
     (hypernest-careful
     #/hypernest-coil-bump overall-degree data bump-degree
+    #/dlog "blah a5"
     #/hypernest-join-all-degrees-selective
     #/hypernest-dv-map-all-degrees tails #/fn tails-hole-degree data
-      (expect (onum<? tails-hole-degree bump-degree) #t data
-      #/hypernest-join-selective-interpolation
+      (w- promoted-d (onum-max bump-degree overall-degree)
+      #/w- promote-this-hole
+        (fn root-hole-degree data
+          (begin (verify-hole-value root-hole-degree data)
+          #/mat data
+            (hypernest-join-selective-interpolation interpolation)
+            (hypernest-join-selective-interpolation
+            #/hypernest-promote promoted-d interpolation)
+          #/dissect data
+            (hypernest-join-selective-non-interpolation _)
+            data))
+      #/expect (onum<? tails-hole-degree bump-degree) #t
+        (promote-this-hole tails-hole-degree data)
+      #/hypernest-join-selective-non-interpolation
+      #/dlog "blah a6"
       #/hypernest-join-all-degrees-selective
+;      #/hypernest-promote promoted-d
       #/hypernest-dv-map-all-degrees data #/fn tail-hole-degree data
         (if (onum<? tail-hole-degree tails-hole-degree)
           (dissect data (trivial)
-          #/hypernest-join-selective-non-interpolation #/trivial)
+          #/hypernest-join-selective-interpolation #/trivial)
+#;          (promote-this-hole tail-hole-degree data)
           data)))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
@@ -923,14 +951,16 @@
 ;
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (hypernest-join-all-degrees-selective
+  (dlog "blah b0" hn
+  #/hypernest-join-all-degrees-selective
   #/hypernest-dv-map-all-degrees hn #/fn root-hole-degree data
     (expect (hypernest? data) #t
       (error "Expected each interpolation of a hypernest join to be a hypernest")
     #/hypernest-join-selective-interpolation
     #/hypernest-dv-map-all-degrees data
     #/fn interpolation-hole-degree data
-      (expect (onum<? interpolation-hole-degree root-hole-degree) #t
+      (dlog "blah b1" interpolation-hole-degree root-hole-degree data
+      #/expect (onum<? interpolation-hole-degree root-hole-degree) #t
         (hypernest-join-selective-non-interpolation data)
       #/hypernest-join-selective-interpolation data))))
 
