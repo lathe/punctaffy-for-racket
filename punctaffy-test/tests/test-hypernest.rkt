@@ -83,7 +83,7 @@
 
 (check-equal?
   (hypernest-drop1 sample-closing-3)
-  (hypernest-coil-hole 2 'a
+  (hypernest-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
     ; `(hypernest-drop1 sample-closing-3)`. Make sure it's correct.
     (n-ht 2
