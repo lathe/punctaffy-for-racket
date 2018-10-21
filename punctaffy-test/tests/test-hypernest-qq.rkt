@@ -65,6 +65,20 @@
 ; that degree-3 approach, do we really need hypernests at all?
 
 
+; TODO NOW: These tests haven't succeeded ever since we changed the
+; implementation of hypernests to an AST-style approach (which was
+; necessary so we could have bumps of low degree in the areas beyond
+; the low-degree holes of bumps and holes of high degree). Fix these
+; tests. Then go back and change `hn-tag-3-...` and `hn-tag-4-...` to
+; `hn-tag-1-...` and `hn-tag-2...` since those lower-degree encodings
+; will have become correct.
+;
+; Note that technically `hn-tag-3-...` and `hn-tag-4-...` were always
+; of too low degree -- they're only of degree high enough to get
+; quasiquote to work -- which is why we needed to start fixing the way
+; we were representing hypernests.
+
+
 ; Altogether, these commented-out tests seem to take about 11 minutes
 ; and 54 seconds to run (on my machine). They take about 55 seconds if
 ; `assert-valid-hypertee-brackets` and

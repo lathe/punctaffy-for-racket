@@ -793,7 +793,7 @@
 (define/contract (hypernest-join-all-degrees-selective hn)
   (-> hypernest? hypernest?)
   (dlog "blah a1" ; hn
-  #/begin (pretty-print hn)  ; blah
+  #/begin (pretty-write hn)  ; blah
   #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypernest-careful #/hypernest-coil-zero)
@@ -842,15 +842,38 @@
             (error "Expected each low-degree hole of each interpolation to contain an interpolation of a trivial value")
           #/hypernest-join-selective-interpolation
           #/dlog "blah a2"
+          #/ (fn result #/begin0 result #/pretty-write result)  ; blah
           #/hypernest-join-all-degrees-selective
           #/hypernest-dv-map-all-degrees tail
           #/fn tail-hole-degree tail-data
             (dlog "blah a2.1" tail-hole-degree (hypertee-degree tails-hole) tail-data
-            #/if (onum<? tail-hole-degree (hypertee-degree tails-hole))
+            #/if
+              (onum<? tail-hole-degree (hypertee-degree tails-hole))
               (dissect tail-data (trivial)
               #/hypernest-join-selective-non-interpolation
               #/hypernest-join-selective-interpolation #/trivial)
-              tail-data)))
+            #/mat tail-data
+              (hypernest-join-selective-interpolation interpolation)
+              ; TODO: See if there's some user input which makes
+              ; `interpolation` a value other than a hypernest.
+              (hypernest-join-selective-interpolation
+              #/hypernest-dv-map-all-degrees interpolation
+              #/fn d data
+                ; TODO: See if there's some user input which makes
+                ; `data` a value other than a
+                ; `hypernest-join-selective-interpolation` or a
+                ; `hypernest-join-selective-non-interpolation`.
+                (expect data
+                  (hypernest-join-selective-non-interpolation data)
+                  data
+                #/hypernest-join-selective-non-interpolation
+                #/hypernest-join-selective-non-interpolation data))
+            ; TODO: See if there's some user input which makes this
+            ; `dissect` fail.
+            #/dissect tail-data
+              (hypernest-join-selective-non-interpolation data)
+              (hypernest-join-selective-non-interpolation
+              #/hypernest-join-selective-non-interpolation data))))
         (just interpolation)
         (raise-arguments-error 'hypernest-join-all-degrees-selective
           "expected each interpolation to have the right shape for the hole it occurred in"
@@ -954,8 +977,10 @@
 ;
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dlog "blah b0" hn
+  (dlog "blah b0"  ; hn
+  #/begin (pretty-write hn)  ; blah
   #/hypernest-join-all-degrees-selective
+  #/ (fn result #/dlog "blah b0.1" #/begin (pretty-write result) result)
   #/hypernest-dv-map-all-degrees hn #/fn root-hole-degree data
     (expect (hypernest? data) #t
       (error "Expected each interpolation of a hypernest join to be a hypernest")
