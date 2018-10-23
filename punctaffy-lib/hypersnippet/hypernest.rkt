@@ -796,9 +796,7 @@
 ;
 (define/contract (hypernest-join-all-degrees-selective hn)
   (-> hypernest? hypernest?)
-  (dlog "blah a1" ; hn
-  #/begin (pretty-write hn)  ; blah
-  #/dissect hn (hypernest coil)
+  (dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypernest-careful #/hypernest-coil-zero)
   #/w- result-degree (hypernest-degree hn)
@@ -866,14 +864,10 @@
             (hypernest-join-selective-interpolation #/trivial)
             (error "Expected each low-degree hole of each interpolation to contain an interpolation of a trivial value")
           #/hypernest-join-selective-interpolation
-          #/dlog "blah a2"
-          #/ (fn result #/begin0 result #/pretty-write result)  ; blah
           #/hypernest-join-all-degrees-selective
           #/hypernest-dv-map-all-degrees tail
           #/fn tail-hole-degree tail-data
-            (dlog "blah a2.1" tail-hole-degree (hypertee-degree tails-hole) tail-data
-            #/if
-              (onum<? tail-hole-degree (hypertee-degree tails-hole))
+            (if (onum<? tail-hole-degree (hypertee-degree tails-hole))
               (dissect tail-data (trivial)
               #/hypernest-join-selective-non-interpolation
               #/hypernest-join-selective-interpolation #/trivial)
@@ -886,16 +880,12 @@
           ; holes contain trivial values here.
           "root-hole-degree" (hypertee-degree tails)
           "interpolation" interpolation)
-      #/dlog "blah a3"
       #/hypernest-join-all-degrees-selective interpolation)
     #/dissect data (hypernest-join-selective-non-interpolation data)
       (hypernest-careful
       #/hypernest-coil-hole overall-degree data
       #/hypertee-dv-map-all-degrees tails #/fn tails-hole-degree tail
-        (dlog "blah a4"
-        #/begin (pretty-write tail)  ; blah
-        #/ (fn result #/begin0 result #/pretty-write result)  ; blah
-        #/hypernest-join-all-degrees-selective
+        (hypernest-join-all-degrees-selective
         #/hypernest-dv-map-all-degrees tail #/fn tail-hole-degree data
           (if (onum<? tail-hole-degree tails-hole-degree)
             (dissect data (trivial)
@@ -908,37 +898,27 @@
     ; terminate. If they don't, we need to take a different approach.
     (hypernest-careful
     #/hypernest-coil-bump overall-degree data bump-degree
-    #/dlog "blah a5"
-    #/ (fn result #/begin0 result #/pretty-write result)  ; blah
     #/hypernest-join-all-degrees-selective
     #/hypernest-dv-map-all-degrees tails #/fn tails-hole-degree data
-      (w- promoted-d (onum-max bump-degree overall-degree)
-      #/dlog "blah a5.1"
-      #/w- promote-this-hole
-        (fn root-hole-degree data
-          (begin (verify-hole-value root-hole-degree data)
-          #/w- data (double-non-interpolations data)
-          #/mat data
-            (hypernest-join-selective-interpolation interpolation)
-            (hypernest-join-selective-interpolation
-            ; TODO: See if we really need this `hypernest-promote`
-            ; call.
-            #/hypernest-promote promoted-d interpolation)
-          #/dissect data
-            (hypernest-join-selective-non-interpolation data)
-            (hypernest-join-selective-non-interpolation data)))
-      #/expect (onum<? tails-hole-degree bump-degree) #t
-        (promote-this-hole tails-hole-degree data)
+      (expect (onum<? tails-hole-degree bump-degree) #t
+        (begin (verify-hole-value tails-hole-degree data)
+        #/w- data (double-non-interpolations data)
+        #/mat data
+          (hypernest-join-selective-interpolation interpolation)
+          (hypernest-join-selective-interpolation
+          ; TODO: See if we really need this `hypernest-promote`
+          ; call.
+          #/hypernest-promote (onum-max bump-degree overall-degree)
+            interpolation)
+        #/dissect data
+          (hypernest-join-selective-non-interpolation data)
+          (hypernest-join-selective-non-interpolation data))
       #/hypernest-join-selective-non-interpolation
-      #/dlog "blah a6" data
-      #/ (fn result #/begin0 result (pretty-write data) (pretty-write result))  ; blah
       #/hypernest-join-all-degrees-selective
-;      #/hypernest-promote promoted-d
       #/hypernest-dv-map-all-degrees data #/fn tail-hole-degree data
         (if (onum<? tail-hole-degree tails-hole-degree)
           (dissect data (trivial)
           #/hypernest-join-selective-non-interpolation #/trivial)
-#;          (promote-this-hole tail-hole-degree data)
           data)))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
@@ -989,18 +969,14 @@
 ;
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (dlog "blah b0"  ; hn
-  #/begin (pretty-write hn)  ; blah
-  #/hypernest-join-all-degrees-selective
-  #/ (fn result #/dlog "blah b0.1" #/begin (pretty-write result) result)
+  (hypernest-join-all-degrees-selective
   #/hypernest-dv-map-all-degrees hn #/fn root-hole-degree data
     (expect (hypernest? data) #t
       (error "Expected each interpolation of a hypernest join to be a hypernest")
     #/hypernest-join-selective-interpolation
     #/hypernest-dv-map-all-degrees data
     #/fn interpolation-hole-degree data
-      (dlog "blah b1" interpolation-hole-degree root-hole-degree data
-      #/expect (onum<? interpolation-hole-degree root-hole-degree) #t
+      (expect (onum<? interpolation-hole-degree root-hole-degree) #t
         (hypernest-join-selective-non-interpolation data)
       #/hypernest-join-selective-interpolation data))))
 

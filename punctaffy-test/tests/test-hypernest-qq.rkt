@@ -65,13 +65,13 @@
 ; that degree-3 approach, do we really need hypernests at all?
 
 
-; TODO NOW: These tests haven't succeeded ever since we changed the
-; implementation of hypernests to an AST-style approach (which was
-; necessary so we could have bumps of low degree in the areas beyond
-; the low-degree holes of bumps and holes of high degree). Fix these
-; tests. Then go back and change `hn-tag-3-...` and `hn-tag-4-...` to
-; `hn-tag-1-...` and `hn-tag-2...` since those lower-degree encodings
-; will have become correct.
+; TODO NOW: Some of these tests haven't succeeded ever since we
+; changed the implementation of hypernests to an AST-style approach
+; (which was necessary so we could have bumps of low degree in the
+; areas beyond the low-degree holes of bumps and holes of high
+; degree). Fix these tests. Then go back and change `hn-tag-3-...` and
+; `hn-tag-4-...` to `hn-tag-1-...` and `hn-tag-2...` since those
+; lower-degree encodings will have become correct.
 ;
 ; Note that technically `hn-tag-3-...` and `hn-tag-4-...` were always
 ; of too low degree -- they're only of degree high enough to get
@@ -79,21 +79,22 @@
 ; we were representing hypernests.
 
 
-; Altogether, these commented-out tests seem to take about 11 minutes
-; and 54 seconds to run (on my machine). They take about 55 seconds if
-; `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-hypertees` are no-ops.
+; Altogether, these commented-out tests seem to take about (TODO: Time
+; these once they're all working.) to run (on my machine). They take
+; about (TODO: Time this too.) if `assert-valid-hypertee-brackets` and
+; `assert-valid-hypernest-coil` are no-ops.
+;
+; Each one is labeled with the amount of time it takes to run
+; individually (with and without those `assert-...` passes).
 ;
 ; TODO: See if there's some way to optimize them. Let's uncomment them
 ; if we can get them down to 3 minutes or less.
+
+
+; Time with assertions:       2m45s
+; Time without assertions:      11.4s
 ;
-#|
-
-
-; This one seems to take about 49 seconds to run (on my machine). It
-; takes about 25 seconds if `assert-valid-hypertee-brackets` is a
-; no-op. It takes about 11 seconds if that and
-; `assert-valid-hypernest-hypertees` are no-ops.
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -105,10 +106,13 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; This one seems to take about 2 minutes and 49 seconds to run (on my
-; machine). It takes about 1 minute and 14 seconds if
-; `assert-valid-hypertee-brackets` is a no-op. It takes about 27
-; seconds if that and `assert-valid-hypernest-hypertees` are no-ops.
+; Time with assertions:     >16m
+; Time without assertions:      20.2s
+;
+; TODO NOW: See if there's an infinite loop when the assertions are
+; active.
+;
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -126,10 +130,11 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; This one seems to take about 3 minutes and 46 seconds to run (on my
-; machine). It takes about 28 seconds if
-; `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-hypertees` are no-ops.
+; Currently fails.
+;
+; TODO NOW: Get this to pass.
+;
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -147,10 +152,11 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; This one seems to take about 4 minutes and 3 seconds to run (on my
-; machine). It takes about 28 seconds if
-; `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-hypertees` are no-ops.
+; Currently fails.
+;
+; TODO NOW: Get this to pass.
+;
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -173,9 +179,6 @@
           i j))
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
-
-
-|#
 
 
 ; TODO: Turn this into a unit test. There was at one point (although
