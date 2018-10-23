@@ -130,9 +130,7 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; Currently fails.
-;
-; TODO NOW: Get this to pass.
+; TODO NOW: Time this.
 ;
 #;
 (check-equal?
@@ -152,9 +150,7 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; Currently fails.
-;
-; TODO NOW: Get this to pass.
+; TODO NOW: Time this.
 ;
 #;
 (check-equal?

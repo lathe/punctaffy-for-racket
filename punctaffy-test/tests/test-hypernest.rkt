@@ -502,3 +502,74 @@
     0
     (list 0 'a))
   "Joining hypernests selectively when there's a degree-0 non-interpolation in the root")
+
+
+
+; ===== Testing `hypernest-truncate-to-hypertee` =====================
+
+(check-equal?
+  (hypernest-truncate-to-hypertee #/n-hn 1
+    (list 'open 1 'a)
+    0
+    (list 0 'a))
+  (n-ht 1
+    (list 0 'a))
+  "Truncating a degree-1 hypernest to a hypertee")
+
+(check-equal?
+  (hypernest-truncate-to-hypertee #/n-hn 1
+    (list 'open 1 'a)
+    0
+    (list 'open 1 'a)
+    0
+    (list 'open 1 'a)
+    0
+    (list 0 'a))
+  (n-ht 1
+    (list 0 'a))
+  "Truncating a degree-1 hypernest with multiple bumps to a hypertee")
+
+(check-equal?
+  (hypernest-truncate-to-hypertee #/n-hn 1
+    (list 'open 2 'a)
+    1
+    (list 'open 1 'a)
+    0
+    0
+    0
+    (list 'open 1 'a)
+    0
+    (list 0 'a))
+  (n-ht 1
+    (list 0 'a))
+  "Truncating a degree-1 hypernest with a degree-2 bump to a hypertee")
+
+(check-equal?
+  (hypernest-truncate-to-hypertee #/n-hn 2
+    (list 'open 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 'open 1 'a)
+    0
+    (list 0 'a))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Truncating a degree-2 hypernest to a hypertee")
+
+(check-equal?
+  (hypernest-truncate-to-hypertee #/n-hn 2
+    (list 'open 2 'a)
+    1
+    (list 1 'a)
+    0
+    0
+    0
+    (list 0 'a))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Truncating a degree-2 hypernest with a degree-2 bump to a hypertee")

@@ -24,6 +24,9 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require racket/pretty)
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -400,6 +403,7 @@
 
 (define/contract (assert-valid-hypernest-coil coil)
   (-> (hypernest-coil/c) void?)
+  (void)#;
   (mat coil (hypernest-coil-zero) (void)
   #/mat coil
     (hypernest-coil-hole overall-degree hole-value tails-hypertee)
@@ -416,7 +420,8 @@
         (error "Expected each tail of a hypernest-coil-hole to be a hypernest of the same degree as the overall degree")
       #/expect
         (hypertee-zip-low-degrees hole
-          (hypernest-truncate-to-hypertee tail)
+          (dlog "blah c1"
+          #/hypernest-truncate-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
             (raise-arguments-error 'assert-valid-hypernest-coil
@@ -443,7 +448,8 @@
           (error "Expected each tail of a hypernest-coil-bump to be a hypernest of the same degree as the overall degree or of the same degree as the hole it occurred in, whichever was greater")
         #/expect
           (hypertee-zip-low-degrees hole
-            (hypernest-truncate-to-hypertee data)
+            (dlog "blah d1"
+            #/hypernest-truncate-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
               (raise-arguments-error 'assert-valid-hypernest-coil
@@ -580,7 +586,9 @@
 
 (define/contract (hypernest-truncate-to-hypertee hn)
   (-> hypernest? hypertee?)
-  (dissect hn (hypernest coil)
+  (dlog "blah a1"
+;  #/begin (pretty-write hn)  ; blah
+  #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypertee-plus1 0 #/nothing)
   #/mat coil (hypernest-coil-hole d data tails)
@@ -589,15 +597,17 @@
       (hypernest-truncate-to-hypertee tail))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
-    (w- tails-degree (hypernest-degree tails)
+    (w- intermediate-degree (onum-max overall-degree bump-degree)
     #/hypertee-set-degree overall-degree
     #/hypertee-bind-all-degrees
-      (hypernest-truncate-to-hypertee tails)
+      (hypertee-promote intermediate-degree
+      #/hypernest-truncate-to-hypertee tails)
     #/fn hole data
-      (hypertee-promote tails-degree
+      (dlog "blah a2" overall-degree bump-degree intermediate-degree
+      #/hypertee-promote intermediate-degree
       #/if (onum<? (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
-        (hypernest-pure overall-degree data hole)))))
+        (hypernest-contour data hole)))))
 
 ; Takes a hypertee of any degree N and returns a hypernest of degree
 ; N+1 with all the same degree-less-than-N holes as well as a single
@@ -671,7 +681,8 @@
     (-> hypertee? any/c boolean?)
     (-> hypertee? any/c any/c any/c)
     (maybe/c hypernest?))
-  (expect (onum<=? (hypertee-degree smaller) (hypernest-degree bigger)) #t
+  (dlog "blah b1"
+  #/expect (onum<=? (hypertee-degree smaller) (hypernest-degree bigger)) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/dissect
     (hypernest-dv-fold-map-any-all-degrees 0 bigger #/fn i d data
@@ -680,7 +691,8 @@
   #/maybe-map
     (hypertee-zip-selective
       smaller
-      (hypernest-truncate-to-hypertee bigger)
+      (dlog "blah b2"
+      #/hypernest-truncate-to-hypertee bigger)
       (fn hole entry
         (dissect entry (list i data)
         #/should-zip? hole data))
@@ -710,7 +722,8 @@
 (define/contract (hypernest-zip-low-degrees smaller bigger func)
   (-> hypertee? hypernest? (-> hypertee? any/c any/c any/c)
     (maybe/c hypernest?))
-  (hypernest-zip-selective smaller bigger (fn hole data #t) func))
+  (dlog "blah e1"
+  #/hypernest-zip-selective smaller bigger (fn hole data #t) func))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -851,7 +864,8 @@
       ; terminate. If they don't, we need to take a different
       ; approach.
       (expect
-        (hypernest-zip-selective tails interpolation
+        (dlog "blah f1"
+        #/hypernest-zip-selective tails interpolation
           (fn hole data
             (mat data (hypernest-join-selective-interpolation _)
               #t
