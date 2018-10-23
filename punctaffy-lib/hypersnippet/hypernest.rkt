@@ -24,9 +24,6 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
-(require racket/pretty)
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
