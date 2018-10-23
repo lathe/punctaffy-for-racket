@@ -42,44 +42,51 @@
 ; `hn-tag-nest` region without being confused with closing brackets
 ; bounding the region.
 ;
-; To illustrate in more detail, the problem we avoid that way is that
-; if we have one `hn-tag-nest` representing a degree-2 snippet of the
-; code (encoded as a degree-4 bump) and inside its degree-2 region we
-; have a degree-1 snippet of code represented as a degree-1 bump, then
-; the first hypertee in the representation of this hypernest will have
-; a degree-1 hole (the inner bump) inside a degree-2 region, which is
-; treated (whether we like it or not) as a hole in that region rather
-; than as a bump. Bumping all the degree-1 snippets up to degree 3
-; lets us avoid this.
+; The problem we avoided that way has to do with a previous
+; representation of hypernests we were using. That representation
+; treated all the hypernest's immediate holes and bumps as being holes
+; of a hypertee, and it treated the interior of each bump as another
+; hypertee. This representation was incorrect because it wasn't able
+; to represent a low-degree bump that occurred inside of a high-degree
+; hole of a higher-degree hole or bump. Those low-degree bumps would
+; have needed to be represented by low-degree holes, but the
+; low-degree holes occurring there were inside high-degree holes in
+; the hypertee representation, so they could only represent holes in
+; the high-degree hole, not bumps in it.
 ;
-; We shouldn't really have to think about that when we're using
-; hypernests, so there's probably a representation format that fits
-; the hypernest format better. Here's an approach that could work:
-; Instead of representing `hn-tag-nest` as contour-of-contour-shaped
-; bumps with empty interiors, we could represent them with bumps whose
-; interiors correspond to the interiors of the brackets they represent
-; and whose data annotations contain are appropriately shaped
-; hypernest values which encode the brackets' original syntax.
+; To work around this problem at first, we represented expressions
+; using degree-3 regions and list-like operations using degree-4
+; regions. This put them at just high enough a degree that we could
+; get these quasiquotation tests to work. I believe an operator of
+; higher degree than quasiquotation would have required us to raise
+; the degrees of our regions accordingly, so this was not an approach
+; that allowed us to express operators of arbitrary degree.
 ;
-; On the other hand, since we have been able to get this working with
-; that degree-3 approach, do we really need hypernests at all?
+; Now, we have changed the representation of hypernests so that it
+; *is* possible to represent a low-degree bump beyond a higher-degree
+; hole in a high-degree hole or bump. This means we should be able to
+; switch the expressions and list-like operators back to using
+; degree-1 and degree-2 regions. If we can, I don't believe we will
+; have trouble implementing operations of higher degree than
+; quasiquotation.
 
 
-; Altogether, these commented-out tests seem to take about 11 minutes
-; and 54 seconds to run (on my machine). They take about 55 seconds if
-; `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-hypertees` are no-ops.
+; Altogether, these commented-out tests seem to take about 54m52s to
+; run (on my machine). They take about 28.7s if
+; `assert-valid-hypertee-brackets` and `assert-valid-hypernest-coil`
+; are no-ops.
+;
+; Each one is labeled with the amount of time it takes to run
+; individually (with and without those `assert-...` passes).
 ;
 ; TODO: See if there's some way to optimize them. Let's uncomment them
 ; if we can get them down to 3 minutes or less.
+
+
+; Time with assertions:       3m07s
+; Time without assertions:       9.67s
 ;
-#|
-
-
-; This one seems to take about 49 seconds to run (on my machine). It
-; takes about 25 seconds if `assert-valid-hypertee-brackets` is a
-; no-op. It takes about 11 seconds if that and
-; `assert-valid-hypernest-hypertees` are no-ops.
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -91,10 +98,10 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; This one seems to take about 2 minutes and 49 seconds to run (on my
-; machine). It takes about 1 minute and 14 seconds if
-; `assert-valid-hypertee-brackets` is a no-op. It takes about 27
-; seconds if that and `assert-valid-hypernest-hypertees` are no-ops.
+; Time with assertions:      20m54s
+; Time without assertions:      13.3s
+;
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -112,10 +119,10 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; This one seems to take about 3 minutes and 46 seconds to run (on my
-; machine). It takes about 28 seconds if
-; `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-hypertees` are no-ops.
+; Time with assertions:      14m01s
+; Time without assertions:      20.1s
+;
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -133,10 +140,10 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; This one seems to take about 4 minutes and 3 seconds to run (on my
-; machine). It takes about 28 seconds if
-; `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-hypertees` are no-ops.
+; Time with assertions:      15m10s
+; Time without assertions:      16.6s
+;
+#;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
@@ -159,9 +166,6 @@
           i j))
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
-
-
-|#
 
 
 ; TODO: Turn this into a unit test. There was at one point (although

@@ -45,6 +45,7 @@
   
   make-pushable-hyperstack
   pushable-hyperstack-dimension
+  pushable-hyperstack-peek-elem
   pushable-hyperstack-push
   pushable-hyperstack-pop)
 
@@ -136,6 +137,17 @@
   (-> pushable-hyperstack? onum<=e0?)
   (dissect h (pushable-hyperstack olist)
   #/olist-length olist))
+
+(define/contract (pushable-hyperstack-peek-elem h i)
+  (->i
+    (
+      [h pushable-hyperstack?]
+      [i (h) (onum</c #/pushable-hyperstack-dimension h)])
+    [_ any/c])
+  (dissect h (pushable-hyperstack olist)
+  #/dissect (olist-ref-and-call olist i)
+    (list barrier elem olist-suffix)
+    elem))
 
 (define/contract (pushable-hyperstack-push h elems-to-push)
   (-> pushable-hyperstack? olist<=e0? pushable-hyperstack?)

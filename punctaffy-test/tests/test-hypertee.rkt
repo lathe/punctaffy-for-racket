@@ -123,6 +123,7 @@
     (list 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
 
+; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
   (hypertee-join-all-degrees #/n-ht 2
     (list 1 #/n-ht 2
@@ -152,6 +153,7 @@
     (list 0 'a))
   "Joining hypertees to make a hypertee with more holes than any of the parts on its own")
 
+; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
   (hypertee-join-all-degrees #/n-ht 2
     (list 1 #/hypertee-pure 2 'a #/n-ht 1
@@ -178,6 +180,7 @@
     (list 0 'a))
   "Joining hypertees where one of the nonzero-degree holes in the root is just a hole rather than an interpolation")
 
+; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
   (hypertee-join-all-degrees #/n-ht 3
     
@@ -227,3 +230,83 @@
     0
     (list 0 'a))
   "Joining hypertees where one of the interpolations is degree 2 with its own degree-1 hole")
+
+
+(define (htterp val)
+  (hypertee-join-selective-interpolation val))
+
+(define (htnonterp val)
+  (hypertee-join-selective-non-interpolation val))
+
+(check-equal?
+  (hypertee-join-all-degrees-selective #/n-ht 2
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 0 #/htterp #/hypertee-pure 2 (htnonterp 'a) #/n-ht 0))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypertees selectively when there isn't any selectiveness being exercised")
+
+(check-equal?
+  (hypertee-join-all-degrees-selective #/n-ht 2
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 1 #/htnonterp 'a)
+    0
+    (list 0 #/htterp #/hypertee-pure 2 (htnonterp 'a) #/n-ht 0))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypertees selectively when there's a degree-1 non-interpolation in the root")
+
+(check-equal?
+  (hypertee-join-all-degrees-selective #/n-ht 2
+    (list 1 #/htterp #/n-ht 2
+      (list 1 #/htnonterp 'a)
+      0
+      (list 1 #/htnonterp 'a)
+      0
+      (list 0 #/htterp #/trivial))
+    0
+    (list 1 #/htnonterp 'a)
+    0
+    (list 0 #/htnonterp 'a))
+  (n-ht 2
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 1 'a)
+    0
+    (list 0 'a))
+  "Joining hypertees selectively when there's a degree-0 non-interpolation in the root")
