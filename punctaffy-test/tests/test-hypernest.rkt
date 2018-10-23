@@ -342,9 +342,6 @@
 ; Now that we have a better understanding of the situation that we've
 ; had trouble with, here's a simplified test that still fails in the
 ; same way.
-;
-; TODO NOW: Fix this test.
-;
 (check-equal?
   (hypernest-join-all-degrees #/n-hn 1
     (list 'open 3 'a)
@@ -364,8 +361,6 @@
     (list 0 (trivial)))
   "Joining with a complex degree-3 bump in the way")
 
-; TODO NOW: Fix and uncomment this test.
-#;
 (check-equal?
   (hypernest-join-all-degrees #/n-hn 1
     (list 'open 3 'a)

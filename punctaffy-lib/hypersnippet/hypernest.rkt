@@ -422,7 +422,9 @@
           (hypernest-truncate-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
-            (error "Expected each tail of a hypernest-coil-hole to have trivial values in its low-degree holes")
+            (raise-arguments-error 'assert-valid-hypernest-coil
+              "expected each tail of a hypernest-coil-hole to have trivial values in its low-degree holes"
+              "tail-data" tail-data)
           #/trivial))
         (just zipped)
         (error "Expected each tail of a hypernest-coil-hole to match up with the hole it occurred in")
@@ -447,7 +449,9 @@
             (hypernest-truncate-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
-              (error "Expected each tail of a hypernest-coil-bump to have trivial values in its low-degree holes")
+              (raise-arguments-error 'assert-valid-hypernest-coil
+                "expected each tail of a hypernest-coil-bump to have trivial values in its low-degree holes"
+                "tail-data" tail-data)
             #/trivial))
           (just zipped)
           (error "Expected each tail of a hypernest-coil-bump to match up with the hole it occurred in")
@@ -823,6 +827,27 @@
         ; TODO: See if we should display a full hole shape here.
         "root-hole-degree" root-hole-degree
         "data" data))
+  #/w- double-non-interpolations
+    (fn data
+      (mat data (hypernest-join-selective-interpolation interpolation)
+        ; TODO: See if there's some user input which makes
+        ; `interpolation` a value other than a hypernest.
+        (hypernest-join-selective-interpolation
+        #/hypernest-dv-map-all-degrees interpolation #/fn d data
+          (mat data (hypernest-join-selective-interpolation data)
+            ; TODO: See if `data` is always a trivial value here.
+            (hypernest-join-selective-interpolation data)
+          ; TODO: See if there's some user input which makes this
+          ; `dissect` fail.
+          #/dissect data
+            (hypernest-join-selective-non-interpolation data)
+            (hypernest-join-selective-non-interpolation
+            #/hypernest-join-selective-non-interpolation data)))
+      ; TODO: See if there's some user input which makes this
+      ; `dissect` fail.
+      #/dissect data (hypernest-join-selective-non-interpolation data)
+        (hypernest-join-selective-non-interpolation
+        #/hypernest-join-selective-non-interpolation data)))
   #/mat coil (hypernest-coil-hole overall-degree data tails)
     (begin (verify-hole-value (hypertee-degree tails) data)
     #/mat data (hypernest-join-selective-interpolation interpolation)
@@ -852,30 +877,7 @@
               (dissect tail-data (trivial)
               #/hypernest-join-selective-non-interpolation
               #/hypernest-join-selective-interpolation #/trivial)
-            #/mat tail-data
-              (hypernest-join-selective-interpolation interpolation)
-              ; TODO: See if there's some user input which makes
-              ; `interpolation` a value other than a hypernest.
-              (hypernest-join-selective-interpolation
-              #/hypernest-dv-map-all-degrees interpolation
-              #/fn d data
-                (mat data
-                  (hypernest-join-selective-interpolation data)
-                  ; TODO: See if `data` is always a trivial value
-                  ; here.
-                  (hypernest-join-selective-interpolation data)
-                ; TODO: See if there's some user input which makes
-                ; this `dissect` fail.
-                #/dissect data
-                  (hypernest-join-selective-non-interpolation data)
-                  (hypernest-join-selective-non-interpolation
-                  #/hypernest-join-selective-non-interpolation data)))
-            ; TODO: See if there's some user input which makes this
-            ; `dissect` fail.
-            #/dissect tail-data
-              (hypernest-join-selective-non-interpolation data)
-              (hypernest-join-selective-non-interpolation
-              #/hypernest-join-selective-non-interpolation data))))
+            #/double-non-interpolations tail-data)))
         (just interpolation)
         (raise-arguments-error 'hypernest-join-all-degrees-selective
           "expected each interpolation to have the right shape for the hole it occurred in"
@@ -891,11 +893,13 @@
       #/hypernest-coil-hole overall-degree data
       #/hypertee-dv-map-all-degrees tails #/fn tails-hole-degree tail
         (dlog "blah a4"
+        #/begin (pretty-write tail)  ; blah
+        #/ (fn result #/begin0 result #/pretty-write result)  ; blah
         #/hypernest-join-all-degrees-selective
         #/hypernest-dv-map-all-degrees tail #/fn tail-hole-degree data
           (if (onum<? tail-hole-degree tails-hole-degree)
             (dissect data (trivial)
-            #/hypernest-join-selective-interpolation #/trivial)
+            #/hypernest-join-selective-non-interpolation #/trivial)
             data))))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
@@ -905,39 +909,29 @@
     (hypernest-careful
     #/hypernest-coil-bump overall-degree data bump-degree
     #/dlog "blah a5"
+    #/ (fn result #/begin0 result #/pretty-write result)  ; blah
     #/hypernest-join-all-degrees-selective
     #/hypernest-dv-map-all-degrees tails #/fn tails-hole-degree data
       (w- promoted-d (onum-max bump-degree overall-degree)
+      #/dlog "blah a5.1"
       #/w- promote-this-hole
         (fn root-hole-degree data
           (begin (verify-hole-value root-hole-degree data)
+          #/w- data (double-non-interpolations data)
           #/mat data
             (hypernest-join-selective-interpolation interpolation)
             (hypernest-join-selective-interpolation
-            #/hypernest-promote promoted-d
-            #/hypernest-dv-map-all-degrees interpolation #/fn d data
-              (mat data
-                (hypernest-join-selective-interpolation interpolation)
-                ; TODO: See if there's some user input which makes
-                ; this `dissect` fail.
-                (dissect interpolation (trivial)
-                #/hypernest-join-selective-interpolation #/trivial)
-              ; TODO: See if there's some user input which makes this
-              ; `dissect` fail.
-              #/dissect data
-                (hypernest-join-selective-non-interpolation data)
-                (hypernest-join-selective-non-interpolation
-                #/hypernest-join-selective-non-interpolation data)))
-          ; TODO: See if there's some user input which makes this
-          ; `dissect` fail.
+            ; TODO: See if we really need this `hypernest-promote`
+            ; call.
+            #/hypernest-promote promoted-d interpolation)
           #/dissect data
             (hypernest-join-selective-non-interpolation data)
-            (hypernest-join-selective-non-interpolation
-            #/hypernest-join-selective-non-interpolation data)))
+            (hypernest-join-selective-non-interpolation data)))
       #/expect (onum<? tails-hole-degree bump-degree) #t
         (promote-this-hole tails-hole-degree data)
       #/hypernest-join-selective-non-interpolation
       #/dlog "blah a6" data
+      #/ (fn result #/begin0 result (pretty-write data) (pretty-write result))  ; blah
       #/hypernest-join-all-degrees-selective
 ;      #/hypernest-promote promoted-d
       #/hypernest-dv-map-all-degrees data #/fn tail-hole-degree data
