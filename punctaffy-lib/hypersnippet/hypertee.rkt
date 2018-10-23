@@ -431,7 +431,6 @@
 (define/contract
   (assert-valid-hypertee-brackets opening-degree closing-brackets)
   (-> onum<=omega? list? void?)
-  (void)#;
   (w- final-region-degree
     (poppable-hyperstack-dimension #/list-foldl
       (make-poppable-hyperstack-n opening-degree)

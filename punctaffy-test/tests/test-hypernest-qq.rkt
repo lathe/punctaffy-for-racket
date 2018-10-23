@@ -80,8 +80,8 @@
 
 
 ; Altogether, these commented-out tests seem to take about (TODO: Time
-; these once they're all working.) to run (on my machine). They take
-; about (TODO: Time this too.) if `assert-valid-hypertee-brackets` and
+; these once we're sure they terminate.) to run (on my machine). They
+; take about 28.7s if `assert-valid-hypertee-brackets` and
 ; `assert-valid-hypernest-coil` are no-ops.
 ;
 ; Each one is labeled with the amount of time it takes to run
@@ -91,8 +91,8 @@
 ; if we can get them down to 3 minutes or less.
 
 
-; Time with assertions:       2m45s
-; Time without assertions:      11.4s
+; Time with assertions:       3m07s
+; Time without assertions:       9.67s
 ;
 #;
 (check-equal?
@@ -106,8 +106,11 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; Time with assertions:     >16m
-; Time without assertions:      20.2s
+; Time with assertions:      >5m
+; Time without assertions:      13.3s
+;
+; An earlier version of the code took over 16m with assertions, and
+; this one is probably no different.
 ;
 ; TODO NOW: See if there's an infinite loop when the assertions are
 ; active.
@@ -130,7 +133,11 @@
               ,(+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; TODO NOW: Time this.
+; Time with assertions:      >5m
+; Time without assertions:      20.1s
+;
+; TODO NOW: See if there's an infinite loop when the assertions are
+; active.
 ;
 #;
 (check-equal?
@@ -150,7 +157,11 @@
               ,(+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; TODO NOW: Time this.
+; Time with assertions:      >5m
+; Time without assertions:      16.6s
+;
+; TODO NOW: See if there's an infinite loop when the assertions are
+; active.
 ;
 #;
 (check-equal?

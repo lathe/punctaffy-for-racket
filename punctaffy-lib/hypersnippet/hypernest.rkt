@@ -24,9 +24,6 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
-(require racket/pretty)
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -403,7 +400,6 @@
 
 (define/contract (assert-valid-hypernest-coil coil)
   (-> (hypernest-coil/c) void?)
-  (void)#;
   (mat coil (hypernest-coil-zero) (void)
   #/mat coil
     (hypernest-coil-hole overall-degree hole-value tails-hypertee)
@@ -420,8 +416,7 @@
         (error "Expected each tail of a hypernest-coil-hole to be a hypernest of the same degree as the overall degree")
       #/expect
         (hypertee-zip-low-degrees hole
-          (dlog "blah c1"
-          #/hypernest-truncate-to-hypertee tail)
+          (hypernest-truncate-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
             (raise-arguments-error 'assert-valid-hypernest-coil
@@ -448,8 +443,7 @@
           (error "Expected each tail of a hypernest-coil-bump to be a hypernest of the same degree as the overall degree or of the same degree as the hole it occurred in, whichever was greater")
         #/expect
           (hypertee-zip-low-degrees hole
-            (dlog "blah d1"
-            #/hypernest-truncate-to-hypertee data)
+            (hypernest-truncate-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
               (raise-arguments-error 'assert-valid-hypernest-coil
@@ -586,9 +580,7 @@
 
 (define/contract (hypernest-truncate-to-hypertee hn)
   (-> hypernest? hypertee?)
-  (dlog "blah a1"
-;  #/begin (pretty-write hn)  ; blah
-  #/dissect hn (hypernest coil)
+  (dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypertee-plus1 0 #/nothing)
   #/mat coil (hypernest-coil-hole d data tails)
@@ -603,8 +595,7 @@
       (hypertee-promote intermediate-degree
       #/hypernest-truncate-to-hypertee tails)
     #/fn hole data
-      (dlog "blah a2" overall-degree bump-degree intermediate-degree
-      #/hypertee-promote intermediate-degree
+      (hypertee-promote intermediate-degree
       #/if (onum<? (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
         (hypernest-contour data hole)))))
@@ -681,8 +672,7 @@
     (-> hypertee? any/c boolean?)
     (-> hypertee? any/c any/c any/c)
     (maybe/c hypernest?))
-  (dlog "blah b1"
-  #/expect (onum<=? (hypertee-degree smaller) (hypernest-degree bigger)) #t
+  (expect (onum<=? (hypertee-degree smaller) (hypernest-degree bigger)) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/dissect
     (hypernest-dv-fold-map-any-all-degrees 0 bigger #/fn i d data
@@ -691,8 +681,7 @@
   #/maybe-map
     (hypertee-zip-selective
       smaller
-      (dlog "blah b2"
-      #/hypernest-truncate-to-hypertee bigger)
+      (hypernest-truncate-to-hypertee bigger)
       (fn hole entry
         (dissect entry (list i data)
         #/should-zip? hole data))
@@ -722,8 +711,7 @@
 (define/contract (hypernest-zip-low-degrees smaller bigger func)
   (-> hypertee? hypernest? (-> hypertee? any/c any/c any/c)
     (maybe/c hypernest?))
-  (dlog "blah e1"
-  #/hypernest-zip-selective smaller bigger (fn hole data #t) func))
+  (hypernest-zip-selective smaller bigger (fn hole data #t) func))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -864,8 +852,7 @@
       ; terminate. If they don't, we need to take a different
       ; approach.
       (expect
-        (dlog "blah f1"
-        #/hypernest-zip-selective tails interpolation
+        (hypernest-zip-selective tails interpolation
           (fn hole data
             (mat data (hypernest-join-selective-interpolation _)
               #t
