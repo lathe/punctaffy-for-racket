@@ -23,6 +23,8 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in syntax/parse id syntax-parse)
 
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
@@ -35,7 +37,7 @@
   hypernest-promote hypernest-set-degree)
 
 (provide
-  (struct-out hn-tag-3-s-expr-stx)
+  (struct-out hn-tag-1-s-expr-stx)
   (struct-out hn-tag-4-list)
   (struct-out hn-tag-4-list*)
   (struct-out hn-tag-4-vector)
@@ -182,13 +184,13 @@
 ; Each of these tags can occur as a bump of the indicated degree. They
 ; represent data that was carried over from the original
 ; s-expression-shaped Racket syntax objects when they were converted
-; to hn-expressions. The `hn-tag-3-s-expr-stx` can potentially contain
+; to hn-expressions. The `hn-tag-1-s-expr-stx` can potentially contain
 ; an entire subtree in Racket syntax object form, but usually the
 ; layers are broken up into separate `hn-tag-4-list` nodes. Instead,
-; an `hn-tag-3-s-expr-syntax` is usually used just for miscellaneous
+; an `hn-tag-1-s-expr-syntax` is usually used just for miscellaneous
 ; atomic values occurring in the syntax, like symbols and datums.
 ;
-(struct-easy (hn-tag-3-s-expr-stx stx) #:equal)
+(struct-easy (hn-tag-1-s-expr-stx stx) #:equal)
 (struct-easy (hn-tag-4-list stx-example) #:equal)
 (struct-easy (hn-tag-4-list* stx-example) #:equal)
 (struct-easy (hn-tag-4-vector stx-example) #:equal)
@@ -309,7 +311,8 @@
           0
         #/list 0 #/trivial)
       #/fn hole data
-        (hypernest-promote 2
+        (dlog "blah c1" (n-hn-append0 1 elems)
+        #/hypernest-promote 2
         #/n-hn-append0 1 elems)))
   
   ; We traverse into proper and improper lists.
@@ -355,7 +358,7 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-1 holes that a user-defined syntax
       ; introduces for a different reason).
-      (n-hn 1 (list 'open 3 #/hn-tag-3-s-expr-stx stx) 0
+      (n-hn 1 (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
       #/list 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an

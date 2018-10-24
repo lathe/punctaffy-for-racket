@@ -24,6 +24,8 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -400,6 +402,7 @@
 
 (define/contract (assert-valid-hypernest-coil coil)
   (-> (hypernest-coil/c) void?)
+;  (void)#;
   (mat coil (hypernest-coil-zero) (void)
   #/mat coil
     (hypernest-coil-hole overall-degree hole-value tails-hypertee)
@@ -430,7 +433,13 @@
     (hypernest-coil-bump
       overall-degree bump-value bump-degree tails-hypernest)
     ; NOTE: We don't validate `bump-value`.
-    (hypernest-each-all-degrees tails-hypernest #/fn hole data
+    (expect
+      (equal?
+        (onum-max overall-degree bump-degree)
+        (hypernest-degree tails-hypernest))
+      #t
+      (error "Expected the tails of a hypernest-coil-bump to be a hypernest of degree equal to the max of the overall degree and the bump degree")
+    #/hypernest-each-all-degrees tails-hypernest #/fn hole data
       (w- hole-degree (hypertee-degree hole)
       #/when (onum<? hole-degree bump-degree)
         (expect (hypernest? data) #t
@@ -495,7 +504,8 @@
 ; are.
 (define/contract (hypernest-promote new-degree hn)
   (-> onum<=omega? hypernest? hypernest?)
-  (dissect hn (hypernest coil)
+  (dlog "blah e1"
+  #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (error "Expected hn to be a hypernest of nonzero degree")
   #/expect (onum<=? (hypernest-degree hn) new-degree) #t
@@ -507,15 +517,19 @@
     (if (equal? d new-degree) hn
     #/hypernest-careful #/hypernest-coil-hole new-degree data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
-      (hypernest-promote new-degree tail))
+      (dlog "blah e2"
+      #/hypernest-promote new-degree tail))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (if (equal? overall-degree new-degree) hn
     #/hypernest-careful
     #/hypernest-coil-bump new-degree data bump-degree
+    #/dlog "blah e3"
+    #/hypernest-promote (onum-max new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (onum<? d bump-degree)
-        (hypernest-set-degree (onum-max d new-degree) data)
+        (dlog "blah e4"
+        #/hypernest-set-degree (onum-max d new-degree) data)
         data))))
 
 ; Takes a nonzero-degree hypernest with no holes of degree N or
@@ -523,7 +537,8 @@
 ; holes.
 (define/contract (hypernest-set-degree new-degree hn)
   (-> onum<=omega? hypernest? hypernest?)
-  (dissect hn (hypernest coil)
+  (dlog "blah f1"
+  #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (error "Expected hn to be a hypernest of nonzero degree")
   #/mat coil (hypernest-coil-hole d data tails)
@@ -543,6 +558,7 @@
     (if (equal? overall-degree new-degree) hn
     #/hypernest-careful
     #/hypernest-coil-bump new-degree data bump-degree
+    #/hypernest-set-degree (onum-max new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (onum<? d bump-degree)
         (hypernest-set-degree (onum-max d new-degree) data)

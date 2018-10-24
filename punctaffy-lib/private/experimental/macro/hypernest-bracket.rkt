@@ -25,6 +25,8 @@
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
+(require #/for-syntax lathe-debugging)
+
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w- w-loop)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -40,13 +42,13 @@
   hypernest-degree hypernest-drop1 hypernest-dv-map-all-degrees
   hypernest-join-all-degrees hypernest-join-one-degree
   hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
-  hypernest-truncate-to-hypertee)
+  hypernest-set-degree hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-3-s-expr-stx hn-tag-4-list hn-tag-nest
+  hn-tag-1-s-expr-stx hn-tag-4-list hn-tag-nest
   hn-tag-unmatched-closing-bracket s-expr-stx->hn-expr
   simple-hn-builder-syntax)
 
@@ -88,10 +90,14 @@
           (hypernest-dv-map-all-degrees interior-and-bracket-and-tails
           #/fn d tail
             (next (onum-max first-nontrivial-d d) tail))
-        #/hypernest-plus1 #/hypernest-coil-bump
+        #/w- new-overall-degree
           (onum-max opening-degree first-nontrivial-d)
+        #/hypernest-plus1 #/hypernest-coil-bump
+          new-overall-degree
           data
           bump-degree-plus-two
+        #/hypernest-set-degree
+          (onum-max new-overall-degree bump-degree-plus-two)
           mapped))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
     #/expect
@@ -150,7 +156,10 @@
       ; If this syntax transformer is used in an identifier position,
       ; we just expand as though the identifier isn't bound to a
       ; syntax transformer at all.
-      (n-hn 1 (list 3 #/hn-tag-3-s-expr-stx stx) 0
+      ;
+      ; TODO: This should be a bump, not a hole.
+      ;
+      (n-hn 1 (list 1 #/hn-tag-1-s-expr-stx stx) 0
       #/list 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree (syntax-e #'degree-stx)
@@ -170,9 +179,9 @@
       (list 'open 4 #/hn-tag-4-list #/datum->syntax stx #/list)
       1
       
-      (list 'open 3 #/hn-tag-3-s-expr-stx #'op)
+      (list 'open 1 #/hn-tag-1-s-expr-stx #'op)
       0
-      (list 'open 3 #/hn-tag-3-s-expr-stx #'degree-stx)
+      (list 'open 1 #/hn-tag-1-s-expr-stx #'degree-stx)
       0
       
       (list 1
@@ -188,6 +197,7 @@
           #/list 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
         ; TODO: See if we need this `hypernest-promote` call.
+        #/dlog "blah b1"
         #/hypernest-promote degree-plus-one
           bracket-syntax))
       0

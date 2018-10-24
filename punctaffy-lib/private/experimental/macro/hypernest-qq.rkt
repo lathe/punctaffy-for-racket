@@ -45,7 +45,7 @@
   hypertee-v-each-one-degree)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-3-s-expr-stx hn-tag-4-list hn-tag-4-list* hn-tag-4-prefab
+  hn-tag-1-s-expr-stx hn-tag-4-list hn-tag-4-list* hn-tag-4-prefab
   hn-tag-4-vector hn-tag-nest s-expr-stx->hn-expr)
 
 
@@ -139,16 +139,15 @@
       (error "Expected an hn-expr with a trivial value in its degree-0 hole")
     #/list)
   #/dissect dropped (hypernest-coil-bump 1 data bump-degree tails)
-  #/mat data (hn-tag-3-s-expr-stx stx)
-    (expect bump-degree 3
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
+  #/mat data (hn-tag-1-s-expr-stx stx)
+    (expect bump-degree 1
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree other than 1")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
-    #/expect (hypertee-set-degree-maybe 1 tails) (just tails)
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree-2 or degree-1 hole in it")
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a bump in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
+      (begin (displayln "blah a1") (writeln bump-degree) (writeln tails)
+      #/error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour")
     #/cons stx #/hn-expr->s-expr-stx-list tail)
   #/w- process-listlike
     (fn stx-example list->whatever
@@ -200,21 +199,22 @@
     (hypernest-plus1 #/hypernest-coil-hole 2 data
     #/process-tails tails)
   #/dissect dropped (hypernest-coil-bump 2 data bump-degree tails)
-  #/mat data (hn-tag-3-s-expr-stx stx)
-    (expect bump-degree 3
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
+  #/mat data (hn-tag-1-s-expr-stx stx)
+    (expect bump-degree 1
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree other than 3")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a bump in it")
     #/expect (hypertee-set-degree-maybe 1 tails) (just tails)
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree-2 or degree-1 hole in it")
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
+      (begin (displayln "blah a2") (writeln tails)
+      #/error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
     #/hypernest-plus1 #/hypernest-coil-bump 2
-      (hn-tag-3-s-expr-stx #`'#,stx)
-      3
+      (hn-tag-1-s-expr-stx #`'#,stx)
+      1
     #/hypertee->hypernest
-    #/hypertee-promote 3
+    #/hypertee-promote 2
     #/process-tails tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
@@ -238,7 +238,7 @@
         (list 1 #/n-hn-append0 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn 2
-            (list 'open 3 #/hn-tag-3-s-expr-stx list-beginning)
+            (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
             0
           #/list 0 #/trivial))
         0
@@ -288,21 +288,22 @@
     (hypernest-plus1 #/hypernest-coil-hole 2 data
     #/process-tails tails)
   #/dissect dropped (hypernest-coil-bump 2 data bump-degree tails)
-  #/mat data (hn-tag-3-s-expr-stx stx)
-    (expect bump-degree 3
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree other than 3")
+  #/mat data (hn-tag-1-s-expr-stx stx)
+    (expect bump-degree 1
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree other than 1")
     #/expect (hypernest->maybe-hypertee tails) (just tails)
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a bump in it")
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a bump in it")
     #/expect (hypertee-set-degree-maybe 1 tails) (just tails)
-      (error "Encountered an hn-tag-3-s-expr-stx bump with a degree-2 or degree-1 hole in it")
+      (error "Encountered an hn-tag-1-s-expr-stx bump with a degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (error "Internal error: Encountered an hn-tag-3-s-expr-stx bump which wasn't a contour of a twice-promoted hole")
+      (begin (displayln "blah a3") (writeln tails)
+      #/error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
     #/hypernest-plus1 #/hypernest-coil-bump 2
-      (hn-tag-3-s-expr-stx #`#'#,stx)
-      3
+      (hn-tag-1-s-expr-stx #`#'#,stx)
+      1
     #/hypertee->hypernest
-    #/hypertee-promote 3
+    #/hypertee-promote 2
     #/process-tails tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
@@ -323,10 +324,10 @@
         (list 'open 4 #/hn-tag-4-list stx-example)
         1
         
-        (list 'open 3 #/hn-tag-3-s-expr-stx #'datum->syntax)
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'datum->syntax)
         0
         
-        (list 'open 3 #/hn-tag-3-s-expr-stx #`#'#,stx-example)
+        (list 'open 1 #/hn-tag-1-s-expr-stx #`#'#,stx-example)
         0
         
         (list 'open 4 #/hn-tag-4-list stx-example)
@@ -335,7 +336,7 @@
         (list 1 #/n-hn-append0 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn 2
-            (list 'open 3 #/hn-tag-3-s-expr-stx list-beginning)
+            (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
             0
           #/list 0 #/trivial))
         0

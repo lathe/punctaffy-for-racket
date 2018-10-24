@@ -81,6 +81,11 @@
 ;
 ; TODO: See if there's some way to optimize them. Let's uncomment them
 ; if we can get them down to 3 minutes or less.
+;
+; TODO: The timings are a little out of date. Update them. We've added
+; behavior to `assert-valid-hypernest-coil`, `hypernest-promote`, and
+; `hypernest-set-degree`, so all the timings are likely to be longer
+; now.
 
 
 ; Time with assertions:       3m07s
