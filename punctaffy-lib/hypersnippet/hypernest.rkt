@@ -400,7 +400,6 @@
 
 (define/contract (assert-valid-hypernest-coil coil)
   (-> (hypernest-coil/c) void?)
-  (void)#;
   (mat coil (hypernest-coil-zero) (void)
   #/mat coil
     (hypernest-coil-hole overall-degree hole-value tails-hypertee)
