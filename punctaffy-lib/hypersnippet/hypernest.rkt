@@ -430,7 +430,13 @@
     (hypernest-coil-bump
       overall-degree bump-value bump-degree tails-hypernest)
     ; NOTE: We don't validate `bump-value`.
-    (hypernest-each-all-degrees tails-hypernest #/fn hole data
+    (expect
+      (equal?
+        (onum-max overall-degree bump-degree)
+        (hypernest-degree tails-hypernest))
+      #t
+      (error "Expected the tails of a hypernest-coil-bump to be a hypernest of degree equal to the max of the overall degree and the bump degree")
+    #/hypernest-each-all-degrees tails-hypernest #/fn hole data
       (w- hole-degree (hypertee-degree hole)
       #/when (onum<? hole-degree bump-degree)
         (expect (hypernest? data) #t
@@ -513,6 +519,7 @@
     (if (equal? overall-degree new-degree) hn
     #/hypernest-careful
     #/hypernest-coil-bump new-degree data bump-degree
+    #/hypernest-promote (onum-max new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (onum<? d bump-degree)
         (hypernest-set-degree (onum-max d new-degree) data)
@@ -543,6 +550,7 @@
     (if (equal? overall-degree new-degree) hn
     #/hypernest-careful
     #/hypernest-coil-bump new-degree data bump-degree
+    #/hypernest-set-degree (onum-max new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (onum<? d bump-degree)
         (hypernest-set-degree (onum-max d new-degree) data)
