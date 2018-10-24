@@ -50,6 +50,8 @@
   hypertee-each-all-degrees hypertee-get-hole-zero hypertee<omega?
   hypertee-plus1 hypertee-promote hypertee-set-degree
   hypertee-zip-low-degrees hypertee-zip-selective)
+(require #/only-in punctaffy/private/suppress-internal-errors
+  punctaffy-suppress-internal-errors)
 
 (provide
   (struct-out hypernest-coil-zero)
@@ -125,7 +127,15 @@
       rest)))
 
 (define (hypernest-careful coil)
-  (assert-valid-hypernest-coil coil)
+  (unless (punctaffy-suppress-internal-errors)
+    ; NOTE: At this point we don't expect
+    ; `assert-valid-hypernest-coil` itself to be very buggy. Since its
+    ; implementation involves the construction of other hypertees and
+    ; hypernests, we can save a *lot* of time by constructing those
+    ; without verification. Otherwise the verification can end up
+    ; doing some rather catastrophic recursion.
+    (parameterize ([punctaffy-suppress-internal-errors #t])
+      (assert-valid-hypernest-coil coil)))
   (hypernest coil))
 
 (define/contract
@@ -400,7 +410,6 @@
 
 (define/contract (assert-valid-hypernest-coil coil)
   (-> (hypernest-coil/c) void?)
-;  (void)#;
   (mat coil (hypernest-coil-zero) (void)
   #/mat coil
     (hypernest-coil-hole overall-degree hole-value tails-hypertee)

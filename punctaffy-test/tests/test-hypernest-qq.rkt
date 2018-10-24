@@ -20,6 +20,12 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/for-syntax racket/base)
+
+(require #/for-syntax #/only-in
+  punctaffy/private/suppress-internal-errors
+  punctaffy-suppress-internal-errors)
+
 (require rackunit)
 
 (require #/only-in lathe-comforts w-)
@@ -30,31 +36,56 @@
 ; (We provide nothing from this module.)
 
 
+; NOTE: We edit this line to change this to `#f` when we want to
+; measure the "with assertions" times.
+(define-for-syntax should-suppress-assertions #t)
 
-; Altogether, these commented-out tests seem to take about
-; 54m52s[TODO UPDATE] to run (on my machine). They take about 1m1.236s
-; if `assert-valid-hypertee-brackets` and
-; `assert-valid-hypernest-coil` are no-ops.
-;
-; Each one is labeled with the amount of time it takes to run
-; individually (with and without those `assert-...` passes).
-;
-; TODO: See if there's some way to optimize them. Let's uncomment them
-; if we can get them down to 3 minutes or less.
-;
-; TODO: Update any timings labeled with "[TODO UPDATE]". We've added
-; behavior to `assert-valid-hypernest-coil` and redesigned the
-; unquotes to be of the form `(^> 1 #/list ...)` instead of
-; `(^> 1 ...)`, so the timings are likely to be longer now. Longer
-; than one hour each, if the time of the splicing test is any
-; indication.
+(define-syntax (possibly-suppress-assertions stx)
+  (syntax-case stx () #/ (_ body)
+  #/parameterize
+    ([punctaffy-suppress-internal-errors should-suppress-assertions])
+    (define opaque-only #t)
+    (define-values (false opaque-expanded-expr)
+      (syntax-local-expand-expression #'body opaque-only))
+    opaque-expanded-expr))
 
 
-; Time with assertions:         4m15.992s
-; Time without assertions:         8.910s
+; Altogether, these tests take about 54.054s to run (on my machine).
 ;
-#;
-(check-equal?
+; They're only that fast (relatively speaking) because we use
+; `punctaffy-suppress-internal-errors` to skip all internal calls to
+; `assert-valid-hypertee-brackets` and `assert-valid-hypernest-coil`.
+;
+; If we configure this file not to skip those checks (by changing
+; `should-suppress-assertions` to `#f`), the tests take about
+; 1h34m06.633s.
+;
+; Each test is labeled with the amount of time it takes to run
+; individually, with and without those `assert-...` passes.
+;
+; We've been timing them by commenting out certain tests and running
+; Bash commands like this:
+;
+;   # Print the date so it's easy to check how long the test has run.
+;   # Run the test, and at the end, print how long it takes.
+;   # Print the bell control character as a completion notification.
+;   date; time racket test-hypernest-qq.rkt; printf '\a'
+;
+; TODO: See if there's some way to optimize these tests. Let's
+; change `should-suppress-assertions` to `#t` if we can get them down
+; to 3 minutes or less.
+;
+; TODO: If at any point any of these timings are likely to be
+; outdated, label them with "[TODO UPDATE]". If at any point they're
+; labeled with that, update them.
+
+
+; Time with assertions:         1m00.431s
+; Time without assertions:         9.460s
+;
+;#;
+(possibly-suppress-assertions
+#/check-equal?
   (my-quasiquote #/^< 2
     (a b
       (c d
@@ -66,11 +97,12 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; Time with assertions:        20m54s[TODO UPDATE]
-; Time without assertions:        17.853s
+; Time with assertions:        28m15.466s
+; Time without assertions:        17.587s
 ;
-#;
-(check-equal?
+;#;
+(possibly-suppress-assertions
+#/check-equal?
   (my-quasiquote #/^< 2
     (a b
       (my-quasiquote #/_^< 2
@@ -89,11 +121,12 @@
                 (+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; Time with assertions:        14m01s[TODO UPDATE]
-; Time without assertions:        19.709s
+; Time with assertions:        22m31.910s
+; Time without assertions:        19.268s
 ;
-#;
-(check-equal?
+;#;
+(possibly-suppress-assertions
+#/check-equal?
   (my-quasiquote #/^< 2
     (a b
       (my-quasiquote #/^< 2
@@ -112,11 +145,12 @@
                 (+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; Time with assertions:        15m10s[TODO UPDATE]
-; Time without assertions:        20.582s
+; Time with assertions:        26m28.545s
+; Time without assertions:        21.375s
 ;
-#;
-(check-equal?
+;#;
+(possibly-suppress-assertions
+#/check-equal?
   (my-quasiquote #/^< 2
     (a b
       (my-quasiquote #/^< 2
@@ -141,11 +175,12 @@
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
 
-; Time with assertions:      1h13m42.123s
-; Time without assertions:        14.975s
+; Time with assertions:        16m28.279s
+; Time without assertions:        15.008s
 ;
-#;
-(check-equal?
+;#;
+(possibly-suppress-assertions
+#/check-equal?
   (w- list-to-splice (list 4 5)
     (my-quasiquote #/^< 2
       (a b

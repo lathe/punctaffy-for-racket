@@ -46,6 +46,8 @@
   poppable-hyperstack-pop poppable-hyperstack-pop-n
   poppable-hyperstack-pop-n-with-barrier pushable-hyperstack-dimension
   pushable-hyperstack-pop pushable-hyperstack-push)
+(require #/only-in punctaffy/private/suppress-internal-errors
+  punctaffy-suppress-internal-errors)
 
 (provide
   hypertee-closing-bracket-degree
@@ -431,7 +433,6 @@
 (define/contract
   (assert-valid-hypertee-brackets opening-degree closing-brackets)
   (-> onum<=omega? list? void?)
-;  (void)#;
   (w- final-region-degree
     (poppable-hyperstack-dimension #/list-foldl
       (make-poppable-hyperstack-n opening-degree)
@@ -478,7 +479,8 @@
 (struct-easy (hypertee degree closing-brackets)
   #:equal
   (#:guard-easy
-    (assert-valid-hypertee-brackets degree closing-brackets)))
+    (unless (punctaffy-suppress-internal-errors)
+      (assert-valid-hypertee-brackets degree closing-brackets))))
 
 ; A version of `hypertee?` that does not satisfy
 ; `struct-predicate-procedure?`.
