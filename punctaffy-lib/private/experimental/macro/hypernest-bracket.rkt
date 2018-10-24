@@ -125,21 +125,6 @@
     #/expect (hypertee-uncontour bracket-interior-and-tails)
       (just #/list bracket-interior tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket which wasn't a contour of a contour")
-    ; TODO: Once we're sure we don't need to zip these, delete this
-    ; commented-out code.
-;    #/expect
-;      (hypernest-zip
-;        (hypertee-dv-map-all-degrees bracket-interior-and-tails
-;        #/fn d data
-;          (if (equal? bump-degree-plus-one d)
-;            data
-;            (trivial)))
-;        bracket-syntax
-;      #/fn hole bracket-interior-data bracket-syntax-data
-;        (dissect bracket-syntax-data (trivial)
-;          bracket-interior-data))
-;      (just zipped-bracket)
-;      (error "Internal error: Expected bracket-syntax and bracket-interior-and-tails to be of compatible shapes since bracket-syntax was a tail of an hn-tag-unmatched-closing-bracket bump and this tail was located in the contour of bracket-interior-and-tails")
     #/hypernest-plus1 #/hypernest-coil-hole
       (onum-max opening-degree first-nontrivial-d)
       (list bracket-syntax bracket-interior)
