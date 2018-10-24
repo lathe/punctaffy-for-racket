@@ -155,9 +155,9 @@
       ; we just expand as though the identifier isn't bound to a
       ; syntax transformer at all.
       ;
-      ; TODO: This should be a bump, not a hole.
+      ; TODO: See if we'll ever need to rely on this functionality.
       ;
-      (n-hn 1 (list 1 #/hn-tag-1-s-expr-stx stx) 0
+      (n-hn 1 (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
       #/list 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree (syntax-e #'degree-stx)
