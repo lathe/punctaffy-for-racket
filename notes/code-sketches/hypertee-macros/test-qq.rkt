@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; punctaffy/tests/test-qq
+; test-qq.rkt
 ;
 ; Unit tests of a quasiquotation operator defined in terms of
 ; hypersnippet-shaped data structures.
@@ -22,7 +22,7 @@
 
 (require rackunit)
 
-(require punctaffy/private/experimental/macro/qq)
+(require "qq.rkt")
 
 ; (We provide nothing from this module.)
 

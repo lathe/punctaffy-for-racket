@@ -43,8 +43,7 @@
   (require #/only-in lathe-comforts/trivial trivial)
   (require #/only-in lathe-ordinals onum<? onum-omega)
   
-  (require #/only-in
-    punctaffy/private/experimental/macro/hypertee-macro
+  (require #/only-in "hypertee-macro.rkt"
     
     ht-tag-1-other ht-tag-1-s-expr-stx ht-tag-2-list ht-tag-2-list*
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
