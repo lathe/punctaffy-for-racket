@@ -48,6 +48,8 @@
   hn-tag-1-s-expr-stx hn-tag-2-list hn-tag-2-list* hn-tag-2-prefab
   hn-tag-2-vector hn-tag-nest s-expr-stx->hn-expr)
 
+(require #/only-in lathe-comforts expect w-)
+
 
 (provide my-quasiquote)
 
@@ -207,7 +209,7 @@
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
     #/hypernest-plus1 #/hypernest-coil-bump 2
-      (hn-tag-1-s-expr-stx #`'#,stx)
+      (hn-tag-1-s-expr-stx #`(list '#,stx))
       1
     #/hypertee->hypernest
     #/hypertee-promote 2
@@ -229,6 +231,15 @@
         (list 'open 2 #/hn-tag-2-list stx-example)
         1
         
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'list)
+        0
+        
+        (list 'open 2 #/hn-tag-2-list stx-example)
+        1
+        
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'apply)
+        0
+        
         (list 1 #/n-hn-append0 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn 2
@@ -237,7 +248,19 @@
           #/list 0 #/trivial))
         0
         
+        (list 'open 2 #/hn-tag-2-list stx-example)
+        1
+        
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'append)
+        0
+        
         (list 1 #/hn-expr-2->s-expr-generator elems)
+        0
+        
+        0
+        0
+        
+        0
         0
         
         0
@@ -293,7 +316,7 @@
       (just #/list tail tails-tails)
       (error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
     #/hypernest-plus1 #/hypernest-coil-bump 2
-      (hn-tag-1-s-expr-stx #`#'#,stx)
+      (hn-tag-1-s-expr-stx #`(list #'#,stx))
       1
     #/hypertee->hypernest
     #/hypertee-promote 2
@@ -315,6 +338,12 @@
         (list 'open 2 #/hn-tag-2-list stx-example)
         1
         
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'list)
+        0
+        
+        (list 'open 2 #/hn-tag-2-list stx-example)
+        1
+        
         (list 'open 1 #/hn-tag-1-s-expr-stx #'datum->syntax)
         0
         
@@ -324,12 +353,21 @@
         (list 'open 2 #/hn-tag-2-list stx-example)
         1
         
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'apply)
+        0
+        
         (list 1 #/n-hn-append0 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn 2
             (list 'open 1 #/hn-tag-1-s-expr-stx list-beginning)
             0
           #/list 0 #/trivial))
+        0
+        
+        (list 'open 2 #/hn-tag-2-list stx-example)
+        1
+        
+        (list 'open 1 #/hn-tag-1-s-expr-stx #'append)
         0
         
         (list 1 #/hn-expr-2->s-expr-stx-generator elems)
@@ -340,6 +378,13 @@
         
         0
         0
+        
+        0
+        0
+        
+        0
+        0
+        
       #/list 0 #/hn-expr-2->s-expr-stx-generator tail))
   #/mat data (hn-tag-2-list stx-example)
     (process-listlike stx-example #/list #'list)
@@ -411,9 +456,15 @@
     #/hypernest-join-all-degrees zipped)
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")
-    result))
-
-; TODO: Allow for splicing.
+  #/syntax-protect
+    ; TODO: See if we should use `quasisyntax/loc` here so the error
+    ; message refers to the place `my-quasiquote` is used.
+    #`(w- spliced-root #,result
+      #/expect spliced-root (list root)
+        (raise-arguments-error 'my-quasiquote
+          "spliced a value other than a singleton list into the root of a my-quasiquote"
+          "spliced-root" spliced-root)
+        root)))
 
 ; TODO: Define a corresponding `my-quasisyntax` based on
-; `hn-expr-2->s-expr-stx-generator` once we have splicing support.
+; `hn-expr-2->s-expr-stx-generator`.

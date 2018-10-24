@@ -22,6 +22,8 @@
 
 (require rackunit)
 
+(require #/only-in lathe-comforts w-)
+
 (require punctaffy/private/experimental/macro/hypernest-bracket)
 (require punctaffy/private/experimental/macro/hypernest-qq)
 
@@ -29,10 +31,10 @@
 
 
 
-; Altogether, these commented-out tests seem to take about 54m52s to
-; run (on my machine). They take about 23.9s if
-; `assert-valid-hypertee-brackets` and `assert-valid-hypernest-coil`
-; are no-ops.
+; Altogether, these commented-out tests seem to take about
+; 54m52s[TODO UPDATE] to run (on my machine). They take about 1m1.236s
+; if `assert-valid-hypertee-brackets` and
+; `assert-valid-hypernest-coil` are no-ops.
 ;
 ; Each one is labeled with the amount of time it takes to run
 ; individually (with and without those `assert-...` passes).
@@ -40,29 +42,32 @@
 ; TODO: See if there's some way to optimize them. Let's uncomment them
 ; if we can get them down to 3 minutes or less.
 ;
-; TODO: The "with assertions" timings (including the "altogether" one
-; above) are a little out of date. Update them. We've added behavior
-; to `assert-valid-hypernest-coil`, so the timings are likely to be
-; even longer now.
+; TODO: Update any timings labeled with "[TODO UPDATE]". We've added
+; behavior to `assert-valid-hypernest-coil` and redesigned the
+; unquotes to be of the form `(^> 1 #/list ...)` instead of
+; `(^> 1 ...)`, so the timings are likely to be longer now. Longer
+; than one hour each, if the time of the splicing test is any
+; indication.
 
 
-; Time with assertions:       3m07s
-; Time without assertions:       9.21s
+; Time with assertions:         4m15.992s
+; Time without assertions:         8.910s
 ;
 #;
 (check-equal?
   (my-quasiquote #/^< 2
     (a b
       (c d
-        (^> 1 (+ 4 5)))))
+        (^> 1 #/list
+          (+ 4 5)))))
   `
     (a b
       (c d
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; Time with assertions:      20m54s
-; Time without assertions:      13.7s
+; Time with assertions:        20m54s[TODO UPDATE]
+; Time without assertions:        17.853s
 ;
 #;
 (check-equal?
@@ -70,20 +75,22 @@
     (a b
       (my-quasiquote #/_^< 2
         (c d
-          (_^> 1
+          (_^> 1 #/list
             (e f
-              (^> 1 (+ 4 5))))))))
+              (^> 1 #/list
+                (+ 4 5))))))))
   `
     (a b
       (my-quasiquote #/_^< 2
         (c d
-          (_^> 1
+          (_^> 1 #/list
             (e f
-              ,(+ 4 5))))))
+              ,
+                (+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; Time with assertions:      14m01s
-; Time without assertions:      16.5s
+; Time with assertions:        14m01s[TODO UPDATE]
+; Time without assertions:        19.709s
 ;
 #;
 (check-equal?
@@ -91,20 +98,22 @@
     (a b
       (my-quasiquote #/^< 2
         (c d
-          (^> 1
+          (^> 1 #/list
             (e f
-              (^> 1 (+ 4 5))))))))
+              (^> 1 #/list
+                (+ 4 5))))))))
   `
     (a b
       (my-quasiquote #/^< 2
         (c d
-          (^> 1
+          (^> 1 #/list
             (e f
-              ,(+ 4 5))))))
+              ,
+                (+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; Time with assertions:      15m10s
-; Time without assertions:      14.8s
+; Time with assertions:        15m10s[TODO UPDATE]
+; Time without assertions:        20.582s
 ;
 #;
 (check-equal?
@@ -112,9 +121,10 @@
     (a b
       (my-quasiquote #/^< 2
         (c d
-          (^> 1
+          (^> 1 #/list
             (e f
-              (^> 1 (+ 4 5))
+              (^> 1 #/list
+                (+ 4 5))
               g h))
           i j))
       k l))
@@ -122,13 +132,43 @@
     (a b
       (my-quasiquote #/^< 2
         (c d
-          (^> 1
+          (^> 1 #/list
             (e f
-              ,(+ 4 5)
+              ,
+                (+ 4 5)
               g h))
           i j))
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
+
+; Time with assertions:      1h13m42.123s
+; Time without assertions:        14.975s
+;
+#;
+(check-equal?
+  (w- list-to-splice (list 4 5)
+    (my-quasiquote #/^< 2
+      (a b
+        (my-quasiquote #/^< 2
+          (c d
+            (^> 1
+              (e f
+                (^> 1 list-to-splice)
+                g h))
+            i j))
+        k l)))
+  (w- list-to-splice (list 4 5)
+    `
+      (a b
+        (my-quasiquote #/^< 2
+          (c d
+            (^> 1
+              (e f
+                ,@list-to-splice
+                g h))
+            i j))
+        k l))
+  "The new quasiquote supports nesting and splicing")
 
 
 ; TODO: Turn this into a unit test. There was at one point (although
