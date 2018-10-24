@@ -38,7 +38,7 @@
 
 ; NOTE: We edit this line to change this to `#f` when we want to
 ; measure the "with assertions" times.
-(define-for-syntax should-suppress-assertions #t)
+(define-for-syntax should-suppress-assertions #f)
 
 (define-syntax (possibly-suppress-assertions stx)
   (syntax-case stx () #/ (_ body)
@@ -50,15 +50,12 @@
     opaque-expanded-expr))
 
 
-; Altogether, these tests take about 54.054s to run (on my machine).
+; Altogether, these tests take about 3m01.038s to run (on my machine).
 ;
-; They're only that fast (relatively speaking) because we use
-; `punctaffy-suppress-internal-errors` to skip all internal calls to
-; `assert-valid-hypertee-brackets` and `assert-valid-hypernest-coil`.
-;
-; If we configure this file not to skip those checks (by changing
-; `should-suppress-assertions` to `#f`), the tests take about
-; 1h34m06.633s.
+; They run faster if we use `punctaffy-suppress-internal-errors` to
+; skip all internal calls to `assert-valid-hypertee-brackets` and
+; `assert-valid-hypernest-coil`. When we do that (by changing
+; `should-suppress-assertions` to `#t`), the tests take about 51.657s.
 ;
 ; Each test is labeled with the amount of time it takes to run
 ; individually, with and without those `assert-...` passes.
@@ -71,17 +68,17 @@
 ;   # Print the bell control character as a completion notification.
 ;   date; time racket test-hypernest-qq.rkt; printf '\a'
 ;
-; TODO: See if there's some way to optimize these tests. Let's
-; change `should-suppress-assertions` to `#t` if we can get them down
-; to 3 minutes or less.
+; TODO: If at any point these tests take around 4 minutes or more to
+; run, change `should-suppress-assertions` to `#t`. If at any point
+; they take around 3 minutes or less to run, change it back to `#f`.
 ;
 ; TODO: If at any point any of these timings are likely to be
 ; outdated, label them with "[TODO UPDATE]". If at any point they're
 ; labeled with that, update them.
 
 
-; Time with assertions:         1m00.431s
-; Time without assertions:         9.460s
+; Time with assertions:           16.235s
+; Time without assertions:         9.988s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -97,8 +94,8 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; Time with assertions:        28m15.466s
-; Time without assertions:        17.587s
+; Time with assertions:         1m12.688s
+; Time without assertions:        17.133s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -121,8 +118,8 @@
                 (+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; Time with assertions:        22m31.910s
-; Time without assertions:        19.268s
+; Time with assertions:           59.624s
+; Time without assertions:        18.623s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -145,8 +142,8 @@
                 (+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; Time with assertions:        26m28.545s
-; Time without assertions:        21.375s
+; Time with assertions:         1m01.345s
+; Time without assertions:        19.327s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -175,8 +172,8 @@
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
 
-; Time with assertions:        16m28.279s
-; Time without assertions:        15.008s
+; Time with assertions:           45.716s
+; Time without assertions:        14.983s
 ;
 ;#;
 (possibly-suppress-assertions

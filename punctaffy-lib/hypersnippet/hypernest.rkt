@@ -126,16 +126,10 @@
     #/dissect dropped-and-rest (list dropped rest)
       rest)))
 
+; NOTE: This is a procedure we call only from within this module. It
+; may seem like a synonym of `hypernest`, but when we're debugging
+; this module, we can change it to be a synonym of `hypernest-plus1`.
 (define (hypernest-careful coil)
-  (unless (punctaffy-suppress-internal-errors)
-    ; NOTE: At this point we don't expect
-    ; `assert-valid-hypernest-coil` itself to be very buggy. Since its
-    ; implementation involves the construction of other hypertees and
-    ; hypernests, we can save a *lot* of time by constructing those
-    ; without verification. Otherwise the verification can end up
-    ; doing some rather catastrophic recursion.
-    (parameterize ([punctaffy-suppress-internal-errors #t])
-      (assert-valid-hypernest-coil coil)))
   (hypernest coil))
 
 (define/contract
@@ -429,7 +423,7 @@
           (hypernest-truncate-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
-            (raise-arguments-error 'assert-valid-hypernest-coil
+            (raise-arguments-error 'hypernest-plus1
               "expected each tail of a hypernest-coil-hole to have trivial values in its low-degree holes"
               "tail-data" tail-data)
           #/trivial))
@@ -462,7 +456,7 @@
             (hypernest-truncate-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
-              (raise-arguments-error 'assert-valid-hypernest-coil
+              (raise-arguments-error 'hypernest-plus1
                 "expected each tail of a hypernest-coil-bump to have trivial values in its low-degree holes"
                 "tail-data" tail-data)
             #/trivial))
@@ -482,8 +476,17 @@
   (-> (hypernest-coil/c) hypernest?)
   ; TODO: See if we can improve the error messages so that they're
   ; like part of the contract of this procedure instead of being
-  ; thrown from inside `hypernest-careful`.
-  (hypernest-careful coil))
+  ; thrown from inside `assert-valid-hypernest-coil`.
+  (unless (punctaffy-suppress-internal-errors)
+    ; NOTE: At this point we don't expect
+    ; `assert-valid-hypernest-coil` itself to be very buggy. Since its
+    ; implementation involves the construction of other hypertees and
+    ; hypernests, we can save a *lot* of time by constructing those
+    ; without verification. Otherwise the verification can end up
+    ; doing some rather catastrophic recursion.
+    (parameterize ([punctaffy-suppress-internal-errors #t])
+      (assert-valid-hypernest-coil coil)))
+  (hypernest coil))
 
 (define/contract (hypernest-degree hn)
   (-> hypernest? onum<=omega?)
