@@ -23,8 +23,6 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in syntax/parse id syntax-parse)
 
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
@@ -311,8 +309,7 @@
           0
         #/list 0 #/trivial)
       #/fn hole data
-        (dlog "blah c1" (n-hn-append0 1 elems)
-        #/hypernest-promote 2
+        (hypernest-promote 2
         #/n-hn-append0 1 elems)))
   
   ; We traverse into proper and improper lists.

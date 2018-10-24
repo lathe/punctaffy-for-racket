@@ -146,8 +146,7 @@
       (error "Encountered an hn-tag-1-s-expr-stx bump with a bump in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (begin (displayln "blah a1") (writeln bump-degree) (writeln tails)
-      #/error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour")
+      (error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour")
     #/cons stx #/hn-expr->s-expr-stx-list tail)
   #/w- process-listlike
     (fn stx-example list->whatever
@@ -208,8 +207,7 @@
       (error "Encountered an hn-tag-1-s-expr-stx bump with a degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (begin (displayln "blah a2") (writeln tails)
-      #/error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
+      (error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
     #/hypernest-plus1 #/hypernest-coil-bump 2
       (hn-tag-1-s-expr-stx #`'#,stx)
       1
@@ -297,8 +295,7 @@
       (error "Encountered an hn-tag-1-s-expr-stx bump with a degree-1 hole in it")
     #/expect (hypertee-uncontour tails)
       (just #/list tail tails-tails)
-      (begin (displayln "blah a3") (writeln tails)
-      #/error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
+      (error "Internal error: Encountered an hn-tag-1-s-expr-stx bump which wasn't a contour of a promoted hole")
     #/hypernest-plus1 #/hypernest-coil-bump 2
       (hn-tag-1-s-expr-stx #`#'#,stx)
       1

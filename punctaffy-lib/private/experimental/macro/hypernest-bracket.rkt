@@ -25,8 +25,6 @@
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
-(require #/for-syntax lathe-debugging)
-
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w- w-loop)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -197,7 +195,6 @@
           #/list 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
         ; TODO: See if we need this `hypernest-promote` call.
-        #/dlog "blah b1"
         #/hypernest-promote degree-plus-one
           bracket-syntax))
       0
