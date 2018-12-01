@@ -45,7 +45,7 @@
   make-pushable-hyperstack poppable-hyperstack-dimension
   poppable-hyperstack-pop poppable-hyperstack-pop-n
   poppable-hyperstack-pop-n-with-barrier pushable-hyperstack-dimension
-  pushable-hyperstack-pop pushable-hyperstack-push)
+  pushable-hyperstack-pop pushable-hyperstack-push-uniform)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -886,8 +886,7 @@
         (list d #/hypertee-join-selective-non-interpolation data)
         ; We begin a non-interpolation in an interpolation.
         (w- histories
-          (pushable-hyperstack-push histories
-          #/olist-build d #/dissectfn _ state)
+          (pushable-hyperstack-push-uniform histories d state)
         #/w- hist (list state histories)
         #/next root-brackets interpolations hist
           (cons (list d data) rev-result))
@@ -948,8 +947,7 @@
       (list d #/hypertee-join-selective-non-interpolation data)
       ; We begin a non-interpolation in the root.
       (w- histories
-        (pushable-hyperstack-push histories
-        #/olist-build d #/dissectfn _ state)
+        (pushable-hyperstack-push-uniform histories d state)
       #/w- hist (list state histories)
       #/next root-brackets interpolations hist
         (cons (list d data) rev-result))

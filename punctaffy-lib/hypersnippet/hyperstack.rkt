@@ -47,7 +47,9 @@
   pushable-hyperstack-dimension
   pushable-hyperstack-peek-elem
   pushable-hyperstack-push
-  pushable-hyperstack-pop)
+  pushable-hyperstack-pop
+  
+  pushable-hyperstack-push-uniform)
 
 
 (struct-easy (poppable-hyperstack nested-olist))
@@ -183,3 +185,8 @@
     (olist-zip-map elems-to-push tails #/fn elem tail
       (list 'pop elem tail))
     olist-suffix))
+
+(define/contract (pushable-hyperstack-push-uniform h bump-degree elem)
+  (-> pushable-hyperstack? onum<=e0? any/c pushable-hyperstack?)
+  (pushable-hyperstack-push h #/olist-build bump-degree #/dissectfn _
+    elem))

@@ -41,7 +41,7 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   make-pushable-hyperstack pushable-hyperstack-dimension
   pushable-hyperstack-peek-elem pushable-hyperstack-pop
-  pushable-hyperstack-push)
+  pushable-hyperstack-push-uniform)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-all-degrees hypertee-contour hypertee-degree
@@ -174,8 +174,7 @@
         (part-state #t 0 bump-degree
           (onum-max opening-degree bump-degree)
           (list))
-        (pushable-hyperstack-push stack
-        #/olist-build bump-degree #/dissectfn _
+        (pushable-hyperstack-push-uniform stack bump-degree
           (parent-new-part)))
     #/mat first-bracket (list hole-degree data)
       (expect (onum<? hole-degree opening-degree) #t
@@ -257,8 +256,7 @@
             current-first-non-interpolation-degree
             current-overall-degree
             (cons hypernest-bracket current-rev-brackets)))
-        (pushable-hyperstack-push stack
-        #/olist-build bump-degree #/dissectfn _
+        (pushable-hyperstack-push-uniform stack bump-degree
           (parent-same-part #f))
         current-i
         new-i)
