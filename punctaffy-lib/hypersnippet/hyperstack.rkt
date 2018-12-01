@@ -156,16 +156,21 @@
   (dissect h (pushable-hyperstack olist)
   #/w- i (olist-length elems-to-push)
   #/w- tails (olist-tails olist)
-  #/w- tails
-    (mat (olist-drop i tails) (just tails-and-rest)
-      (dissect tails-and-rest (list tails _)
-        tails)
-      (dissect (onum-drop (olist-length tails) i) (just excess)
-        (olist-plus tails #/olist-build excess #/dissectfn _
-          (olist-zero))))
-  #/pushable-hyperstack
+  #/dissect
+    (mat (olist-drop i olist) (just dropped-and-rest)
+      (dissect dropped-and-rest (list _ rest)
+      #/dissect (olist-drop i tails) (just #/list tails _)
+      #/list tails rest)
+    #/dissect (onum-drop (olist-length tails) i) (just excess)
+    #/list
+      (olist-plus tails #/olist-build excess #/dissectfn _
+        (olist-zero))
+      (olist-zero))
+    (list tails rest)
+  #/pushable-hyperstack #/olist-plus
     (olist-zip-map elems-to-push tails #/fn elem tail
-      (list 'push elem tail))))
+      (list 'push elem tail))
+    rest))
 
 (define/contract (pushable-hyperstack-pop h elems-to-push)
   (->i ([h pushable-hyperstack?] [elems-to-push olist<e0?])

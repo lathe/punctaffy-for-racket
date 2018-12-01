@@ -877,8 +877,15 @@
         (pop-interpolation-bracket interpolations interpolation-i)
         (list interpolations maybe-bracket)
       #/expect maybe-bracket (just closing-bracket)
-        (expect (pushable-hyperstack-dimension histories) 0
-          (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
+        ; TODO: We used to make this check here. However, since we can
+        ; have a non-interpolation of degree 0, and a
+        ; non-interpolation causes us to push rather than pop the
+        ; hyperstack, we can have a hyperstack of degree other than 0
+        ; at the end here. See if there's some other check we should
+        ; make. This was an internal error anyway, so maybe not.
+;        (expect (pushable-hyperstack-dimension histories) 0
+;          (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
+        (begin
         ; The interpolation has no more closing brackets, and we're in
         ; a region of degree 0, so we end the loop.
         #/finish root-brackets interpolations rev-result)
@@ -937,8 +944,15 @@
     
     ; We read from the root's closing bracket stream.
     #/expect root-brackets (cons root-bracket root-brackets)
-      (expect (pushable-hyperstack-dimension histories) 0
-        (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
+      ; TODO: We used to make this check here. However, since we can
+      ; have a non-interpolation of degree 0, and a non-interpolation
+      ; causes us to push rather than pop the hyperstack, we can have
+      ; a hyperstack of degree other than 0 at the end here. See if
+      ; there's some other check we should make. This was an internal
+      ; error anyway, so maybe not.
+;      (expect (pushable-hyperstack-dimension histories) 0
+;        (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
+      (begin
       ; The root has no more closing brackets, and we're in a region
       ; of degree 0, so we end the loop.
       #/finish root-brackets interpolations rev-result)
