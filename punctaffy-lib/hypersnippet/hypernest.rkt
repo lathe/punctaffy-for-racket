@@ -919,7 +919,6 @@
     #/hypernest-dv-map-all-degrees tails #/fn tails-hole-degree data
       (expect (onum<? tails-hole-degree bump-degree) #t
         (begin (verify-hole-value tails-hole-degree data)
-        #/w- data (double-non-interpolations data)
         #/mat data
           (hypernest-join-selective-interpolation interpolation)
           (hypernest-join-selective-interpolation

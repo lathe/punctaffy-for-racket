@@ -422,6 +422,21 @@
 
 
 
+; ====================================================================
+; Testing `hypernest-join-all-degrees` on bumps of degree 0
+; ====================================================================
+
+(check-equal?
+  (hypernest-join-all-degrees #/n-hn 1
+    (list 'open 0 'a)
+    (list 0 (n-hn 1 (list 0 (trivial)))))
+  (n-hn 1
+    (list 'open 0 'a)
+    (list 0 (trivial)))
+  "Joining with a bump of degree 0 in the way")
+
+
+
 ; ===== Testing `hypernest-join-all-degrees-selective` ===============
 
 (define (hnterp val)
