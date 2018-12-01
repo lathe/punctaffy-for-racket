@@ -46,7 +46,13 @@
     ([punctaffy-suppress-internal-errors should-suppress-assertions])
     (define opaque-only #t)
     (define-values (false opaque-expanded-expr)
-      (syntax-local-expand-expression #'body opaque-only))
+      ; TODO: If we stop supporting old versions of Racket, simplify
+      ; this.
+      (if (procedure-arity-includes? syntax-local-expand-expression 2)
+        ; Racket 7.0+
+        (syntax-local-expand-expression #'body opaque-only)
+        ; Racket 6.12
+        (syntax-local-expand-expression #'body)))
     opaque-expanded-expr))
 
 
