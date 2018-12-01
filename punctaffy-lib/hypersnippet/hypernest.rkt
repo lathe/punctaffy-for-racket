@@ -24,6 +24,9 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require racket/pretty)
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -41,7 +44,7 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   make-pushable-hyperstack pushable-hyperstack-dimension
   pushable-hyperstack-peek-elem pushable-hyperstack-pop
-  pushable-hyperstack-push)
+  pushable-hyperstack-push-uniform)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-all-degrees hypertee-contour hypertee-degree
@@ -154,7 +157,8 @@
       overall-degree
       rev-brackets))
   
-  (mat opening-degree 0
+  (dlog "c1"
+  #/mat opening-degree 0
     (expect hypernest-brackets (list)
       (error "Expected hypernest-brackets to be empty since opening-degree was zero")
     #/hypernest-careful #/hypernest-coil-zero)
@@ -165,17 +169,18 @@
     (make-pushable-hyperstack
     #/olist-build opening-degree #/dissectfn _
       (parent-same-part #t))
+  #/dlog "c1.1" (pushable-hyperstack-dimension stack)
   #/dissect
     (mat first-bracket (list 'open bump-degree data)
-      (list
+      (dlog "c2"
+      #/list
         (fn root-part
           (hypernest-careful #/hypernest-coil-bump
             opening-degree data bump-degree root-part))
         (part-state #t 0 bump-degree
           (onum-max opening-degree bump-degree)
           (list))
-        (pushable-hyperstack-push stack
-        #/olist-build bump-degree #/dissectfn _
+        (pushable-hyperstack-push-uniform stack bump-degree
           (parent-new-part)))
     #/mat first-bracket (list hole-degree data)
       (expect (onum<? hole-degree opening-degree) #t
@@ -203,7 +208,8 @@
     stack stack
     current-i root-i
     new-i 0
-    (dissect (hash-ref parts current-i)
+    (dlog "c3"
+    #/dissect (hash-ref parts current-i)
       (part-state
         current-is-hypernest
         current-first-nontrivial-degree
@@ -211,9 +217,11 @@
         current-overall-degree
         current-rev-brackets)
     #/w- current-d (pushable-hyperstack-dimension stack)
+    #/dlog "c3.1" current-d
     #/expect hypernest-brackets-remaining
       (cons hypernest-bracket hypernest-brackets-remaining)
-      (expect current-d 0
+      (dlog "c4"
+      #/expect current-d 0
         (error "Expected more closing brackets")
       #/let ()
         (define (get-part i)
@@ -245,8 +253,10 @@
               (get-subpart d data))))
       #/finish #/get-part root-i)
     
+    #/dlog "c5"
     #/mat hypernest-bracket (list 'open bump-degree bump-value)
-      (expect current-is-hypernest #t
+      (dlog "c6"
+      #/expect current-is-hypernest #t
         (error "Encountered a bump inside a hole")
       #/next
         hypernest-brackets-remaining
@@ -257,8 +267,7 @@
             current-first-non-interpolation-degree
             current-overall-degree
             (cons hypernest-bracket current-rev-brackets)))
-        (pushable-hyperstack-push stack
-        #/olist-build bump-degree #/dissectfn _
+        (pushable-hyperstack-push-uniform stack bump-degree
           (parent-same-part #f))
         current-i
         new-i)
@@ -267,6 +276,7 @@
         (list hole-degree hole-value)
         (list hypernest-bracket (trivial)))
       (list hole-degree hole-value)
+    #/dlog "c7"
     #/expect (onum<? hole-degree current-d) #t
       (raise-arguments-error 'degree-and-brackets->hypernest
         "encountered a closing bracket of degree too high for where it occurred"
@@ -815,7 +825,11 @@
 ;
 (define/contract (hypernest-join-all-degrees-selective hn)
   (-> hypernest? hypernest?)
-  (dissect hn (hypernest coil)
+  (dlog "blah f1"
+  #/begin (pretty-write hn)
+;    (hnh 1 (hnterp #/hnb 1 'a 0 (hnh 1 (hnnonterp #/hnnonterp #/hnnonterp #/trivial) (htz))) (htz))
+;    (n-hn 1 (list 0 (hnterp (n-hn 1 (list 'open 0 'a) (list 0 (hnnonterp #/hnnonterp #/hnnonterp #/trivial))))))
+  #/dissect hn (hypernest coil)
   #/mat coil (hypernest-coil-zero)
     (hypernest-careful #/hypernest-coil-zero)
   #/w- result-degree (hypernest-degree hn)

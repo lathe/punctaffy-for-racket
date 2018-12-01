@@ -23,12 +23,14 @@
 (require #/only-in racket/contract/base -> ->i any/c list/c or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts dissect dissectfn expect fn mat w-)
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
-  onum<? onum</c onum-drop onum<e0? onum<=e0?)
+  onum<? onum</c onum-drop onum<e0? onum<=e0? onum-max)
 (require #/only-in lathe-ordinals/olist
   olist-drop olist<=e0? olist<e0? olist-build olist-length olist-map
   olist-tails olist-plus olist-ref-and-call olist-zip-map olist-zero)
@@ -47,7 +49,9 @@
   pushable-hyperstack-dimension
   pushable-hyperstack-peek-elem
   pushable-hyperstack-push
-  pushable-hyperstack-pop)
+  pushable-hyperstack-pop
+  
+  pushable-hyperstack-push-uniform)
 
 
 (struct-easy (poppable-hyperstack nested-olist))
@@ -154,16 +158,21 @@
   (dissect h (pushable-hyperstack olist)
   #/w- i (olist-length elems-to-push)
   #/w- tails (olist-tails olist)
-  #/w- tails
-    (mat (olist-drop i tails) (just tails-and-rest)
-      (dissect tails-and-rest (list tails _)
-        tails)
-      (dissect (onum-drop (olist-length tails) i) (just excess)
-        (olist-plus tails #/olist-build excess #/dissectfn _
-          (olist-zero))))
-  #/pushable-hyperstack
+  #/dissect
+    (mat (olist-drop i olist) (just dropped-and-rest)
+      (dissect dropped-and-rest (list _ rest)
+      #/dissect (olist-drop i tails) (just #/list tails _)
+      #/list tails rest)
+    #/dissect (onum-drop (olist-length tails) i) (just excess)
+    #/list
+      (olist-plus tails #/olist-build excess #/dissectfn _
+        (olist-zero))
+      (olist-zero))
+    (list tails rest)
+  #/pushable-hyperstack #/olist-plus
     (olist-zip-map elems-to-push tails #/fn elem tail
-      (list 'push elem tail))))
+      (list 'push elem tail))
+    rest))
 
 (define/contract (pushable-hyperstack-pop h elems-to-push)
   (->i ([h pushable-hyperstack?] [elems-to-push olist<e0?])
@@ -183,3 +192,8 @@
     (olist-zip-map elems-to-push tails #/fn elem tail
       (list 'pop elem tail))
     olist-suffix))
+
+(define/contract (pushable-hyperstack-push-uniform h bump-degree elem)
+  (-> pushable-hyperstack? onum<=e0? any/c pushable-hyperstack?)
+  (pushable-hyperstack-push h #/olist-build bump-degree #/dissectfn _
+    elem))

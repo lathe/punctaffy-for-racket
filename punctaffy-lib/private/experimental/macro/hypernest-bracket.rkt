@@ -25,6 +25,8 @@
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
+(require #/for-syntax lathe-debugging)
+
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w- w-loop)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -46,7 +48,7 @@
   hypertee-uncontour)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-1-s-expr-stx hn-tag-2-list hn-tag-nest
+  hn-tag-0-s-expr-stx hn-tag-2-list hn-tag-nest
   hn-tag-unmatched-closing-bracket s-expr-stx->hn-expr
   simple-hn-builder-syntax)
 
@@ -134,7 +136,8 @@
 
 
 (define-for-syntax (helper-for-^<-and-^> stx bump-value)
-  (syntax-parse stx
+  (dlog "blah a0"
+  #/syntax-parse stx
     [op:id
       ; If this syntax transformer is used in an identifier position,
       ; we just expand as though the identifier isn't bound to a
@@ -142,30 +145,34 @@
       ;
       ; TODO: See if we'll ever need to rely on this functionality.
       ;
-      (n-hn 1 (list 'open 1 #/hn-tag-1-s-expr-stx stx) 0
+      (dlog "blah a1"
+      #/n-hn 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
       #/list 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
+  #/dlog "blah a1.1"
   #/w- degree (syntax-e #'degree-stx)
   #/w- degree-plus-one (onum-plus degree 1)
   #/w- degree-plus-two (onum-plus degree 2)
+  #/dlog "blah a1.2"
   #/w- interior-and-closing-brackets
     (unmatched-brackets->holes degree #/n-hn-append0 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (s-expr-stx->hn-expr interpolation))
+      (dlog "blah a1.2.1"
+      #/s-expr-stx->hn-expr interpolation))
+  #/dlog "blah a1.3"
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
   #/hypernest-plus1 #/hypernest-coil-bump 1 bump-value degree-plus-two
   #/hypernest-contour
     ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree 1
+    #/dlog "blah a2"
     #/n-hn degree-plus-one
       (list 'open 2 #/hn-tag-2-list #/datum->syntax stx #/list)
       1
       
-      (list 'open 1 #/hn-tag-1-s-expr-stx #'op)
-      0
-      (list 'open 1 #/hn-tag-1-s-expr-stx #'degree-stx)
-      0
+      (list 'open 0 #/hn-tag-0-s-expr-stx #'op)
+      (list 'open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
       
       (list 1
       #/hypernest-join-all-degrees
