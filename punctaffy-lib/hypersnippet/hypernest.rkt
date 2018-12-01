@@ -24,6 +24,8 @@
   -> any any/c contract? list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 
+(require lathe-debugging)
+
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-ref-maybe)
@@ -617,7 +619,7 @@
       (hypertee-promote intermediate-degree
       #/if (onum<? (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
-        (hypernest-contour data hole)))))
+        (hypertee-contour data hole)))))
 
 ; Takes a hypertee of any degree N and returns a hypernest of degree
 ; N+1 with all the same degree-less-than-N holes as well as a single
@@ -985,7 +987,9 @@
 ;
 (define/contract (hypernest-join-all-degrees hn)
   (-> hypernest? hypernest?)
-  (hypernest-join-all-degrees-selective
+  (dlog "blah g1"
+  #/hypernest-join-all-degrees-selective
+  #/dlog "blah g2"
   #/hypernest-dv-map-all-degrees hn #/fn root-hole-degree data
     (expect (hypernest? data) #t
       (error "Expected each interpolation of a hypernest join to be a hypernest")
@@ -1012,7 +1016,9 @@
 ; bumps instead of holes.
 (define/contract (hypernest-bind-all-degrees hn hole-to-hn)
   (-> hypernest? (-> hypertee<omega? any/c hypernest?) hypernest?)
-  (hypernest-join-all-degrees
+  (dlog "blah f1"
+  #/hypernest-join-all-degrees
+  #/dlog "blah f2"
   #/hypernest-map-all-degrees hn hole-to-hn))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for

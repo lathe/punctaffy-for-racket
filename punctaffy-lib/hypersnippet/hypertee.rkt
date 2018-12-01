@@ -1396,8 +1396,10 @@
       #/dissect (on-hole state d data) (list state maybe-data)
       #/expect maybe-data (just data) (list state #/nothing)
       #/list state #/just #/list d data))
-    (list state #/just closing-brackets)
-  #/list state #/just #/hypertee d closing-brackets))
+    (list state maybe-closing-brackets)
+  #/list state
+    (maybe-map maybe-closing-brackets #/fn closing-brackets
+      (hypertee d closing-brackets))))
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when certain holes of the
