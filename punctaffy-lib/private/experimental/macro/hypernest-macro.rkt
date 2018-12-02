@@ -248,7 +248,7 @@
 ;
 (define/contract (s-expr-stx->hn-expr stx)
   (-> syntax? hypernest?)
-  (dlog "blah d1"
+  (dlog "blah d1" stx
   #/mat
     (syntax-parse stx
       [ (op:id arg ...)

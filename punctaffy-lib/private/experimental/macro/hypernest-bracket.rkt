@@ -46,7 +46,7 @@
   hypernest-set-degree hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
-  hypertee-uncontour)
+  hypertee-promote hypertee-uncontour)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
   hn-tag-0-s-expr-stx hn-tag-2-list hn-tag-nest
@@ -72,17 +72,20 @@
 
 
 (define-for-syntax (unmatched-brackets->holes opening-degree hn-expr)
-  (dlog "blah i1" #/begin (pretty-write hn-expr)
+  (dlogr "blah i1" #/begin (pretty-write hn-expr)
   #/expect (hypernest-degree hn-expr) 1
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w-loop next first-nontrivial-d 1 hn-expr hn-expr
-    (dlog "blah i2" hn-expr
+    (dlog "blah i2" #;hn-expr
     #/w- dropped (hypernest-drop1 hn-expr)
     #/mat dropped (hypernest-coil-hole d data tails)
-      (dlog "blah i3"
-      #/hypernest-plus1 #/hypernest-coil-hole
+      (dlog "blah i3" #/begin (pretty-write tails)
+      #/w- new-overall-degree
         (onum-max opening-degree first-nontrivial-d)
-        data
+      #/dissect (onum-drop1 new-overall-degree)
+        (just new-overall-degree-minus-one)
+      #/hypernest-plus1 #/hypernest-coil-hole new-overall-degree data
+      #/hypertee-promote new-overall-degree-minus-one
       #/hypertee-dv-map-all-degrees tails #/fn d tail
         (next (onum-max first-nontrivial-d d) tail))
     #/dissect dropped
@@ -91,14 +94,14 @@
     #/w- ignore
       (fn
         (w- mapped
-          (dlog "blah i3.1" interior-and-bracket-and-tails
+          (dlog "blah i3.1" #/begin (pretty-write interior-and-bracket-and-tails)
           #/hypernest-dv-map-all-degrees interior-and-bracket-and-tails
           #/fn d tail
             ; TODO: We used to have the same code here as in our
             ; `hypertee-dv-map-all-degrees` bodies, namely
             ; `(next (onum-max first-nontrivial-d d) tail)`. See if
             ; those should also be changed to this.
-            (dlog "blah i3.2" first-nontrivial-d bump-degree-plus-two d tail
+            (dlog "blah i3.2" first-nontrivial-d bump-degree-plus-two d #/begin (pretty-write tail)
             #/if
               (and
                 (onum<=? bump-degree-plus-two d)
@@ -106,6 +109,16 @@
               (dissect tail (trivial)
               #/trivial)
             #/next (onum-max first-nontrivial-d d) tail))
+        #/w- new-overall-degree
+          (onum-max opening-degree first-nontrivial-d)
+        #/hypernest-plus1 #/hypernest-coil-bump
+          new-overall-degree
+          data
+          bump-degree-plus-two
+        #/hypernest-set-degree
+          (onum-max new-overall-degree bump-degree-plus-two)
+        #/next 1 mapped
+        #;
         #/w- new-overall-degree
           (onum-max opening-degree first-nontrivial-d)
         #/hypernest-plus1 #/hypernest-coil-bump
@@ -125,15 +138,15 @@
     #/dlog "blah i6"
     #/expect (onum-pred-maybe bump-degree-plus-two)
       (just bump-degree-plus-one)
-      (error "Internal error: Encountered a degree-0 bump")
+      (error "Encountered an hn-tag-unmatched-closing-bracket on a degree-0 bump")
       ; TODO: Use this error message instead if we ever add support
       ; for hypertees and hypernests of dimension greater than omega.
 ;      (error "Encountered an hn-tag-unmatched-closing-bracket on a degree-N bump where N was a limit ordinal, rather than a degree-(N + 2) bump for any N")
     #/expect (onum-pred-maybe bump-degree-plus-one) (just bump-degree)
-      (error "Encountered an hn-tag-unmatched-closing-bracket on a degree-1 hole")
+      (error "Encountered an hn-tag-unmatched-closing-bracket on a degree-1 bump")
       ; TODO: Use this error message instead if we ever add support
       ; for hypertees and hypernests of dimension greater than omega.
-;      (error "Encountered an hn-tag-unmatched-closing-bracket on a degree-1 bump or a degree-(N + 1) hole where N was a limit ordinal, rather than a degree-(N + 2) bump for any N")
+;      (error "Encountered an hn-tag-unmatched-closing-bracket on a degree-1 bump or a degree-(N + 1) bump where N was a limit ordinal, rather than a degree-(N + 2) bump for any N")
     #/expect (onum<=? first-nontrivial-d bump-degree) #t
       (error "Encountered a not-yet-processed hn-tag-unmatched-closing-bracket in a region of too high degree to process it now")
     #/expect

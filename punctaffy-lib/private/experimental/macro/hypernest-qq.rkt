@@ -25,6 +25,7 @@
 
 (require #/for-syntax #/only-in syntax/parse syntax-parse)
 
+(require #/for-syntax racket/pretty)
 (require #/for-syntax lathe-debugging)
 
 (require #/for-syntax #/only-in lathe-comforts
@@ -388,6 +389,7 @@
   #/dlog "blah b2"
   #/w- quotation (s-expr-stx->hn-expr #'quotation)
   #/dlog "blah b3"
+  #/begin (pretty-write quotation)
   #/expect (hypernest-drop1 quotation)
     (hypernest-coil-bump overall-degree (hn-tag-nest) bump-degree
       bracket-and-quotation-and-tails)
