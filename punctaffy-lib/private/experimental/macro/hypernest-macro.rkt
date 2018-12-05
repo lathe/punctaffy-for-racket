@@ -206,6 +206,8 @@
 ; opening bracket syntaxes can specifically look for them and process
 ; them to build things like `hn-tag-nest` values.
 ;
+; NOTE: See "NOTE COUNTOURS".
+;
 (struct-easy (hn-tag-unmatched-closing-bracket) #:equal)
 
 ; The `hn-tag-nest` tag can occur as a bump of degree (N + 2) for any
@@ -219,14 +221,28 @@
 ; These are essentially supposed to represent bumps in the hypernest,
 ; but they're represented in a slightly higher-dimensional format to
 ; let us round-trip the bracket syntax back to s-expressions when
-; desired. If the preserved s-exprssion syntax (the degree-(N + 1)
+; desired. If the preserved s-expression syntax (the degree-(N + 1)
 ; hole and everything inside it) is removed from all of these, they
 ; can be replaced with degree-N hypernest bumps. The value of these
 ; bumps is something trivial; if we actually represented them as
 ; bumps, we would probably use `(hn-tag-nest)` as the label for the
 ; bumps themselves so that they could coexist with user-defined bumps.
 ;
+; NOTE: See "NOTE COUNTOURS".
+;
 (struct-easy (hn-tag-nest) #:equal)
+
+; NOTE CONTOURS: Although we could represent
+; `hn-tag-unmatched-closing-bracket` or `hn-tag-nest` bumps by using a
+; bump where the interior of the bump contains the syntax of the
+; bracket (and a hole in the bump still contains the interior of the
+; bracket), or by using a bump where the interior of the bump contains
+; the interior of the bracket (and the data annotation on the bump
+; contains a hypernest containing the syntax of the bracket), neither
+; of those seems like a particularly consistent choice. By
+; representing this using a bump with a trivial interior, we represent
+; both regions of data in the same way, as contoured holes in the
+; bump. This may help clarify how the two regions are related.
 
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a
