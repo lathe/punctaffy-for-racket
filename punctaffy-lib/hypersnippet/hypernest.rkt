@@ -71,11 +71,13 @@
   hypernest-zip
   hypernest-drop1
   hypernest-dv-map-all-degrees
+  hypernest-v-map-one-degree
   (struct-out hypernest-join-selective-interpolation)
   (struct-out hypernest-join-selective-non-interpolation)
   hypernest-join-all-degrees-selective
   hypernest-map-all-degrees
   hypernest-pure
+  hypernest-get-hole-zero
   hypernest-join-all-degrees
   hypernest-dv-bind-all-degrees
   hypernest-bind-all-degrees
@@ -789,10 +791,14 @@
   (hypernest-dgv-map-all-degrees hn #/fn d get-hole data
     (func d data)))
 
-; TODO IMPLEMENT: Implement operations analogous to these:
-;
-;   hypertee-v-map-one-degree
-;   hypertee-fold
+(define/contract (hypernest-v-map-one-degree degree hn func)
+  (-> onum<omega? hypernest? (-> any/c any/c) hypernest?)
+  (hypernest-dv-map-all-degrees hn #/fn hole-degree data
+    (if (equal? degree hole-degree)
+      (func data)
+      data)))
+
+; TODO IMPLEMENT: Implement operations analogous to `hypertee-fold`.
 
 (struct-easy (hypernest-join-selective-interpolation val) #:equal)
 (struct-easy (hypernest-join-selective-non-interpolation val) #:equal)
@@ -966,6 +972,8 @@
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (dissect (hypernest-get-hole-zero tails) (just tail)
+    #/mat bump-degree 0
+      (just tail)
     #/hypernest-get-hole-zero tail)))
 
 ; TODO IMPLEMENT: Implement operations analogous to these:

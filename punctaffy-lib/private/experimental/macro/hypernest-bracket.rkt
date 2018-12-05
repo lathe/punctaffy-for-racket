@@ -46,7 +46,7 @@
   hypertee-uncontour)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-0-s-expr-stx hn-tag-2-list hn-tag-nest
+  hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-nest
   hn-tag-unmatched-closing-bracket s-expr-stx->hn-expr
   simple-hn-builder-syntax)
 
@@ -187,8 +187,7 @@
     ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree 1
     #/n-hn degree-plus-one
-      (list 'open 2 #/hn-tag-2-list #/datum->syntax stx #/list)
-      1
+      (list 'open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
       
       (list 'open 0 #/hn-tag-0-s-expr-stx #'op)
       (list 'open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
@@ -210,7 +209,6 @@
           bracket-syntax))
       0
       
-      0
       0
     #/list 0 #/trivial)
   #/hypertee-contour

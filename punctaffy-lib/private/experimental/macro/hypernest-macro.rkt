@@ -36,10 +36,10 @@
 
 (provide
   (struct-out hn-tag-0-s-expr-stx)
-  (struct-out hn-tag-2-list)
-  (struct-out hn-tag-2-list*)
-  (struct-out hn-tag-2-vector)
-  (struct-out hn-tag-2-prefab)
+  (struct-out hn-tag-1-list)
+  (struct-out hn-tag-1-list*)
+  (struct-out hn-tag-1-vector)
+  (struct-out hn-tag-1-prefab)
   (struct-out hn-tag-unmatched-closing-bracket)
   (struct-out hn-tag-nest)
   (struct-out hn-tag-other)
@@ -184,15 +184,15 @@
 ; s-expression-shaped Racket syntax objects when they were converted
 ; to hn-expressions. The `hn-tag-0-s-expr-stx` can potentially contain
 ; an entire subtree in Racket syntax object form, but usually the
-; layers are broken up into separate `hn-tag-2-list` nodes. Instead,
+; layers are broken up into separate `hn-tag-1-list` nodes. Instead,
 ; an `hn-tag-0-s-expr-syntax` is usually used just for miscellaneous
 ; atomic values occurring in the syntax, like symbols and datums.
 ;
 (struct-easy (hn-tag-0-s-expr-stx stx) #:equal)
-(struct-easy (hn-tag-2-list stx-example) #:equal)
-(struct-easy (hn-tag-2-list* stx-example) #:equal)
-(struct-easy (hn-tag-2-vector stx-example) #:equal)
-(struct-easy (hn-tag-2-prefab key stx-example) #:equal)
+(struct-easy (hn-tag-1-list stx-example) #:equal)
+(struct-easy (hn-tag-1-list* stx-example) #:equal)
+(struct-easy (hn-tag-1-vector stx-example) #:equal)
+(struct-easy (hn-tag-1-prefab key stx-example) #:equal)
 
 ; The `hn-tag-unmatched-closing-bracket` tag can occur as a bump of
 ; degree (N + 2) for any nonzero N. It represents a closing bracket of
@@ -299,14 +299,11 @@
       ; When we call this, `elems` is a list of degree-1 hypernests,
       ; and their degree-0 holes have trivial contents. We
       ; degree-0-concatenate them, and then we degree-1-concatenate a
-      ; degree-2 bump around that, holding the given metadata. We
+      ; degree-1 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
       (hypernest-set-degree 1
       #/hypernest-bind-one-degree 1
-        (n-hn 2
-          (list 'open 2 metadata)
-            1 (list 1 #/trivial) 0 0
-          0
+        (n-hn 2 (list 'open 1 metadata) (list 1 #/trivial) 0 0
         #/list 0 #/trivial)
       #/fn hole data
         (hypernest-promote 2
@@ -321,7 +318,7 @@
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypernest-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      (make-list-layer (hn-tag-2-list stx-example) elems)
+      (make-list-layer (hn-tag-1-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped.
     ; Usually it'll be wrapped up as an atom. However, it could still
@@ -331,13 +328,13 @@
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
-      (make-list-layer (hn-tag-2-list* stx-example)
+      (make-list-layer (hn-tag-1-list* stx-example)
       #/append elems #/list tail))
   
   ; We traverse into prefab structs.
   #/w- key (prefab-struct-key s)
   #/if key
-    (make-list-layer (hn-tag-2-prefab key stx-example)
+    (make-list-layer (hn-tag-1-prefab key stx-example)
     #/process-list #/cdr #/vector->list #/struct->vector s)
   
   #/syntax-parse stx
@@ -347,7 +344,7 @@
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
-        (make-list-layer (hn-tag-2-vector stx-example) elems))]
+        (make-list-layer (hn-tag-1-vector stx-example) elems))]
     
     [_
       ; We return a degree-1 hypernest with trivial contents in its

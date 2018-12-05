@@ -36,8 +36,9 @@
   degree-and-brackets->hypernest hypernest-bind-one-degree
   hypernest-coil-bump hypernest-coil-hole hypernest-contour
   hypernest-degree hypernest-drop1 hypernest-dv-bind-all-degrees
-  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
-  hypernest-promote hypernest-set-degree hypernest-zip
+  hypernest-get-hole-zero hypernest-join-all-degrees
+  hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
+  hypernest-set-degree hypernest-v-map-one-degree hypernest-zip
   hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-dv-map-all-degrees hypertee-promote
@@ -45,8 +46,8 @@
   hypertee-v-each-one-degree)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-0-s-expr-stx hn-tag-2-list hn-tag-2-list* hn-tag-2-prefab
-  hn-tag-2-vector hn-tag-nest s-expr-stx->hn-expr)
+  hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-1-list* hn-tag-1-prefab
+  hn-tag-1-vector hn-tag-nest s-expr-stx->hn-expr)
 
 (require #/only-in lathe-comforts expect w-)
 
@@ -147,27 +148,22 @@
     #/cons stx #/hn-expr->s-expr-stx-list tails)
   #/w- process-listlike
     (fn stx-example list->whatever
-      (expect bump-degree 2
-        (error "Encountered a list-like hn-tag-2-... bump with a degree other than 2")
-      #/expect (hypernest->maybe-hypertee tails) (just tails)
-        (error "Encountered a list-like hn-tag-2-... bump with a bump in it")
-      #/expect (hypertee-uncontour tails)
-        (just #/list elems tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour")
-      #/expect (hypertee-uncontour tails-tails)
-        (just #/list tail tails-tails-tails)
-        (error "Internal error: Encountered a list-like hn-tag-2-... bump which wasn't a contour of a contour")
+      (expect bump-degree 1
+        (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
+      #/w- elems
+        (hypernest-v-map-one-degree 0 tails #/fn tail #/trivial)
+      #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/cons
         (datum->syntax stx-example
         #/list->whatever #/hn-expr->s-expr-stx-list elems)
         (hn-expr->s-expr-stx-list tail)))
-  #/mat data (hn-tag-2-list stx-example)
+  #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/fn lst lst)
-  #/mat data (hn-tag-2-list* stx-example)
+  #/mat data (hn-tag-1-list* stx-example)
     (process-listlike stx-example #/fn lst #/apply list* lst)
-  #/mat data (hn-tag-2-vector stx-example)
+  #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/fn lst #/list->vector lst)
-  #/mat data (hn-tag-2-prefab key stx-example)
+  #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example #/fn lst
       (apply make-prefab-struct key lst))
   #/mat data (hn-tag-nest)
@@ -202,25 +198,18 @@
     #/hn-expr-2->s-expr-generator tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
-      (expect bump-degree 2
-        (error "Encountered a list-like hn-tag-2-... bump with a degree other than 2")
-      #/expect (hypernest->maybe-hypertee tails) (just tails)
-        (error "Encountered a list-like hn-tag-2-... bump with a bump in it")
-      #/expect (hypertee-uncontour tails)
-        (just #/list elems tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour")
-      #/expect (hypertee-uncontour tails-tails)
-        (just #/list tail tails-tails-tails)
-        (error "Internal error: Encountered a list-like hn-tag-2-... bump which wasn't a contour of a contour")
+      (expect bump-degree 1
+        (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
+      #/w- elems
+        (hypernest-v-map-one-degree 0 tails #/fn tail #/trivial)
+      #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/hypernest-join-all-degrees
       #/n-hn 2
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'list)
         
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'apply)
         
@@ -230,8 +219,7 @@
           #/list 0 #/trivial))
         0
         
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'append)
         
@@ -239,21 +227,18 @@
         0
         
         0
-        0
         
         0
-        0
         
-        0
         0
       #/list 0 #/hn-expr-2->s-expr-generator tail))
-  #/mat data (hn-tag-2-list stx-example)
+  #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
-  #/mat data (hn-tag-2-list* stx-example)
+  #/mat data (hn-tag-1-list* stx-example)
     (process-listlike stx-example #/list #'list*)
-  #/mat data (hn-tag-2-vector stx-example)
+  #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/list #'vector)
-  #/mat data (hn-tag-2-prefab key stx-example)
+  #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
   #/mat data (hn-tag-nest)
@@ -295,31 +280,23 @@
     #/hn-expr-2->s-expr-stx-generator tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
-      (expect bump-degree 2
-        (error "Encountered a list-like hn-tag-2-... bump with a degree other than 2")
-      #/expect (hypernest->maybe-hypertee tails) (just tails)
-        (error "Encountered a list-like hn-tag-2-... bump with a bump in it")
-      #/expect (hypertee-uncontour tails)
-        (just #/list elems tails-tails)
-        (error "Encountered a list-like hn-tag-2-... bump which wasn't a contour")
-      #/expect (hypertee-uncontour tails-tails)
-        (just #/list tail tails-tails-tails)
-        (error "Internal error: Encountered a list-like hn-tag-2-... bump which wasn't a contour of a contour")
+      (expect bump-degree 1
+        (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
+      #/w- elems
+        (hypernest-v-map-one-degree 0 tails #/fn tail #/trivial)
+      #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/hypernest-join-all-degrees
       #/n-hn 2
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'list)
         
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'datum->syntax)
         (list 'open 0 #/hn-tag-0-s-expr-stx #`#'#,stx-example)
         
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'apply)
         
@@ -329,8 +306,7 @@
           #/list 0 #/trivial))
         0
         
-        (list 'open 2 #/hn-tag-2-list stx-example)
-        1
+        (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'append)
         
@@ -338,25 +314,21 @@
         0
         
         0
+        
         0
         
         0
-        0
         
-        0
-        0
-        
-        0
         0
         
       #/list 0 #/hn-expr-2->s-expr-stx-generator tail))
-  #/mat data (hn-tag-2-list stx-example)
+  #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
-  #/mat data (hn-tag-2-list* stx-example)
+  #/mat data (hn-tag-1-list* stx-example)
     (process-listlike stx-example #/list #'list*)
-  #/mat data (hn-tag-2-vector stx-example)
+  #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/list #'vector)
-  #/mat data (hn-tag-2-prefab key stx-example)
+  #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
   #/mat data (hn-tag-nest)
