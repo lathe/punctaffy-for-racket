@@ -23,8 +23,6 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in syntax/parse id syntax-parse)
 
-(require lathe-debugging)
-
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
@@ -175,10 +173,8 @@
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (dlog "blah e1"
-  #/list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
-    (dlog "blah e2"
-    #/hypernest-bind-one-degree 0 hn #/fn hole data
+  (list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
+    (hypernest-bind-one-degree 0 hn #/fn hole data
       (dissect data (trivial)
         tail))))
 
@@ -248,8 +244,7 @@
 ;
 (define/contract (s-expr-stx->hn-expr stx)
   (-> syntax? hypernest?)
-  (dlog "blah d1" stx
-  #/mat
+  (mat
     (syntax-parse stx
       [ (op:id arg ...)
         (maybe-bind (syntax-local-maybe #'op) #/fn op
@@ -288,9 +283,7 @@
     ; `s-expr-stx->hn-expr` reports that it has broken its own
     ; contract.
     ;
-    (dlog "blah d2"
-    #/proc op stx)
-  #/dlog "blah d3"
+    (proc op stx)
   #/w- process-list
     (fn elems
       (list-map elems #/fn elem #/s-expr-stx->hn-expr elem))
@@ -308,9 +301,7 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-2 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (dlog "blah d3.1"
-      #/hypernest-set-degree 1
-      #/dlog "blah d3.2"
+      (hypernest-set-degree 1
       #/hypernest-bind-one-degree 1
         (n-hn 2
           (list 'open 2 metadata)
@@ -318,31 +309,24 @@
           0
         #/list 0 #/trivial)
       #/fn hole data
-        (dlog "blah d3.3"
-        #/hypernest-promote 2
-        #/dlog "blah d3.4"
+        (hypernest-promote 2
         #/n-hn-append0 1 elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)
-    (dlog "blah d4"
-    #/dissect (improper-list->list-and-tail s) (list elems tail)
-    #/dlog "blah d4.1"
+    (dissect (improper-list->list-and-tail s) (list elems tail)
     #/w- elems (process-list elems)
-    #/dlog "blah d4.2"
     #/mat tail (list)
       ; The metadata we pass in here represents the `list` operation,
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypernest-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      (dlog "blah d4.3"
-      #/make-list-layer (hn-tag-2-list stx-example) elems)
+      (make-list-layer (hn-tag-2-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped.
     ; Usually it'll be wrapped up as an atom. However, it could still
     ; be expanded as a identifier syntax or processed as a vector or
     ; as a prefab struct.
-    #/dlog "blah d4.4"
     #/w- tail (s-expr-stx->hn-expr tail)
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
@@ -353,15 +337,13 @@
   ; We traverse into prefab structs.
   #/w- key (prefab-struct-key s)
   #/if key
-    (dlog "blah d5"
-    #/make-list-layer (hn-tag-2-prefab key stx-example)
+    (make-list-layer (hn-tag-2-prefab key stx-example)
     #/process-list #/cdr #/vector->list #/struct->vector s)
   
   #/syntax-parse stx
     ; We traverse into vectors.
     [ #(elem ...)
-      (dlog "blah d6"
-      #/w- elems (process-list #/syntax->list #'(elem ...))
+      (w- elems (process-list #/syntax->list #'(elem ...))
         ; This is like the proper list case, but this time the
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
@@ -373,8 +355,7 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (dlog "blah d7"
-      #/n-hn 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
+      (n-hn 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
       #/list 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an

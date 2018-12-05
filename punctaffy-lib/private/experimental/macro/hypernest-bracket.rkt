@@ -25,9 +25,6 @@
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
-(require #/for-syntax racket/pretty)
-(require #/for-syntax lathe-debugging)
-
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w- w-loop)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -89,8 +86,7 @@
 ; value.
 ;
 (define-for-syntax (unmatched-brackets->holes opening-degree hn-expr)
-  (dlogr "blah i1" #/begin (pretty-write hn-expr)
-  #/expect (hypernest-degree hn-expr) 1
+  (expect (hypernest-degree hn-expr) 1
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w- first-d-not-to-process opening-degree
   #/w-loop next
@@ -98,11 +94,9 @@
     target-d opening-degree
     first-d-to-process 1
     
-    (dlog "blah i2" #;hn-expr
-    #/w- dropped (hypernest-drop1 hn-expr)
+    (w- dropped (hypernest-drop1 hn-expr)
     #/mat dropped (hypernest-coil-hole d data tails)
-      (dlog "blah i3" d target-d #/begin (pretty-write tails)
-      #/hypernest-plus1 #/hypernest-coil-hole target-d data
+      (hypernest-plus1 #/hypernest-coil-hole target-d data
       #/hypertee-dv-map-all-degrees tails #/fn d tail
         (next tail target-d (onum-max first-d-to-process d)))
     #/dissect dropped
@@ -115,11 +109,9 @@
           data
           bracket-degree-plus-two
         #/next
-          (dlog "blah i3.1" #/begin (pretty-write interior-and-bracket-and-tails)
-          #/hypernest-dv-map-all-degrees interior-and-bracket-and-tails
+          (hypernest-dv-map-all-degrees interior-and-bracket-and-tails
           #/fn d tail
-            (dlog "blah i3.2" first-d-to-process bracket-degree-plus-two d #/begin (pretty-write tail)
-            #/if
+            (if
               (and
                 (onum<=? bracket-degree-plus-two d)
                 (onum<? d first-d-to-process))
@@ -129,9 +121,7 @@
               (onum-max first-d-to-process d)))
           (onum-max target-d bracket-degree-plus-two)
           (onum-max first-d-to-process bracket-degree-plus-two)))
-    #/dlog "blah i4"
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
-    #/dlog "blah i5"
     #/expect
       (and
         (onum<=?
@@ -142,7 +132,6 @@
           (onum-plus first-d-not-to-process 2)))
       #t
       (ignore)
-    #/dlog "blah i6"
     #/expect (onum-pred-maybe bracket-degree-plus-two)
       (just bracket-degree-plus-one)
       (error "Encountered a matching hn-tag-unmatched-closing-bracket bump of degree 0")
@@ -165,7 +154,6 @@
     #/expect (hypertee-uncontour bracket-interior-and-tails)
       (just #/list bracket-interior tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour of a contour")
-    #/dlog "blah i7"
     #/hypernest-plus1 #/hypernest-coil-hole target-d
       (list bracket-syntax bracket-interior)
     #/hypertee-dv-map-all-degrees tails #/fn d tail
@@ -174,8 +162,7 @@
 
 
 (define-for-syntax (helper-for-^<-and-^> stx bump-value)
-  (dlog "blah h1"
-  #/syntax-parse stx
+  (syntax-parse stx
     [op:id
       ; If this syntax transformer is used in an identifier position,
       ; we just expand as though the identifier isn't bound to a
@@ -189,15 +176,12 @@
   #/w- degree (syntax-e #'degree-stx)
   #/w- degree-plus-one (onum-plus degree 1)
   #/w- degree-plus-two (onum-plus degree 2)
-  #/dlog "blah h2"
   #/w- interior-and-closing-brackets
     (unmatched-brackets->holes degree #/n-hn-append0 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
       (s-expr-stx->hn-expr interpolation))
-  #/dlog "blah h3"
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
-  #/dlog "blah h4"
   #/hypernest-plus1 #/hypernest-coil-bump 1 bump-value degree-plus-two
   #/hypernest-contour
     ; This is the syntax for the bracket itself.

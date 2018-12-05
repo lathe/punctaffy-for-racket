@@ -25,9 +25,6 @@
 
 (require #/for-syntax #/only-in syntax/parse syntax-parse)
 
-(require #/for-syntax racket/pretty)
-(require #/for-syntax lathe-debugging)
-
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
 (require #/for-syntax #/only-in lathe-comforts/list
@@ -185,8 +182,7 @@
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
 (define-for-syntax (hn-expr-2->s-expr-generator hn)
-  (dlog "blah a1"
-  #/expect (hypernest-degree hn) 2
+  (expect (hypernest-degree hn) 2
     (error "Expected an hn-expr of degree 2")
   #/w- dropped (hypernest-drop1 hn)
   #/w- process-tails
@@ -198,8 +194,7 @@
     #/process-tails tails)
   #/dissect dropped (hypernest-coil-bump 2 data bump-degree tails)
   #/mat data (hn-tag-0-s-expr-stx stx)
-    (dlog "blah a2"
-    #/expect bump-degree 0
+    (expect bump-degree 0
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
     #/hypernest-plus1 #/hypernest-coil-bump 2
       (hn-tag-0-s-expr-stx #`(list '#,stx))
@@ -277,7 +272,6 @@
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
       (hypernest-promote 4 tail))
-  #/dlog "blah j1" data
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
 (define-for-syntax (hn-expr-2->s-expr-stx-generator hn)
@@ -384,12 +378,8 @@
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 
 (define-syntax (my-quasiquote stx)
-  (dlog "blah b1"
-  #/syntax-parse stx #/ (_ quotation)
-  #/dlog "blah b2"
+  (syntax-parse stx #/ (_ quotation)
   #/w- quotation (s-expr-stx->hn-expr #'quotation)
-  #/dlog "blah b3"
-  #/begin (pretty-write quotation)
   #/expect (hypernest-drop1 quotation)
     (hypernest-coil-bump overall-degree (hn-tag-nest) bump-degree
       bracket-and-quotation-and-tails)
@@ -416,7 +406,6 @@
         (error "Encountered more than one degree-0-adjacent piece of data in the root of a quasiquotation")
       #/dissect data (trivial)
       #/void))
-  #/dlog "blah b4"
   #/dissect
     (hypernest-zip tails (hn-expr-2->s-expr-generator quotation)
     #/fn hole tail quotation-data
