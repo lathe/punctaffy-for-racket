@@ -31,7 +31,7 @@
 (require #/only-in lathe-comforts
   dissect expect expectfn mat w- w-loop)
 (require #/only-in lathe-comforts/hash
-  hash-keys-same? hash-kv-all hash-kv-each hash-kv-map hash-kv-map-kv
+  hash-keys-same? hash-kv-all hash-kv-bind hash-kv-each hash-kv-map
   hash-kv-map-maybe hash-kv-map-sorted hash-v-map)
 (require #/only-in lathe-comforts/list
   list-bind list-each list-kv-all list-kv-map list-map list-zip-all
@@ -167,8 +167,8 @@
     (error "Expected tower to be a tower")
   #/hoqq-tower
   #/list-map tables #/lambda (table)
-    (hash-kv-map-kv table #/lambda (k v)
-      (list (func k) v))))
+    (hash-kv-bind table #/lambda (k v)
+      (hashequal (func k) v))))
 
 (define (hoqq-tower-dkv-split-by tower func)
   (w- tower
