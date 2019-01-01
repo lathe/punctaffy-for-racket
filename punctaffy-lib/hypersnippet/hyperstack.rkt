@@ -27,8 +27,7 @@
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
-(require #/only-in lathe-ordinals
-  onum<? onum</c onum-drop onum<e0? onum<=e0?)
+(require #/only-in lathe-ordinals onum<? onum</c onum-drop onum<=e0?)
 (require #/only-in lathe-ordinals/olist
   olist-drop olist<=e0? olist<e0? olist-build olist-length olist-map
   olist-tails olist-plus olist-ref-and-call olist-zip-map olist-zero)

@@ -32,11 +32,8 @@
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
-  onum<=? onum<? onum-max 0<onum<=omega? onum<=omega? onum<omega?
-  onum-plus)
-(require #/only-in lathe-ordinals/olist
-  olist-build olist-drop olist-length olist-plus olist-ref-and-call
-  olist-zero)
+  onum<=? onum<? onum-max 0<onum<=omega? onum<=omega? onum<omega?)
+(require #/only-in lathe-ordinals/olist olist-build)
 
 (require #/only-in punctaffy/hypersnippet/hyperstack
   make-pushable-hyperstack pushable-hyperstack-dimension
@@ -120,13 +117,6 @@
   #/mat bracket (list d data)
     d
     bracket))
-
-(define (olist-replace-first-n n elem lst)
-  (olist-plus
-    (olist-build n #/dissectfn _ elem)
-    (expect (olist-drop n lst) (just dropped-and-rest) (olist-zero)
-    #/dissect dropped-and-rest (list dropped rest)
-      rest)))
 
 ; NOTE: This is a procedure we call only from within this module. It
 ; may seem like a synonym of `hypernest`, but when we're debugging
