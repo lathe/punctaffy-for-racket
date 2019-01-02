@@ -22,7 +22,7 @@
 
 (require rackunit)
 
-(require #/only-in lathe-comforts fn)
+(require #/only-in lathe-comforts dissect fn w-)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/hypernest)
@@ -58,29 +58,29 @@
 
 ; NOTE: These are the same as some of the hypertee tests in
 ; test-hypertee.rkt.
-(define sample-0 (n-hn 0))
-(define sample-closing-1 (n-hn 1 (list 0 'a)))
+(define sample-0 (list 0 #/list))
+(define sample-closing-1 (list 1 #/list (list 0 'a)))
 (define sample-closing-2
-  (n-hn 2
+  (list 2 #/list
     (list 1 'a)
     0 (list 0 'a)))
 (define sample-closing-3
-  (n-hn 3
+  (list 3 #/list
     (list 2 'a)
     1 (list 1 'a) 0 0 0 (list 0 'a)))
 (define sample-closing-4
-  (n-hn 4
+  (list 4 #/list
     (list 3 'a)
     2 (list 2 'a) 1 1 1 (list 1 'a) 0 0 0 0 0 0 0 (list 0 'a)))
 (define sample-closing-5
-  (n-hn 5
+  (list 5 #/list
     (list 4 'a)
     3 (list 3 'a) 2 2 2 (list 2 'a) 1 1 1 1 1 1 1 (list 1 'a)
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 (list 0 'a)))
 
 
 (define sample-opening-1
-  (n-hn 1
+  (list 1 #/list
     (list 'open 1 'a)
     0
     (list 'open 2 'a)
@@ -92,18 +92,36 @@
     (list 0 'a)))
 
 
+(define (db->hn degree-and-brackets)
+  (dissect degree-and-brackets (list degree brackets)
+  #/degree-and-brackets->hypernest degree brackets))
+
+(define (check-brackets-round-trip sample)
+  (check-equal? (hypernest->degree-and-brackets #/db->hn sample)
+    sample))
+
+(check-brackets-round-trip sample-0)
+(check-brackets-round-trip sample-closing-1)
+(check-brackets-round-trip sample-closing-2)
+(check-brackets-round-trip sample-closing-3)
+(check-brackets-round-trip sample-closing-4)
+(check-brackets-round-trip sample-closing-5)
+(check-brackets-round-trip sample-opening-1)
+
 (define (check-drop1-round-trip sample)
-  (check-equal? (hypernest-plus1 #/hypernest-drop1 sample) sample))
+  (w- sample (db->hn sample)
+  #/check-equal? (hypernest-plus1 #/hypernest-drop1 sample) sample))
 
 (check-drop1-round-trip sample-0)
 (check-drop1-round-trip sample-closing-1)
 (check-drop1-round-trip sample-closing-2)
 
 (check-equal?
-  (hypernest-drop1 sample-closing-3)
+  (hypernest-drop1 #/db->hn sample-closing-3)
   (hypernest-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
-    ; `(hypernest-drop1 sample-closing-3)`. Make sure it's correct.
+    ; `(hypernest-drop1 #/db->hn sample-closing-3)`. Make sure it's
+    ; correct.
     (n-ht 2
       (list 1 #/n-hn 3
         (list 1 'a)

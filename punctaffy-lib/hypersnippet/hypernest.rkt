@@ -26,7 +26,8 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/hash hash-ref-maybe)
+(require #/only-in lathe-comforts/hash hash-kv-each hash-ref-maybe)
+(require #/only-in lathe-comforts/list list-kv-map)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct istruct/c struct-easy)
@@ -42,11 +43,12 @@
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-all-degrees hypertee-contour hypertee-degree
-  hypertee-drop1 hypertee-dv-each-all-degrees
-  hypertee-dv-fold-map-any-all-degrees hypertee-dv-map-all-degrees
-  hypertee-each-all-degrees hypertee-get-hole-zero hypertee<omega?
-  hypertee-plus1 hypertee-promote hypertee-set-degree
-  hypertee-zip-low-degrees hypertee-zip-selective)
+  hypertee->degree-and-closing-brackets hypertee-drop1
+  hypertee-dv-each-all-degrees hypertee-dv-fold-map-any-all-degrees
+  hypertee-dv-map-all-degrees hypertee-each-all-degrees
+  hypertee-get-hole-zero hypertee<omega? hypertee-plus1
+  hypertee-promote hypertee-set-degree hypertee-zip-low-degrees
+  hypertee-zip-selective)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -58,6 +60,7 @@
   (rename-out [-hypernest? hypernest?])
   hypernest-degree
   degree-and-brackets->hypernest
+  hypernest->degree-and-brackets
   hypernest-promote
   hypernest-set-degree
   hypernest<omega?
@@ -111,7 +114,7 @@
       onum<omega?
       (list/c onum<omega? any/c)
       (list/c 'open onum<=omega? any/c))
-    onum<omega?)
+    onum<=omega?)
   (mat bracket (list 'open d data)
     d
   #/mat bracket (list d data)
@@ -382,16 +385,6 @@
         parent-i
         new-i))))
 
-; TODO: Implement this.
-#;
-(define/contract (hypernest->brackets hn)
-  (-> hypernest?
-    (listof #/or/c
-      onum<omega?
-      (list/c onum<omega? any/c)
-      (list/c 'open onum<=omega? any/c)))
-  'TODO)
-
 (define/contract (assert-valid-hypernest-coil coil)
   (-> (hypernest-coil/c) void?)
   (mat coil (hypernest-coil-zero) (void)
@@ -487,17 +480,186 @@
     (hypernest-coil-bump overall-degree data bump-degree tails)
     overall-degree))
 
-; TODO: Uncomment this once `hypernest->brackets` has been
-; implemented.
-#;
 (define/contract (hypernest->degree-and-brackets hn)
-  (-> hypertee?
+  (-> hypernest?
     (list/c onum<=omega?
     #/listof #/or/c
       onum<omega?
       (list/c onum<omega? any/c)
       (list/c 'open onum<=omega? any/c)))
-  (list (hypernest-degree hn) (hypernest->brackets hn)))
+  (dissect hn (hypernest coil)
+  #/w- interleave
+    (fn overall-degree bump-degree tails #/let ()
+      
+      (struct-easy (state-in-root))
+      (struct-easy (state-in-interpolation i))
+      
+      (w-loop next
+        root-brackets (list-kv-map tails #/fn k v #/list k v)
+        interpolations (make-immutable-hasheq)
+        hist
+          (list (state-in-root)
+          #/make-pushable-hyperstack
+          #/olist-build (onum-max overall-degree bump-degree)
+          #/dissectfn _ #/state-in-root)
+        rev-result (list)
+        
+        (define (finish root-brackets interpolations rev-result)
+          (expect root-brackets (list)
+            (error "Internal error: Encountered the end of a hypernest hole or bump tail in a region of degree 0 before getting to the end of the hole or bump itself")
+          #/void)
+          (hash-kv-each interpolations #/fn i interpolation-brackets
+            (expect interpolation-brackets (list)
+              (error "Internal error: Encountered the end of a hypernest hole or bump bracket system before getting to the end of its tails")
+            #/void))
+          (reverse rev-result))
+        
+        (define (pop-interpolation-bracket interpolations i)
+          (expect (hash-ref interpolations i) (cons bracket rest)
+            (list interpolations #/nothing)
+            (list (hash-set interpolations i rest) #/just bracket)))
+        
+        (dissect hist (list state histories)
+        #/mat state (state-in-interpolation interpolation-i)
+          
+          ; We read from the interpolation's bracket stream.
+          (dissect
+            (pop-interpolation-bracket interpolations interpolation-i)
+            (list interpolations maybe-bracket)
+          #/expect maybe-bracket (just bracket)
+            ; TODO: We used to make this check here, back when this
+            ; code was part of `hypertee-join-all-degrees`. However,
+            ; since we can have a bump of degree 0, and a
+            ; non-interpolation such as a bump causes us to push
+            ; rather than pop the hyperstack, we can have a hyperstack
+            ; of degree other than 0 at the end here. See if there's
+            ; some other check we should make. This was an internal
+            ; error anyway, so maybe not.
+;            (expect (pushable-hyperstack-dimension histories) 0
+;              (error "Internal error: A hypernest tail ran out of brackets before reaching a region of degree 0")
+            (begin
+            ; The interpolation has no more brackets, and we're in a
+            ; region of degree 0, so we end the loop.
+            #/finish root-brackets interpolations rev-result)
+          #/w- d (hypernest-bracket-degree bracket)
+          #/if
+            (mat bracket (list 'open d data) #t
+            #/onum<=? (pushable-hyperstack-dimension histories) d)
+            ; We begin a non-interpolation in an interpolation.
+            (w- histories
+              (pushable-hyperstack-push-uniform histories d state)
+            #/w- hist (list state histories)
+            #/next root-brackets interpolations hist
+              (cons bracket rev-result))
+          #/dissect
+            (pushable-hyperstack-pop histories
+            #/olist-build d #/dissectfn _ state)
+            (list popped-barrier state histories)
+          #/w- hist (list state histories)
+          #/mat state (state-in-root)
+            
+            ; We've moved out of the interpolation through a
+            ; low-degree hole and arrived at the root. Now we proceed
+            ; by processing the root's brackets instead of the
+            ; interpolation's brackets.
+            ;
+            (dissect root-brackets
+              (cons (list root-bracket-i root-bracket) root-brackets)
+            #/begin
+              (mat bracket (list d data)
+                (expect data (trivial)
+                  (error "Internal error: A hypernest hole or bump had a tail with a low-degree hole where the value wasn't a trivial value")
+                #/void)
+              #/void)
+            #/next root-brackets interpolations hist
+              (cons d rev-result))
+          #/dissect state (state-in-interpolation i)
+            
+            ; We just moved out of a non-interpolation of the
+            ; interpolation, so we're still in the interpolation, and
+            ; we continue to proceed by processing the interpolation's
+            ; brackets.
+            ;
+            (next root-brackets interpolations hist
+              (cons bracket rev-result)))
+        
+        ; We read from the root's bracket stream.
+        #/expect root-brackets (cons root-bracket root-brackets)
+          ; TODO: We used to make this check here, back when this code
+          ; was part of `hypertee-join-all-degrees`. However, since we
+          ; can have a bump of degree 0, and a non-interpolation such
+          ; as a bump causes us to push rather than pop the
+          ; hyperstack, we can have a hyperstack of degree other than
+          ; 0 at the end here. See if there's some other check we
+          ; should make. This was an internal error anyway, so maybe
+          ; not.
+;          (expect (pushable-hyperstack-dimension histories) 0
+;            (error "Internal error: A hypernest hole or bump ran out of brackets before reaching a region of degree 0")
+          (begin
+          ; The root has no more brackets, and we're in a region of
+          ; degree 0, so we end the loop.
+          #/finish root-brackets interpolations rev-result)
+        #/dissect root-bracket (list root-bracket-i bracket)
+        #/w- d (hypernest-bracket-degree bracket)
+        #/mat bracket (list 'open _ _)
+          ; We begin a non-interpolation in the root.
+          (w- histories
+            (pushable-hyperstack-push-uniform histories d state)
+          #/w- hist (list state histories)
+          #/next root-brackets interpolations hist
+            (cons bracket rev-result))
+        #/expect (onum<? d #/pushable-hyperstack-dimension histories)
+          #t
+          (error "Internal error: Expected each hole of a hypernest hole or bump to be of a degree less than the current region's degree")
+        #/w- old-d (pushable-hyperstack-dimension histories)
+        #/dissect
+          (pushable-hyperstack-pop histories
+          #/olist-build d #/dissectfn _ state)
+          (list popped-barrier state histories)
+        #/expect bracket (list d data)
+          (w- hist (list state histories)
+          #/mat state (state-in-root)
+            ; We just moved out of a non-interpolation of the root, so
+            ; we're still in the root.
+            (next root-brackets interpolations hist
+              (cons bracket rev-result))
+          #/dissect state (state-in-interpolation i)
+            ; We resume an interpolation in the root.
+            (dissect (pop-interpolation-bracket interpolations i)
+              (list interpolations #/just interpolation-bracket)
+            #/next root-brackets interpolations hist
+              (cons d rev-result)))
+        ; We begin an interpolation in the root.
+        #/expect data (list data-d data-brackets)
+          (error "Internal error: Expected each hypernest bump or hole tail to be converted to brackets already")
+        #/expect (equal? data-d #/onum-max overall-degree d) #t
+          (error "Internal error: Expected each hypernest bump or hole tail to have the same degree as the root or the bump, whichever was greater")
+        #/next root-brackets
+          (hash-set interpolations root-bracket-i data-brackets)
+          (list (state-in-interpolation root-bracket-i) histories)
+          (cons d rev-result))))
+  #/mat coil (hypernest-coil-zero) (list 0 #/list)
+  #/mat coil (hypernest-coil-hole overall-degree data tails)
+    (list overall-degree
+    #/dissect
+      (hypertee->degree-and-closing-brackets
+      #/hypertee-dv-map-all-degrees tails #/fn d tail
+        (hypernest->degree-and-brackets tail))
+      (list hole-degree tails)
+    #/cons (list hole-degree data)
+    #/interleave overall-degree hole-degree tails)
+  #/dissect coil
+    (hypernest-coil-bump overall-degree data bump-degree tails)
+    (list overall-degree
+    #/dissect
+      (hypernest->degree-and-brackets
+      #/hypernest-dv-map-all-degrees tails #/fn d data
+        (if (onum<? d bump-degree)
+          (hypernest->degree-and-brackets data)
+          data))
+      (list _ tails)
+    #/cons (list 'open bump-degree data)
+    #/interleave overall-degree bump-degree tails)))
 
 ; Takes a hypernest of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its bumps and holes the way they
