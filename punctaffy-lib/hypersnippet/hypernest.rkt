@@ -96,9 +96,15 @@
     overall-degree data bump-degree tails-hypernest)
   #:equal)
 
-; TODO: Give this a custom writer that uses a sequence-of-brackets
-; representation.
-(struct-easy (hypernest coil) #:equal)
+(struct-easy (hypernest coil)
+  #:equal
+  
+  ; We write hypernests using a sequence-of-brackets representation.
+  #:write
+  (fn this
+    (dissect (hypernest->degree-and-brackets this)
+      (list degree brackets)
+    #/cons degree brackets)))
 
 (define/contract (hypernest-coil/c)
   (-> contract?)
