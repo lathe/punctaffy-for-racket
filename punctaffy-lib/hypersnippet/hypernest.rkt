@@ -44,11 +44,10 @@
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-all-degrees hypertee-contour hypertee-degree
   hypertee->degree-and-closing-brackets hypertee-drop1
-  hypertee-dv-each-all-degrees hypertee-dv-fold-map-any-all-degrees
-  hypertee-dv-map-all-degrees hypertee-each-all-degrees
-  hypertee-get-hole-zero hypertee<omega? hypertee-plus1
-  hypertee-promote hypertee-set-degree hypertee-zip-low-degrees
-  hypertee-zip-selective)
+  hypertee-dv-fold-map-any-all-degrees hypertee-dv-map-all-degrees
+  hypertee-each-all-degrees hypertee-get-hole-zero hypertee<omega?
+  hypertee-plus1 hypertee-promote hypertee-set-degree
+  hypertee-zip-low-degrees hypertee-zip-selective)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
