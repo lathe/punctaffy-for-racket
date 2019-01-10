@@ -5,7 +5,7 @@
 ; Unit tests of a quasiquotation operator defined in terms of
 ; hypersnippet-shaped data structures.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -51,7 +51,13 @@
         (define-values (false opaque-expanded-expr)
           (syntax-local-expand-expression #'body opaque-only))
         opaque-expanded-expr)
+      
       ; Racket 6.12
+      ;
+      ; TODO: See if we should keep this around. Lathe Comforts hasn't
+      ; stopped working on Racket 6.12, but it's no longer testing on
+      ; it, and it might introduce new features that don't work on it.
+      ;
       (let ()
         (define-values (expanded-expr opaque-expanded-expr)
           (syntax-local-expand-expression #'body))
