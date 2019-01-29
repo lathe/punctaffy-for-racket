@@ -21,16 +21,19 @@
 
 
 (require #/only-in racket/contract/base
-  -> any any/c contract? list/c listof or/c)
+  -> any any/c contract? contract-out list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
+(require #/only-in racket/struct make-constructor-style-printer)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each hash-ref-maybe)
 (require #/only-in lathe-comforts/list list-kv-map)
+(require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
-(require #/only-in lathe-comforts/struct istruct/c struct-easy)
+(require #/only-in lathe-comforts/struct
+  auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
   onum<=? onum<? onum-max 0<onum<=omega? onum<=omega? onum<omega?)
@@ -52,11 +55,28 @@
   punctaffy-suppress-internal-errors)
 
 (provide
-  (struct-out hypernest-coil-zero)
-  (struct-out hypernest-coil-hole)
-  (struct-out hypernest-coil-bump)
+  hypernest-coil-zero
+  (contract-out
+    [hypernest-coil-zero? (-> any/c boolean?)])
+  hypernest-coil-hole
+  (contract-out
+    [hypernest-coil-hole? (-> any/c boolean?)]
+    [hypernest-coil-hole-overall-degree
+      (-> hypernest-coil-hole? any/c)]
+    [hypernest-coil-hole-data (-> hypernest-coil-hole? any/c)]
+    [hypernest-coil-hole-tails-hypertee
+      (-> hypernest-coil-hole? any/c)])
+  hypernest-coil-bump
+  (contract-out
+    [hypernest-coil-bump? (-> any/c boolean?)]
+    [hypernest-coil-bump-overall-degree
+      (-> hypernest-coil-bump? any/c)]
+    [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
+    [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
+    [hypernest-coil-bump-tails-hypernest
+      (-> hypernest-coil-bump? any/c)])
   hypernest-bracket-degree
-  (rename-out [-hypernest? hypernest?])
+  hypernest?
   hypernest-degree
   degree-and-brackets->hypernest
   hypernest->degree-and-brackets
@@ -71,8 +91,16 @@
   hypernest-drop1
   hypernest-dv-map-all-degrees
   hypernest-v-map-one-degree
-  (struct-out hypernest-join-selective-interpolation)
-  (struct-out hypernest-join-selective-non-interpolation)
+  hypernest-join-selective-interpolation
+  (contract-out
+    [hypernest-join-selective-interpolation? (-> any/c boolean?)]
+    [hypernest-join-selective-interpolation-val
+      (-> hypernest-join-selective-interpolation? any/c)])
+  hypernest-join-selective-non-interpolation
+  (contract-out
+    [hypernest-join-selective-non-interpolation? (-> any/c boolean?)]
+    [hypernest-join-selective-non-interpolation-val
+      (-> hypernest-join-selective-interpolation? any/c)])
   hypernest-join-all-degrees-selective
   hypernest-map-all-degrees
   hypernest-pure
@@ -87,30 +115,41 @@
 
 ; ===== Hypernests ===================================================
 
-(struct-easy (hypernest-coil-zero) #:equal)
-(struct-easy (hypernest-coil-hole overall-degree data tails-hypertee)
-  #:equal)
-(struct-easy
-  (hypernest-coil-bump
-    overall-degree data bump-degree tails-hypernest)
-  #:equal)
+(define-imitation-simple-struct (hypernest-coil-zero?)
+  hypernest-coil-zero
+  'hypernest-coil-zero (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hypernest-coil-hole?
+    hypernest-coil-hole-overall-degree
+    hypernest-coil-hole-data
+    hypernest-coil-hole-tails-hypertee)
+  hypernest-coil-hole
+  'hypernest-coil-hole (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hypernest-coil-bump?
+    hypernest-coil-bump-overall-degree
+    hypernest-coil-bump-data
+    hypernest-coil-bump-bump-degree
+    hypernest-coil-bump-tails-hypernest)
+  hypernest-coil-bump
+  'hypernest-coil-bump (current-inspector) (auto-write) (auto-equal))
 
-(struct-easy (hypernest coil)
-  #:equal
-  
-  ; We write hypernests using a sequence-of-brackets representation.
-  #:write
-  (fn this
-    (dissect (hypernest->degree-and-brackets this)
-      (list degree brackets)
-    #/cons degree brackets)))
+(define-imitation-simple-struct (hypernest? hypernest-coil) hypernest
+  'hypernest (current-inspector) (auto-equal)
+  (#:prop prop:custom-write #/make-constructor-style-printer
+    ; We write hypernests using a sequence-of-brackets representation.
+    (fn self 'n-hn)
+    (fn self
+      (dissect (hypernest->degree-and-brackets)
+        (list degree brackets)
+      #/cons degree brackets))))
 
 (define/contract (hypernest-coil/c)
   (-> contract?)
   (or/c
-    (istruct/c hypernest-coil-zero)
-    (istruct/c hypernest-coil-hole 0<onum<=omega? any/c hypertee?)
-    (istruct/c hypernest-coil-bump
+    (match/c hypernest-coil-zero)
+    (match/c hypernest-coil-hole 0<onum<=omega? any/c hypertee?)
+    (match/c hypernest-coil-bump
       0<onum<=omega? any/c onum<=omega? hypernest?)))
 
 (define/contract (hypernest-bracket-degree bracket)
@@ -452,14 +491,6 @@
           (error "Expected each tail of a hypernest-coil-bump to match up with the hole it occurred in")
         #/void)))))
 
-; A version of `hypernest?` that does not satisfy
-; `struct-predicate-procedure?`.
-(define/contract (-hypernest? v)
-  (-> any/c boolean?)
-  (hypernest? v))
-
-; A version of the `hypernest` constructor that does not satisfy
-; `struct-constructor-procedure?`.
 (define/contract (hypernest-plus1 coil)
   (-> (hypernest-coil/c) hypernest?)
   ; TODO: See if we can improve the error messages so that they're
@@ -957,8 +988,22 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to `hypertee-fold`.
 
-(struct-easy (hypernest-join-selective-interpolation val) #:equal)
-(struct-easy (hypernest-join-selective-non-interpolation val) #:equal)
+(define-imitation-simple-struct
+  (hypernest-join-selective-interpolation?
+    hypernest-join-selective-interpolation-val)
+  hypernest-join-selective-interpolation
+  'hypernest-join-selective-interpolation
+  (current-inspector)
+  (auto-write)
+  (auto-equal))
+(define-imitation-simple-struct
+  (hypernest-join-selective-non-interpolation?
+    hypernest-join-selective-non-interpolation-val)
+  hypernest-join-selective-non-interpolation
+  'hypernest-join-selective-non-interpolation
+  (current-inspector)
+  (auto-write)
+  (auto-equal))
 
 ; This takes a hypernest of degree N where each hole value of each
 ; degree M is either a `hypernest-join-selective-interpolation`

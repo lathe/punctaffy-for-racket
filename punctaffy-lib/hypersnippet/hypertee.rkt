@@ -70,8 +70,16 @@
   hypertee-v-map-one-degree
   hypertee-v-map-highest-degree
   hypertee-fold
-  (struct-out hypertee-join-selective-interpolation)
-  (struct-out hypertee-join-selective-non-interpolation)
+  hypertee-join-selective-interpolation
+  (contract-out
+    [hypertee-join-selective-interpolation? (-> any/c boolean?)]
+    [hypertee-join-selective-interpolation-val
+      (-> hypertee-join-selective-interpolation? any/c)])
+  hypertee-join-selective-non-interpolation
+  (contract-out
+    [hypertee-join-selective-non-interpolation? (-> any/c boolean?)]
+    [hypertee-join-selective-non-interpolation-val
+      (-> hypertee-join-selective-interpolation? any/c)])
   hypertee-join-all-degrees-selective
   hypertee-map-all-degrees
   hypertee-map-one-degree
@@ -804,8 +812,22 @@
     #/hypertee-plus1 (hypertee-degree ht)
     #/just #/list (func hole data) tails)))
 
-(struct-easy (hypertee-join-selective-interpolation val) #:equal)
-(struct-easy (hypertee-join-selective-non-interpolation val) #:equal)
+(define-imitation-simple-struct
+  (hypertee-join-selective-interpolation?
+    hypertee-join-selective-interpolation-val)
+  hypertee-join-selective-interpolation
+  'hypertee-join-selective-interpolation
+  (current-inspector)
+  (auto-write)
+  (auto-equal))
+(define-imitation-simple-struct
+  (hypertee-join-selective-non-interpolation?
+    hypertee-join-selective-non-interpolation-val)
+  hypertee-join-selective-non-interpolation
+  'hypertee-join-selective-non-interpolation
+  (current-inspector)
+  (auto-write)
+  (auto-equal))
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is either a `hypertee-join-selective-interpolation`
