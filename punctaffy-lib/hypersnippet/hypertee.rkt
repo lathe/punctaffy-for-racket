@@ -21,7 +21,7 @@
 
 
 (require #/only-in racket/contract/base
-  -> any any/c list/c listof or/c)
+  -> any any/c contract-out list/c listof or/c)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/list make-list)
 
@@ -31,9 +31,13 @@
 (require #/only-in lathe-comforts/list
   list-all list-any list-bind list-each list-foldl list-kv-map
   list-map)
+(require #/only-in lathe-comforts/match
+  define-match-expander-attenuated
+  define-match-expander-from-match-and-make)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
-(require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-comforts/struct
+  auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-ordinals
   onum<=? onum<? onum-max onum<=omega? onum<omega? onum-plus
@@ -51,9 +55,9 @@
 
 (provide
   hypertee-closing-bracket-degree
-  (rename-out
-    [-hypertee? hypertee?]
-    [-hypertee-degree hypertee-degree])
+  (contract-out
+    [hypertee? (-> any/c boolean?)]
+    [hypertee-degree (-> hypertee? onum<=omega?)])
   degree-and-closing-brackets->hypertee
   hypertee->degree-and-closing-brackets
   hypertee-promote
@@ -476,20 +480,23 @@
   #/void))
 
 
-(struct-easy (hypertee degree closing-brackets)
-  #:equal
-  (#:guard-easy
+(define-imitation-simple-struct
+  (hypertee? hypertee-degree hypertee-closing-brackets)
+  unguarded-hypertee 'hypertee (current-inspector)
+  (auto-write)
+  (auto-equal))
+
+(define-match-expander-attenuated
+  attenuated-hypertee unguarded-hypertee
+  [degree any/c]
+  [closing-brackets any/c]
+  (begin0 #t
     (unless (punctaffy-suppress-internal-errors)
       (assert-valid-hypertee-brackets degree closing-brackets))))
 
-; A version of `hypertee?` that does not satisfy
-; `struct-predicate-procedure?`.
-(define/contract (-hypertee? v)
-  (-> any/c boolean?)
-  (hypertee? v))
+(define-match-expander-from-match-and-make
+  hypertee unguarded-hypertee attenuated-hypertee attenuated-hypertee)
 
-; A version of the `hypertee` constructor that does not satisfy
-; `struct-constructor-procedure?`.
 (define/contract
   (degree-and-closing-brackets->hypertee degree closing-brackets)
   (->
@@ -500,13 +507,6 @@
   ; like part of the contract of this procedure instead of being
   ; thrown from inside the `hypertee` constructor.
   (hypertee degree closing-brackets))
-
-; A version of `hypertee-degree` that does not satisfy
-; `struct-accessor-procedure?`.
-(define/contract (-hypertee-degree ht)
-  (-> hypertee? onum<=omega?)
-  (dissect ht (hypertee d closing-brackets)
-    d))
 
 (define/contract (hypertee->degree-and-closing-brackets ht)
   (-> hypertee?
