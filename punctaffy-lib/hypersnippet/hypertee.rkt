@@ -5,7 +5,7 @@
 ; A data structure for encoding the kind of higher-order structure
 ; that occurs in higher quasiquotation.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@
 
 
 (require #/only-in racket/contract/base
-  -> any any/c contract-out list/c listof or/c)
+  -> ->i any any/c contract? contract-out list/c listof or/c
+  rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/list make-list)
 
@@ -39,17 +40,15 @@
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
-(require #/only-in lathe-ordinals
-  onum<=? onum<? onum-max onum<=omega? onum<omega? onum-plus
-  onum-plus1 onum-pred-maybe)
-(require #/only-in lathe-ordinals/olist olist-build)
 
 (require #/only-in punctaffy/hypersnippet/hyperstack
-  make-poppable-hyperstack make-poppable-hyperstack-n
-  make-pushable-hyperstack poppable-hyperstack-dimension
-  poppable-hyperstack-pop poppable-hyperstack-pop-n
-  poppable-hyperstack-pop-n-with-barrier pushable-hyperstack-dimension
-  pushable-hyperstack-pop pushable-hyperstack-push-uniform)
+  dim-successors-sys? dim-successors-sys-dim-plus-int
+  dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys dim-sys?
+  dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
+  dim-sys-dim=0? dim-sys-dim/c dim-sys-dimlist-uniform dim-sys-dim-max
+  dim-sys-dim-zero hyperstack-dimension hyperstack-pop
+  hyperstack-pop-n hyperstack-pop-n-with-barrier
+  hyperstack-push-uniform make-hyperstack make-hyperstack-n)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -57,13 +56,16 @@
   hypertee-closing-bracket-degree
   (contract-out
     [hypertee? (-> any/c boolean?)]
-    [hypertee-degree (-> hypertee? onum<=omega?)])
+    [hypertee-dim-sys (-> hypertee? dim-sys?)]
+    [hypertee-degree
+      (->i ([ht hypertee?])
+        [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
+    [hypertee/c (-> dim-sys? contract?)])
   degree-and-closing-brackets->hypertee
   hypertee->degree-and-closing-brackets
   hypertee-promote
   hypertee-set-degree-maybe
   hypertee-set-degree
-  hypertee<omega?
   hypertee-contour
   hypertee-drop1
   hypertee-dv-map-all-degrees
@@ -437,32 +439,40 @@
 
 
 (define/contract (hypertee-closing-bracket-degree closing-bracket)
-  (-> (or/c onum<omega? #/list/c onum<omega? any/c) onum<omega?)
+  ; TODO: Change this representation so we can more decisively
+  ; distinguish closing brackets from dimension numbers if the
+  ; dimension numbers are represented as lists.
+  (-> (or/c (list/c any/c any/c) any/c) any/c)
   (mat closing-bracket (list d data)
     d
     closing-bracket))
 
 (define/contract
-  (assert-valid-hypertee-brackets opening-degree closing-brackets)
-  (-> onum<=omega? list? void?)
+  (assert-valid-hypertee-brackets ds opening-degree closing-brackets)
+  (->i
+    (
+      [ds dim-sys?]
+      [opening-degree (ds) (dim-sys-dim/c ds)]
+      [closing-brackets list?])
+    [_ void?])
   (w- final-region-degree
-    (poppable-hyperstack-dimension #/list-foldl
-      (make-poppable-hyperstack-n opening-degree)
+    (hyperstack-dimension #/list-foldl
+      (make-hyperstack-n ds opening-degree)
       closing-brackets
     #/fn histories closing-bracket
       (w- closing-degree
         (hypertee-closing-bracket-degree closing-bracket)
       #/expect
-        (onum<? closing-degree
-        #/poppable-hyperstack-dimension histories)
+        (dim-sys-dim<? ds closing-degree
+          (hyperstack-dimension histories))
         #t
         (error "Encountered a closing bracket of degree higher than the current region's degree")
       #/w- restored-history
-        (poppable-hyperstack-pop-n histories closing-degree)
+        (hyperstack-pop-n histories closing-degree)
       #/begin
         (if
-          (equal? closing-degree
-          #/poppable-hyperstack-dimension restored-history)
+          (dim-sys-dim=? ds closing-degree
+            (hyperstack-dimension restored-history))
           ; NOTE: We don't validate `hole-value`.
           (expect closing-bracket (list closing-degree hole-value)
             (raise-arguments-error 'degree-and-closing-brackets->hypertee
@@ -479,7 +489,7 @@
               "closing-bracket" closing-bracket)
           #/void))
         restored-history))
-  #/expect final-region-degree 0
+  #/expect (dim-sys-dim=0? ds final-region-degree) #t
     (raise-arguments-error 'degree-and-closing-brackets->hypertee
       "expected more closing brackets"
       "opening-degree" opening-degree
@@ -489,114 +499,131 @@
 
 
 (define-imitation-simple-struct
-  (hypertee? hypertee-degree hypertee-closing-brackets)
+  (hypertee?
+    hypertee-dim-sys hypertee-degree hypertee-closing-brackets)
   unguarded-hypertee 'hypertee (current-inspector)
   (auto-write)
   (auto-equal))
 
 (define-match-expander-attenuated
   attenuated-hypertee unguarded-hypertee
+  [ds any/c]
   [degree any/c]
   [closing-brackets any/c]
   (begin0 #t
     (unless (punctaffy-suppress-internal-errors)
-      (assert-valid-hypertee-brackets degree closing-brackets))))
+      (assert-valid-hypertee-brackets ds degree closing-brackets))))
 
 (define-match-expander-from-match-and-make
   hypertee unguarded-hypertee attenuated-hypertee attenuated-hypertee)
 
+(define (hypertee/c ds)
+  (rename-contract
+    (fn v
+      (and (hypertee? v) (dim-sys-accepts? ds #/hypertee-dim-sys v)))
+    `(hypertee/c ,ds)))
+
 (define/contract
-  (degree-and-closing-brackets->hypertee degree closing-brackets)
-  (->
-    onum<=omega?
-    (listof #/or/c onum<omega? #/list/c onum<omega? any/c)
-    hypertee?)
+  (degree-and-closing-brackets->hypertee ds degree closing-brackets)
+  (->i
+    (
+      [ds dim-sys?]
+      [degree (ds) (dim-sys-dim/c ds)]
+      [closing-brackets (ds)
+        (listof #/or/c
+          (list/c (dim-sys-dim/c ds) any/c)
+          (dim-sys-dim/c ds))])
+    [_ (ds) (hypertee/c ds)])
   ; TODO: See if we can improve the error messages so that they're
   ; like part of the contract of this procedure instead of being
   ; thrown from inside the `hypertee` constructor.
-  (hypertee degree closing-brackets))
+  (hypertee ds degree closing-brackets))
 
 (define/contract (hypertee->degree-and-closing-brackets ht)
-  (-> hypertee?
-    (list/c onum<=omega?
-    #/listof #/or/c onum<omega? #/list/c onum<omega? any/c))
-  (dissect ht (hypertee d closing-brackets)
+  (->i ([ht hypertee?])
+    [_ (ht)
+      (w- ds (hypertee-dim-sys ht)
+      #/list/c (dim-sys-dim/c ds)
+      #/listof #/or/c
+        (list/c (dim-sys-dim/c ds) any/c)
+        (dim-sys-dim/c ds))])
+  (dissect ht (hypertee ds d closing-brackets)
   #/list d closing-brackets))
 
 ; Takes a hypertee of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its holes the way they are.
 (define/contract (hypertee-promote new-degree ht)
-  (-> onum<=omega? hypertee? hypertee?)
-  (dissect ht (hypertee d closing-brackets)
-  #/mat d 0
+  (->i
+    (
+      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (dissect ht (hypertee ds d closing-brackets)
+  #/if (dim-sys-dim=0? ds d)
     (raise-arguments-error 'hypertee-promote
       "expected ht to be a hypertee of nonzero degree"
       "ht" ht)
-  #/expect (onum<=? d new-degree) #t
+  #/expect (dim-sys-dim<=? ds d new-degree) #t
     (raise-arguments-error 'hypertee-promote
       "expected ht to be a hypertee of degree no greater than new-degree"
       "new-degree" new-degree
       "ht" ht)
-  #/hypertee new-degree closing-brackets))
+  #/hypertee ds new-degree closing-brackets))
 
 ; Takes a nonzero-degree hypertee and returns a `just` of a degree-N
 ; hypertee with the same holes if possible. If this isn't possible
 ; (because some holes in the original are of degree N or greater),
 ; this returns `(nothing)`.
 (define/contract (hypertee-set-degree-maybe new-degree ht)
-  (-> onum<=omega? hypertee? #/maybe/c hypertee?)
-  (dissect ht (hypertee d closing-brackets)
-  #/mat d 0
+  (->i
+    (
+      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
+  (dissect ht (hypertee ds d closing-brackets)
+  #/if (dim-sys-dim=0? ds d)
     (raise-arguments-error 'hypertee-set-degree-maybe
       "expected ht to be a hypertee of nonzero degree"
       "ht" ht)
   #/if
-    (or (onum<=? d new-degree)
+    (or (dim-sys-dim<=? ds d new-degree)
     #/list-all closing-brackets #/fn closing-bracket
       (expect closing-bracket (list d data) #t
-      #/onum<? d new-degree))
-    (just #/hypertee new-degree closing-brackets)
+      #/dim-sys-dim<? ds d new-degree))
+    (just #/hypertee ds new-degree closing-brackets)
     (nothing)))
 
 ; Takes a nonzero-degree hypertee with no holes of degree N or greater
 ; and returns a degree-N hypertee with the same holes.
 (define/contract (hypertee-set-degree new-degree ht)
-  (-> onum<=omega? hypertee? hypertee?)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (expect (hypertee-set-degree-maybe new-degree ht) (just result)
     (error "Expected ht to have no holes of degree new-degree or greater")
     result))
-
-(define/contract (hypertee<omega? v)
-  (-> any/c boolean?)
-  (and (hypertee? v) (onum<omega? #/hypertee-degree v)))
 
 ; Takes a hypertee of any degree N and returns a hypertee of degree
 ; N+1 with all the same degree-less-than-N holes as well as a single
 ; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
-(define/contract (hypertee-contour hole-value ht)
-  (-> any/c hypertee<omega? hypertee?)
-  (dissect ht (hypertee d closing-brackets)
-  #/hypertee (onum-plus d 1)
-  #/cons (list d hole-value)
-  #/list-bind closing-brackets #/fn closing-bracket
-    (list (hypertee-closing-bracket-degree closing-bracket)
-      closing-bracket)))
-
-; Takes a hypertee of any degree N and returns a hypertee of degree
-; 1+N where each hole has been replaced with a one-degree-greater
-; hole. This creates one new hole of degree 0.
-(define/contract (hypertee-tunnel hole-value ht)
-  (-> any/c hypertee? hypertee?)
-  (dissect ht (hypertee d closing-brackets)
-  #/hypertee (onum-plus1 d)
-  #/append
-    (list-map closing-brackets #/fn closing-bracket
-      (mat closing-bracket (list d data)
-        (list (onum-plus1 d) data)
-        (onum-plus1 closing-bracket)))
-    (make-list (length closing-brackets) 0)
-    (list #/list 0 hole-value)))
+(define/contract (hypertee-contour dss hole-value ht)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [hole-value any/c]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect
+    (dim-successors-sys-dim-plus-int dss (hypertee-degree ht) 1)
+    (just succ-d)
+    (raise-arguments-error 'hypertee-contour
+      "expected the given hypertee to be of a degree that had a a successor"
+      "ht" ht)
+  #/hypertee-pure succ-d hole-value ht))
 
 (define/contract (hypertee-drop1 ht)
   (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
@@ -611,20 +638,21 @@
       rev-brackets interpolation-hyperstack))
   (struct-easy (interpolation-state-finished result))
   
-  (dissect ht (hypertee d-root closing-brackets)
+  (dissect ht (hypertee ds d-root closing-brackets)
   #/expect closing-brackets (cons first rest) (nothing)
   #/dissect first (list d-dropped data-dropped)
   #/just #/list data-dropped
   ; NOTE: This special case is necessary. Most of the code below goes
-  ; smoothly for a `d-dropped` equal to `0`, but the fold ends with a
+  ; smoothly for a `d-dropped` equal to 0, but the fold ends with a
   ; location of `(loc-dropped)` instead of `(loc-outside)`.
-  #/mat d-dropped 0 (hypertee 0 #/list)
+  #/if (dim-sys-dim=0? ds d-dropped)
+    (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/w- stack
-    (make-poppable-hyperstack #/olist-build d-root #/dissectfn _
-      (loc-outside))
+    (make-hyperstack ds
+    #/dim-sys-dimlist-uniform ds d-root #/loc-outside)
   #/dissect
-    (poppable-hyperstack-pop stack
-    #/olist-build d-dropped #/dissectfn _
+    (hyperstack-pop stack
+    #/dim-sys-dimlist-uniform ds d-dropped
       (loc-interpolation-uninitialized))
     (list popped-barrier (loc-outside) stack)
   #/w-loop next
@@ -639,8 +667,7 @@
         (interpolation-state-in-progress
           rev-brackets interpolation-hyperstack)
       #/dissect
-        (poppable-hyperstack-pop-n-with-barrier
-          interpolation-hyperstack d)
+        (hyperstack-pop-n-with-barrier interpolation-hyperstack d)
         (list popped-barrier interpolation-hyperstack)
       #/hash-set interpolations i
         (interpolation-state-in-progress
@@ -656,19 +683,20 @@
         (interpolation-state-in-progress
           rev-brackets interpolation-hyperstack)
       #/hash-set interpolations i
-        (mat (poppable-hyperstack-dimension interpolation-hyperstack)
-          0
+        (if
+          (dim-sys-dim=0? ds
+            (hyperstack-dimension interpolation-hyperstack))
           (interpolation-state-finished
-          #/hypertee d-root #/reverse rev-brackets)
+            (hypertee ds d-root #/reverse rev-brackets))
           (interpolation-state-in-progress
             rev-brackets interpolation-hyperstack))))
     
     (expect root-brackets (cons root-bracket root-brackets)
       (dissect hist (list (loc-outside) stack)
-      #/dissect (poppable-hyperstack-dimension stack) 0
+      #/dissect (dim-sys-dim=0? ds #/hyperstack-dimension stack) #t
       ; We look up all the indexes stored in `rev-result` and make a
       ; hypertee out of it.
-      #/hypertee d-dropped #/reverse
+      #/hypertee ds d-dropped #/reverse
       #/list-map rev-result #/fn bracket
         (expect bracket (list d i) bracket
         #/dissect (hash-ref interpolations i)
@@ -678,8 +706,8 @@
     #/dissect hist (list loc stack)
     #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
     #/dissect
-      (poppable-hyperstack-pop stack
-      #/olist-build d-bracket #/dissectfn _ loc)
+      (hyperstack-pop stack
+        (dim-sys-dimlist-uniform ds d-bracket loc))
       (list popped-barrier tentative-new-loc tentative-new-stack)
     #/mat loc (loc-outside)
       (dissect tentative-new-loc (loc-interpolation i d)
@@ -692,7 +720,7 @@
         (next root-brackets
           (hash-set interpolations new-i
             (interpolation-state-in-progress (list)
-              (make-poppable-hyperstack-n d-root)))
+              (make-hyperstack-n ds d-root)))
           (list
             (loc-interpolation new-i closing-bracket)
             tentative-new-stack)
@@ -720,46 +748,75 @@
     #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
 
 (define/contract (hypertee-dv-map-all-degrees ht func)
-  (-> hypertee? (-> onum<omega? any/c any/c) hypertee?)
-  (dissect ht (hypertee degree closing-brackets)
-  #/hypertee degree #/list-map closing-brackets #/fn bracket
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (dissect ht (hypertee ds degree closing-brackets)
+  #/hypertee ds degree #/list-map closing-brackets #/fn bracket
     (expect bracket (list d data) bracket
     #/list d #/func d data)))
 
 (define/contract (hypertee-v-map-one-degree degree ht func)
-  (-> onum<omega? hypertee? (-> any/c any/c) hypertee?)
-  (hypertee-dv-map-all-degrees ht #/fn hole-degree data
-    (if (equal? degree hole-degree)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (-> any/c any/c)])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (w- ds (hypertee-dim-sys ht)
+  #/hypertee-dv-map-all-degrees ht #/fn hole-degree data
+    (if (dim-sys-dim=? ds degree hole-degree)
       (func data)
       data)))
 
-(define/contract (hypertee-v-map-pred-degree degree ht func)
-  (-> onum<=omega? hypertee? (-> any/c any/c) hypertee?)
+(define/contract (hypertee-v-map-pred-degree dss degree ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (-> any/c any/c)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   
-  ; If the degree is 0 or a limit ordinal, we have nothing to do. No
-  ; hole's degree has the given degree as its successor, so there are
-  ; no holes to process.
-  (expect (onum-pred-maybe degree) (just pred-degree) ht
+  ; If the degree is 0 or something like a limit ordinal, we're done.
+  ; No hole's degree has the given degree as its successor, so there
+  ; are no holes to process.
+  (expect (dim-successors-sys-dim-plus-int dss degree -1)
+    (just pred-degree)
+    ht
   
   #/hypertee-v-map-one-degree pred-degree ht func))
 
-(define/contract (hypertee-v-map-highest-degree ht func)
-  (-> hypertee? (-> any/c any/c) hypertee?)
-  (hypertee-v-map-pred-degree (hypertee-degree ht) ht func))
+(define/contract (hypertee-v-map-highest-degree dss ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (-> any/c any/c)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+  (hypertee-v-map-pred-degree dss (hypertee-degree ht) ht func))
 
 (define/contract (hypertee-fold first-nontrivial-d ht func)
-  (->
-    onum<=omega?
-    hypertee?
-    (-> onum<=omega? any/c hypertee<omega? any/c)
-    any/c)
-  (mat (hypertee-degree ht) 0
+  (->i
+    (
+      [first-nontrivial-d (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht)
+        (w- ds (hypertee-dim-sys ht)
+        #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
+    [_ any/c])
+  (w- ds (hypertee-dim-sys ht)
+  #/expect (dim-sys-dim=0? ds #/hypertee-degree ht) #t
     ; TODO: Make this part of the contract instead.
     (error "Expected ht to be a hypertee of degree greater than 0")
   #/dissect (hypertee-drop1 ht) (just #/list data tails)
   #/func first-nontrivial-d data
   #/hypertee-dv-map-all-degrees tails #/fn hole-degree tail
-    (hypertee-fold (onum-max first-nontrivial-d hole-degree) tail
+    (hypertee-fold (dim-sys-dim-max ds first-nontrivial-d hole-degree)
+      tail
       func)))
 
 ; TODO: See if we can simplify the implementation of
@@ -772,18 +829,22 @@
 #;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
-  (mat (hypertee-degree ht) 0 ht
-  #/hypertee-fold 0 ht #/fn first-nontrivial-d suffix tails
+  (w- ds (hypertee-dim-sys ht)
+  #/if (dim-sys-dim=0? ds #/hypertee-degree ht) ht
+  #/hypertee-fold (dim-sys-dim-zero ds) ht
+  #/fn first-nontrivial-d suffix tails
     (w- d (hypertee-degree tails)
-    #/if (onum<? d first-nontrivial-d)
+    #/if (dim-sys-dim<? ds d first-nontrivial-d)
       (dissect suffix (trivial)
       ; TODO: See if this is correct.
-      #/hypertee-plus1 (hypertee-degree ht)
+      #/hypertee-plus1 ds (hypertee-degree ht)
       #/just #/list (trivial) tails)
     #/expect
       (and
         (hypertee? suffix)
-        (onum<? (hypertee-degree tails) (hypertee-degree suffix)))
+        (dim-sys-dim<? ds
+          (hypertee-degree tails)
+          (hypertee-degree suffix)))
       #t
       (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
     #/expect
@@ -799,17 +860,19 @@
 ;
 #;
 (define/contract (hypertee-map-all-degrees ht func)
-  (-> hypertee? (-> hypertee<omega? any/c any/c) hypertee?)
-  (mat (hypertee-degree ht) 0 ht
-  #/hypertee-fold 0 ht #/fn first-nontrivial-d data tails
+  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
+  (w- ds (hypertee-dim-sys ht)
+  #/if (dim-sys-dim=0? ds #/hypertee-degree ht) ht
+  #/hypertee-fold (dim-sys-dim-zero ds) ht
+  #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
-    #/if (onum<? d first-nontrivial-d)
+    #/if (dim-sys-dim<? ds d first-nontrivial-d)
       (dissect data (trivial)
-      #/hypertee-plus1 (hypertee-degree ht)
+      #/hypertee-plus1 ds (hypertee-degree ht)
       #/just #/list (trivial) tails)
     #/w- hole
       (hypertee-dv-map-all-degrees tails #/fn d data #/trivial)
-    #/hypertee-plus1 (hypertee-degree ht)
+    #/hypertee-plus1 ds (hypertee-degree ht)
     #/just #/list (func hole data) tails)))
 
 (define-imitation-simple-struct
@@ -846,14 +909,14 @@
   (struct-easy (state-in-root))
   (struct-easy (state-in-interpolation i))
   
-  (dissect ht (hypertee overall-degree closing-brackets)
+  (dissect ht (hypertee ds overall-degree closing-brackets)
   #/w-loop next
     root-brackets (list-kv-map closing-brackets #/fn k v #/list k v)
     interpolations (make-immutable-hasheq)
     hist
       (list (state-in-root)
-      #/make-pushable-hyperstack
-      #/olist-build overall-degree #/dissectfn _ #/state-in-root)
+      #/make-hyperstack ds
+      #/dim-sys-dimlist-uniform ds overall-degree #/state-in-root)
     rev-result (list)
     
     (define (finish root-brackets interpolations rev-result)
@@ -875,7 +938,7 @@
       ; it's easy to modify this code to log the fully constructed
       ; list of brackets.
       ;
-      (hypertee overall-degree #/reverse rev-result))
+      (hypertee ds overall-degree #/reverse rev-result))
     
     (define (pop-interpolation-bracket interpolations i)
       (expect (hash-ref interpolations i) (cons bracket rest)
@@ -884,7 +947,8 @@
     
     (define (verify-bracket-degree d closing-bracket)
       (unless
-        (equal? d #/hypertee-closing-bracket-degree closing-bracket)
+        (dim-sys-dim=? ds d
+          (hypertee-closing-bracket-degree closing-bracket))
         (raise-arguments-error 'hypertee-join-all-degrees-selective
           "expected each interpolation of a hypertee join to be the right shape for its interpolation context"
           "expected-closing-bracket-degree" d
@@ -905,7 +969,8 @@
         ; hyperstack, we can have a hyperstack of degree other than 0
         ; at the end here. See if there's some other check we should
         ; make. This was an internal error anyway, so maybe not.
-;        (expect (pushable-hyperstack-dimension histories) 0
+;        (expect (dim-sys-dim=0? ds #/hyperstack-dimension histories)
+;          #t
 ;          (error "Internal error: A hypertee join interpolation ran out of brackets before reaching a region of degree 0")
         (begin
         ; The interpolation has no more closing brackets, and we're in
@@ -914,8 +979,7 @@
       #/mat closing-bracket
         (list d #/hypertee-join-selective-non-interpolation data)
         ; We begin a non-interpolation in an interpolation.
-        (w- histories
-          (pushable-hyperstack-push-uniform histories d state)
+        (w- histories (hyperstack-push-uniform histories d state)
         #/w- hist (list state histories)
         #/next root-brackets interpolations hist
           (cons (list d data) rev-result))
@@ -925,11 +989,12 @@
           (error "Expected each hole of a hypertee join interpolation to contain a hypertee-join-selective-interpolation or a hypertee-join-selective-non-interpolation")
         #/list d data)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (onum<? d #/pushable-hyperstack-dimension histories) #t
+      #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories)
+        #t
         (error "Expected each high-degree hole of a hypertee join interpolation to be a hypertee-join-selective-non-interpolation")
       #/dissect
-        (pushable-hyperstack-pop histories
-        #/olist-build d #/dissectfn _ state)
+        (hyperstack-pop histories
+          (dim-sys-dimlist-uniform ds d state))
         (list popped-barrier state histories)
       #/w- hist (list state histories)
       #/mat state (state-in-root)
@@ -972,7 +1037,7 @@
       ; a hyperstack of degree other than 0 at the end here. See if
       ; there's some other check we should make. This was an internal
       ; error anyway, so maybe not.
-;      (expect (pushable-hyperstack-dimension histories) 0
+;      (expect (dim-sys-dim=0? ds #/hyperstack-dimension histories) #t
 ;        (error "Internal error: A hypertee join root ran out of brackets before reaching a region of degree 0")
       (begin
       ; The root has no more closing brackets, and we're in a region
@@ -982,8 +1047,7 @@
     #/mat closing-bracket
       (list d #/hypertee-join-selective-non-interpolation data)
       ; We begin a non-interpolation in the root.
-      (w- histories
-        (pushable-hyperstack-push-uniform histories d state)
+      (w- histories (hyperstack-push-uniform histories d state)
       #/w- hist (list state histories)
       #/next root-brackets interpolations hist
         (cons (list d data) rev-result))
@@ -993,11 +1057,10 @@
         (error "Expected each hole of a hypertee join root to contain a hypertee-join-selective-interpolation or a hypertee-join-selective-non-interpolation")
       #/list d data)
     #/w- d (hypertee-closing-bracket-degree closing-bracket)
-    #/expect (onum<? d #/pushable-hyperstack-dimension histories) #t
+    #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories) #t
       (error "Internal error: Expected the next closing bracket of a hypertee join root to be of a degree less than the current region's degree")
     #/dissect
-      (pushable-hyperstack-pop histories
-      #/olist-build d #/dissectfn _ state)
+      (hyperstack-pop histories #/dim-sys-dimlist-uniform ds d state)
       (list popped-barrier state histories)
     #/expect closing-bracket (list d data)
       (w- hist (list state histories)
@@ -1013,13 +1076,19 @@
         #/begin (verify-bracket-degree d interpolation-bracket)
         #/next root-brackets interpolations hist rev-result))
     ; We begin an interpolation in the root.
-    #/expect data (hypertee data-d data-closing-brackets)
+    #/expect data (hypertee data-ds data-d data-closing-brackets)
       (raise-arguments-error 'hypertee-join-all-degrees-selective
         "expected each hypertee join interpolation to be a hypertee"
         "ht" ht
         "closing-bracket" closing-bracket
         "data" data)
-    #/expect (equal? data-d overall-degree) #t
+    #/expect (dim-sys-accepts? ds data-ds) #t
+      (raise-arguments-error 'hypertee-join-all-degrees-selective
+        "expected each hypertee join interpolation to be a hypertee with a compatible dimension system"
+        "ht" ht
+        "closing-bracket" closing-bracket
+        "data" data)
+    #/expect (dim-sys-dim=? ds data-d overall-degree) #t
       (raise-arguments-error 'hypertee-join-all-degrees-selective
         "expected each hypertee join interpolation to have the same degree as the root"
         "ht" ht
@@ -1031,12 +1100,13 @@
       rev-result)))
 
 (define/contract (hypertee-map-all-degrees ht func)
-  (-> hypertee? (-> hypertee<omega? any/c any/c) hypertee?)
-  (dissect ht (hypertee overall-degree closing-brackets)
+  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
+  (dissect ht (hypertee ds overall-degree closing-brackets)
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for an `overall-degree` equal to `0`, but the loop ends
   ; with a `maybe-current-hole` of `(nothing)`.
-  #/mat overall-degree 0 (hypertee 0 #/list)
+  #/if (dim-sys-dim=0? ds overall-degree)
+    (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/w- result
     (list-kv-map closing-brackets #/fn i closing-bracket
       (expect closing-bracket (list d data) closing-bracket
@@ -1049,31 +1119,32 @@
           (expect closing-bracket (list d data) hole-states
           #/dissect data (list data i)
           #/hash-set hole-states i
-            (list (list) (make-poppable-hyperstack-n d))))
+            (list (list) (make-hyperstack-n ds d))))
         (list (nothing)
-          (make-poppable-hyperstack
-          #/olist-build overall-degree #/dissectfn _ #/nothing)))
+          (make-hyperstack ds
+          #/dim-sys-dimlist-uniform ds overall-degree #/nothing)))
       result
     #/fn state closing-bracket
       (dissect state
         (list hole-states #/list maybe-current-hole histories)
       #/w- d (hypertee-closing-bracket-degree closing-bracket)
-      #/expect (onum<? d #/poppable-hyperstack-dimension histories) #t
+      #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories)
+        #t
         (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
       #/dissect
-        (poppable-hyperstack-pop histories
-        #/olist-build d #/dissectfn _ maybe-current-hole)
+        (hyperstack-pop histories
+          (dim-sys-dimlist-uniform ds d maybe-current-hole))
         (list popped-barrier maybe-restored-hole histories)
       #/w- update-hole-state
         (fn hole-states i
           (dissect (hash-ref hole-states i) (list rev-brackets hist)
-          #/expect (onum<? d #/poppable-hyperstack-dimension hist) #t
+          #/expect (dim-sys-dim<? ds d #/hyperstack-dimension hist) #t
             (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
-          #/w- hist (poppable-hyperstack-pop-n hist d)
+          #/w- hist (hyperstack-pop-n hist d)
           #/hash-set hole-states i
             (list
               (cons
-                (if (equal? d #/poppable-hyperstack-dimension hist)
+                (if (dim-sys-dim=? ds d #/hyperstack-dimension hist)
                   (list d #/trivial)
                   d)
                 rev-brackets)
@@ -1097,51 +1168,90 @@
         (list hole-states #/list (just state) histories)
       #/error "Internal error: Went directly from the root to the root without passing through a hole"))
     (list hole-states #/list maybe-current-hole histories)
-  #/expect (poppable-hyperstack-dimension histories) 0
+  #/expect (dim-sys-dim=0? ds #/hyperstack-dimension histories) #t
     (error "Internal error: Ended hypertee-map-all-degrees without being in a zero-degree region")
   #/expect maybe-current-hole (just i)
     (error "Internal error: Ended hypertee-map-all-degrees without being in a hole")
   #/expect (hash-ref hole-states i) (list (list) state-hist)
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
-  #/expect (poppable-hyperstack-dimension state-hist) 0
+  #/expect (dim-sys-dim=0? ds #/hyperstack-dimension state-hist) #t
     (error "Internal error: Ended hypertee-map-all-degrees without being in the zero-degree hole")
-  #/hypertee overall-degree #/list-map result #/fn closing-bracket
+  #/hypertee ds overall-degree #/list-map result #/fn closing-bracket
     (expect closing-bracket (list d #/list data i) closing-bracket
     #/dissect (hash-ref hole-states i) (list rev-brackets hist)
-    #/expect (poppable-hyperstack-dimension hist) 0
+    #/expect (dim-sys-dim=0? ds #/hyperstack-dimension hist) #t
       (error "Internal error: Failed to exhaust the history of a hole while doing hypertee-map-all-degrees")
-    #/list d (func (hypertee d #/reverse rev-brackets) data))))
+    #/list d (func (hypertee ds d #/reverse rev-brackets) data))))
 
 (define/contract (hypertee-map-one-degree degree ht func)
-  (-> onum<omega? hypertee? (-> hypertee? any/c any/c) hypertee?)
-  (hypertee-map-all-degrees ht #/fn hole data
-    (if (equal? degree #/hypertee-degree hole)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht) (-> (hypertee/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (w- ds (hypertee-dim-sys ht)
+  #/hypertee-map-all-degrees ht #/fn hole data
+    (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
       (func hole data)
       data)))
 
-(define/contract (hypertee-map-pred-degree degree ht func)
-  (-> onum<=omega? hypertee? (-> hypertee? any/c any/c) hypertee?)
+(define/contract (hypertee-map-pred-degree dss degree ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (dss)
+        (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
+          any/c)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   
-  ; If the degree is 0 or a limit ordinal, we have nothing to do. No
-  ; hole's degree has the given degree as its successor, so there are
-  ; no holes to process.
-  (expect (onum-pred-maybe degree) (just pred-degree) ht
+  ; If the degree is 0 or something like a limit ordinal, we're done.
+  ; No hole's degree has the given degree as its successor, so there
+  ; are no holes to process.
+  (expect (dim-successors-sys-dim-plus-int dss degree -1)
+    (just pred-degree)
+    ht
   
   #/hypertee-map-one-degree pred-degree ht func))
 
-(define/contract (hypertee-map-highest-degree ht func)
-  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
-  (hypertee-map-pred-degree (hypertee-degree ht) ht func))
+(define/contract (hypertee-map-highest-degree dss ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (dss)
+        (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
+          any/c)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+  (hypertee-map-pred-degree dss (hypertee-degree ht) ht func))
 
 (define/contract (hypertee-pure degree data hole)
-  (-> onum<=omega? any/c hypertee<omega? hypertee?)
-  (hypertee-promote degree #/hypertee-contour data hole))
+  (->i
+    (
+      [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
+      [data any/c]
+      [hole hypertee?])
+    [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])
+  (dissect hole (hypertee ds old-degree closing-brackets)
+  #/expect (dim-sys-dim<? ds old-degree degree) #t
+    (raise-arguments-error 'hypertee-pure
+      "expected hole to be a hypertee of degree strictly less than the given degree"
+      "degree" degree
+      "hole" hole)
+  #/hypertee ds degree
+  #/cons (list old-degree data)
+  #/list-bind closing-brackets #/fn closing-bracket
+    (list (hypertee-closing-bracket-degree closing-bracket)
+      closing-bracket)))
 
 (define/contract (hypertee-get-hole-zero ht)
   (-> hypertee? maybe?)
-  (dissect ht (hypertee degree closing-brackets)
-  #/mat degree 0 (nothing)
-  #/dissect (reverse closing-brackets) (cons (list 0 data) _)
+  (dissect ht (hypertee ds degree closing-brackets)
+  #/if (dim-sys-dim=0? ds degree) (nothing)
+  #/dissect (reverse closing-brackets) (cons (list d data) _)
+  #/dissect (dim-sys-dim=0? ds d) #t
   #/just data))
 
 ; This takes a hypertee of degree N where each hole value of each
@@ -1153,61 +1263,109 @@
 ;
 (define/contract (hypertee-join-all-degrees ht)
   (-> hypertee? hypertee?)
-  (hypertee-join-all-degrees-selective
+  (w- ds (hypertee-dim-sys ht)
+  #/hypertee-join-all-degrees-selective
   #/hypertee-dv-map-all-degrees ht #/fn root-hole-degree data
     (expect (hypertee? data) #t
       (error "Expected each interpolation of a hypertee join to be a hypertee")
     #/hypertee-join-selective-interpolation
     #/hypertee-dv-map-all-degrees data
     #/fn interpolation-hole-degree data
-      (expect (onum<? interpolation-hole-degree root-hole-degree) #t
+      (expect
+        (dim-sys-dim<? ds interpolation-hole-degree root-hole-degree)
+        #t
         (hypertee-join-selective-non-interpolation data)
       #/hypertee-join-selective-interpolation data))))
 
 (define/contract (hypertee-bind-all-degrees ht hole-to-ht)
-  (-> hypertee? (-> hypertee<omega? any/c hypertee?) hypertee?)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+          (hypertee/c #/hypertee-dim-sys ht))])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
 
 (define/contract (hypertee-bind-one-degree degree ht func)
-  (-> onum<omega? hypertee? (-> hypertee<omega? any/c hypertee?)
-    hypertee?)
-  (hypertee-bind-all-degrees ht #/fn hole data
-    (if (equal? degree #/hypertee-degree hole)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht)
+        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+          (hypertee/c #/hypertee-dim-sys ht))])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (w- ds (hypertee-dim-sys ht)
+  #/hypertee-bind-all-degrees ht #/fn hole data
+    (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-pure (hypertee-degree ht) data hole))))
 
-(define/contract (hypertee-bind-pred-degree degree ht func)
-  (-> onum<=omega? hypertee? (-> hypertee? any/c hypertee?) hypertee?)
+(define/contract (hypertee-bind-pred-degree dss degree ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [ht hypertee?]
+      [func (dss)
+        (w- ds (dim-successors-sys-dim-sys dss)
+        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   
-  ; If the degree is 0 or a limit ordinal, we have nothing to do,
-  ; because no hole's degree has the given degree as its successor, so
-  ; there are no holes to process.
-  (expect (onum-pred-maybe degree) (just pred-degree) ht
+  ; If the degree is 0 or something like a limit ordinal, we're done.
+  ; No hole's degree has the given degree as its successor, so there
+  ; are no holes to process.
+  (expect (dim-successors-sys-dim-plus-int dss degree -1)
+    (just pred-degree)
+    ht
   
   #/hypertee-bind-one-degree pred-degree ht func))
 
-(define/contract (hypertee-bind-highest-degree ht func)
-  (-> hypertee? (-> hypertee? any/c hypertee?) hypertee?)
-  (hypertee-bind-pred-degree (hypertee-degree ht) ht func))
+(define/contract (hypertee-bind-highest-degree dss ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (dss)
+        (w- ds (dim-successors-sys-dim-sys dss)
+        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+  (hypertee-bind-pred-degree dss (hypertee-degree ht) ht func))
 
 (define/contract (hypertee-join-one-degree degree ht)
-  (-> onum<omega? hypertee? hypertee?)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (hypertee-bind-one-degree degree ht #/fn hole data
     data))
 
 (define/contract (hypertee-dv-any-all-degrees ht func)
-  (-> hypertee? (-> onum<omega? any/c any/c) any/c)
-  (dissect ht (hypertee degree closing-brackets)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ any/c])
+  (dissect ht (hypertee ds degree closing-brackets)
   #/list-any closing-brackets #/fn bracket
     (expect bracket (list d data) #f
     #/func d data)))
 
 ; TODO: See if we'll use this.
 (define/contract (hypertee-v-any-one-degree degree ht func)
-  (-> onum<omega? hypertee? (-> any/c any/c) any/c)
-  (hypertee-dv-any-all-degrees ht #/fn d data
-    (and (equal? degree d)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht) (-> any/c any/c)])
+    [_ any/c])
+  (w- ds (hypertee-dim-sys ht)
+  #/hypertee-dv-any-all-degrees ht #/fn d data
+    (and (dim-sys-dim=? ds degree d)
     #/func data)))
 
 (define/contract (hypertee-any-all-degrees ht func)
@@ -1220,8 +1378,13 @@
     #/func hole data)))
 
 (define/contract (hypertee-dv-all-all-degrees ht func)
-  (-> hypertee? (-> onum<omega? any/c any/c) any/c)
-  (dissect ht (hypertee degree closing-brackets)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ any/c])
+  (dissect ht (hypertee ds degree closing-brackets)
   #/list-all closing-brackets #/fn bracket
     (expect bracket (list d data) #t
     #/func d data)))
@@ -1236,16 +1399,27 @@
     #/func hole data)))
 
 (define/contract (hypertee-dv-each-all-degrees ht body)
-  (-> hypertee? (-> onum<omega? any/c any) void?)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any)])
+    [_ void?])
   (hypertee-dv-any-all-degrees ht #/fn d data #/begin
     (body d data)
     #f)
   (void))
 
 (define/contract (hypertee-v-each-one-degree degree ht body)
-  (-> onum<omega? hypertee? (-> any/c any) void?)
-  (hypertee-dv-each-all-degrees ht #/fn d data
-    (when (equal? degree d)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [body (ht) (-> any/c any)])
+    [_ void?])
+  (w- ds (hypertee-dim-sys ht)
+  #/hypertee-dv-each-all-degrees ht #/fn d data
+    (when (dim-sys-dim=? ds degree d)
       (body data))))
 
 (define/contract (hypertee-each-all-degrees ht body)
@@ -1255,26 +1429,32 @@
     #f)
   (void))
 
-(define/contract (hypertee-plus1 degree coil)
-  (-> onum<=omega? (maybe/c #/list/c any/c hypertee?) hypertee?)
+(define/contract (hypertee-plus1 ds degree coil)
+  (->i
+    (
+      [ds dim-sys?]
+      [degree (ds) (dim-sys-dim/c ds)]
+      [coil (ds) (maybe/c #/list/c any/c #/hypertee/c ds)])
+    [_ (ds) (hypertee/c ds)])
   (expect coil (just coil)
-    (expect degree 0
+    (expect (dim-sys-dim=0? ds degree) #t
       (error "Expected the degree to be zero since the coil was nothing")
-    #/hypertee 0 #/list)
-  #/mat degree 0
+    #/hypertee ds (dim-sys-dim-zero ds) #/list)
+  #/if (dim-sys-dim=0? ds degree)
     (error "Expected the degree to be nonzero since the coil wasn't nothing")
   #/dissect coil (list data tails)
-  #/expect (onum<? (hypertee-degree tails) degree) #t
+  #/expect (dim-sys-dim<? ds (hypertee-degree tails) degree) #t
     (error "Expected tails to be a hypertee with degree less than the given degree")
   #/begin
     (hypertee-dv-each-all-degrees tails #/fn d tail
       (unless
-        (and (hypertee? tail) (equal? degree #/hypertee-degree tail))
+        (and (hypertee? tail)
+          (dim-sys-dim=? ds degree #/hypertee-degree tail))
         (error "Expected tails to be a hypertee with hypertees of the given degree in its holes")))
   #/begin
     (hypertee-dv-each-all-degrees tails #/fn d tail
       (hypertee-dv-each-all-degrees tail #/fn d2 data
-        (when (onum<? d2 d)
+        (when (dim-sys-dim<? ds d2 d)
         #/expect data (trivial)
           (error "Expected tails to be a hypertee containing hypertees such that a hypertee in a hole of degree N contained only trivial values at degrees less than N")
         #/void)))
@@ -1284,25 +1464,38 @@
       (trivial))
     tails))
 
-(define/contract (hypertee-contour? v)
-  (-> any/c boolean?)
-  (and (hypertee? v)
-  #/expect (onum-pred-maybe #/hypertee-degree v)
-    (just expected-hole-degree)
-    #f
-  #/w-loop next expected-hole-degree expected-hole-degree v v
-    (dissect (hypertee-drop1 v) (just #/list data tails)
-    #/and (equal? expected-hole-degree #/hypertee-degree tails)
+(define/contract (hypertee-contour? dss ht)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+    [_ boolean?])
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/w- expected-succ-hole-degree (hypertee-degree ht)
+  #/w- is-expected-degree
+    (fn hole-degree
+      (dim-successors-sys-dim=plus-int? dss
+        expected-succ-hole-degree hole-degree 1))
+  #/w-loop next is-expected-degree is-expected-degree ht ht
+    (dissect (hypertee-drop1 ht) (just #/list data tails)
+    #/and (is-expected-degree #/hypertee-degree tails)
     #/hypertee-dv-all-all-degrees tails #/fn d tail
-      (next d tail))))
+      (next (fn d2 #/dim-sys-dim=? ds d d2) tail))))
 
-(define/contract (hypertee-uncontour ht)
-  (-> hypertee? #/maybe/c #/list/c any/c hypertee<omega?)
-  (expect (hypertee-contour? ht) #t (nothing)
+(define/contract (hypertee-uncontour dss ht)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+    [_ (dss)
+      (maybe/c
+      #/list/c any/c #/hypertee/c #/dim-successors-sys-dim-sys dss)])
+  (expect (hypertee-contour? dss ht) #t (nothing)
   #/dissect (hypertee-drop1 ht) (just #/list data tails)
   #/just #/list data #/hypertee-dv-map-all-degrees tails #/fn d data
-    (dissect
-      (hypertee-uncontour #/hypertee-set-degree (onum-plus d 1) data)
+    (dissect (dim-successors-sys-dim-plus-int dss d 1) (just succ-d)
+    #/dissect
+      (hypertee-uncontour dss #/hypertee-set-degree succ-d data)
       (just #/list hole-value ht)
       hole-value)))
 
@@ -1329,11 +1522,11 @@
 ; given predicate.
 (define/contract (hypertee-filter ht should-keep?)
   (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)
-  (dissect ht (hypertee d closing-brackets)
+  (dissect ht (hypertee ds d closing-brackets)
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (should-keep? hole data)
       (hypertee-pure d data hole)
-    #/mat (hypertee-degree hole) 0
+    #/if (dim-sys-dim=0? ds #/hypertee-degree hole)
       (error "Expected should-keep? to accept the degree-zero hole")
       (hypertee-promote d hole))))
 
@@ -1342,26 +1535,35 @@
 ; degree. The given degree must not be greater than the hypertee's
 ; existing degree.
 (define/contract (hypertee-truncate new-degree ht)
-  (-> onum<=omega? hypertee? hypertee?)
-  (dissect ht (hypertee d closing-brackets)
-  #/expect (onum<=? new-degree d) #t
+  (->i
+    (
+      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (dissect ht (hypertee ds d closing-brackets)
+  #/expect (dim-sys-dim<=? ds new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
-  #/mat new-degree 0
+  #/if (dim-sys-dim=0? ds new-degree)
     ; NOTE: Since `hypertee-filter` can't filter out the degree-zero
     ; hole, we treat truncation to degree zero as a special case.
-    (hypertee 0 #/list)
+    (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/dissect
     (hypertee-filter ht #/fn hole data
-      (onum<? (hypertee-degree hole) new-degree))
-    (hypertee d closing-brackets)
-  #/hypertee new-degree closing-brackets))
+      (dim-sys-dim<? ds (hypertee-degree hole) new-degree))
+    (hypertee ds d closing-brackets)
+  #/hypertee ds new-degree closing-brackets))
 
 (define/contract (hypertee-zip a b func)
-  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
-    (maybe/c hypertee?))
-  (dissect a (hypertee d-a closing-brackets-a)
-  #/dissect b (hypertee d-b closing-brackets-b)
-  #/expect (equal? d-a d-b) #t
+  (->i
+    (
+      [a (b) (hypertee/c #/hypertee-dim-sys b)]
+      [b hypertee?]
+      [func (b)
+        (-> (hypertee/c #/hypertee-dim-sys b) any/c any/c any/c)])
+    [_ (b) (maybe/c #/hypertee/c #/hypertee-dim-sys b)])
+  (dissect a (hypertee _ d-a closing-brackets-a)
+  #/dissect b (hypertee ds d-b closing-brackets-b)
+  #/expect (dim-sys-dim=? ds d-a d-b) #t
     (error "Expected hypertees a and b to have the same degree")
   #/expect (= (length closing-brackets-a) (length closing-brackets-b))
     #t
@@ -1379,16 +1581,16 @@
       #/dissect entry (list a b)
       #/mat a (list d-a data-a)
         (mat b (list d-b data-b)
-          (expect (equal? d-a d-b) #t (nothing)
+          (expect (dim-sys-dim=? ds d-a d-b) #t (nothing)
           #/next closing-brackets
             (cons (list d-a #/list data-a data-b) rev-zipped))
           (nothing))
         (mat b (list d-b data-b)
           (nothing)
-          (expect (equal? a b) #t (nothing)
+          (expect (dim-sys-dim=? ds a b) #t (nothing)
           #/next closing-brackets (cons a rev-zipped)))))
   #/fn zipped-closing-brackets
-  #/hypertee-map-all-degrees (hypertee d-a zipped-closing-brackets)
+  #/hypertee-map-all-degrees (hypertee ds d-a zipped-closing-brackets)
   #/fn hole data
     (dissect data (list a b)
     #/func hole a b)))
@@ -1406,12 +1608,16 @@
 
 (define/contract
   (hypertee-dv-fold-map-any-all-degrees state ht on-hole)
-  (->
-    any/c
-    hypertee?
-    (-> any/c onum<omega? any/c #/list/c any/c #/maybe/c any/c)
-    (list/c any/c #/maybe/c hypertee?))
-  (dissect ht (hypertee d closing-brackets)
+  (->i
+    (
+      [state any/c]
+      [ht hypertee?]
+      [on-hole (ht)
+        (-> any/c (dim-sys-dim/c #/hypertee-dim-sys ht) any/c
+          (list/c any/c #/maybe/c any/c))])
+    [_ (ht)
+      (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
+  (dissect ht (hypertee ds d closing-brackets)
   #/dissect
     (list-fold-map-any state closing-brackets #/fn state bracket
       (expect bracket (list d data) (list state #/just bracket)
@@ -1421,7 +1627,7 @@
     (list state maybe-closing-brackets)
   #/list state
     (maybe-map maybe-closing-brackets #/fn closing-brackets
-      (hypertee d closing-brackets))))
+      (hypertee ds d closing-brackets))))
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when certain holes of the
@@ -1429,18 +1635,23 @@
 ; or greater and the holes that don't match the given predicate.
 (define/contract
   (hypertee-zip-selective smaller bigger should-zip? func)
-  (->
-    hypertee?
-    hypertee?
-    (-> hypertee? any/c boolean?)
-    (-> hypertee? any/c any/c any/c)
-    (maybe/c hypertee?))
-  (dissect smaller (hypertee d-smaller closing-brackets-smaller)
-  #/dissect bigger (hypertee d-bigger closing-brackets-bigger)
-  #/expect (onum<=? d-smaller d-bigger) #t
+  (->i
+    (
+      [smaller (bigger) (hypertee/c #/hypertee-dim-sys bigger)]
+      [bigger hypertee?]
+      [should-zip? (bigger)
+        (-> (hypertee/c #/hypertee-dim-sys bigger) any/c
+          boolean?)]
+      [func (bigger)
+        (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
+          any/c)])
+    [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])
+  (dissect smaller (hypertee _ d-smaller closing-brackets-smaller)
+  #/dissect bigger (hypertee ds d-bigger closing-brackets-bigger)
+  #/expect (dim-sys-dim<=? ds d-smaller d-bigger) #t
     (error "Expected smaller to be a hypertee of degree no greater than bigger's degree")
   #/w- prepared-bigger
-    (hypertee d-bigger
+    (hypertee ds d-bigger
     #/list-kv-map closing-brackets-bigger #/fn i bracket
       (expect bracket (list d data) bracket
       #/list d #/list data i))
@@ -1449,7 +1660,7 @@
       (dissect data (list data i)
       #/list data i
         (and
-          (onum<? (hypertee-degree hole) d-smaller)
+          (dim-sys-dim<? ds (hypertee-degree hole) d-smaller)
           (should-zip? hole data))))
   #/w- filtered-bigger
     (hypertee-filter (hypertee-truncate d-smaller prepared-bigger)
@@ -1460,7 +1671,7 @@
     (hypertee-zip smaller filtered-bigger #/fn hole smaller bigger
       (dissect bigger (list data i #t)
         (list (func hole smaller data) i)))
-  #/dissectfn (hypertee zipped-filtered-d zipped-filtered-brackets)
+  #/dissectfn (hypertee _ zipped-filtered-d zipped-filtered-brackets)
   #/w- env
     (list-foldl (make-immutable-hasheq) zipped-filtered-brackets
     #/fn env bracket

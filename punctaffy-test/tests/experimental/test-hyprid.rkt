@@ -1,41 +1,65 @@
 #lang parendown racket/base
 
-; punctaffy/tests/test-hyprid
+; punctaffy/tests/experimental/test-hyprid
 ;
 ; Unit tests of the hyprid data structure for hypersnippet-shaped
 ; data.
+
+;   Copyright 2017-2019 The Lathe Authors
+;
+;   Licensed under the Apache License, Version 2.0 (the "License");
+;   you may not use this file except in compliance with the License.
+;   You may obtain a copy of the License at
+;
+;       http://www.apache.org/licenses/LICENSE-2.0
+;
+;   Unless required by applicable law or agreed to in writing,
+;   software distributed under the License is distributed on an
+;   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+;   either express or implied. See the License for the specific
+;   language governing permissions and limitations under the License.
+
 
 (require rackunit)
 
 (require #/only-in lathe-comforts fn)
 (require #/only-in lathe-comforts/trivial trivial)
 
+(require punctaffy/hypersnippet/hyperstack)
 (require punctaffy/hypersnippet/hypertee)
 (require punctaffy/private/experimental/hyprid)
 
 ; (We provide nothing from this module.)
 
 
-(define make-ht degree-and-closing-brackets->hypertee)
+(define ds (nat-dim-sys))
+(define dss (nat-dim-successors-sys))
+
+(define (make-ht degree closing-brackets)
+  (degree-and-closing-brackets->hypertee ds degree closing-brackets))
 
 
 (check-equal?
   (hyprid-destripe-once
-    (hyprid 1 1
-    #/island-cane "Hello." #/hyprid 1 0 #/make-ht 1 #/list #/list 0
+    (hyprid dss 1 1
+    #/island-cane "Hello."
+    #/hyprid dss 1 0 #/make-ht 1 #/list #/list 0
     #/non-lake-cane #/trivial))
-  (hyprid 2 0 #/make-ht 2 #/list
+  (hyprid dss 2 0 #/make-ht 2 #/list
     (list 0 #/trivial))
   "Destriping a hyprid-encoded interpolated string with no interpolations gives a degree-2 hyprid with no nonzero-degree holes")
 
 (check-equal?
   (hyprid-fully-destripe
-    (hyprid 1 1
-    #/island-cane "Hello, " #/hyprid 1 0 #/make-ht 1 #/list #/list 0
-    #/lake-cane 'name #/make-ht 1 #/list #/list 0
-    #/island-cane "! It's " #/hyprid 1 0 #/make-ht 1 #/list #/list 0
-    #/lake-cane 'weather #/make-ht 1 #/list #/list 0
-    #/island-cane " today." #/hyprid 1 0 #/make-ht 1 #/list #/list 0
+    (hyprid dss 1 1
+    #/island-cane "Hello, "
+    #/hyprid dss 1 0 #/make-ht 1 #/list #/list 0
+    #/lake-cane dss 'name #/make-ht 1 #/list #/list 0
+    #/island-cane "! It's "
+    #/hyprid dss 1 0 #/make-ht 1 #/list #/list 0
+    #/lake-cane dss 'weather #/make-ht 1 #/list #/list 0
+    #/island-cane " today."
+    #/hyprid dss 1 0 #/make-ht 1 #/list #/list 0
     #/non-lake-cane #/trivial))
   (make-ht 2 #/list
     (list 1 'name)
@@ -47,7 +71,7 @@
 
 (check-equal?
   (hyprid-stripe-once
-  #/hyprid 3 0 #/make-ht 3 #/list
+  #/hyprid dss 3 0 #/make-ht 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
@@ -55,9 +79,11 @@
     0
     0
     (list 0 'a))
-  (hyprid 2 1 #/island-cane (trivial) #/hyprid 2 0 #/make-ht 2 #/list
-    (list 1 #/lake-cane 'a #/make-ht 2 #/list
-      (list 1 #/island-cane (trivial) #/hyprid 2 0 #/make-ht 2 #/list
+  (hyprid dss 2 1
+  #/island-cane (trivial) #/hyprid dss 2 0 #/make-ht 2 #/list
+    (list 1 #/lake-cane dss 'a #/make-ht 2 #/list
+      (list 1
+      #/island-cane (trivial) #/hyprid dss 2 0 #/make-ht 2 #/list
         (list 1 #/non-lake-cane 'a)
         0
         (list 0 #/trivial))
@@ -71,7 +97,7 @@
   
   (hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid 3 0 #/make-ht 3 #/list
+  #/hyprid dss 3 0 #/make-ht 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
@@ -82,23 +108,23 @@
   
   ; NOTE: The only reason I was able to write this out was because I
   ; printed the result first and transcribed it.
-  (hyprid 1 2
-  #/island-cane (trivial) #/hyprid 1 1
-  #/island-cane (trivial) #/hyprid 1 0
-  #/make-ht 1 #/list #/list 0 #/lake-cane
-    (lake-cane 'a #/make-ht 2 #/list
+  (hyprid dss 1 2
+  #/island-cane (trivial) #/hyprid dss 1 1
+  #/island-cane (trivial) #/hyprid dss 1 0
+  #/make-ht 1 #/list #/list 0 #/lake-cane dss
+    (lake-cane dss 'a #/make-ht 2 #/list
       (list 1
-      #/island-cane (trivial) #/hyprid 1 1
-      #/island-cane (trivial) #/hyprid 1 0
-      #/make-ht 1 #/list #/list 0 #/lake-cane
+      #/island-cane (trivial) #/hyprid dss 1 1
+      #/island-cane (trivial) #/hyprid dss 1 0
+      #/make-ht 1 #/list #/list 0 #/lake-cane dss
         (non-lake-cane 'a)
       #/make-ht 1 #/list #/list 0
-      #/island-cane (trivial) #/hyprid 1 0
+      #/island-cane (trivial) #/hyprid dss 1 0
       #/make-ht 1 #/list #/list 0 #/non-lake-cane #/trivial)
       0
       (list 0 #/trivial))
   #/make-ht 1 #/list #/list 0
-  #/island-cane (trivial) #/hyprid 1 0
+  #/island-cane (trivial) #/hyprid dss 1 0
   #/make-ht 1 #/list #/list 0 #/non-lake-cane 'a)
   
   "Striping a hyprid twice")
@@ -108,7 +134,7 @@
   #/hyprid-stripe-once
   #/hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid 3 0 #/make-ht 3 #/list
+  #/hyprid dss 3 0 #/make-ht 3 #/list
     (list 2 'a)
     1
     (list 1 'a)
