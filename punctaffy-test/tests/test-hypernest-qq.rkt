@@ -64,13 +64,12 @@
         expanded-expr))))
 
 
-; Altogether, these tests take about 3m01.038s to run (on my machine).
-; [TODO UPDATE: They seem to take only 33s now!]
+; Altogether, these tests take about 39.458s to run (on my machine).
 ;
 ; They run faster if we use `punctaffy-suppress-internal-errors` to
 ; skip all internal calls to `assert-valid-hypertee-brackets` and
 ; `assert-valid-hypernest-coil`. When we do that (by changing
-; `should-suppress-assertions` to `#t`), the tests take about 51.657s.
+; `should-suppress-assertions` to `#t`), the tests take about 26.433s.
 ;
 ; Each test is labeled with the amount of time it takes to run
 ; individually, with and without those `assert-...` passes.
@@ -92,8 +91,8 @@
 ; labeled with that, update them.
 
 
-; Time with assertions:           16.235s  [TODO UPDATE]
-; Time without assertions:         9.988s  [TODO UPDATE]
+; Time with assertions:           19.899s
+; Time without assertions:        11.987s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -109,8 +108,8 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; Time with assertions:         1m12.688s  [TODO UPDATE]
-; Time without assertions:        17.133s  [TODO UPDATE]
+; Time with assertions:           18.094s
+; Time without assertions:        18.119s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -133,8 +132,8 @@
                 (+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; Time with assertions:           59.624s  [TODO UPDATE]
-; Time without assertions:        18.623s  [TODO UPDATE]
+; Time with assertions:           20.466s
+; Time without assertions:        21.376s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -157,8 +156,8 @@
                 (+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; Time with assertions:         1m01.345s  [TODO UPDATE]
-; Time without assertions:        19.327s  [TODO UPDATE]
+; Time with assertions:           21.670s
+; Time without assertions:        21.087s
 ;
 ;#;
 (possibly-suppress-assertions
@@ -187,8 +186,8 @@
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
 
-; Time with assertions:           45.716s  [TODO UPDATE]
-; Time without assertions:        14.983s  [TODO UPDATE]
+; Time with assertions:           17.457s
+; Time without assertions:        21.868s
 ;
 ;#;
 (possibly-suppress-assertions
