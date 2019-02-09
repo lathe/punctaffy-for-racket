@@ -33,13 +33,13 @@
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest-bind-one-degree
-  hypernest-coil-bump hypernest-coil-hole hypernest-contour
-  hypernest-degree hypernest-drop1 hypernest-dv-bind-all-degrees
-  hypernest-get-hole-zero hypernest-join-all-degrees
-  hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
-  hypernest-set-degree hypernest-v-map-one-degree hypernest-zip
-  hypertee->hypernest)
+  degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
+  hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
+  hypernest-contour hypernest-degree hypernest-drop1
+  hypernest-dv-bind-all-degrees hypernest-get-hole-zero
+  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
+  hypernest-promote hypernest-set-degree hypernest-v-map-one-degree
+  hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hyperstack
   dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
   dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-zero nat-dim-successors-sys
@@ -139,15 +139,17 @@
   (w- ds (dim-successors-sys-dim-sys dss)
   #/degree-and-brackets->hypernest ds (n-d dss degree)
   #/list-map brackets #/fn bracket
-    (mat bracket (list 'open d data) (list 'open (n-d dss d) data)
-    #/mat bracket (list d data) (list (n-d dss d) data)
-      (n-d dss bracket))))
+    (mat bracket (hnb-open d data) (hnb-open (n-d dss d) data)
+    #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d dss d) data)
+    #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d dss d))
+    #/hnb-unlabeled (n-d dss bracket))))
 
 (define-for-syntax (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+  (list-foldr hns (n-hn dss degree #/hnb-labeled 0 #/trivial)
+  #/fn hn tail
     (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
@@ -231,34 +233,34 @@
       #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/hypernest-join-all-degrees
       #/n-hn dss 2
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'list)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'list)
         
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'apply)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'apply)
         
-        (list 1 #/n-hn-append0 dss 2
+        (hnb-labeled 1 #/n-hn-append0 dss 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn dss 2
-            (list 'open 0 #/hn-tag-0-s-expr-stx list-beginning)
-          #/list 0 #/trivial))
+            (hnb-open 0 #/hn-tag-0-s-expr-stx list-beginning)
+          #/hnb-labeled 0 #/trivial))
         0
         
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'append)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
         
-        (list 1 #/hn-expr-2->s-expr-generator dss elems)
-        0
-        
-        0
-        
+        (hnb-labeled 1 #/hn-expr-2->s-expr-generator dss elems)
         0
         
         0
-      #/list 0 #/hn-expr-2->s-expr-generator dss tail))
+        
+        0
+        
+        0
+      #/hnb-labeled 0 #/hn-expr-2->s-expr-generator dss tail))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-list* stx-example)
@@ -316,42 +318,42 @@
       #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/hypernest-join-all-degrees
       #/n-hn dss 2
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'list)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'list)
         
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'datum->syntax)
-        (list 'open 0 #/hn-tag-0-s-expr-stx #`#'#,stx-example)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'datum->syntax)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #`#'#,stx-example)
         
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'apply)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'apply)
         
-        (list 1 #/n-hn-append0 dss 2
+        (hnb-labeled 1 #/n-hn-append0 dss 2
         #/list-map list-beginnings #/fn list-beginning
           (n-hn dss 2
-            (list 'open 0 #/hn-tag-0-s-expr-stx list-beginning)
-          #/list 0 #/trivial))
+            (hnb-open 0 #/hn-tag-0-s-expr-stx list-beginning)
+          #/hnb-labeled 0 #/trivial))
         0
         
-        (list 'open 1 #/hn-tag-1-list stx-example)
+        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (list 'open 0 #/hn-tag-0-s-expr-stx #'append)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
         
-        (list 1 #/hn-expr-2->s-expr-stx-generator dss elems)
-        0
-        
-        0
-        
+        (hnb-labeled 1 #/hn-expr-2->s-expr-stx-generator dss elems)
         0
         
         0
         
         0
         
-      #/list 0 #/hn-expr-2->s-expr-stx-generator dss tail))
+        0
+        
+        0
+        
+      #/hnb-labeled 0 #/hn-expr-2->s-expr-stx-generator dss tail))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-list* stx-example)

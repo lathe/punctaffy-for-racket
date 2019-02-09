@@ -31,8 +31,9 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest-bind-one-degree hypernest/c
-  hypernest-promote hypernest-set-degree)
+  degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
+  hypernest-bind-one-degree hypernest/c hypernest-promote
+  hypernest-set-degree)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   dim-successors-sys? dim-successors-sys-dim-plus-int
   dim-successors-sys-dim-sys dim-sys-dim-zero
@@ -187,15 +188,17 @@
   (w- ds (dim-successors-sys-dim-sys dss)
   #/degree-and-brackets->hypernest ds (n-d dss degree)
   #/list-map brackets #/fn bracket
-    (mat bracket (list 'open d data) (list 'open (n-d dss d) data)
-    #/mat bracket (list d data) (list (n-d dss d) data)
-      (n-d dss bracket))))
+    (mat bracket (hnb-open d data) (hnb-open (n-d dss d) data)
+    #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d dss d) data)
+    #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d dss d))
+    #/hnb-unlabeled (n-d dss bracket))))
 
 (define (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+  (list-foldr hns (n-hn dss degree #/hnb-labeled 0 #/trivial)
+  #/fn hn tail
     (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
@@ -347,8 +350,12 @@
       ; return the degree-1 hypernest that results.
       (hypernest-set-degree (n-d dss 1)
       #/hypernest-bind-one-degree (n-d dss 1)
-        (n-hn dss 2 (list 'open 1 metadata) (list 1 #/trivial) 0 0
-        #/list 0 #/trivial)
+        (n-hn dss 2
+          (hnb-open 1 metadata)
+          (hnb-labeled 1 #/trivial)
+          0
+          0
+        #/hnb-labeled 0 #/trivial)
       #/fn hole data
         (hypernest-promote (n-d dss 2)
         #/n-hn-append0 dss 1 elems)))
@@ -396,8 +403,8 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (n-hn dss 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
-      #/list 0 #/trivial)]))
+      (n-hn dss 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      #/hnb-labeled 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-1 hypernest just like `s-expr-stx->hn-expr`, but it expects

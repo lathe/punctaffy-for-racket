@@ -21,8 +21,9 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->i any any/c contract? contract-out list/c listof or/c
-  rename-contract)
+  -> ->i any any/c contract? contract-name contract-out list/c listof
+  or/c rename-contract)
+(require #/only-in racket/contract/combinator coerce-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/struct make-constructor-style-printer)
 
@@ -55,6 +56,22 @@
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
+(provide hnb-open)
+(provide #/contract-out
+  [hnb-open? (-> any/c boolean?)]
+  [hnb-open-degree (-> hnb-open? any/c)]
+  [hnb-open-data (-> hnb-open? any/c)])
+(provide hnb-labeled)
+(provide #/contract-out
+  [hnb-labeled? (-> any/c boolean?)]
+  [hnb-labeled-degree (-> hnb-labeled? any/c)]
+  [hnb-labeled-data (-> hnb-labeled? any/c)])
+(provide hnb-unlabeled)
+(provide #/contract-out
+  [hnb-unlabeled? (-> any/c boolean?)]
+  [hnb-unlabeled-degree (-> hnb-unlabeled? any/c)])
+(provide #/contract-out
+  [hnb/c (-> contract? contract?)])
 (provide
   hypernest-coil-zero
   (contract-out
@@ -168,17 +185,36 @@
       (dim-sys-dim/c ds)
       (hypernest/c ds))))
 
+(define-imitation-simple-struct
+  (hnb-open? hnb-open-degree hnb-open-data)
+  hnb-open
+  'hnb-open (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hnb-labeled? hnb-labeled-degree hnb-labeled-data)
+  hnb-labeled
+  'hnb-labeled (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hnb-unlabeled? hnb-unlabeled-degree)
+  hnb-unlabeled
+  'hnb-unlabeled (current-inspector) (auto-write) (auto-equal))
+
+(define (hnb/c dim/c)
+  (w- dim/c (coerce-contract 'hnb/c dim/c)
+  #/rename-contract
+    (or/c
+      (match/c hnb-open dim/c any/c)
+      (match/c hnb-labeled dim/c any/c)
+      (match/c hnb-unlabeled dim/c))
+    `(hnb/c ,(contract-name dim/c))))
+
 (define/contract (hypernest-bracket-degree bracket)
   ; TODO: Change this representation so we can more decisively
   ; distinguish closing brackets from dimension numbers if the
   ; dimension numbers are represented as lists.
-  (-> (or/c (list/c 'open any/c any/c) (list/c any/c any/c) any/c)
-    any/c)
-  (mat bracket (list 'open d data)
-    d
-  #/mat bracket (list d data)
-    d
-    bracket))
+  (-> (hnb/c any/c) any/c)
+  (mat bracket (hnb-open d data) d
+  #/mat bracket (hnb-labeled d data) d
+  #/dissect bracket (hnb-unlabeled d) d))
 
 ; NOTE: This is a procedure we call only from within this module. It
 ; may seem like a synonym of `hypernest`, but when we're debugging
@@ -193,11 +229,7 @@
     (
       [ds dim-sys?]
       [opening-degree (ds) (dim-sys-dim/c ds)]
-      [hypernest-brackets (ds)
-        (listof #/or/c
-          (list/c 'open (dim-sys-dim/c ds) any/c)
-          (list/c (dim-sys-dim/c ds) any/c)
-          (dim-sys-dim/c ds))])
+      [hypernest-brackets (ds) (listof #/hnb/c #/dim-sys-dim/c ds)])
     [_ (ds) (hypernest/c ds)])
   
   (struct-easy (parent-same-part should-annotate-as-nontrivial))
@@ -223,7 +255,7 @@
     (make-hyperstack ds
     #/dim-sys-dimlist-uniform ds opening-degree #/parent-same-part #t)
   #/dissect
-    (mat first-bracket (list 'open bump-degree data)
+    (mat first-bracket (hnb-open bump-degree data)
       (list
         (fn root-part
           (hypernest-careful ds #/hypernest-coil-bump
@@ -232,7 +264,7 @@
           (dim-sys-dim-max ds opening-degree bump-degree)
           (list))
         (hyperstack-push-uniform stack bump-degree #/parent-new-part))
-    #/mat first-bracket (list hole-degree data)
+    #/mat first-bracket (hnb-labeled hole-degree data)
       (expect (dim-sys-dim<? ds hole-degree opening-degree) #t
         (raise-arguments-error 'degree-and-brackets->hypernest
           "encountered a closing bracket of degree too high for where it occurred, and it was the first bracket"
@@ -296,14 +328,15 @@
             (hypertee-dv-map-all-degrees
               (degree-and-closing-brackets->hypertee ds overall-degree
                 (reverse #/list-map rev-brackets #/fn closing-bracket
-                  (mat closing-bracket (list d data)
+                  (mat closing-bracket (hnb-labeled d data)
                     (htb-labeled d data)
-                  #/htb-unlabeled closing-bracket)))
+                  #/dissect closing-bracket (hnb-unlabeled d)
+                    (htb-unlabeled d))))
             #/fn d data
               (get-subpart d data))))
       #/finish #/get-part root-i)
     
-    #/mat hypernest-bracket (list 'open bump-degree bump-value)
+    #/mat hypernest-bracket (hnb-open bump-degree bump-value)
       (expect current-is-hypernest #t
         (error "Encountered a bump inside a hole")
       #/next
@@ -320,9 +353,10 @@
         current-i
         new-i)
     #/dissect
-      (mat hypernest-bracket (list hole-degree hole-value)
+      (mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         (list hole-degree hole-value)
-        (list hypernest-bracket (trivial)))
+      #/dissect hypernest-bracket (hnb-unlabeled hole-degree)
+        (list hole-degree (trivial)))
       (list hole-degree hole-value)
     #/expect (dim-sys-dim<? ds hole-degree current-d) #t
       (raise-arguments-error 'degree-and-brackets->hypernest
@@ -334,7 +368,7 @@
         "hypernest-brackets" hypernest-brackets)
     #/w- parent (hyperstack-peek-elem stack hole-degree)
     #/begin
-      (mat hypernest-bracket (list hole-degree hole-value)
+      (mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         (expect parent (parent-same-part #t)
           (raise-arguments-error 'degree-and-brackets->hypernest
             "encountered an annotated closing bracket of degree too low for where it occurred"
@@ -361,7 +395,9 @@
         (list _ _ updated-stack)
       #/dissect
         (eq? should-annotate-as-nontrivial
-          (mat hypernest-bracket (list hole-degree hole-value) #t #f))
+          (mat hypernest-bracket (hnb-labeled hole-degree hole-value)
+            #t
+            #f))
         #t
       #/w- parts
         (hash-set parts current-i
@@ -383,7 +419,7 @@
         #/dim-sys-dimlist-uniform ds hole-degree
           (parent-part current-i #t))
         (list _ _ updated-stack)
-      #/mat hypernest-bracket (list hole-degree hole-value)
+      #/mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         ; TODO: Is this really an internal error, or is there some way
         ; to cause it with an incorrect sequence of input brackets?
         (error "Internal error: Expected the beginning of an interpolation to be unannotated")
@@ -396,7 +432,8 @@
             current-first-nontrivial-degree
             current-first-non-interpolation-degree
             current-overall-degree
-            (cons (list hole-degree parent-i) current-rev-brackets)))
+            (cons (hnb-labeled hole-degree parent-i)
+              current-rev-brackets)))
       #/w- parts
         (hash-set parts parent-i
           (part-state #t hole-degree hole-degree
@@ -431,8 +468,8 @@
             current-overall-degree
             (cons
               (if should-annotate-as-trivial
-                (list hole-degree (trivial))
-                hole-degree)
+                (hnb-labeled hole-degree (trivial))
+                (hnb-unlabeled hole-degree))
               current-rev-brackets)))
       #/w- parts
         (hash-set parts parent-i
@@ -441,7 +478,7 @@
             parent-first-nontrivial-degree
             parent-first-non-interpolation-degree
             parent-overall-degree
-            (cons hole-degree parent-rev-brackets)))
+            (cons (hnb-unlabeled hole-degree) parent-rev-brackets)))
       #/next
         hypernest-brackets-remaining
         parts
@@ -547,11 +584,7 @@
     ([hn hypernest?])
     [_ (hn)
       (w- dim/c (dim-sys-dim/c #/hypernest-dim-sys hn)
-      #/list/c dim/c
-      #/listof #/or/c
-        (list/c 'open dim/c any/c)
-        (list/c dim/c any/c)
-        dim/c)])
+      #/list/c dim/c #/listof #/hnb/c dim/c)])
   (dissect hn (hypernest ds coil)
   #/w- interleave
     (fn overall-degree bump-degree tails #/let ()
@@ -614,7 +647,7 @@
             #/finish root-brackets interpolations rev-result)
           #/w- d (hypernest-bracket-degree bracket)
           #/if
-            (mat bracket (list 'open d data) #t
+            (mat bracket (hnb-open d data) #t
               (dim-sys-dim<=? ds (hyperstack-dimension histories) d))
             ; We begin a non-interpolation in an interpolation.
             (w- histories (hyperstack-push-uniform histories d state)
@@ -636,13 +669,13 @@
             (dissect root-brackets
               (cons (list root-bracket-i root-bracket) root-brackets)
             #/begin
-              (mat bracket (list d data)
+              (mat bracket (hnb-labeled d data)
                 (expect data (trivial)
                   (error "Internal error: A hypernest hole or bump had a tail with a low-degree hole where the value wasn't a trivial value")
                 #/void)
               #/void)
             #/next root-brackets interpolations hist
-              (cons d rev-result))
+              (cons (hnb-unlabeled d) rev-result))
           #/dissect state (state-in-interpolation i)
             
             ; We just moved out of a non-interpolation of the
@@ -672,7 +705,7 @@
           #/finish root-brackets interpolations rev-result)
         #/dissect root-bracket (list root-bracket-i bracket)
         #/w- d (hypernest-bracket-degree bracket)
-        #/mat bracket (list 'open _ _)
+        #/mat bracket (hnb-open _ _)
           ; We begin a non-interpolation in the root.
           (w- histories (hyperstack-push-uniform histories d state)
           #/w- hist (list state histories)
@@ -686,7 +719,7 @@
           (hyperstack-pop histories
             (dim-sys-dimlist-uniform ds d state))
           (list popped-barrier state histories)
-        #/expect bracket (list d data)
+        #/expect bracket (hnb-labeled d data)
           (w- hist (list state histories)
           #/mat state (state-in-root)
             ; We just moved out of a non-interpolation of the root, so
@@ -698,7 +731,7 @@
             (dissect (pop-interpolation-bracket interpolations i)
               (list interpolations #/just interpolation-bracket)
             #/next root-brackets interpolations hist
-              (cons d rev-result)))
+              (cons (hnb-unlabeled d) rev-result)))
         ; We begin an interpolation in the root.
         #/expect data (list data-d data-brackets)
           (error "Internal error: Expected each hypernest bump or hole tail to be converted to brackets already")
@@ -711,7 +744,7 @@
         #/next root-brackets
           (hash-set interpolations root-bracket-i data-brackets)
           (list (state-in-interpolation root-bracket-i) histories)
-          (cons d rev-result))))
+          (cons (hnb-unlabeled d) rev-result))))
   #/mat coil (hypernest-coil-zero) (list (dim-sys-dim-zero ds) #/list)
   #/mat coil (hypernest-coil-hole overall-degree data tails)
     (list overall-degree
@@ -720,11 +753,11 @@
       #/hypertee-dv-map-all-degrees tails #/fn d tail
         (hypernest->degree-and-brackets tail))
       (list hole-degree tails)
-    #/cons (list hole-degree data)
+    #/cons (hnb-labeled hole-degree data)
     #/interleave overall-degree hole-degree
     #/list-map tails #/fn closing-bracket
-      (mat closing-bracket (htb-labeled d data) (list d data)
-      #/dissect closing-bracket (htb-unlabeled d) d))
+      (mat closing-bracket (htb-labeled d data) (hnb-labeled d data)
+      #/dissect closing-bracket (htb-unlabeled d) (hnb-unlabeled d)))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (list overall-degree
@@ -735,7 +768,7 @@
           (hypernest->degree-and-brackets data)
           data))
       (list _ tails)
-    #/cons (list 'open bump-degree data)
+    #/cons (hnb-open bump-degree data)
     #/interleave overall-degree bump-degree tails)))
 
 ; Takes a hypernest of any nonzero degree N and upgrades it to any

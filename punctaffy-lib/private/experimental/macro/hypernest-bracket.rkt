@@ -33,12 +33,13 @@
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hypernest-bind-one-degree
-  hypernest-coil-bump hypernest-coil-hole hypernest-contour
-  hypernest-degree hypernest-drop1 hypernest-dv-map-all-degrees
-  hypernest-join-all-degrees hypernest-join-one-degree
-  hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
-  hypernest-set-degree hypernest-truncate-to-hypertee)
+  degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
+  hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
+  hypernest-contour hypernest-degree hypernest-drop1
+  hypernest-dv-map-all-degrees hypernest-join-all-degrees
+  hypernest-join-one-degree hypernest->maybe-hypertee hypernest-plus1
+  hypernest-promote hypernest-set-degree
+  hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
@@ -75,15 +76,17 @@
   (w- ds (dim-successors-sys-dim-sys dss)
   #/degree-and-brackets->hypernest ds (n-d dss degree)
   #/list-map brackets #/fn bracket
-    (mat bracket (list 'open d data) (list 'open (n-d dss d) data)
-    #/mat bracket (list d data) (list (n-d dss d) data)
-      (n-d dss bracket))))
+    (mat bracket (hnb-open d data) (hnb-open (n-d dss d) data)
+    #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d dss d) data)
+    #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d dss d))
+    #/hnb-unlabeled (n-d dss bracket))))
 
 (define-for-syntax (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+  (list-foldr hns (n-hn dss degree #/hnb-labeled 0 #/trivial)
+  #/fn hn tail
     (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
@@ -206,8 +209,8 @@
       ;
       ; TODO: See if we'll ever need to rely on this functionality.
       ;
-      (n-hn dss 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
-      #/list 0 #/trivial)]
+      (n-hn dss 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      #/hnb-labeled 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree (syntax-e #'degree-stx)
   #/w- degree-plus-one (+ degree 1)
@@ -225,12 +228,12 @@
     ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree (n-d dss 1)
     #/n-hn dss degree-plus-one
-      (list 'open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
+      (hnb-open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
       
-      (list 'open 0 #/hn-tag-0-s-expr-stx #'op)
-      (list 'open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
+      (hnb-open 0 #/hn-tag-0-s-expr-stx #'op)
+      (hnb-open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
       
-      (list 1
+      (hnb-labeled 1
       #/hypernest-join-all-degrees
       #/hypernest-contour dss
         (hypernest-contour dss (trivial)
@@ -239,7 +242,7 @@
       #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
         (if (dim-sys-dim=0? ds d)
           (dissect data (trivial)
-          #/n-hn dss degree-plus-one #/list 0 #/trivial)
+          #/n-hn dss degree-plus-one #/hnb-labeled 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
         ; TODO: See if we need this `hypernest-promote` call.
         #/hypernest-promote degree-plus-one
@@ -247,7 +250,7 @@
       0
       
       0
-    #/list 0 #/trivial)
+    #/hnb-labeled 0 #/trivial)
   #/hypertee-contour dss
     ; This is everything inside of the bracket.
     (hypernest-dv-map-all-degrees interior-and-closing-brackets
@@ -258,7 +261,7 @@
   #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
     (if (dim-sys-dim=0? ds d)
       (dissect data (trivial)
-      #/n-hn dss 1 #/list 0 #/trivial)
+      #/n-hn dss 1 #/hnb-labeled 0 #/trivial)
     #/dissect data (list bracket-syntax tail)
       tail)))
 
