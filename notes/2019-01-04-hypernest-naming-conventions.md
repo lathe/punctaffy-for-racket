@@ -13,7 +13,6 @@ At the time of writing, the exports of punctaffy-lib/hypersnippet/hypertee.rkt a
   hypertee-promote
   hypertee-set-degree-maybe
   hypertee-set-degree
-  hypertee<omega?
   hypertee-contour
   hypertee-drop1
   hypertee-dv-map-all-degrees
@@ -59,7 +58,6 @@ And here are the exports from punctaffy-lib/hypersnippet/hypernest.rkt:
   hypernest->degree-and-brackets
   hypernest-promote
   hypernest-set-degree
-  hypernest<omega?
   hypertee->hypernest
   hypernest->maybe-hypertee
   hypernest-truncate-to-hypertee

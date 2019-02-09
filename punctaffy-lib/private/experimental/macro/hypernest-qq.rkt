@@ -40,6 +40,10 @@
   hypernest->maybe-hypertee hypernest-plus1 hypernest-promote
   hypernest-set-degree hypernest-v-map-one-degree hypernest-zip
   hypertee->hypernest)
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hyperstack
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
+  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-zero nat-dim-successors-sys
+  successorless-dim-successors-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-dv-map-all-degrees hypertee-promote
   hypertee-set-degree-maybe hypertee-uncontour
@@ -118,45 +122,65 @@
 ; are typically built around.
 
 
-(define-for-syntax (n-hn degree . brackets)
-  (degree-and-brackets->hypernest degree brackets))
+(define-for-syntax (n-d-maybe dss dim-as-nat)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/dim-successors-sys-dim-plus-int dss (dim-sys-dim-zero ds)
+    dim-as-nat))
 
-(define-for-syntax (n-hn-append0 degree hns)
+(define-for-syntax (n-d dss dim-as-nat)
+  (expect (n-d-maybe dss dim-as-nat) (just dim)
+    (raise-arguments-error 'n-d
+      "expected the given number of successors to exist for the zero dimension"
+      "dss" dss
+      "dim-as-nat" dim-as-nat)
+    dim))
+
+(define-for-syntax (n-hn dss degree . brackets)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/degree-and-brackets->hypernest ds (n-d dss degree)
+  #/list-map brackets #/fn bracket
+    (mat bracket (list 'open d data) (list 'open (n-d dss d) data)
+    #/mat bracket (list d data) (list (n-d dss d) data)
+      (n-d dss bracket))))
+
+(define-for-syntax (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
-    (hypernest-bind-one-degree 0 hn #/fn hole data
+  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+    (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
 
 
-(define-for-syntax (hn-expr->s-expr-stx-list hn)
-  (expect (hypernest-degree hn) 1
+(define-for-syntax (hn-expr->s-expr-stx-list dss hn)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (dim-sys-dim=? ds (hypernest-degree hn) (n-d dss 1)) #t
     (raise-arguments-error 'hn-expr->s-expr-stx-list
       "expected an hn-expr of degree 1"
       "hn" hn)
   #/w- dropped (hypernest-drop1 hn)
-  #/mat dropped (hypernest-coil-hole 1 data tails)
+  #/mat dropped (hypernest-coil-hole _ data tails)
     (expect data (trivial)
       (error "Expected an hn-expr with a trivial value in its degree-0 hole")
     #/list)
-  #/dissect dropped (hypernest-coil-bump 1 data bump-degree tails)
+  #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
   #/mat data (hn-tag-0-s-expr-stx stx)
-    (expect bump-degree 0
+    (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/cons stx #/hn-expr->s-expr-stx-list tails)
+    #/cons stx #/hn-expr->s-expr-stx-list dss tails)
   #/w- process-listlike
     (fn stx-example list->whatever
-      (expect bump-degree 1
+      (expect (dim-sys-dim=? ds bump-degree (n-d dss 1)) #t
         (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
       #/w- elems
-        (hypernest-v-map-one-degree 0 tails #/fn tail #/trivial)
+        (hypernest-v-map-one-degree (n-d dss 0) tails #/fn tail
+          (trivial))
       #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/cons
         (datum->syntax stx-example
-        #/list->whatever #/hn-expr->s-expr-stx-list elems)
-        (hn-expr->s-expr-stx-list tail)))
+          (list->whatever #/hn-expr->s-expr-stx-list dss elems))
+        (hn-expr->s-expr-stx-list dss tail)))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/fn lst lst)
   #/mat data (hn-tag-1-list* stx-example)
@@ -169,42 +193,44 @@
   #/mat data (hn-tag-nest)
     (expect (hypernest->maybe-hypertee tails) (just tails)
       (error "Encountered an hn-tag-nest bump with bumps in it")
-    #/expect (hypertee-uncontour tails)
+    #/expect (hypertee-uncontour dss tails)
       (just #/list bracket-syntax tails-tails)
       (error "Encountered an hn-tag-nest bump which wasn't a contour")
-    #/expect (hypertee-uncontour tails-tails) (just _)
+    #/expect (hypertee-uncontour dss tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
     #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
-(define-for-syntax (hn-expr-2->s-expr-generator hn)
-  (expect (hypernest-degree hn) 2
+(define-for-syntax (hn-expr-2->s-expr-generator dss hn)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (dim-sys-dim=? ds (hypernest-degree hn) (n-d dss 2)) #t
     (error "Expected an hn-expr of degree 2")
   #/w- dropped (hypernest-drop1 hn)
   #/w- process-tails
     (fn tails
       (hypertee-dv-map-all-degrees tails #/fn d tail
-        (hn-expr-2->s-expr-generator tail)))
-  #/mat dropped (hypernest-coil-hole 2 data tails)
-    (hypernest-plus1 #/hypernest-coil-hole 2 data
+        (hn-expr-2->s-expr-generator dss tail)))
+  #/mat dropped (hypernest-coil-hole _ data tails)
+    (hypernest-plus1 ds #/hypernest-coil-hole (n-d dss 2) data
     #/process-tails tails)
-  #/dissect dropped (hypernest-coil-bump 2 data bump-degree tails)
+  #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
   #/mat data (hn-tag-0-s-expr-stx stx)
-    (expect bump-degree 0
+    (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/hypernest-plus1 #/hypernest-coil-bump 2
+    #/hypernest-plus1 ds #/hypernest-coil-bump (n-d dss 2)
       (hn-tag-0-s-expr-stx #`(list '#,stx))
-      0
-    #/hn-expr-2->s-expr-generator tails)
+      (n-d dss 0)
+    #/hn-expr-2->s-expr-generator dss tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
-      (expect bump-degree 1
+      (expect (dim-sys-dim=? ds bump-degree (n-d dss 1)) #t
         (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
       #/w- elems
-        (hypernest-v-map-one-degree 0 tails #/fn tail #/trivial)
+        (hypernest-v-map-one-degree (n-d dss 0) tails #/fn tail
+          (trivial))
       #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/hypernest-join-all-degrees
-      #/n-hn 2
+      #/n-hn dss 2
         (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'list)
@@ -213,9 +239,10 @@
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'apply)
         
-        (list 1 #/n-hn-append0 2
+        (list 1 #/n-hn-append0 dss 2
         #/list-map list-beginnings #/fn list-beginning
-          (n-hn 2 (list 'open 0 #/hn-tag-0-s-expr-stx list-beginning)
+          (n-hn dss 2
+            (list 'open 0 #/hn-tag-0-s-expr-stx list-beginning)
           #/list 0 #/trivial))
         0
         
@@ -223,7 +250,7 @@
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'append)
         
-        (list 1 #/hn-expr-2->s-expr-generator elems)
+        (list 1 #/hn-expr-2->s-expr-generator dss elems)
         0
         
         0
@@ -231,7 +258,7 @@
         0
         
         0
-      #/list 0 #/hn-expr-2->s-expr-generator tail))
+      #/list 0 #/hn-expr-2->s-expr-generator dss tail))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-list* stx-example)
@@ -244,49 +271,51 @@
   #/mat data (hn-tag-nest)
     (expect (hypernest->maybe-hypertee tails) (just tails)
       (error "Encountered an hn-tag-nest bump with bumps in it")
-    #/expect (hypertee-uncontour tails)
+    #/expect (hypertee-uncontour dss tails)
       (just #/list bracket-syntax tails-tails)
       (error "Encountered an hn-tag-nest bump which wasn't a contour")
-    #/expect (hypertee-uncontour tails-tails) (just _)
+    #/expect (hypertee-uncontour dss tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
-    #/hn-expr-2->s-expr-generator
+    #/hn-expr-2->s-expr-generator dss
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
-    #/hypernest-set-degree 2
+    #/hypernest-set-degree (n-d dss 2)
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
-      (hypernest-promote 4 tail))
+      (hypernest-promote (n-d dss 4) tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
-(define-for-syntax (hn-expr-2->s-expr-stx-generator hn)
-  (expect (hypernest-degree hn) 2
+(define-for-syntax (hn-expr-2->s-expr-stx-generator dss hn)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (dim-sys-dim=? ds (hypernest-degree hn) (n-d dss 2)) #t
     (error "Expected an hn-expr of degree 2")
   #/w- dropped (hypernest-drop1 hn)
   #/w- process-tails
     (fn tails
       (hypertee-dv-map-all-degrees tails #/fn d tail
-        (hn-expr-2->s-expr-stx-generator tail)))
-  #/mat dropped (hypernest-coil-hole 2 data tails)
-    (hypernest-plus1 #/hypernest-coil-hole 2 data
+        (hn-expr-2->s-expr-stx-generator dss tail)))
+  #/mat dropped (hypernest-coil-hole _ data tails)
+    (hypernest-plus1 ds #/hypernest-coil-hole (n-d dss 2) data
     #/process-tails tails)
-  #/dissect dropped (hypernest-coil-bump 2 data bump-degree tails)
+  #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
   #/mat data (hn-tag-0-s-expr-stx stx)
-    (expect bump-degree 0
+    (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/hypernest-plus1 #/hypernest-coil-bump 2
+    #/hypernest-plus1 ds #/hypernest-coil-bump (n-d dss 2)
       (hn-tag-0-s-expr-stx #`(list #'#,stx))
-      0
-    #/hn-expr-2->s-expr-stx-generator tails)
+      (n-d dss 0)
+    #/hn-expr-2->s-expr-stx-generator dss tails)
   #/w- process-listlike
     (fn stx-example list-beginnings
-      (expect bump-degree 1
+      (expect (dim-sys-dim=? ds bump-degree (n-d dss 1)) #t
         (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
       #/w- elems
-        (hypernest-v-map-one-degree 0 tails #/fn tail #/trivial)
+        (hypernest-v-map-one-degree (n-d dss 0) tails #/fn tail
+          (trivial))
       #/dissect (hypernest-get-hole-zero tails) (just tail)
       #/hypernest-join-all-degrees
-      #/n-hn 2
+      #/n-hn dss 2
         (list 'open 1 #/hn-tag-1-list stx-example)
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'list)
@@ -300,9 +329,10 @@
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'apply)
         
-        (list 1 #/n-hn-append0 2
+        (list 1 #/n-hn-append0 dss 2
         #/list-map list-beginnings #/fn list-beginning
-          (n-hn 2 (list 'open 0 #/hn-tag-0-s-expr-stx list-beginning)
+          (n-hn dss 2
+            (list 'open 0 #/hn-tag-0-s-expr-stx list-beginning)
           #/list 0 #/trivial))
         0
         
@@ -310,7 +340,7 @@
         
         (list 'open 0 #/hn-tag-0-s-expr-stx #'append)
         
-        (list 1 #/hn-expr-2->s-expr-stx-generator elems)
+        (list 1 #/hn-expr-2->s-expr-stx-generator dss elems)
         0
         
         0
@@ -321,7 +351,7 @@
         
         0
         
-      #/list 0 #/hn-expr-2->s-expr-stx-generator tail))
+      #/list 0 #/hn-expr-2->s-expr-stx-generator dss tail))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-list* stx-example)
@@ -334,62 +364,65 @@
   #/mat data (hn-tag-nest)
     (expect (hypernest->maybe-hypertee tails) (just tails)
       (error "Encountered an hn-tag-nest bump with bumps in it")
-    #/expect (hypertee-uncontour tails)
+    #/expect (hypertee-uncontour dss tails)
       (just #/list bracket-syntax tails-tails)
       (error "Encountered an hn-tag-nest bump which wasn't a contour")
-    #/expect (hypertee-uncontour tails-tails) (just _)
+    #/expect (hypertee-uncontour dss tails-tails) (just _)
       (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
-    #/hn-expr-2->s-expr-stx-generator
+    #/hn-expr-2->s-expr-stx-generator dss
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
-    #/hypernest-set-degree 2
+    #/hypernest-set-degree (n-d dss 2)
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
-      (hypernest-promote 4 tail))
+      (hypernest-promote (n-d dss 4) tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 
 (define-syntax (my-quasiquote stx)
   (syntax-parse stx #/ (_ quotation)
-  #/w- quotation (s-expr-stx->hn-expr #'quotation)
+  #/w- dss (nat-dim-successors-sys)
+  #/w- ds (dim-successors-sys-dim-sys dss)
+  #/w- quotation (s-expr-stx->hn-expr dss #'quotation)
   #/expect (hypernest-drop1 quotation)
     (hypernest-coil-bump overall-degree (hn-tag-nest) bump-degree
       bracket-and-quotation-and-tails)
     (error "Expected a quasiquotation to be of the form (my-quasiquote #/^< ...)")
-  #/expect bump-degree 4
+  #/expect (dim-sys-dim=? ds bump-degree (n-d dss 4)) #t
     (error "Expected a quasiquotation to be of the form (my-quasiquote #/^< 2 ...)")
   #/expect (hypernest->maybe-hypertee bracket-and-quotation-and-tails)
     (just bracket-and-quotation-and-tails)
     (error "Encountered an hn-tag-nest bump with bumps in it")
-  #/expect (hypertee-uncontour bracket-and-quotation-and-tails)
+  #/expect (hypertee-uncontour dss bracket-and-quotation-and-tails)
     (just #/list bracket quotation-and-tails)
     (error "Encountered an hn-tag-nest bump which wasn't a contour")
-  #/expect (hypertee-uncontour quotation-and-tails)
+  #/expect (hypertee-uncontour dss quotation-and-tails)
     (just #/list quotation tails)
     (error "Encountered an hn-tag-nest bump which wasn't a contour of a contour")
   #/begin
-    (hypertee-v-each-one-degree 0 tails #/fn tail
+    (hypertee-v-each-one-degree (n-d dss 0) tails #/fn tail
       ; TODO: See if there's a good way to differentiate these error
       ; messages.
       (expect (hypernest-drop1 tail)
         (hypernest-coil-hole d data tail-tails)
         (error "Encountered more than one degree-0-adjacent piece of data in the root of a quasiquotation")
-      #/expect (hypertee-degree tail-tails) 0
+      #/expect (dim-sys-dim=0? ds #/hypertee-degree tail-tails) #t
         (error "Encountered more than one degree-0-adjacent piece of data in the root of a quasiquotation")
       #/dissect data (trivial)
       #/void))
   #/dissect
-    (hypernest-zip tails (hn-expr-2->s-expr-generator quotation)
+    (hypernest-zip tails (hn-expr-2->s-expr-generator dss quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
-      #/dissect (hypernest-degree tail) 1
-      #/hypernest-promote 2
+      #/dissect (dim-sys-dim=? ds (hypernest-degree tail) (n-d dss 1))
+        #t
+      #/hypernest-promote (n-d dss 2)
         tail))
     (just zipped)
   #/expect
-    (hn-expr->s-expr-stx-list
-    #/hypernest-set-degree 1
-    #/hypernest-join-all-degrees zipped)
+    (hn-expr->s-expr-stx-list dss
+      (hypernest-set-degree (n-d dss 1)
+      #/hypernest-join-all-degrees zipped))
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")
   #/syntax-protect

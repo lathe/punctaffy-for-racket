@@ -5,7 +5,7 @@
 ; A baseline syntax for opening and closing brackets for
 ; hypersnippet-shaped code regions.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -31,8 +31,6 @@
   list-foldr list-map)
 (require #/for-syntax #/only-in lathe-comforts/maybe just)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
-(require #/for-syntax #/only-in lathe-ordinals
-  onum<? onum<=? onum-plus onum-pred-maybe onum-max)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hypernest-bind-one-degree
@@ -44,6 +42,11 @@
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hyperstack
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
+  dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
+  dim-sys-dim-max dim-sys-dim-zero nat-dim-successors-sys
+  successorless-dim-successors-sys)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
   hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-nest
@@ -55,15 +58,33 @@
 
 
 
-(define-for-syntax (n-hn degree . brackets)
-  (degree-and-brackets->hypernest degree brackets))
+(define-for-syntax (n-d-maybe dss dim-as-nat)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/dim-successors-sys-dim-plus-int dss (dim-sys-dim-zero ds)
+    dim-as-nat))
 
-(define-for-syntax (n-hn-append0 degree hns)
+(define-for-syntax (n-d dss dim-as-nat)
+  (expect (n-d-maybe dss dim-as-nat) (just dim)
+    (raise-arguments-error 'n-d
+      "expected the given number of successors to exist for the zero dimension"
+      "dss" dss
+      "dim-as-nat" dim-as-nat)
+    dim))
+
+(define-for-syntax (n-hn dss degree . brackets)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/degree-and-brackets->hypernest ds (n-d dss degree)
+  #/list-map brackets #/fn bracket
+    (mat bracket (list 'open d data) (list 'open (n-d dss d) data)
+    #/mat bracket (list d data) (list (n-d dss d) data)
+      (n-d dss bracket))))
+
+(define-for-syntax (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (list-foldr hns (n-hn degree #/list 0 #/trivial) #/fn hn tail
-    (hypernest-bind-one-degree 0 hn #/fn hole data
+  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+    (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
 
@@ -85,26 +106,32 @@
 ; will be preserved in the result, but we expect it to be a `trivial`
 ; value.
 ;
-(define-for-syntax (unmatched-brackets->holes opening-degree hn-expr)
-  (expect (hypernest-degree hn-expr) 1
+(define-for-syntax
+  (unmatched-brackets->holes dss opening-degree hn-expr)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (n-d-maybe dss 1) (just _)
+    (error "Expected at least 1 successor to exist for the zero dimension")
+  #/expect (dim-sys-dim=? ds (hypernest-degree hn-expr) (n-d dss 1))
+    #t
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w- first-d-not-to-process opening-degree
   #/w-loop next
     hn-expr hn-expr
     target-d opening-degree
-    first-d-to-process 1
+    first-d-to-process (n-d dss 1)
     
     (w- dropped (hypernest-drop1 hn-expr)
     #/mat dropped (hypernest-coil-hole d data tails)
-      (hypernest-plus1 #/hypernest-coil-hole target-d data
+      (hypernest-plus1 ds #/hypernest-coil-hole target-d data
       #/hypertee-dv-map-all-degrees tails #/fn d tail
-        (next tail target-d (onum-max first-d-to-process d)))
+        (next tail target-d
+          (dim-sys-dim-max ds first-d-to-process d)))
     #/dissect dropped
       (hypernest-coil-bump overall-degree data bracket-degree-plus-two
         interior-and-bracket-and-tails)
     #/w- ignore
       (fn
-        (hypernest-plus1 #/hypernest-coil-bump
+        (hypernest-plus1 ds #/hypernest-coil-bump
           target-d
           data
           bracket-degree-plus-two
@@ -113,56 +140,65 @@
           #/fn d tail
             (if
               (and
-                (onum<=? bracket-degree-plus-two d)
-                (onum<? d first-d-to-process))
+                (dim-sys-dim<=? ds bracket-degree-plus-two d)
+                (dim-sys-dim<? ds d first-d-to-process))
               tail
             #/next tail
-              (onum-max target-d d)
-              (onum-max first-d-to-process d)))
-          (onum-max target-d bracket-degree-plus-two)
-          (onum-max first-d-to-process bracket-degree-plus-two)))
+              (dim-sys-dim-max ds target-d d)
+              (dim-sys-dim-max ds first-d-to-process d)))
+          (dim-sys-dim-max ds target-d bracket-degree-plus-two)
+          (dim-sys-dim-max ds
+            first-d-to-process bracket-degree-plus-two)))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
     #/expect
       (and
-        (onum<=?
-          (onum-plus first-d-to-process 2)
-          bracket-degree-plus-two)
-        (onum<?
-          bracket-degree-plus-two
-          (onum-plus first-d-not-to-process 2)))
+        (expect
+          (dim-successors-sys-dim-plus-int dss first-d-to-process 2)
+          (just first-d-to-process-plus-two)
+          ; TODO: See if returning `#f` here is correct.
+          #f
+        #/dim-sys-dim<=? ds
+          first-d-to-process-plus-two bracket-degree-plus-two)
+        (expect
+          (dim-successors-sys-dim-plus-int dss
+            first-d-not-to-process 2)
+          (just first-d-not-to-process-plus-two)
+          ; TODO: See if returning `#f` here is correct.
+          #f
+        #/dim-sys-dim<? ds
+          bracket-degree-plus-two first-d-not-to-process-plus-two))
       #t
       (ignore)
-    #/expect (onum-pred-maybe bracket-degree-plus-two)
+    #/expect
+      (dim-successors-sys-dim-plus-int dss bracket-degree-plus-two -1)
       (just bracket-degree-plus-one)
-      (error "Encountered a matching hn-tag-unmatched-closing-bracket bump of degree 0")
-      ; TODO: Use this error message instead if we ever add support
-      ; for hypertees and hypernests of dimension greater than omega.
-;      (error "Encountered an hn-tag-unmatched-closing-bracket bump of degree N where N was a limit ordinal, rather than a degree-(N + 2) bump for any N")
-    #/expect (onum-pred-maybe bracket-degree-plus-one)
+      (error "Encountered a matching hn-tag-unmatched-closing-bracket bump of a degree that did not have two predecessors (or even one)")
+    #/expect
+      (dim-successors-sys-dim-plus-int dss bracket-degree-plus-one -1)
       (just bracket-degree)
-      (error "Encountered a matching hn-tag-unmatched-closing-bracket bump of degree 1")
-      ; TODO: Use this error message instead if we ever add support
-      ; for hypertees and hypernests of dimension greater than omega.
-;      (error "Encountered an hn-tag-unmatched-closing-bracket bump of degree 1 or a degree-(N + 1) bump where N was a limit ordinal, rather than a degree-(N + 2) bump for any N")
+      (error "Encountered a matching hn-tag-unmatched-closing-bracket bump of a degree that did not have two predecessors (but did have one)")
     #/expect
       (hypernest->maybe-hypertee interior-and-bracket-and-tails)
       (just bracket-and-tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump with a bump in it")
-    #/expect (hypertee-uncontour bracket-and-tails)
+    #/expect (hypertee-uncontour dss bracket-and-tails)
       (just #/list bracket-syntax bracket-interior-and-tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour")
-    #/expect (hypertee-uncontour bracket-interior-and-tails)
+    #/expect (hypertee-uncontour dss bracket-interior-and-tails)
       (just #/list bracket-interior tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour of a contour")
-    #/hypernest-plus1 #/hypernest-coil-hole target-d
+    #/hypernest-plus1 ds #/hypernest-coil-hole target-d
       (list bracket-syntax bracket-interior)
     #/hypertee-dv-map-all-degrees tails #/fn d tail
-      (next tail target-d (onum-max first-d-to-process d)))))
+      (next tail target-d
+        (dim-sys-dim-max ds first-d-to-process d)))))
 
 
 
 (define-for-syntax (helper-for-^<-and-^> stx bump-value)
-  (syntax-parse stx
+  (w- dss (nat-dim-successors-sys)
+  #/w- ds (dim-successors-sys-dim-sys dss)
+  #/syntax-parse stx
     [op:id
       ; If this syntax transformer is used in an identifier position,
       ; we just expand as though the identifier isn't bound to a
@@ -170,23 +206,25 @@
       ;
       ; TODO: See if we'll ever need to rely on this functionality.
       ;
-      (n-hn 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
+      (n-hn dss 1 (list 'open 0 #/hn-tag-0-s-expr-stx stx)
       #/list 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree (syntax-e #'degree-stx)
-  #/w- degree-plus-one (onum-plus degree 1)
-  #/w- degree-plus-two (onum-plus degree 2)
+  #/w- degree-plus-one (+ degree 1)
+  #/w- degree-plus-two (+ degree 2)
   #/w- interior-and-closing-brackets
-    (unmatched-brackets->holes degree #/n-hn-append0 1
+    (unmatched-brackets->holes dss degree
+    #/n-hn-append0 dss 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (s-expr-stx->hn-expr interpolation))
+      (s-expr-stx->hn-expr dss interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
-  #/hypernest-plus1 #/hypernest-coil-bump 1 bump-value degree-plus-two
-  #/hypernest-contour
+  #/hypernest-plus1 ds
+  #/hypernest-coil-bump (n-d dss 1) bump-value degree-plus-two
+  #/hypernest-contour dss
     ; This is the syntax for the bracket itself.
-    (hypernest-join-one-degree 1
-    #/n-hn degree-plus-one
+    (hypernest-join-one-degree (n-d dss 1)
+    #/n-hn dss degree-plus-one
       (list 'open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
       
       (list 'open 0 #/hn-tag-0-s-expr-stx #'op)
@@ -194,15 +232,14 @@
       
       (list 1
       #/hypernest-join-all-degrees
-      #/hypernest-contour
-        (hypernest-contour (trivial)
+      #/hypernest-contour dss
+        (hypernest-contour dss (trivial)
         #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
           (trivial))
       #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
-        (mat d 0
+        (if (dim-sys-dim=0? ds d)
           (dissect data (trivial)
-          #/degree-and-brackets->hypernest degree-plus-one #/list
-          #/list 0 #/trivial)
+          #/n-hn dss degree-plus-one #/list 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
         ; TODO: See if we need this `hypernest-promote` call.
         #/hypernest-promote degree-plus-one
@@ -211,7 +248,7 @@
       
       0
     #/list 0 #/trivial)
-  #/hypertee-contour
+  #/hypertee-contour dss
     ; This is everything inside of the bracket.
     (hypernest-dv-map-all-degrees interior-and-closing-brackets
     #/fn d data
@@ -219,9 +256,9 @@
   ; This is everything after the bracket's closing brackets. These
   ; things are outside of the bracket.
   #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
-    (mat d 0
+    (if (dim-sys-dim=0? ds d)
       (dissect data (trivial)
-      #/n-hn 1 #/list 0 #/trivial)
+      #/n-hn dss 1 #/list 0 #/trivial)
     #/dissect data (list bracket-syntax tail)
       tail)))
 

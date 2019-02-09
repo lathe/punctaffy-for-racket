@@ -2,6 +2,4 @@
 
 (define collection "punctaffy")
 
-(define deps
-  (list
-    "base" "lathe-comforts-lib" "lathe-ordinals-lib" "parendown-lib"))
+(define deps (list "base" "lathe-comforts-lib" "parendown-lib"))

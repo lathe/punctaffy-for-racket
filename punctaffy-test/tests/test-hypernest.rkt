@@ -5,7 +5,7 @@
 ; Unit tests of the hypernest data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -26,26 +26,29 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/hypernest)
+(require punctaffy/hypersnippet/hyperstack)
 (require punctaffy/hypersnippet/hypertee)
 
 ; (We provide nothing from this module.)
 
 
+(define ds (nat-dim-sys))
+
 (define (n-ht degree . brackets)
-  (degree-and-closing-brackets->hypertee degree brackets))
+  (degree-and-closing-brackets->hypertee ds degree brackets))
 
 (define (n-hn degree . brackets)
-  (degree-and-brackets->hypernest degree brackets))
+  (degree-and-brackets->hypernest ds degree brackets))
 
 (define (hnz)
-  (hypernest-plus1 #/hypernest-coil-zero))
+  (hypernest-plus1 ds #/hypernest-coil-zero))
 
 (define (hnh overall-degree data tails-hypertee)
-  (hypernest-plus1
+  (hypernest-plus1 ds
   #/hypernest-coil-hole overall-degree data tails-hypertee))
 
 (define (hnb overall-degree data bump-degree tails-hypertee)
-  (hypernest-plus1
+  (hypernest-plus1 ds
   #/hypernest-coil-bump
     overall-degree data bump-degree tails-hypertee))
 
@@ -94,7 +97,7 @@
 
 (define (db->hn degree-and-brackets)
   (dissect degree-and-brackets (list degree brackets)
-  #/degree-and-brackets->hypernest degree brackets))
+  #/degree-and-brackets->hypernest ds degree brackets))
 
 (define (check-brackets-round-trip sample)
   (check-equal? (hypernest->degree-and-brackets #/db->hn sample)
@@ -110,7 +113,8 @@
 
 (define (check-drop1-round-trip sample)
   (w- sample (db->hn sample)
-  #/check-equal? (hypernest-plus1 #/hypernest-drop1 sample) sample))
+  #/check-equal? (hypernest-plus1 ds #/hypernest-drop1 sample)
+    sample))
 
 (check-drop1-round-trip sample-0)
 (check-drop1-round-trip sample-closing-1)

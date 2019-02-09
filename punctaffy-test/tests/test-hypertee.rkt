@@ -5,7 +5,7 @@
 ; Unit tests of the hypertee data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -26,13 +26,17 @@
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/trivial trivial)
 
+(require punctaffy/hypersnippet/hyperstack)
 (require punctaffy/hypersnippet/hypertee)
 
 ; (We provide nothing from this module.)
 
 
+(define ds (nat-dim-sys))
+(define dss (nat-dim-successors-sys))
+
 (define (n-ht degree . brackets)
-  (degree-and-closing-brackets->hypertee degree brackets))
+  (degree-and-closing-brackets->hypertee ds degree brackets))
 
 
 (define sample-0 (n-ht 0))
@@ -58,7 +62,8 @@
 
 (define (check-drop1-round-trip sample)
   (check-equal?
-    (hypertee-plus1 (hypertee-degree sample) #/hypertee-drop1 sample)
+    (hypertee-plus1 ds (hypertee-degree sample)
+      (hypertee-drop1 sample))
     sample))
 
 (check-drop1-round-trip sample-0)
@@ -99,7 +104,7 @@
 
 (define (check-contour-round-trip sample)
   (check-equal?
-    (hypertee-uncontour #/hypertee-contour 'b sample)
+    (hypertee-uncontour dss #/hypertee-contour dss 'b sample)
     (just #/list 'b sample)))
 
 (check-contour-round-trip sample-0)

@@ -6,7 +6,7 @@
 ; hypersnippet-shaped data using "stripes" of low-dimensional
 ; hypertees.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract/base -> any any/c)
+(require #/only-in racket/contract/base -> ->i any any/c)
+(require #/only-in racket/contract/combinator
+  contract-first-order-passes?)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 
@@ -32,14 +34,14 @@
 (require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
-(require #/only-in lathe-ordinals
-  onum<? 0<onum<omega? onum<omega? onum-plus onum-pred-maybe)
-(require #/only-in lathe-ordinals/olist olist-build)
 
 (require #/only-in punctaffy/hypersnippet/hyperstack
-  make-poppable-hyperstack make-poppable-hyperstack-n
-  poppable-hyperstack-dimension poppable-hyperstack-pop
-  poppable-hyperstack-pop-n)
+  dim-successors-sys? dim-successors-sys-accepts?
+  dim-successors-sys-dim-sys dim-successors-sys-dim-plus-int
+  dim-successors-sys-dim=plus-int? dim-sys-dim<? dim-sys-dim=?
+  dim-sys-dim=0? dim-sys-dim/c dim-sys-dimlist-uniform
+  hyperstack-dimension hyperstack-pop hyperstack-pop-n make-hyperstack
+  make-hyperstack-n)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-pred-degree hypertee-closing-bracket-degree
@@ -66,66 +68,105 @@
 ; TODO: Come up with a better name than "hyprid."
 ;
 (struct-easy
-  (hyprid unstriped-degrees striped-degrees striped-hypertee)
+  (hyprid
+    dim-successors-sys
+    unstriped-degrees striped-degrees striped-hypertee)
   #:equal
   (#:guard-easy
-    (unless (0<onum<omega? unstriped-degrees)
-      (error "Expected unstriped-degrees to be a nonzero ordinal numeral less than omega (i.e. an exact positive integer)"))
+    (define dss dim-successors-sys)
+    (unless (dim-successors-sys? dss)
+      (error "Expected dss to be a dimension successors system"))
+    (define ds (dim-successors-sys-dim-sys dss))
+    ; TODO: Stop calling `contract-first-order-passes?` like this, and
+    ; enforce this part of the contract with `contract-out` instead.
+    (unless
+      (contract-first-order-passes? (dim-sys-dim/c ds)
+        unstriped-degrees)
+      (error "Expected unstriped-degrees to be a dimension number"))
+    ; TODO: See if this is really necessary.
+    (expect (dim-successors-sys-dim-plus-int dss unstriped-degrees -1)
+      (just pred-unstriped-degrees)
+      (error "Expected unstriped-degrees to have a predecessor")
+    #/void)
     (unless (natural? striped-degrees)
       (error "Expected striped-degrees to be a natural number"))
+    (expect
+      (dim-successors-sys-dim-plus-int dss
+        unstriped-degrees striped-degrees)
+      (just total-degrees)
+      (error "Expected unstriped-degrees to have at least as many as striped-degrees successors")
+    #/void)
     (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
       (expect (hypertee? striped-hypertee) #t
         (error "Expected striped-hypertee to be a hypertee since striped-degrees was zero")
       #/dissect
         (hypertee->degree-and-closing-brackets striped-hypertee)
         (list degree closing-brackets)
-      #/unless (equal? unstriped-degrees degree)
+      #/unless (dim-sys-dim=? ds unstriped-degrees degree)
         (error "Expected striped-hypertee to be a hypertee of degree unstriped-degrees"))
       (expect striped-hypertee
         (island-cane data
-        #/hyprid
+        #/hyprid dss
           unstriped-degrees-2 striped-degrees-2 striped-hypertee-2)
         (error "Expected striped-hypertee to be an island-cane since striped-degrees was nonzero")
-      #/expect (equal? unstriped-degrees unstriped-degrees-2) #t
+      #/expect
+        (dim-sys-dim=? ds unstriped-degrees unstriped-degrees-2)
+        #t
         (error "Expected striped-hypertee to be an island-cane of the same unstriped-degrees")
       #/unless (= pred-striped-degrees striped-degrees-2)
         (error "Expected striped-hypertee to be an island-cane of striped-degrees one less")))))
 
 (define/contract (hyprid-degree h)
-  (-> hyprid? onum<omega?)
+  (->i ([h hyprid?])
+    [_ (h)
+      (dim-sys-dim/c #/dim-successors-sys-dim-sys
+      #/hyprid-dim-successors-sys h)])
   (dissect h
-    (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/onum-plus unstriped-degrees striped-degrees))
+    (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
+  #/dissect
+    (dim-successors-sys-dim-plus-int dss
+      unstriped-degrees striped-degrees)
+    (just degree)
+    degree))
 
 (struct-easy (island-cane data rest)
   #:equal
   (#:guard-easy
     (unless (hyprid? rest)
       (error "Expected rest to be a hyprid"))
-    (w- d (hyprid-degree rest)
+    (w- dss (hyprid-dim-successors-sys rest)
+    #/w- ds (dim-successors-sys-dim-sys dss)
+    #/w- d (hyprid-degree rest)
     #/hyprid-dv-each-lake-all-degrees rest #/fn hole-degree data
-      (when (equal? d #/onum-plus hole-degree 1)
-        (mat data (lake-cane data rest)
-          (unless (equal? d #/hypertee-degree rest)
-            (error "Expected data to be of the same degree as the island-cane if it was a lake-cane"))
+      (when (dim-successors-sys-dim=plus-int? dss d hole-degree 1)
+        (mat data (lake-cane lake-dss data rest)
+          (begin
+            (unless (dim-successors-sys-accepts? dss lake-dss)
+              (error "Expected lake-dss to be accepted by dss"))
+            (unless (dim-sys-dim=? ds d #/hypertee-degree rest)
+              (error "Expected data to be of the same degree as the island-cane if it was a lake-cane")))
         #/mat data (non-lake-cane data)
           (void)
         #/error "Expected data to be a lake-cane or a non-lake-cane")))))
 
-(struct-easy (lake-cane data rest)
+(struct-easy (lake-cane dss data rest)
   #:equal
   (#:guard-easy
+    (unless (dim-successors-sys? dss)
+      (error "Expected dss to be a dimension successors system"))
     (unless (hypertee? rest)
       (error "Expected rest to be a hypertee"))
-    (w- d (hypertee-degree rest)
+    (w- ds (dim-successors-sys-dim-sys dss)
+    #/w- d (hypertee-degree rest)
     #/hypertee-dv-each-all-degrees rest #/fn hole-degree data
-      (if (equal? d #/onum-plus hole-degree 1)
+      (if (dim-successors-sys-dim=plus-int? dss d hole-degree 1)
         (expect data (island-cane data rest)
           (error "Expected data to be an island-cane")
-        #/unless (equal? d #/hyprid-degree rest)
+        #/unless (dim-sys-dim=? ds d #/hyprid-degree rest)
           (error "Expected data to be an island-cane of the same degree")
         #/hyprid-dv-each-lake-all-degrees rest #/fn hole-degree data
-          (unless (equal? d #/onum-plus hole-degree 1)
+          (unless
+            (dim-successors-sys-dim=plus-int? dss d hole-degree 1)
           
           ; A root island is allowed to contain arbitrary values in
           ; its low-degree holes, but the low-degree holes of an
@@ -150,25 +191,25 @@
 (define/contract (hyprid-map-lakes-highest-degree h func)
   (-> hyprid? (-> hypertee? any/c any/c) hyprid?)
   (dissect h
-    (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/hyprid unstriped-degrees striped-degrees
+    (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
+  #/hyprid dss unstriped-degrees striped-degrees
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
-    (hypertee-map-highest-degree striped-hypertee func)
+    (hypertee-map-highest-degree dss striped-hypertee func)
   #/dissect striped-hypertee (island-cane data rest)
   #/island-cane data
   #/hyprid-map-lakes-highest-degree rest #/fn hole-hypertee rest
-    (mat rest (lake-cane data rest)
-      (lake-cane
+    (mat rest (lake-cane _ data rest)
+      (lake-cane dss
         (func
-          (hypertee-v-map-highest-degree rest #/fn rest
+          (hypertee-v-map-highest-degree dss rest #/fn rest
             (trivial))
           data)
-      #/hypertee-v-map-highest-degree rest #/fn rest
+      #/hypertee-v-map-highest-degree dss rest #/fn rest
         (dissect
           (hyprid-map-lakes-highest-degree
-            (hyprid unstriped-degrees striped-degrees rest)
+            (hyprid dss unstriped-degrees striped-degrees rest)
             func)
-          (hyprid unstriped-degrees-2 striped-degrees-2 rest)
+          (hyprid _ unstriped-degrees-2 striped-degrees-2 rest)
           rest))
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
@@ -176,27 +217,28 @@
 (define/contract (hyprid-destripe-once h)
   (-> hyprid? hyprid?)
   (dissect h
-    (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/w- succ-unstriped-degrees (onum-plus unstriped-degrees 1)
+    (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
   #/expect (nat->maybe striped-degrees) (just pred-striped-degrees)
     (error "Expected h to be a hyprid with at least one degree of striping")
-  #/hyprid succ-unstriped-degrees pred-striped-degrees
+  #/dissect (dim-successors-sys-dim-plus-int dss unstriped-degrees 1)
+    (just succ-unstriped-degrees)
+  #/hyprid dss succ-unstriped-degrees pred-striped-degrees
   #/dissect striped-hypertee
     (island-cane data
-    #/hyprid unstriped-degrees-2 pred-striped-degrees-2 rest)
+    #/hyprid dss unstriped-degrees-2 pred-striped-degrees-2 rest)
   #/expect (nat->maybe pred-striped-degrees)
     (just pred-pred-striped-degrees)
-    (hypertee-bind-pred-degree unstriped-degrees
+    (hypertee-bind-pred-degree dss unstriped-degrees
       (hypertee-promote succ-unstriped-degrees rest)
     #/fn hole rest
-      (mat rest (lake-cane data rest)
-        (hypertee-bind-pred-degree unstriped-degrees
-          (hypertee-contour data rest)
+      (mat rest (lake-cane _ data rest)
+        (hypertee-bind-pred-degree dss unstriped-degrees
+          (hypertee-contour dss data rest)
         #/fn hole rest
           (dissect
             (hyprid-destripe-once
-            #/hyprid unstriped-degrees striped-degrees rest)
-            (hyprid succ-unstriped-degrees pred-striped-degrees
+              (hyprid dss unstriped-degrees striped-degrees rest))
+            (hyprid _ succ-unstriped-degrees pred-striped-degrees
               destriped-rest)
             destriped-rest))
       #/mat rest (non-lake-cane data)
@@ -206,13 +248,13 @@
   #/w- destriped-rest (hyprid-destripe-once rest)
   #/hyprid-map-lakes-highest-degree destriped-rest
   #/fn hole-hypertee rest
-    (mat rest (lake-cane data rest)
-      (lake-cane data
-      #/hypertee-v-map-highest-degree rest #/fn rest
+    (mat rest (lake-cane _ data rest)
+      (lake-cane dss data
+      #/hypertee-v-map-highest-degree dss rest #/fn rest
         (dissect
           (hyprid-destripe-once
-          #/hyprid unstriped-degrees striped-degrees rest)
-          (hyprid succ-unstriped-degrees pred-striped-degrees
+            (hyprid dss unstriped-degrees striped-degrees rest))
+          (hyprid _ succ-unstriped-degrees pred-striped-degrees
             destriped-rest)
           destriped-rest))
     #/mat rest (non-lake-cane data) (non-lake-cane data)
@@ -221,12 +263,19 @@
 (define/contract (hyprid-fully-destripe h)
   (-> hyprid? hypertee?)
   (dissect h
-    (hyprid unstriped-degrees striped-degrees striped-hypertee)
+    (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
   #/mat striped-degrees 0 striped-hypertee
   #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
 (define/contract (hyprid-dv-each-lake-all-degrees h body)
-  (-> hyprid? (-> onum<omega? any/c any) void?)
+  (->i
+    (
+      [h hyprid?]
+      [body (h)
+        (w- ds
+          (dim-successors-sys-dim-sys #/hyprid-dim-successors-sys h)
+        #/-> (dim-sys-dim/c ds) any/c any)])
+    [_ void?])
   (hypertee-dv-each-all-degrees (hyprid-fully-destripe h) body))
 
 ; This is the inverse of `hyprid-destripe-once`, taking a hyprid and
@@ -265,41 +314,45 @@
   (struct-easy (stripe-state rev-brackets hist))
   
   (dissect h
-    (hyprid unstriped-degrees striped-degrees striped-hypertee)
-  #/dissect (onum-pred-maybe unstriped-degrees)
+    (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
+  #/w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (dim-successors-sys-dim-plus-int dss unstriped-degrees -1)
     (just pred-unstriped-degrees)
-  #/expect (onum-pred-maybe pred-unstriped-degrees)
+    (error "Expected h to be a hyprid with at least two unstriped degrees")
+  #/expect
+    (dim-successors-sys-dim-plus-int dss pred-unstriped-degrees -1)
     (just pred-pred-unstriped-degrees)
     (error "Expected h to be a hyprid with at least two unstriped degrees")
   #/w- succ-striped-degrees (add1 striped-degrees)
-  #/hyprid pred-unstriped-degrees succ-striped-degrees
+  #/hyprid dss pred-unstriped-degrees succ-striped-degrees
   #/expect striped-degrees 0
     (dissect striped-hypertee (island-cane data rest)
     #/w- striped-rest (hyprid-stripe-once rest)
     #/island-cane data
     #/hyprid-map-lakes-highest-degree striped-rest
     #/fn hole-hypertee rest
-      (mat rest (lake-cane data rest)
-        (lake-cane data
-        #/hypertee-v-map-highest-degree rest #/fn rest
+      (mat rest (lake-cane lake-dss data rest)
+        (dissect (dim-successors-sys-accepts? dss lake-dss) #t
+        #/lake-cane dss data
+        #/hypertee-v-map-highest-degree dss rest #/fn rest
           (dissect
             (hyprid-stripe-once
-            #/hyprid unstriped-degrees striped-degrees rest)
-            (hyprid pred-unstriped-degrees succ-striped-degrees
+              (hyprid dss unstriped-degrees striped-degrees rest))
+            (hyprid _ pred-unstriped-degrees succ-striped-degrees
               striped-rest)
             striped-rest))
       #/mat rest (non-lake-cane data) (non-lake-cane data)
       #/error "Internal error"))
   #/dissect (hypertee->degree-and-closing-brackets striped-hypertee)
     (list d closing-brackets)
-  #/expect (equal? d unstriped-degrees) #t
+  #/expect (dim-sys-dim=? ds d unstriped-degrees) #t
     (error "Internal error")
   ; We begin a `stripe-states` entry to place the root island's
   ; brackets in and a loop variable for the overall history.
   #/w- stripe-starting-state
     (w- rev-brackets (list)
     #/stripe-state rev-brackets
-    #/make-poppable-hyperstack-n pred-unstriped-degrees)
+    #/make-hyperstack-n ds pred-unstriped-degrees)
   #/w- root-island-state 'root
   #/w-loop next
     
@@ -312,8 +365,8 @@
     
     hist
     (list (history-info 'root-island #/just root-island-state)
-    #/make-poppable-hyperstack #/olist-build d #/dissectfn _
-      (history-info 'hole #/nothing))
+      (make-hyperstack ds
+      #/dim-sys-dimlist-uniform ds d #/history-info 'hole #/nothing))
     
     (expect closing-brackets (cons closing-bracket closing-brackets)
       ; In the end, we build the root island by accessing its state to
@@ -323,29 +376,33 @@
       (w-loop assemble-island-from-state state root-island-state
         (dissect (hash-ref stripe-states state)
           (stripe-state rev-brackets hist)
-        #/dissect (poppable-hyperstack-dimension hist) 0
+        #/dissect (dim-sys-dim=0? ds #/hyperstack-dimension hist) #t
         
         ; TRIVIAL VALUE NOTE: This is where we put a trivial value
         ; into the new layer of stripe data.
         #/island-cane (trivial)
         
-        #/hyprid pred-unstriped-degrees 0
-        #/degree-and-closing-brackets->hypertee pred-unstriped-degrees
+        #/hyprid dss pred-unstriped-degrees 0
+        #/degree-and-closing-brackets->hypertee ds
+          pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (list d data) closing-bracket
-          #/expect (equal? d pred-pred-unstriped-degrees) #t
+          #/expect (dim-sys-dim=? ds d pred-pred-unstriped-degrees) #t
             closing-bracket
           #/mat data (non-lake-cane data) closing-bracket
           #/mat data (unfinished-lake-cane data rest-state)
             (dissect (hash-ref stripe-states rest-state)
               (stripe-state rev-brackets hist)
-            #/dissect (poppable-hyperstack-dimension hist) 0
-            #/list d #/lake-cane data
-            #/degree-and-closing-brackets->hypertee
+            #/dissect (dim-sys-dim=0? ds #/hyperstack-dimension hist)
+              #t
+            #/list d #/lake-cane dss data
+            #/degree-and-closing-brackets->hypertee ds
               pred-unstriped-degrees
             #/list-map (reverse rev-brackets) #/fn closing-bracket
               (expect closing-bracket (list d data) closing-bracket
-              #/expect (equal? d pred-pred-unstriped-degrees) #t
+              #/expect
+                (dim-sys-dim=? ds d pred-pred-unstriped-degrees)
+                #t
                 closing-bracket
               #/list d #/assemble-island-from-state data))
           #/error "Internal error")))
@@ -359,18 +416,18 @@
         histories-before)
     #/w- d (hypertee-closing-bracket-degree closing-bracket)
     #/expect
-      (onum<? d #/poppable-hyperstack-dimension histories-before)
+      (dim-sys-dim<? ds d #/hyperstack-dimension histories-before)
       #t
       (error "Internal error")
     #/dissect
-      (poppable-hyperstack-pop histories-before
-      #/olist-build d #/dissectfn _
+      (hyperstack-pop histories-before
+      #/dim-sys-dimlist-uniform ds d
         (history-info location-before maybe-state-before))
       (list
         popped-barrier
         (history-info location-after maybe-state-after)
         histories-after)
-    #/if (equal? d pred-unstriped-degrees)
+    #/if (dim-sys-dim=? ds d pred-unstriped-degrees)
       
       ; If we've encountered a closing bracket of the highest degree
       ; the original hypertee can support, we're definitely starting a
@@ -392,14 +449,13 @@
           (stripe-state
             (cons
               (list pred-pred-unstriped-degrees
-              #/unfinished-lake-cane data rest-state)
+                (unfinished-lake-cane data rest-state))
               rev-brackets)
-            (poppable-hyperstack-pop-n
-              hist pred-pred-unstriped-degrees)))
+            (hyperstack-pop-n hist pred-pred-unstriped-degrees)))
       #/next closing-brackets stripe-states
         (list (history-info 'lake #/just rest-state) histories-after))
     
-    #/if (equal? d pred-pred-unstriped-degrees)
+    #/if (dim-sys-dim=? ds d pred-pred-unstriped-degrees)
       
       ; If we've encountered a closing bracket of the highest degree
       ; that a stripe in the result can support, we may be starting an
@@ -419,7 +475,7 @@
           (hash-set stripe-states state
             (stripe-state
               (cons (list d #/non-lake-cane data) rev-brackets)
-              (poppable-hyperstack-pop-n hist d)))
+              (hyperstack-pop-n hist d)))
           (list (history-info 'non-lake #/nothing) histories-after))
         
         ; This bracket is closing an even higher-degree bracket, which
@@ -438,7 +494,7 @@
           (hash-set stripe-states state
             (stripe-state
               (cons (list d new-state) rev-brackets)
-              (poppable-hyperstack-pop-n hist d)))
+              (hyperstack-pop-n hist d)))
         #/next closing-brackets stripe-states
           (list (history-info 'inner-island #/just new-state)
             histories-after)))
@@ -456,12 +512,12 @@
       (expect maybe-state-before (just state) stripe-states
       #/dissect (hash-ref stripe-states state)
         (stripe-state rev-brackets hist)
-      #/w- hist (poppable-hyperstack-pop-n hist d)
+      #/w- hist (hyperstack-pop-n hist d)
       #/hash-set stripe-states state
         (stripe-state
           (cons
             (mat closing-bracket (list d data) closing-bracket
-            #/if (equal? d #/poppable-hyperstack-dimension hist)
+            #/if (dim-sys-dim=? ds d #/hyperstack-dimension hist)
               (list d #/trivial)
               d)
             rev-brackets)
@@ -473,7 +529,7 @@
       #/hash-set stripe-states state
         (stripe-state
           (cons d rev-brackets)
-          (poppable-hyperstack-pop-n hist d)))
+          (hyperstack-pop-n hist d)))
     #/next closing-brackets stripe-states
       (list (history-info location-after maybe-state-after)
         histories-after))))
