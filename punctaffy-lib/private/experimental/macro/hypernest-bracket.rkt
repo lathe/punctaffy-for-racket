@@ -65,7 +65,10 @@
 
 (define-for-syntax (n-d dss dim-as-nat)
   (expect (n-d-maybe dss dim-as-nat) (just dim)
-    (error "Expected the given number of successors to exist for the zero dimension")
+    (raise-arguments-error 'n-d
+      "expected the given number of successors to exist for the zero dimension"
+      "dss" dss
+      "dim-as-nat" dim-as-nat)
     dim))
 
 (define-for-syntax (n-hn dss degree . brackets)
@@ -76,12 +79,11 @@
     #/mat bracket (list d data) (list (n-d dss d) data)
       (n-d dss bracket))))
 
-(define-for-syntax (n-hn-append0 ds degree hns)
+(define-for-syntax (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (w- dss (successorless-dim-successors-sys ds)
-  #/list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
     (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
@@ -179,10 +181,10 @@
       (hypernest->maybe-hypertee interior-and-bracket-and-tails)
       (just bracket-and-tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump with a bump in it")
-    #/expect (hypertee-uncontour bracket-and-tails)
+    #/expect (hypertee-uncontour dss bracket-and-tails)
       (just #/list bracket-syntax bracket-interior-and-tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour")
-    #/expect (hypertee-uncontour bracket-interior-and-tails)
+    #/expect (hypertee-uncontour dss bracket-interior-and-tails)
       (just #/list bracket-interior tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour of a contour")
     #/hypernest-plus1 ds #/hypernest-coil-hole target-d
@@ -212,14 +214,14 @@
   #/w- degree-plus-two (+ degree 2)
   #/w- interior-and-closing-brackets
     (unmatched-brackets->holes dss degree
-    #/n-hn-append0 ds (n-d dss 1)
+    #/n-hn-append0 dss 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (s-expr-stx->hn-expr interpolation))
+      (s-expr-stx->hn-expr dss interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
   #/hypernest-plus1 ds
   #/hypernest-coil-bump (n-d dss 1) bump-value degree-plus-two
-  #/hypernest-contour
+  #/hypernest-contour dss
     ; This is the syntax for the bracket itself.
     (hypernest-join-one-degree (n-d dss 1)
     #/n-hn dss degree-plus-one
@@ -230,8 +232,8 @@
       
       (list 1
       #/hypernest-join-all-degrees
-      #/hypernest-contour
-        (hypernest-contour (trivial)
+      #/hypernest-contour dss
+        (hypernest-contour dss (trivial)
         #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
           (trivial))
       #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
@@ -246,7 +248,7 @@
       
       0
     #/list 0 #/trivial)
-  #/hypertee-contour
+  #/hypertee-contour dss
     ; This is everything inside of the bracket.
     (hypernest-dv-map-all-degrees interior-and-closing-brackets
     #/fn d data

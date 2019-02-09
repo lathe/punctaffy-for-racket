@@ -177,7 +177,10 @@
 
 (define (n-d dss dim-as-nat)
   (expect (n-d-maybe dss dim-as-nat) (just dim)
-    (error "Expected the given number of successors to exist for the zero dimension")
+    (raise-arguments-error 'n-d
+      "expected the given number of successors to exist for the zero dimension"
+      "dss" dss
+      "dim-as-nat" dim-as-nat)
     dim))
 
 (define (n-hn dss degree . brackets)
@@ -188,12 +191,11 @@
     #/mat bracket (list d data) (list (n-d dss d) data)
       (n-d dss bracket))))
 
-(define (n-hn-append0 ds degree hns)
+(define (n-hn-append0 dss degree hns)
   ; When we call this, the elements of `hns` are hypernests of degree
   ; `degree`, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (w- dss (successorless-dim-successors-sys ds)
-  #/list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
+  (list-foldr hns (n-hn dss degree #/list 0 #/trivial) #/fn hn tail
     (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
       (dissect data (trivial)
         tail))))
@@ -286,7 +288,6 @@
     [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
   (expect (n-d-maybe dss 2) (just _)
     (error "Expected at least 2 successors to exist for the zero dimension")
-  #/w- ds (dim-successors-sys-dim-sys dss)
   #/mat
     (syntax-parse stx
       [ (op:id arg ...)
@@ -350,7 +351,7 @@
         #/list 0 #/trivial)
       #/fn hole data
         (hypernest-promote (n-d dss 2)
-        #/n-hn-append0 ds 1 elems)))
+        #/n-hn-append0 dss 1 elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)
@@ -416,8 +417,7 @@
     [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
   (expect (n-d-maybe dss 2) (just _)
     (error "Expected 2 successors to exist for the zero dimension")
-  #/w- ds (dim-successors-sys-dim-sys dss)
-  #/n-hn-append0 ds (n-d dss 1)
+  #/n-hn-append0 dss 1
   #/list-map (syntax->list stx) #/fn elem
     (s-expr-stx->hn-expr dss elem)))
 

@@ -65,6 +65,7 @@
 
 
 ; Altogether, these tests take about 3m01.038s to run (on my machine).
+; [TODO UPDATE: They seem to take only 33s now!]
 ;
 ; They run faster if we use `punctaffy-suppress-internal-errors` to
 ; skip all internal calls to `assert-valid-hypertee-brackets` and
@@ -91,8 +92,8 @@
 ; labeled with that, update them.
 
 
-; Time with assertions:           16.235s
-; Time without assertions:         9.988s
+; Time with assertions:           16.235s  [TODO UPDATE]
+; Time without assertions:         9.988s  [TODO UPDATE]
 ;
 ;#;
 (possibly-suppress-assertions
@@ -108,8 +109,8 @@
         ,(+ 4 5)))
   "The new quasiquote works a lot like the original")
 
-; Time with assertions:         1m12.688s
-; Time without assertions:        17.133s
+; Time with assertions:         1m12.688s  [TODO UPDATE]
+; Time without assertions:        17.133s  [TODO UPDATE]
 ;
 ;#;
 (possibly-suppress-assertions
@@ -132,8 +133,8 @@
                 (+ 4 5))))))
   "The new quasiquote works on data that looks roughly similar to nesting")
 
-; Time with assertions:           59.624s
-; Time without assertions:        18.623s
+; Time with assertions:           59.624s  [TODO UPDATE]
+; Time without assertions:        18.623s  [TODO UPDATE]
 ;
 ;#;
 (possibly-suppress-assertions
@@ -156,8 +157,8 @@
                 (+ 4 5))))))
   "The new quasiquote supports nesting")
 
-; Time with assertions:         1m01.345s
-; Time without assertions:        19.327s
+; Time with assertions:         1m01.345s  [TODO UPDATE]
+; Time without assertions:        19.327s  [TODO UPDATE]
 ;
 ;#;
 (possibly-suppress-assertions
@@ -186,8 +187,8 @@
       k l)
   "The new quasiquote supports nesting even when it's not at the end of a list")
 
-; Time with assertions:           45.716s
-; Time without assertions:        14.983s
+; Time with assertions:           45.716s  [TODO UPDATE]
+; Time without assertions:        14.983s  [TODO UPDATE]
 ;
 ;#;
 (possibly-suppress-assertions
@@ -232,7 +233,7 @@
 (require punctaffy/hypersnippet/hypertee)
 
 (writeln #/hypertee-drop1
-  (degree-and-closing-brackets->hypertee 3 #/list
+  (n-ht (nat-dim-successors-sys) 3
     (list 2 'a)
       1
         (list 2 'b)

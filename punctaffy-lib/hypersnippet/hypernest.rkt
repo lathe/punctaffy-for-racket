@@ -1000,7 +1000,9 @@
         (-> (hypertee/c #/hypernest-dim-sys hn) any/c any/c any/c)])
     [_ (hn) (maybe/c #/hypernest/c #/hypernest-dim-sys hn)])
   (w- ds (hypernest-dim-sys hn)
-  #/expect (dim-sys-dim=? (hypertee-degree ht) (hypernest-degree hn)) #t
+  #/expect
+    (dim-sys-dim=? ds (hypertee-degree ht) (hypernest-degree hn))
+    #t
     (error "Expected the hypertee and the hypernest to have the same degree")
   #/hypernest-zip-low-degrees ht hn func))
 
