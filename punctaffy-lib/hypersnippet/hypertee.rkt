@@ -809,7 +809,7 @@
         #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
     [_ any/c])
   (w- ds (hypertee-dim-sys ht)
-  #/expect (dim-sys-dim=0? ds #/hypertee-degree ht) #t
+  #/expect (dim-sys-dim=0? ds #/hypertee-degree ht) #f
     ; TODO: Make this part of the contract instead.
     (error "Expected ht to be a hypertee of degree greater than 0")
   #/dissect (hypertee-drop1 ht) (just #/list data tails)

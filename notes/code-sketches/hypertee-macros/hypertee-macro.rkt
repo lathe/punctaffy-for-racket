@@ -29,8 +29,9 @@
   just maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
-(require #/only-in lathe-ordinals onum-omega)
 
+(require #/only-in punctaffy/hypersnippet/hyperstack
+  dim-successors-sys-dim-sys extended-nat-dim-successors-sys omega)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee hypertee?
   hypertee-bind-one-degree)
@@ -147,7 +148,9 @@
     (nothing)))
 
 (define (omega-ht . closing-brackets)
-  (degree-and-closing-brackets->hypertee (onum-omega)
+  (w- dss (extended-nat-dim-successors-sys)
+  #/w- ds (dim-successors-sys-dim-sys dss)
+  #/degree-and-closing-brackets->hypertee ds (omega)
     closing-brackets))
 
 (define (omega-ht-append0 hts)

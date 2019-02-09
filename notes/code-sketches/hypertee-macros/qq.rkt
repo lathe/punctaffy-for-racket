@@ -41,13 +41,15 @@
   (require #/only-in lathe-comforts/maybe just maybe/c nothing)
   (require #/only-in lathe-comforts/struct struct-easy)
   (require #/only-in lathe-comforts/trivial trivial)
-  (require #/only-in lathe-ordinals onum<? onum-omega)
   
   (require #/only-in "hypertee-macro.rkt"
     
     ht-tag-1-other ht-tag-1-s-expr-stx ht-tag-2-list ht-tag-2-list*
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
     s-expr-stx->ht-expr simple-ht-builder-syntax)
+  (require #/only-in punctaffy/hypersnippet/hyperstack
+    dim-successors-sys-dim-sys dim-sys-dim<?
+    extended-nat-dim-successors-sys omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
     degree-and-closing-brackets->hypertee hypertee?
     hypertee-bind-one-degree hypertee-degree hypertee-drop1
@@ -59,7 +61,9 @@
   
   
   (define (omega-ht . closing-brackets)
-    (degree-and-closing-brackets->hypertee (onum-omega)
+    (w- dss (extended-nat-dim-successors-sys)
+    #/w- ds (dim-successors-sys-dim-sys dss)
+    #/degree-and-closing-brackets->hypertee ds (omega)
       closing-brackets))
   
   (define (omega-ht-append0 hts)
@@ -138,7 +142,7 @@
       ; degree-1 holes so that those expansions become part of this
       ; expansion directly.
       #/hypertee-join-one-degree 1
-      #/hypertee-pure (onum-omega)
+      #/hypertee-pure (omega)
         (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
           (make-op-bracket stx)
           (hypertee-v-map-one-degree 1 body #/fn data
@@ -153,16 +157,18 @@
           (expect data
             (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
               closing-bracket interpolation)
-            (hypertee-promote (onum-omega) hole)
-          #/hypertee-pure (onum-omega)
+            (hypertee-promote (omega) hole)
+          #/hypertee-pure (omega)
             (s-expr-stx->ht-expr interpolation)
             hole)))))
   
   (define (my-quasiquote-ht-expr->stx ht-expr)
-    (expect
+    (w- dss (extended-nat-dim-successors-sys)
+    #/w- ds (dim-successors-sys-dim-sys dss)
+    #/expect
       (hypertee-fold 1 ht-expr #/fn first-nontrivial-d data tails
         (w- d (hypertee-degree tails)
-        #/w- is-trivial (onum<? d first-nontrivial-d)
+        #/w- is-trivial (dim-sys-dim<? ds d first-nontrivial-d)
         #/begin
           (when is-trivial
             (dissect data (trivial)
@@ -228,7 +234,7 @@
                   (ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
                     closing-bracket)
                   closing-bracket
-                #/hypertee-pure (onum-omega) data hole))
+                #/hypertee-pure (omega) data hole))
             #/w- zip-bracket-ends
               (fn smaller bigger func
                 (hypertee-zip-selective smaller bigger

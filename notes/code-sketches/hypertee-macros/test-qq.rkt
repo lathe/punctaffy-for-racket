@@ -112,7 +112,7 @@
 (require punctaffy/hypersnippet/hypertee)
 
 (writeln #/hypertee-drop1
-  (degree-and-closing-brackets->hypertee 3 #/list
+  (n-ht (nat-dim-successors-sys) 3
     (list 2 'a)
       1
         (list 2 'b)

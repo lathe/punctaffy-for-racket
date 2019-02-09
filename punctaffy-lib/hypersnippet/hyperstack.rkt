@@ -176,6 +176,15 @@
 (provide nat-dim-successors-sys)
 (provide #/contract-out
   [nat-dim-successors-sys? (-> any/c boolean?)])
+(provide omega)
+(provide #/contract-out
+  [omega? (-> any/c boolean?)])
+(provide extended-nat-dim-sys)
+(provide #/contract-out
+  [extended-nat-dim-sys? (-> any/c boolean?)])
+(provide extended-nat-dim-successors-sys)
+(provide #/contract-out
+  [extended-nat-dim-successors-sys? (-> any/c boolean?)])
 
 (provide #/contract-out
   
@@ -416,17 +425,17 @@
         #/just result)))))
 
 ; TODO: See if we'll use these.
-(define-imitation-simple-struct (inf?) inf
-  'inf (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct (omega?) omega
+  'omega (current-inspector) (auto-write) (auto-equal))
 (define-imitation-simple-struct (extended-nat-dim-sys?)
   extended-nat-dim-sys
   'extended-nat-dim-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
-    (fn ds #/or/c natural? inf?)
+    (fn ds #/or/c natural? omega?)
     (fn ds lst
       (w-loop next state 0 rest lst
         (expect rest (cons first rest) state
-        #/mat first (inf) (inf)
+        #/mat first (omega) (omega)
         #/next (max state first) rest)))))
 (define-imitation-simple-struct (extended-nat-dim-successors-sys?)
   extended-nat-dim-successors-sys
@@ -438,7 +447,7 @@
       (fn dss #/extended-nat-dim-sys)
       (fn dss d n
         (mat n 0 d
-        #/mat d (inf) (nothing)
+        #/mat d (omega) (nothing)
         #/w- result (+ d n)
         #/if (< result 0) (nothing)
         #/just result)))))

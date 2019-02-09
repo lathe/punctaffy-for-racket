@@ -81,3 +81,4 @@ script:
   - racket notes/code-sketches/macros2.rkt
   - racket notes/code-sketches/single-phase/tests.rkt
   - racket notes/code-sketches/trees.rkt
+  - racket notes/code-sketches/hypertee-macros/test-qq.rkt
