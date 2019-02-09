@@ -29,7 +29,7 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each hash-ref-maybe)
-(require #/only-in lathe-comforts/list list-kv-map)
+(require #/only-in lathe-comforts/list list-kv-map list-map)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
@@ -45,8 +45,8 @@
   hyperstack-peek-elem hyperstack-pop hyperstack-push-uniform
   make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee hypertee?
-  hypertee-bind-all-degrees hypertee/c hypertee-contour
+  degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
+  hypertee? hypertee-bind-all-degrees hypertee/c hypertee-contour
   hypertee-degree hypertee->degree-and-closing-brackets
   hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
@@ -295,7 +295,10 @@
               (get-subpart d data))
             (hypertee-dv-map-all-degrees
               (degree-and-closing-brackets->hypertee ds overall-degree
-                (reverse rev-brackets))
+                (reverse #/list-map rev-brackets #/fn closing-bracket
+                  (mat closing-bracket (list d data)
+                    (htb-labeled d data)
+                  #/htb-unlabeled closing-bracket)))
             #/fn d data
               (get-subpart d data))))
       #/finish #/get-part root-i)
@@ -718,7 +721,10 @@
         (hypernest->degree-and-brackets tail))
       (list hole-degree tails)
     #/cons (list hole-degree data)
-    #/interleave overall-degree hole-degree tails)
+    #/interleave overall-degree hole-degree
+    #/list-map tails #/fn closing-bracket
+      (mat closing-bracket (htb-labeled d data) (list d data)
+      #/dissect closing-bracket (htb-unlabeled d) d))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (list overall-degree

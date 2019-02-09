@@ -33,8 +33,8 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   dim-successors-sys-dim-sys extended-nat-dim-successors-sys omega)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee hypertee?
-  hypertee-bind-one-degree)
+  degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
+  hypertee? hypertee-bind-one-degree)
 
 (provide
   (struct-out ht-tag-1-s-expr-stx)
@@ -151,13 +151,16 @@
   (w- dss (extended-nat-dim-successors-sys)
   #/w- ds (dim-successors-sys-dim-sys dss)
   #/degree-and-closing-brackets->hypertee ds (omega)
-    closing-brackets))
+  #/list-map closing-brackets #/fn closing-bracket
+    (mat closing-bracket (htb-labeled d data) closing-bracket
+    #/mat closing-bracket (htb-unlabeled d) closing-bracket
+    #/htb-unlabeled closing-bracket)))
 
 (define (omega-ht-append0 hts)
   ; When we call this, the elements of `hts` are degree-omega
   ; hypertees, and their degree-0 holes have trivial values as
   ; contents. We return their degree-0 concatenation.
-  (list-foldr hts (omega-ht #/list 0 #/trivial) #/fn ht tail
+  (list-foldr hts (omega-ht #/htb-labeled 0 #/trivial) #/fn ht tail
     (hypertee-bind-one-degree 0 ht #/fn hole data
       (dissect data (trivial)
         tail))))
@@ -239,10 +242,10 @@
       ; return the degree-omega hypertee that results.
       (hypertee-bind-one-degree 1
         (omega-ht
-          (list 2 metadata)
-            1 (list 1 #/trivial) 0 0
+          (htb-labeled 2 metadata)
+            1 (htb-labeled 1 #/trivial) 0 0
           0
-        #/list 0 #/trivial)
+        #/htb-labeled 0 #/trivial)
       #/fn hole data
         (omega-ht-append0 elems)))
   
@@ -289,8 +292,8 @@
       ; `stx` itself (perhaps put in some kind of container so that it
       ; can be distinguished from degree-1 holes that a user-defined
       ; syntax introduces for a different reason).
-      (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
-      #/list 0 #/trivial)]))
+      (omega-ht (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+      #/htb-labeled 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it

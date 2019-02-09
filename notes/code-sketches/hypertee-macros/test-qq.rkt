@@ -113,17 +113,17 @@
 
 (writeln #/hypertee-drop1
   (n-ht (nat-dim-successors-sys) 3
-    (list 2 'a)
+    (htb-labeled 2 'a)
       1
-        (list 2 'b)
-          (list 1 'c1)
+        (htb-labeled 2 'b)
+          (htb-labeled 1 'c1)
           0
-          (list 1 'c2)
+          (htb-labeled 1 'c2)
           0
         0
-        (list 1 'c3)
+        (htb-labeled 1 'c3)
         0
       0
     0
-  #/list 0 'end))
+  #/htb-labeled 0 'end))
 |#

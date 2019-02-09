@@ -37,7 +37,7 @@
   (require #/only-in syntax/parse expr id syntax-parse)
   
   (require #/only-in lathe-comforts dissect expect fn mat w-)
-  (require #/only-in lathe-comforts/list list-foldr)
+  (require #/only-in lathe-comforts/list list-foldr list-map)
   (require #/only-in lathe-comforts/maybe just maybe/c nothing)
   (require #/only-in lathe-comforts/struct struct-easy)
   (require #/only-in lathe-comforts/trivial trivial)
@@ -51,8 +51,8 @@
     dim-successors-sys-dim-sys dim-sys-dim<?
     extended-nat-dim-successors-sys omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
-    degree-and-closing-brackets->hypertee hypertee?
-    hypertee-bind-one-degree hypertee-degree hypertee-drop1
+    degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
+    hypertee? hypertee-bind-one-degree hypertee-degree hypertee-drop1
     hypertee-fold hypertee-join-one-degree hypertee-promote
     hypertee-pure hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
@@ -64,13 +64,16 @@
     (w- dss (extended-nat-dim-successors-sys)
     #/w- ds (dim-successors-sys-dim-sys dss)
     #/degree-and-closing-brackets->hypertee ds (omega)
-      closing-brackets))
+    #/list-map closing-brackets #/fn closing-bracket
+      (mat closing-bracket (htb-labeled d data) closing-bracket
+      #/mat closing-bracket (htb-unlabeled d) closing-bracket
+      #/htb-unlabeled closing-bracket)))
   
   (define (omega-ht-append0 hts)
     ; When we call this, the elements of `hts` are degree-omega
     ; hypertees, and their degree-0 holes have trivial values as
     ; contents. We return their degree-0 concatenation.
-    (list-foldr hts (omega-ht #/list 0 #/trivial) #/fn ht tail
+    (list-foldr hts (omega-ht #/htb-labeled 0 #/trivial) #/fn ht tail
       (hypertee-bind-one-degree 0 ht #/fn hole data
         (dissect data (trivial)
           tail))))
@@ -93,15 +96,15 @@
   (define (make-op-bracket call-stx)
     (syntax-parse call-stx #/ (op body)
     #/omega-ht
-      (list 2 #/ht-tag-2-list #/datum->syntax call-stx #/list)
+      (htb-labeled 2 #/ht-tag-2-list #/datum->syntax call-stx #/list)
       1
-      (list 1 #/ht-tag-1-s-expr-stx #'op)
+      (htb-labeled 1 #/ht-tag-1-s-expr-stx #'op)
       0
-      (list 1 #/ht-tag-1-other #/bracket-tag-1-end)
+      (htb-labeled 1 #/ht-tag-1-other #/bracket-tag-1-end)
       0
       0
       0
-    #/list 0 #/trivial))
+    #/htb-labeled 0 #/trivial))
   
   (define my-quasiquote-uq
     (simple-ht-builder-syntax #/fn stx
@@ -113,16 +116,16 @@
           ; makes it possible to nest `(my-quasiquote uq #/qq ...)`
           ; within itself, without the inner `uq` being treated as a
           ; closing bracket.
-          (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
-          #/list 0 #/trivial)]
+          (omega-ht (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+          #/htb-labeled 0 #/trivial)]
       #/ (op interpolation)
       #/omega-ht
-        (list 1
+        (htb-labeled 1
         #/ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
           (make-op-bracket stx)
           #'interpolation)
         0
-      #/list 0 #/trivial)))
+      #/htb-labeled 0 #/trivial)))
   
   (define my-quasiquote-qq
     (simple-ht-builder-syntax #/fn stx
@@ -131,8 +134,8 @@
           ; If this syntax transformer is used in an identifier
           ; position, we just expand as though the identifier isn't
           ; bound to a syntax transformer at all.
-          (omega-ht (list 1 #/ht-tag-1-s-expr-stx stx) 0
-          #/list 0 #/trivial)]
+          (omega-ht (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+          #/htb-labeled 0 #/trivial)]
       #/ (op body)
       #/w- body (s-expr-stx->ht-expr #'body)
       ; We make a hypertee with a single degree-2 hole (annotated with
@@ -278,8 +281,8 @@
               (my-quasiquote-ht-expr->stx body-and-tails)
             #/expect
               (zip-bracket-ends
-                (omega-ht (list 1 body-and-tails) 0
-                #/list 0 #/trivial)
+                (omega-ht (htb-labeled 1 body-and-tails) 0
+                #/htb-labeled 0 #/trivial)
                 opening-bracket
               #/fn body-and-tails
                 (ht-tag-1-other #/my-quasiquote-tag-1-expanded-expr

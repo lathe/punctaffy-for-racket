@@ -22,7 +22,8 @@
 
 (require rackunit)
 
-(require #/only-in lathe-comforts dissect fn w-)
+(require #/only-in lathe-comforts dissect fn mat w-)
+(require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/hypernest)
@@ -35,7 +36,11 @@
 (define ds (nat-dim-sys))
 
 (define (n-ht degree . brackets)
-  (degree-and-closing-brackets->hypertee ds degree brackets))
+  (degree-and-closing-brackets->hypertee ds degree
+  #/list-map brackets #/fn bracket
+    (mat bracket (htb-labeled d data) bracket
+    #/mat bracket (htb-unlabeled d) bracket
+    #/htb-unlabeled bracket)))
 
 (define (n-hn degree . brackets)
   (degree-and-brackets->hypernest ds degree brackets))
@@ -127,12 +132,12 @@
     ; `(hypernest-drop1 #/db->hn sample-closing-3)`. Make sure it's
     ; correct.
     (n-ht 2
-      (list 1 #/n-hn 3
+      (htb-labeled 1 #/n-hn 3
         (list 1 'a)
         0
       #/list 0 #/trivial)
       0
-    #/list 0 #/n-hn 3 #/list 0 'a)))
+    #/htb-labeled 0 #/n-hn 3 #/list 0 'a)))
 
 (check-drop1-round-trip sample-closing-3)
 (check-drop1-round-trip sample-closing-4)
@@ -256,13 +261,15 @@
               (hnb 2 'a 3
                 (hnh 3
                   (hnh 2 (trivial)
-                    (n-ht 1 (list 0 (hnh 2 (trivial) (n-ht 0)))))
+                    (n-ht 1
+                      (htb-labeled 0 (hnh 2 (trivial) (n-ht 0)))))
                   (n-ht 0)))
               (n-ht 0)))
           (n-ht 1
-            (list 0 (hnh 4 (hnh 2 (trivial) (n-ht 0)) (n-ht 0))))))
+            (htb-labeled 0
+              (hnh 4 (hnh 2 (trivial) (n-ht 0)) (n-ht 0))))))
       (n-ht 2
-        (list 1
+        (htb-labeled 1
           (hnh 3
             (hnb 1 'a 4
               (hnh 4
@@ -275,11 +282,11 @@
                         (n-ht 0)))
                     (n-ht 0)))
                 (n-ht 1
-                  (list 0
+                  (htb-labeled 0
                     (hnh 4 (hnh 1 (trivial) (n-ht 0)) (n-ht 0))))))
-            (n-ht 1 (list 0 (hnh 3 (trivial) (n-ht 0))))))
+            (n-ht 1 (htb-labeled 0 (hnh 3 (trivial) (n-ht 0))))))
         0
-        (list 0
+        (htb-labeled 0
           (hnh 3
             (hnh 1 (hnh 1 (trivial) (n-ht 0)) (n-ht 0))
             (n-ht 0)))))))
@@ -550,7 +557,7 @@
     0
     (list 0 'a))
   (n-ht 1
-    (list 0 'a))
+    (htb-labeled 0 'a))
   "Truncating a degree-1 hypernest to a hypertee")
 
 (check-equal?
@@ -563,7 +570,7 @@
     0
     (list 0 'a))
   (n-ht 1
-    (list 0 'a))
+    (htb-labeled 0 'a))
   "Truncating a degree-1 hypernest with multiple bumps to a hypertee")
 
 (check-equal?
@@ -578,7 +585,7 @@
     0
     (list 0 'a))
   (n-ht 1
-    (list 0 'a))
+    (htb-labeled 0 'a))
   "Truncating a degree-1 hypernest with a degree-2 bump to a hypertee")
 
 (check-equal?
@@ -591,9 +598,9 @@
     0
     (list 0 'a))
   (n-ht 2
-    (list 1 'a)
+    (htb-labeled 1 'a)
     0
-    (list 0 'a))
+    (htb-labeled 0 'a))
   "Truncating a degree-2 hypernest to a hypertee")
 
 (check-equal?
@@ -606,7 +613,7 @@
     0
     (list 0 'a))
   (n-ht 2
-    (list 1 'a)
+    (htb-labeled 1 'a)
     0
-    (list 0 'a))
+    (htb-labeled 0 'a))
   "Truncating a degree-2 hypernest with a degree-2 bump to a hypertee")

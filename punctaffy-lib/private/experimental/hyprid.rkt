@@ -43,8 +43,8 @@
   hyperstack-dimension hyperstack-pop hyperstack-pop-n make-hyperstack
   make-hyperstack-n)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee hypertee?
-  hypertee-bind-pred-degree hypertee-closing-bracket-degree
+  degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
+  hypertee? hypertee-bind-pred-degree hypertee-closing-bracket-degree
   hypertee-contour hypertee-degree
   hypertee->degree-and-closing-brackets hypertee-dv-each-all-degrees
   hypertee-map-highest-degree hypertee-promote hypertee-pure
@@ -386,7 +386,7 @@
         #/degree-and-closing-brackets->hypertee ds
           pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
-          (expect closing-bracket (list d data) closing-bracket
+          (expect closing-bracket (htb-labeled d data) closing-bracket
           #/expect (dim-sys-dim=? ds d pred-pred-unstriped-degrees) #t
             closing-bracket
           #/mat data (non-lake-cane data) closing-bracket
@@ -395,16 +395,17 @@
               (stripe-state rev-brackets hist)
             #/dissect (dim-sys-dim=0? ds #/hyperstack-dimension hist)
               #t
-            #/list d #/lake-cane dss data
+            #/htb-labeled d #/lake-cane dss data
             #/degree-and-closing-brackets->hypertee ds
               pred-unstriped-degrees
             #/list-map (reverse rev-brackets) #/fn closing-bracket
-              (expect closing-bracket (list d data) closing-bracket
+              (expect closing-bracket (htb-labeled d data)
+                closing-bracket
               #/expect
                 (dim-sys-dim=? ds d pred-pred-unstriped-degrees)
                 #t
                 closing-bracket
-              #/list d #/assemble-island-from-state data))
+              #/htb-labeled d #/assemble-island-from-state data))
           #/error "Internal error")))
     
     ; As we encounter lakes, we build `stripe-states` entries to keep
@@ -436,7 +437,7 @@
         (error "Internal error")
       #/expect (eq? 'hole location-after) #t
         (error "Internal error")
-      #/expect closing-bracket (list d data)
+      #/expect closing-bracket (htb-labeled d data)
         (error "Internal error")
       #/w- rest-state new-i
       #/dissect maybe-state-before (just state)
@@ -448,7 +449,7 @@
         (hash-set stripe-states state
           (stripe-state
             (cons
-              (list pred-pred-unstriped-degrees
+              (htb-labeled pred-pred-unstriped-degrees
                 (unfinished-lake-cane data rest-state))
               rev-brackets)
             (hyperstack-pop-n hist pred-pred-unstriped-degrees)))
@@ -460,7 +461,7 @@
       ; If we've encountered a closing bracket of the highest degree
       ; that a stripe in the result can support, we may be starting an
       ; island or a non-lake.
-      (mat closing-bracket (list d data)
+      (mat closing-bracket (htb-labeled d data)
         
         ; This bracket is closing the original hypertee, so it must be
         ; closing an island, so we're starting a non-lake.
@@ -474,7 +475,7 @@
         #/next closing-brackets
           (hash-set stripe-states state
             (stripe-state
-              (cons (list d #/non-lake-cane data) rev-brackets)
+              (cons (htb-labeled d #/non-lake-cane data) rev-brackets)
               (hyperstack-pop-n hist d)))
           (list (history-info 'non-lake #/nothing) histories-after))
         
@@ -493,7 +494,7 @@
         #/w- stripe-states
           (hash-set stripe-states state
             (stripe-state
-              (cons (list d new-state) rev-brackets)
+              (cons (htb-labeled d new-state) rev-brackets)
               (hyperstack-pop-n hist d)))
         #/next closing-brackets stripe-states
           (list (history-info 'inner-island #/just new-state)
@@ -516,10 +517,10 @@
       #/hash-set stripe-states state
         (stripe-state
           (cons
-            (mat closing-bracket (list d data) closing-bracket
+            (mat closing-bracket (htb-labeled d data) closing-bracket
             #/if (dim-sys-dim=? ds d #/hyperstack-dimension hist)
-              (list d #/trivial)
-              d)
+              (htb-labeled d #/trivial)
+              (htb-unlabeled d))
             rev-brackets)
           hist))
     #/w- stripe-states
@@ -528,7 +529,7 @@
         (stripe-state rev-brackets hist)
       #/hash-set stripe-states state
         (stripe-state
-          (cons d rev-brackets)
+          (cons (htb-unlabeled d) rev-brackets)
           (hyperstack-pop-n hist d)))
     #/next closing-brackets stripe-states
       (list (history-info location-after maybe-state-after)
