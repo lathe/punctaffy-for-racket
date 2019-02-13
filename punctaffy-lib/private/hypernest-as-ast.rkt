@@ -490,8 +490,7 @@
         parent-i
         new-i))))
 
-(define/contract (assert-valid-hypernest-coil ds coil)
-  (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)]) [_ void?])
+(define (assert-valid-hypernest-coil err-name ds coil)
   (mat coil (hypernest-coil-zero) (void)
   #/mat coil
     (hypernest-coil-hole overall-degree hole-value tails-hypertee)
@@ -501,26 +500,37 @@
         (hypertee-degree tails-hypertee)
         overall-degree)
       #t
-      (error "Expected the tails of a hypernest-coil-hole to be a hypertee of degree strictly less than the overall degree")
+      (raise-arguments-error err-name
+        "expected the tails of a hypernest-coil-hole to be a hypertee of degree strictly less than the overall degree"
+        "tails-hypertee" tails-hypertee
+        "overall-degree" overall-degree)
     #/hypertee-each-all-degrees tails-hypertee #/fn hole tail
       (w- hole-degree (hypertee-degree hole)
       #/expect (hypernest? tail) #t
-        (error "Expected each tail of a hypernest-coil-hole to be a hypernest")
+        (raise-arguments-error err-name
+          "expected each tail of a hypernest-coil-hole to be a hypernest"
+          "tail" tail)
       #/expect
         (dim-sys-dim=? ds (hypernest-degree tail) overall-degree)
         #t
-        (error "Expected each tail of a hypernest-coil-hole to be a hypernest of the same degree as the overall degree")
+        (raise-arguments-error err-name
+          "expected each tail of a hypernest-coil-hole to be a hypernest of the same degree as the overall degree"
+          "tail" tail
+          "overall-degree" overall-degree)
       #/expect
         (hypertee-zip-low-degrees hole
           (hypernest-truncate-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
-            (raise-arguments-error 'hypernest-plus1
+            (raise-arguments-error err-name
               "expected each tail of a hypernest-coil-hole to have trivial values in its low-degree holes"
               "tail-data" tail-data)
           #/trivial))
         (just zipped)
-        (error "Expected each tail of a hypernest-coil-hole to match up with the hole it occurred in")
+        (raise-arguments-error err-name
+          "expected each tail of a hypernest-coil-hole to match up with the hole it occurred in"
+          "tail" tail
+          "overall-degree" overall-degree)
       #/void))
   #/dissect coil
     (hypernest-coil-bump
@@ -531,37 +541,48 @@
         (dim-sys-dim-max ds overall-degree bump-degree)
         (hypernest-degree tails-hypernest))
       #t
-      (error "Expected the tails of a hypernest-coil-bump to be a hypernest of degree equal to the max of the overall degree and the bump degree")
+      (raise-arguments-error err-name
+        "expected the tails of a hypernest-coil-bump to be a hypernest of degree equal to the max of the overall degree and the bump degree"
+        "tails-hypernest" tails-hypernest
+        "overall-degree" overall-degree
+        "bump-degree" bump-degree)
     #/hypernest-each-all-degrees tails-hypernest #/fn hole data
       (w- hole-degree (hypertee-degree hole)
       #/when (dim-sys-dim<? ds hole-degree bump-degree)
         (expect (hypernest? data) #t
-          (error "Expected each tail of a hypernest-coil-bump to be a hypernest")
+          (raise-arguments-error err-name
+            "expected each tail of a hypernest-coil-bump to be a hypernest"
+            "tail" data)
         #/expect
           (dim-sys-dim=? ds
             (hypernest-degree data)
             (dim-sys-dim-max ds hole-degree overall-degree))
           #t
-          (error "Expected each tail of a hypernest-coil-bump to be a hypernest of the same degree as the overall degree or of the same degree as the hole it occurred in, whichever was greater")
+          (raise-arguments-error err-name
+            "expected each tail of a hypernest-coil-bump to be a hypernest of the same degree as the overall degree or of the same degree as the hole it occurred in, whichever was greater"
+            "tail" data
+            "hole-degree" hole-degree
+            "overall-degree" overall-degree)
         #/expect
           (hypertee-zip-low-degrees hole
             (hypernest-truncate-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
-              (raise-arguments-error 'hypernest-plus1
+              (raise-arguments-error err-name
                 "expected each tail of a hypernest-coil-bump to have trivial values in its low-degree holes"
                 "tail-data" tail-data)
             #/trivial))
           (just zipped)
-          (error "Expected each tail of a hypernest-coil-bump to match up with the hole it occurred in")
+          (raise-arguments-error err-name
+            "expected each tail of a hypernest-coil-bump to match up with the hole it occurred in"
+            "tail" data
+            "hole" hole)
         #/void)))))
 
-(define/contract (hypernest-plus1 ds coil)
-  (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
-    [_ (ds) (hypernest/c ds)])
-  ; TODO: See if we can improve the error messages so that they're
-  ; like part of the contract of this procedure instead of being
-  ; thrown from inside `assert-valid-hypernest-coil`.
+; TODO: See if we'll ever use this. For now, we just have it here as
+; an analogue to `unsafe-degree-and-closing-brackets->hypertee`.
+(define/contract (unsafe-hypernest-plus1 ds coil)
+  (-> dim-sys? any/c any)
   (unless (punctaffy-suppress-internal-errors)
     ; NOTE: At this point we don't expect
     ; `assert-valid-hypernest-coil` itself to be very buggy. Since its
@@ -570,7 +591,20 @@
     ; without verification. Otherwise the verification can end up
     ; doing some rather catastrophic recursion.
     (parameterize ([punctaffy-suppress-internal-errors #t])
-      (assert-valid-hypernest-coil ds coil)))
+      (assert-valid-hypernest-coil 'unsafe-hypernest-plus1 ds coil)))
+  (hypernest ds coil))
+
+(define/contract (hypernest-plus1 ds coil)
+  (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
+    [_ (ds) (hypernest/c ds)])
+  ; NOTE: At this point we don't expect `assert-valid-hypernest-coil`
+  ; itself to be very buggy. Since its implementation involves the
+  ; construction of other hypertees and hypernests, we can save a
+  ; *lot* of time by constructing those without verification.
+  ; Otherwise the verification can end up doing some rather
+  ; catastrophic recursion.
+  (parameterize ([punctaffy-suppress-internal-errors #t])
+    (assert-valid-hypernest-coil 'hypernest-plus1 ds coil))
   (hypernest ds coil))
 
 (define/contract (hypernest-degree hn)
