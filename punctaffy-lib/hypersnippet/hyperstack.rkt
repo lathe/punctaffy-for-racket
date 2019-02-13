@@ -191,7 +191,7 @@
   [hyperstack? (-> any/c boolean?)]
   [hyperstack/c (-> dim-sys? contract?)]
   [hyperstack-dim-sys (-> hyperstack? dim-sys?)]
-  [make-hyperstack
+  [make-hyperstack-dimlist
     (->i ([ds dim-sys?] [elems (ds) (dim-sys-dimlist/c ds)])
       [_ (ds) (hyperstack/c ds)])]
   [hyperstack-dimension
@@ -205,14 +205,14 @@
           (w- ds (hyperstack-dim-sys h)
           #/dim-sys-dim</c ds #/hyperstack-dimension h)])
       [_ any/c])]
-  [hyperstack-push
+  [hyperstack-push-dimlist
     (->i
       (
         [h hyperstack?]
         [elems-to-push (h)
           (dim-sys-dimlist/c #/hyperstack-dim-sys h)])
       [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
-  [hyperstack-pop
+  [hyperstack-pop-dimlist
     (->i
       (
         [h hyperstack?]
@@ -466,7 +466,7 @@
         (dim-sys-accepts? ds #/hyperstack-dim-sys v)))
     `(hyperstack/c ,ds)))
 
-(define (make-hyperstack ds elems)
+(define (make-hyperstack-dimlist ds elems)
   (hyperstack ds #/dim-sys-dimlist-map ds elems #/fn elem
     (list elem #/dim-sys-dimlist-zero ds)))
 
@@ -480,7 +480,7 @@
     (list elem suspended-chevron)
     elem))
 
-(define (hyperstack-push h elems-to-push)
+(define (hyperstack-push-dimlist h elems-to-push)
   (dissect h (hyperstack ds rep)
   #/hyperstack ds #/dim-sys-dimlist-shadow ds
     (dim-sys-dimlist-zip-map ds
@@ -490,7 +490,7 @@
         (list elem rep-chevron)))
     rep))
 
-(define (hyperstack-pop h elems-to-push)
+(define (hyperstack-pop-dimlist h elems-to-push)
   (dissect h (hyperstack ds rep)
   #/w- i (dim-sys-dimlist-length ds elems-to-push)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
@@ -505,18 +505,20 @@
       suspended-chevron)))
 
 (define (make-hyperstack-uniform ds dimension elem)
-  (make-hyperstack ds #/dim-sys-dimlist-uniform ds dimension elem))
+  (make-hyperstack-dimlist ds
+  #/dim-sys-dimlist-uniform ds dimension elem))
 
 (define (make-hyperstack-n ds dimension)
   (make-hyperstack-uniform ds dimension #/trivial))
 
 (define (hyperstack-push-uniform h bump-degree elem)
   (w- ds (hyperstack-dim-sys h)
-  #/hyperstack-push h #/dim-sys-dimlist-uniform ds bump-degree elem))
+  #/hyperstack-push-dimlist h
+  #/dim-sys-dimlist-uniform ds bump-degree elem))
 
 (define (hyperstack-pop-uniform h i elem)
   (w- ds (hyperstack-dim-sys h)
-  #/hyperstack-pop h #/dim-sys-dimlist-uniform ds i elem))
+  #/hyperstack-pop-dimlist h #/dim-sys-dimlist-uniform ds i elem))
 
 (define (hyperstack-pop-n h i)
   (w- ds (hyperstack-dim-sys h)
