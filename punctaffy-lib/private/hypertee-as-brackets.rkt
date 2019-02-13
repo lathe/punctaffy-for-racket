@@ -679,7 +679,7 @@
   #/dissect
     (hyperstack-pop-uniform stack d-dropped
       (loc-interpolation-uninitialized))
-    (list popped-barrier (loc-outside) stack)
+    (list (loc-outside) stack)
   #/w-loop next
     root-brackets (list-kv-map rest #/fn k v #/list k v)
     interpolations (make-immutable-hasheq)
@@ -692,8 +692,7 @@
         (interpolation-state-in-progress
           rev-brackets interpolation-hyperstack)
       #/dissect (hyperstack-pop-uniform interpolation-hyperstack d #f)
-        (list
-          popped-barrier popped-the-root? interpolation-hyperstack)
+        (list popped-the-root? interpolation-hyperstack)
       #/hash-set interpolations i
         (interpolation-state-in-progress
           (cons (if popped-the-root? bracket (htb-unlabeled d))
@@ -732,7 +731,7 @@
     #/dissect hist (list loc stack)
     #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
     #/dissect (hyperstack-pop-uniform stack d-bracket loc)
-      (list popped-barrier tentative-new-loc tentative-new-stack)
+      (list tentative-new-loc tentative-new-stack)
     #/mat loc (loc-outside)
       (dissect tentative-new-loc (loc-interpolation i d)
       #/next root-brackets
@@ -1016,7 +1015,7 @@
         #t
         (error "Expected each high-degree hole of a hypertee join interpolation to be a hypertee-join-selective-non-interpolation")
       #/dissect (hyperstack-pop-uniform histories d state)
-        (list popped-barrier state histories)
+        (list state histories)
       #/w- hist (list state histories)
       #/mat state (state-in-root)
         
@@ -1081,7 +1080,7 @@
     #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories) #t
       (error "Internal error: Expected the next closing bracket of a hypertee join root to be of a degree less than the current region's degree")
     #/dissect (hyperstack-pop-uniform histories d state)
-      (list popped-barrier state histories)
+      (list state histories)
     #/mat closing-bracket (htb-unlabeled d)
       (w- hist (list state histories)
       #/mat state (state-in-root)
@@ -1153,7 +1152,7 @@
         (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
       #/dissect
         (hyperstack-pop-uniform histories d maybe-current-hole)
-        (list popped-barrier maybe-restored-hole histories)
+        (list maybe-restored-hole histories)
       #/w- update-hole-state
         (fn hole-states i
           (dissect (hash-ref hole-states i) (list rev-brackets hist)

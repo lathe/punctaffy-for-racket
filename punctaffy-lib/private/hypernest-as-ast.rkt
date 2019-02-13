@@ -274,7 +274,7 @@
           "hypernest-brackets" hypernest-brackets)
       #/dissect
         (hyperstack-pop-uniform stack hole-degree #/parent-new-part)
-        (list 'root (parent-same-part #t) stack)
+        (list (parent-same-part #t) stack)
       #/list
         (fn root-part
           (hypernest-careful ds #/hypernest-coil-hole
@@ -393,7 +393,7 @@
       (dissect
         (hyperstack-pop-uniform stack hole-degree
           (parent-same-part #f))
-        (list _ _ updated-stack)
+        (list _ updated-stack)
       #/dissect
         (eq? should-annotate-as-nontrivial
           (mat hypernest-bracket (hnb-labeled hole-degree hole-value)
@@ -418,7 +418,7 @@
       (dissect
         (hyperstack-pop-uniform stack hole-degree
           (parent-part current-i #t))
-        (list _ _ updated-stack)
+        (list _ updated-stack)
       #/mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         ; TODO: Is this really an internal error, or is there some way
         ; to cause it with an incorrect sequence of input brackets?
@@ -450,7 +450,7 @@
       #/dissect
         (hyperstack-pop-uniform stack hole-degree
           (parent-part current-i #f))
-        (list _ _ updated-stack)
+        (list _ updated-stack)
       #/dissect (hash-ref parts parent-i)
         (part-state
           parent-is-hypernest
@@ -687,7 +687,7 @@
             #/next root-brackets interpolations hist
               (cons bracket rev-result))
           #/dissect (hyperstack-pop-uniform histories d state)
-            (list popped-barrier state histories)
+            (list state histories)
           #/w- hist (list state histories)
           #/mat state (state-in-root)
             
@@ -746,7 +746,7 @@
           (error "Internal error: Expected each hole of a hypernest hole or bump to be of a degree less than the current region's degree")
         #/w- old-d (hyperstack-dimension histories)
         #/dissect (hyperstack-pop-uniform histories d state)
-          (list popped-barrier state histories)
+          (list state histories)
         #/expect bracket (hnb-labeled d data)
           (w- hist (list state histories)
           #/mat state (state-in-root)

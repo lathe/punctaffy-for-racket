@@ -422,7 +422,6 @@
       (hyperstack-pop-uniform histories-before d
         (history-info location-before maybe-state-before))
       (list
-        popped-barrier
         (history-info location-after maybe-state-after)
         histories-after)
     #/if (dim-sys-dim=? ds d pred-unstriped-degrees)

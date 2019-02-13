@@ -225,9 +225,7 @@
         (dim-sys-dimlist-length ds elems-to-push)
         (hyperstack-dimension h))
       
-      [_ (h)
-        (list/c (or/c 'root 'push 'pop) any/c
-          (hyperstack/c #/hyperstack-dim-sys h))])]
+      [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
   
   [make-hyperstack-uniform
     (->i
@@ -251,19 +249,7 @@
           (w- ds (hyperstack-dim-sys h)
           #/dim-sys-dim</c ds #/hyperstack-dimension h)]
         [elem any/c])
-      [_ (h)
-        (list/c (or/c 'root 'push 'pop) any/c
-          (hyperstack/c #/hyperstack-dim-sys h))])]
-  [hyperstack-pop-n-with-barrier
-    (->i
-      (
-        [h hyperstack?]
-        [i (h)
-          (w- ds (hyperstack-dim-sys h)
-          #/dim-sys-dim</c ds #/hyperstack-dimension h)])
-      [_ (h)
-        (list/c (or/c 'root 'push 'pop)
-          (hyperstack/c #/hyperstack-dim-sys h))])]
+      [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
   [hyperstack-pop-n
     (->i
       (
@@ -482,7 +468,7 @@
 
 (define (make-hyperstack ds elems)
   (hyperstack ds #/dim-sys-dimlist-map ds elems #/fn elem
-    (list 'root elem #/dim-sys-dimlist-zero ds)))
+    (list elem #/dim-sys-dimlist-zero ds)))
 
 (define (hyperstack-dimension h)
   (dissect h (hyperstack ds rep)
@@ -491,7 +477,7 @@
 (define (hyperstack-peek-elem h i)
   (dissect h (hyperstack ds rep)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
-    (list barrier elem suspended-chevron)
+    (list elem suspended-chevron)
     elem))
 
 (define (hyperstack-push h elems-to-push)
@@ -501,21 +487,21 @@
       elems-to-push
       (dim-sys-dimlist-chevrons ds rep)
       (fn elem rep-chevron
-        (list 'push elem rep-chevron)))
+        (list elem rep-chevron)))
     rep))
 
 (define (hyperstack-pop h elems-to-push)
   (dissect h (hyperstack ds rep)
   #/w- i (dim-sys-dimlist-length ds elems-to-push)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
-    (list popped-barrier elem suspended-chevron)
-  #/list popped-barrier elem
+    (list elem suspended-chevron)
+  #/list elem
     (hyperstack ds #/dim-sys-dimlist-shadow ds
       (dim-sys-dimlist-zip-map ds
         elems-to-push
         (dim-sys-dimlist-chevrons ds rep)
         (fn elem rep-chevron
-          (list 'pop elem rep-chevron)))
+          (list elem rep-chevron)))
       suspended-chevron)))
 
 (define (make-hyperstack-uniform ds dimension elem)
@@ -532,13 +518,7 @@
   (w- ds (hyperstack-dim-sys h)
   #/hyperstack-pop h #/dim-sys-dimlist-uniform ds i elem))
 
-(define (hyperstack-pop-n-with-barrier h i)
-  (w- ds (hyperstack-dim-sys h)
-  #/dissect (hyperstack-pop-uniform h i #/trivial)
-    (list popped-barrier elem rest)
-  #/list popped-barrier rest))
-
 (define (hyperstack-pop-n h i)
-  (dissect (hyperstack-pop-n-with-barrier h i)
-    (list popped-barrier rest)
+  (w- ds (hyperstack-dim-sys h)
+  #/dissect (hyperstack-pop-uniform h i #/trivial) (list elem rest)
     rest))
