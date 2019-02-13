@@ -48,8 +48,9 @@
   dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys dim-sys?
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-dim-max dim-sys-dim-zero
-  hyperstack-dimension hyperstack-pop-n hyperstack-pop-uniform
-  hyperstack-push-uniform make-hyperstack-n make-hyperstack-uniform)
+  hyperstack-dimension hyperstack-pop-trivial hyperstack-pop-uniform
+  hyperstack-push-uniform make-hyperstack-trivial
+  make-hyperstack-uniform)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -496,7 +497,7 @@
     err-name ds opening-degree closing-brackets)
   (w- final-region-degree
     (hyperstack-dimension #/list-foldl
-      (make-hyperstack-n ds opening-degree)
+      (make-hyperstack-trivial ds opening-degree)
       closing-brackets
     #/fn histories closing-bracket
       (w- closing-degree
@@ -507,7 +508,7 @@
         #t
         (error "Encountered a closing bracket of degree higher than the current region's degree")
       #/w- restored-history
-        (hyperstack-pop-n histories closing-degree)
+        (hyperstack-pop-trivial histories closing-degree)
       #/begin
         (if
           (dim-sys-dim=? ds closing-degree
@@ -1139,7 +1140,7 @@
           (expect closing-bracket (htb-labeled d data) hole-states
           #/dissect data (list data i)
           #/hash-set hole-states i
-            (list (list) (make-hyperstack-n ds d))))
+            (list (list) (make-hyperstack-trivial ds d))))
         (list (nothing)
           (make-hyperstack-uniform ds overall-degree #/nothing)))
       result
@@ -1158,7 +1159,7 @@
           (dissect (hash-ref hole-states i) (list rev-brackets hist)
           #/expect (dim-sys-dim<? ds d #/hyperstack-dimension hist) #t
             (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
-          #/w- hist (hyperstack-pop-n hist d)
+          #/w- hist (hyperstack-pop-trivial hist d)
           #/hash-set hole-states i
             (list
               (cons

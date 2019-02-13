@@ -39,8 +39,9 @@
   dim-successors-sys? dim-successors-sys-accepts?
   dim-successors-sys-dim-sys dim-successors-sys-dim-plus-int
   dim-successors-sys-dim=plus-int? dim-sys-dim<? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c hyperstack-dimension hyperstack-pop-n
-  hyperstack-pop-uniform make-hyperstack-n make-hyperstack-uniform)
+  dim-sys-dim=0? dim-sys-dim/c hyperstack-dimension
+  hyperstack-pop-trivial hyperstack-pop-uniform
+  make-hyperstack-trivial make-hyperstack-uniform)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
   hypertee? hypertee-bind-pred-degree hypertee-closing-bracket-degree
@@ -351,7 +352,7 @@
   #/w- stripe-starting-state
     (w- rev-brackets (list)
     #/stripe-state rev-brackets
-    #/make-hyperstack-n ds pred-unstriped-degrees)
+    #/make-hyperstack-trivial ds pred-unstriped-degrees)
   #/w- root-island-state 'root
   #/w-loop next
     
@@ -448,7 +449,8 @@
               (htb-labeled pred-pred-unstriped-degrees
                 (unfinished-lake-cane data rest-state))
               rev-brackets)
-            (hyperstack-pop-n hist pred-pred-unstriped-degrees)))
+            (hyperstack-pop-trivial hist
+              pred-pred-unstriped-degrees)))
       #/next closing-brackets stripe-states
         (list (history-info 'lake #/just rest-state) histories-after))
     
@@ -472,7 +474,7 @@
           (hash-set stripe-states state
             (stripe-state
               (cons (htb-labeled d #/non-lake-cane data) rev-brackets)
-              (hyperstack-pop-n hist d)))
+              (hyperstack-pop-trivial hist d)))
           (list (history-info 'non-lake #/nothing) histories-after))
         
         ; This bracket is closing an even higher-degree bracket, which
@@ -491,7 +493,7 @@
           (hash-set stripe-states state
             (stripe-state
               (cons (htb-labeled d new-state) rev-brackets)
-              (hyperstack-pop-n hist d)))
+              (hyperstack-pop-trivial hist d)))
         #/next closing-brackets stripe-states
           (list (history-info 'inner-island #/just new-state)
             histories-after)))
@@ -509,7 +511,7 @@
       (expect maybe-state-before (just state) stripe-states
       #/dissect (hash-ref stripe-states state)
         (stripe-state rev-brackets hist)
-      #/w- hist (hyperstack-pop-n hist d)
+      #/w- hist (hyperstack-pop-trivial hist d)
       #/hash-set stripe-states state
         (stripe-state
           (cons
@@ -526,7 +528,7 @@
       #/hash-set stripe-states state
         (stripe-state
           (cons (htb-unlabeled d) rev-brackets)
-          (hyperstack-pop-n hist d)))
+          (hyperstack-pop-trivial hist d)))
     #/next closing-brackets stripe-states
       (list (history-info location-after maybe-state-after)
         histories-after))))

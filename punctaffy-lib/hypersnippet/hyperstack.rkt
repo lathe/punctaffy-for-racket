@@ -231,7 +231,7 @@
     (->i
       ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)] [elem any/c])
       [_ (ds) (hyperstack/c ds)])]
-  [make-hyperstack-n
+  [make-hyperstack-trivial
     (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
       [_ (ds) (hyperstack/c ds)])]
   [hyperstack-push-uniform
@@ -250,7 +250,7 @@
           #/dim-sys-dim</c ds #/hyperstack-dimension h)]
         [elem any/c])
       [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
-  [hyperstack-pop-n
+  [hyperstack-pop-trivial
     (->i
       (
         [h hyperstack?]
@@ -508,7 +508,7 @@
   (make-hyperstack-dimlist ds
   #/dim-sys-dimlist-uniform ds dimension elem))
 
-(define (make-hyperstack-n ds dimension)
+(define (make-hyperstack-trivial ds dimension)
   (make-hyperstack-uniform ds dimension #/trivial))
 
 (define (hyperstack-push-uniform h bump-degree elem)
@@ -520,7 +520,11 @@
   (w- ds (hyperstack-dim-sys h)
   #/hyperstack-pop-dimlist h #/dim-sys-dimlist-uniform ds i elem))
 
-(define (hyperstack-pop-n h i)
+(define (hyperstack-pop-trivial h i)
   (w- ds (hyperstack-dim-sys h)
   #/dissect (hyperstack-pop-uniform h i #/trivial) (list elem rest)
+  #/expect elem (trivial)
+    (raise-arguments-error 'hyperstack-pop-trivial
+      "expected the popped element to be a trivial value"
+      "elem" elem)
     rest))
