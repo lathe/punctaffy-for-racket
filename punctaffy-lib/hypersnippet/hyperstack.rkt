@@ -191,9 +191,6 @@
   [hyperstack? (-> any/c boolean?)]
   [hyperstack/c (-> dim-sys? contract?)]
   [hyperstack-dim-sys (-> hyperstack? dim-sys?)]
-  [make-hyperstack-dimlist
-    (->i ([ds dim-sys?] [elems (ds) (dim-sys-dimlist/c ds)])
-      [_ (ds) (hyperstack/c ds)])]
   [hyperstack-dimension
     (->i ([h hyperstack?])
       [_ (h) (dim-sys-dim/c #/hyperstack-dim-sys h)])]
@@ -205,6 +202,10 @@
           (w- ds (hyperstack-dim-sys h)
           #/dim-sys-dim</c ds #/hyperstack-dimension h)])
       [_ any/c])]
+  
+  [make-hyperstack-dimlist
+    (->i ([ds dim-sys?] [elems (ds) (dim-sys-dimlist/c ds)])
+      [_ (ds) (hyperstack/c ds)])]
   [hyperstack-push-dimlist
     (->i
       (
@@ -231,9 +232,6 @@
     (->i
       ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)] [elem any/c])
       [_ (ds) (hyperstack/c ds)])]
-  [make-hyperstack-trivial
-    (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
-      [_ (ds) (hyperstack/c ds)])]
   [hyperstack-push
     (->i
       (
@@ -250,6 +248,9 @@
           #/dim-sys-dim</c ds #/hyperstack-dimension h)]
         [elem any/c])
       [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
+  [make-hyperstack-trivial
+    (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
+      [_ (ds) (hyperstack/c ds)])]
   [hyperstack-pop-trivial
     (->i
       (
@@ -466,10 +467,6 @@
         (dim-sys-accepts? ds #/hyperstack-dim-sys v)))
     `(hyperstack/c ,ds)))
 
-(define (make-hyperstack-dimlist ds elems)
-  (hyperstack ds #/dim-sys-dimlist-map ds elems #/fn elem
-    (list elem #/dim-sys-dimlist-zero ds)))
-
 (define (hyperstack-dimension h)
   (dissect h (hyperstack ds rep)
   #/dim-sys-dimlist-length ds rep))
@@ -479,6 +476,11 @@
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
     (list elem suspended-chevron)
     elem))
+
+
+(define (make-hyperstack-dimlist ds elems)
+  (hyperstack ds #/dim-sys-dimlist-map ds elems #/fn elem
+    (list elem #/dim-sys-dimlist-zero ds)))
 
 (define (hyperstack-push-dimlist h elems-to-push)
   (dissect h (hyperstack ds rep)
@@ -504,12 +506,10 @@
           (list elem rep-chevron)))
       suspended-chevron)))
 
+
 (define (make-hyperstack ds dimension elem)
   (make-hyperstack-dimlist ds
   #/dim-sys-dimlist-uniform ds dimension elem))
-
-(define (make-hyperstack-trivial ds dimension)
-  (make-hyperstack ds dimension #/trivial))
 
 (define (hyperstack-push h bump-degree elem)
   (w- ds (hyperstack-dim-sys h)
@@ -519,6 +519,10 @@
 (define (hyperstack-pop h i elem)
   (w- ds (hyperstack-dim-sys h)
   #/hyperstack-pop-dimlist h #/dim-sys-dimlist-uniform ds i elem))
+
+
+(define (make-hyperstack-trivial ds dimension)
+  (make-hyperstack ds dimension #/trivial))
 
 (define (hyperstack-pop-trivial h i)
   (w- ds (hyperstack-dim-sys h)
