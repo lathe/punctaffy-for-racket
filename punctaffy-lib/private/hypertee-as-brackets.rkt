@@ -66,17 +66,33 @@
 (provide #/contract-out
   [htb/c (-> contract? contract?)])
 (provide
-  hypertee-closing-bracket-degree
   (contract-out
+    [hypertee-closing-bracket-degree (-> (htb/c any/c) any/c)]
     [hypertee? (-> any/c boolean?)]
     [hypertee-dim-sys (-> hypertee? dim-sys?)]
     [hypertee-degree
       (->i ([ht hypertee?])
         [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
-    [hypertee/c (-> dim-sys? contract?)])
-  degree-and-closing-brackets->hypertee
-  hypertee->degree-and-closing-brackets
-  hypertee-promote
+    [hypertee/c (-> dim-sys? contract?)]
+    [degree-and-closing-brackets->hypertee
+      (->i
+        (
+          [ds dim-sys?]
+          [degree (ds) (dim-sys-dim/c ds)]
+          [closing-brackets (ds) (listof #/htb/c #/dim-sys-dim/c ds)])
+        [_ (ds) (hypertee/c ds)])]
+    [hypertee->degree-and-closing-brackets
+      (->i ([ht hypertee?])
+        [_ (ht)
+          (w- ds (hypertee-dim-sys ht)
+          #/list/c (dim-sys-dim/c ds)
+          #/listof #/htb/c #/dim-sys-dim/c ds)])]
+    [hypertee-promote
+      (->i
+        (
+          [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+          [ht hypertee?])
+        [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])])
   hypertee-set-degree-maybe
   hypertee-set-degree
   hypertee-contour
@@ -468,19 +484,12 @@
       (match/c htb-unlabeled dim/c))
     `(htb/c ,(contract-name dim/c))))
 
-(define/contract (hypertee-closing-bracket-degree closing-bracket)
-  (-> (htb/c any/c) any/c)
+(define (hypertee-closing-bracket-degree closing-bracket)
   (mat closing-bracket (htb-labeled d data) d
   #/dissect closing-bracket (htb-unlabeled d) d))
 
-(define/contract
+(define
   (assert-valid-hypertee-brackets ds opening-degree closing-brackets)
-  (->i
-    (
-      [ds dim-sys?]
-      [opening-degree (ds) (dim-sys-dim/c ds)]
-      [closing-brackets list?])
-    [_ void?])
   (w- final-region-degree
     (hyperstack-dimension #/list-foldl
       (make-hyperstack-n ds opening-degree)
@@ -550,36 +559,20 @@
       (and (hypertee? v) (dim-sys-accepts? ds #/hypertee-dim-sys v)))
     `(hypertee/c ,ds)))
 
-(define/contract
+(define
   (degree-and-closing-brackets->hypertee ds degree closing-brackets)
-  (->i
-    (
-      [ds dim-sys?]
-      [degree (ds) (dim-sys-dim/c ds)]
-      [closing-brackets (ds) (listof #/htb/c #/dim-sys-dim/c ds)])
-    [_ (ds) (hypertee/c ds)])
   ; TODO: See if we can improve the error messages so that they're
   ; like part of the contract of this procedure instead of being
   ; thrown from inside the `hypertee` constructor.
   (hypertee ds degree closing-brackets))
 
-(define/contract (hypertee->degree-and-closing-brackets ht)
-  (->i ([ht hypertee?])
-    [_ (ht)
-      (w- ds (hypertee-dim-sys ht)
-      #/list/c (dim-sys-dim/c ds)
-      #/listof #/htb/c #/dim-sys-dim/c ds)])
+(define (hypertee->degree-and-closing-brackets ht)
   (dissect ht (hypertee ds d closing-brackets)
   #/list d closing-brackets))
 
 ; Takes a hypertee of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its holes the way they are.
-(define/contract (hypertee-promote new-degree ht)
-  (->i
-    (
-      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-promote new-degree ht)
   (dissect ht (hypertee ds d closing-brackets)
   #/if (dim-sys-dim=0? ds d)
     (raise-arguments-error 'hypertee-promote
