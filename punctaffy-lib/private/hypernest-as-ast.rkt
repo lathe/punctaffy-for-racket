@@ -46,13 +46,15 @@
   hyperstack-peek-elem hyperstack-pop hyperstack-push-uniform
   make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
-  hypertee? hypertee-bind-all-degrees hypertee/c hypertee-contour
-  hypertee-degree hypertee->degree-and-closing-brackets
-  hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
+  htb-labeled htb-unlabeled hypertee? hypertee-bind-all-degrees
+  hypertee/c hypertee-contour hypertee-degree
+  hypertee->degree-and-closing-brackets hypertee-dim-sys
+  hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
   hypertee-get-hole-zero hypertee-plus1 hypertee-promote hypertee-pure
   hypertee-set-degree hypertee-zip-low-degrees hypertee-zip-selective)
+(require #/only-in punctaffy/private/hypertee-unsafe
+  unsafe-degree-and-closing-brackets->hypertee)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -326,7 +328,9 @@
             #/fn d data
               (get-subpart d data))
             (hypertee-dv-map-all-degrees
-              (degree-and-closing-brackets->hypertee ds overall-degree
+              (unsafe-degree-and-closing-brackets->hypertee
+                ds
+                overall-degree
                 (reverse #/list-map rev-brackets #/fn closing-bracket
                   (mat closing-bracket (hnb-labeled d data)
                     (htb-labeled d data)

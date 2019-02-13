@@ -65,34 +65,38 @@
   [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
 (provide #/contract-out
   [htb/c (-> contract? contract?)])
+(provide #/contract-out
+  [hypertee-closing-bracket-degree (-> (htb/c any/c) any/c)]
+  [hypertee? (-> any/c boolean?)]
+  [hypertee-dim-sys (-> hypertee? dim-sys?)]
+  [hypertee-degree
+    (->i ([ht hypertee?])
+      [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
+  [hypertee/c (-> dim-sys? contract?)])
+(module+ unsafe #/provide #/contract-out
+  [unsafe-degree-and-closing-brackets->hypertee
+    (-> dim-sys? any/c any/c any)])
+(provide #/contract-out
+  [degree-and-closing-brackets->hypertee
+    (->i
+      (
+        [ds dim-sys?]
+        [degree (ds) (dim-sys-dim/c ds)]
+        [closing-brackets (ds) (listof #/htb/c #/dim-sys-dim/c ds)])
+      [_ (ds) (hypertee/c ds)])]
+  [hypertee->degree-and-closing-brackets
+    (->i ([ht hypertee?])
+      [_ (ht)
+        (w- ds (hypertee-dim-sys ht)
+        #/list/c (dim-sys-dim/c ds)
+        #/listof #/htb/c #/dim-sys-dim/c ds)])]
+  [hypertee-promote
+    (->i
+      (
+        [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])])
 (provide
-  (contract-out
-    [hypertee-closing-bracket-degree (-> (htb/c any/c) any/c)]
-    [hypertee? (-> any/c boolean?)]
-    [hypertee-dim-sys (-> hypertee? dim-sys?)]
-    [hypertee-degree
-      (->i ([ht hypertee?])
-        [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
-    [hypertee/c (-> dim-sys? contract?)]
-    [degree-and-closing-brackets->hypertee
-      (->i
-        (
-          [ds dim-sys?]
-          [degree (ds) (dim-sys-dim/c ds)]
-          [closing-brackets (ds) (listof #/htb/c #/dim-sys-dim/c ds)])
-        [_ (ds) (hypertee/c ds)])]
-    [hypertee->degree-and-closing-brackets
-      (->i ([ht hypertee?])
-        [_ (ht)
-          (w- ds (hypertee-dim-sys ht)
-          #/list/c (dim-sys-dim/c ds)
-          #/listof #/htb/c #/dim-sys-dim/c ds)])]
-    [hypertee-promote
-      (->i
-        (
-          [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-          [ht hypertee?])
-        [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])])
   hypertee-set-degree-maybe
   hypertee-set-degree
   hypertee-contour
@@ -489,7 +493,8 @@
   #/dissect closing-bracket (htb-unlabeled d) d))
 
 (define
-  (assert-valid-hypertee-brackets ds opening-degree closing-brackets)
+  (assert-valid-hypertee-brackets
+    err-name ds opening-degree closing-brackets)
   (w- final-region-degree
     (hyperstack-dimension #/list-foldl
       (make-hyperstack-n ds opening-degree)
@@ -511,14 +516,14 @@
           ; NOTE: We don't validate `hole-value`.
           (expect closing-bracket
             (htb-labeled closing-degree hole-value)
-            (raise-arguments-error 'degree-and-closing-brackets->hypertee
+            (raise-arguments-error err-name
               "expected a closing bracket that began a hole to be annotated with a data value"
               "opening-degree" opening-degree
               "closing-brackets" closing-brackets
               "closing-bracket" closing-bracket)
           #/void)
           (mat closing-bracket (htb-labeled closing-degree hole-value)
-            (raise-arguments-error 'degree-and-closing-brackets->hypertee
+            (raise-arguments-error err-name
               "expected a closing bracket that did not begin a hole to have no data value annotation"
               "opening-degree" opening-degree
               "closing-brackets" closing-brackets
@@ -526,7 +531,7 @@
           #/void))
         restored-history))
   #/expect (dim-sys-dim=0? ds final-region-degree) #t
-    (raise-arguments-error 'degree-and-closing-brackets->hypertee
+    (raise-arguments-error err-name
       "expected more closing brackets"
       "opening-degree" opening-degree
       "closing-brackets" closing-brackets
@@ -548,7 +553,8 @@
   [closing-brackets any/c]
   (begin0 #t
     (unless (punctaffy-suppress-internal-errors)
-      (assert-valid-hypertee-brackets ds degree closing-brackets))))
+      (assert-valid-hypertee-brackets 'attenuated-hypertee
+        ds degree closing-brackets))))
 
 (define-match-expander-from-match-and-make
   hypertee unguarded-hypertee attenuated-hypertee attenuated-hypertee)
@@ -560,11 +566,19 @@
     `(hypertee/c ,ds)))
 
 (define
+  (unsafe-degree-and-closing-brackets->hypertee
+    ds degree closing-brackets)
+  (unless (punctaffy-suppress-internal-errors)
+    (assert-valid-hypertee-brackets
+      'unsafe-degree-and-closing-brackets->hypertee
+      ds degree closing-brackets))
+  (unguarded-hypertee ds degree closing-brackets))
+
+(define
   (degree-and-closing-brackets->hypertee ds degree closing-brackets)
-  ; TODO: See if we can improve the error messages so that they're
-  ; like part of the contract of this procedure instead of being
-  ; thrown from inside the `hypertee` constructor.
-  (hypertee ds degree closing-brackets))
+  (assert-valid-hypertee-brackets
+    'degree-and-closing-brackets->hypertee ds degree closing-brackets)
+  (unguarded-hypertee ds degree closing-brackets))
 
 (define (hypertee->degree-and-closing-brackets ht)
   (dissect ht (hypertee ds d closing-brackets)
