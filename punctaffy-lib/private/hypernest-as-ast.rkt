@@ -48,9 +48,9 @@
   make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee-bind-all-degrees
-  hypertee/c hypertee-contour hypertee-degree
-  hypertee->degree-and-closing-brackets hypertee-dim-sys
-  hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
+  hypertee/c hypertee-coil-hole hypertee-coil-zero hypertee-contour
+  hypertee-degree hypertee->degree-and-closing-brackets
+  hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
   hypertee-get-hole-zero hypertee-plus1 hypertee-promote hypertee-pure
   hypertee-set-degree hypertee-zip-low-degrees hypertee-zip-selective)
@@ -178,15 +178,17 @@
     `(hypernest/c ,ds)))
 
 (define (hypernest-coil/c ds)
-  (or/c
-    (match/c hypernest-coil-zero)
-    (match/c hypernest-coil-hole (dim-sys-0<dim/c ds) any/c
-      (hypertee/c ds))
-    (match/c hypernest-coil-bump
-      (dim-sys-0<dim/c ds)
-      any/c
-      (dim-sys-dim/c ds)
-      (hypernest/c ds))))
+  (rename-contract
+    (or/c
+      (match/c hypernest-coil-zero)
+      (match/c hypernest-coil-hole (dim-sys-0<dim/c ds) any/c
+        (hypertee/c ds))
+      (match/c hypernest-coil-bump
+        (dim-sys-0<dim/c ds)
+        any/c
+        (dim-sys-dim/c ds)
+        (hypernest/c ds)))
+    `(hypernest-coil/c ,ds)))
 
 (define-imitation-simple-struct
   (hnb-open? hnb-open-degree hnb-open-data)
@@ -865,11 +867,11 @@
 (define/contract (hypertee->hypernest ht)
   (-> hypertee? hypernest?)
   (w- ds (hypertee-dim-sys ht)
-  #/expect (hypertee-drop1 ht) (just data-and-tails)
-    (hypernest-careful ds #/hypernest-coil-zero)
-  #/dissect data-and-tails (list data tails)
   #/hypernest-careful ds
-  #/hypernest-coil-hole (hypertee-degree ht) data
+  #/expect (hypertee-drop1 ht)
+    (hypertee-coil-hole overall-degree data tails)
+    (hypernest-coil-zero)
+  #/hypernest-coil-hole overall-degree data
   #/hypertee-dv-map-all-degrees tails #/fn d tail
     (hypertee->hypernest tail)))
 
@@ -877,7 +879,7 @@
   (-> hypernest? #/maybe/c hypertee?)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
-    (just #/hypertee-plus1 ds (dim-sys-dim-zero ds) #/nothing)
+    (just #/hypertee-plus1 ds #/hypertee-coil-zero)
   #/mat coil (hypernest-coil-hole d data tails)
     (dissect
       (hypertee-dv-fold-map-any-all-degrees (trivial) tails
@@ -885,7 +887,7 @@
         (list state #/hypernest->maybe-hypertee tail))
       (list (trivial) maybe-tails)
     #/maybe-map maybe-tails #/fn tails
-    #/hypertee-plus1 ds d #/just #/list data tails)
+    #/hypertee-plus1 ds #/hypertee-coil-hole d data tails)
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (nothing)))
@@ -894,9 +896,9 @@
   (->i ([hn hypernest?]) [_ (hn) (hypertee/c #/hypernest-dim-sys hn)])
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
-    (hypertee-plus1 ds (dim-sys-dim-zero ds) #/nothing)
+    (hypertee-plus1 ds #/hypertee-coil-zero)
   #/mat coil (hypernest-coil-hole d data tails)
-    (hypertee-plus1 ds d #/just #/list data
+    (hypertee-plus1 ds #/hypertee-coil-hole d data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
       (hypernest-truncate-to-hypertee tail))
   #/dissect coil

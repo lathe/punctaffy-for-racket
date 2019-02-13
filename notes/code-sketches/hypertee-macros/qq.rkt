@@ -38,7 +38,7 @@
   
   (require #/only-in lathe-comforts dissect expect fn mat w-)
   (require #/only-in lathe-comforts/list list-foldr list-map)
-  (require #/only-in lathe-comforts/maybe just maybe/c nothing)
+  (require #/only-in lathe-comforts/maybe just maybe/c)
   (require #/only-in lathe-comforts/struct struct-easy)
   (require #/only-in lathe-comforts/trivial trivial)
   
@@ -52,9 +52,10 @@
     extended-nat-dim-successors-sys omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
     degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
-    hypertee? hypertee-bind-one-degree hypertee-degree hypertee-drop1
-    hypertee-fold hypertee-join-one-degree hypertee-promote
-    hypertee-pure hypertee-truncate hypertee-v-map-one-degree
+    hypertee? hypertee-bind-one-degree hypertee-coil-hole
+    hypertee-coil-zero hypertee-degree hypertee-drop1 hypertee-fold
+    hypertee-join-one-degree hypertee-promote hypertee-pure
+    hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
   
   (provide #/all-defined-out)
@@ -187,8 +188,9 @@
           ; an error.
           (error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax")
         #/mat d 1
-          (dissect (hypertee-drop1 tails) (just #/list rest tails)
-          #/dissect (hypertee-drop1 tails) (nothing)
+          (dissect (hypertee-drop1 tails)
+            (hypertee-coil-hole overall-degree rest tails)
+          #/dissect (hypertee-drop1 tails) (hypertee-coil-zero)
           #/(fn result #/cons result rest)
           #/mat data (ht-tag-1-s-expr-stx stx) #`'#,stx
           #/mat data
@@ -208,8 +210,9 @@
               #/mat d 0 (list (list) data)
               #/dissect d 1
               #/dissect (hypertee-drop1 tails)
-                (just #/list (list elems rest) tails)
-              #/dissect (hypertee-drop1 tails) (nothing)
+                (hypertee-coil-hole
+                  overall-degree (list elems rest) tails)
+              #/dissect (hypertee-drop1 tails) (hypertee-coil-zero)
               #/list (append data elems) rest))
             (list elems rest)
           #/(fn result #/cons result rest)

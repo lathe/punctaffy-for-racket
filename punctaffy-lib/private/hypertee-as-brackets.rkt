@@ -47,7 +47,8 @@
   dim-successors-sys? dim-successors-sys-dim-plus-int
   dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys dim-sys?
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c dim-sys-dim-max dim-sys-dim-zero)
+  dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dim-max
+  dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   hyperstack-push make-hyperstack-trivial make-hyperstack)
@@ -100,6 +101,18 @@
   hypertee-set-degree-maybe
   hypertee-set-degree
   hypertee-contour
+  hypertee-coil-zero
+  (contract-out
+    [hypertee-coil-zero? (-> any/c boolean?)])
+  hypertee-coil-hole
+  (contract-out
+    [hypertee-coil-hole? (-> any/c boolean?)]
+    [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
+    [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
+    [hypertee-coil-hole-tails-hypertee
+      (-> hypertee-coil-hole? any/c)])
+  (contract-out
+    [hypertee-coil/c (-> dim-sys? contract?)])
   hypertee-drop1
   hypertee-dv-map-all-degrees
   hypertee-v-map-one-degree
@@ -654,8 +667,28 @@
       "ht" ht)
   #/hypertee-pure succ-d hole-value ht))
 
+(define-imitation-simple-struct (hypertee-coil-zero?)
+  hypertee-coil-zero
+  'hypertee-coil-zero (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hypertee-coil-hole?
+    hypertee-coil-hole-overall-degree
+    hypertee-coil-hole-data
+    hypertee-coil-hole-tails-hypertee)
+  hypertee-coil-hole
+  'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
+
+(define (hypertee-coil/c ds)
+  (rename-contract
+    (or/c
+      (match/c hypertee-coil-zero)
+      (match/c hypertee-coil-hole (dim-sys-0<dim/c ds) any/c
+        (hypertee/c ds)))
+    `(hypertee-coil/c ,ds)))
+
 (define/contract (hypertee-drop1 ht)
-  (-> hypertee? #/maybe/c #/list/c any/c hypertee?)
+  (->i ([ht hypertee?])
+    [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])
   
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
@@ -668,9 +701,9 @@
   (struct-easy (interpolation-state-finished result))
   
   (dissect ht (hypertee ds d-root closing-brackets)
-  #/expect closing-brackets (cons first rest) (nothing)
+  #/expect closing-brackets (cons first rest) (hypertee-coil-zero)
   #/dissect first (htb-labeled d-dropped data-dropped)
-  #/just #/list data-dropped
+  #/hypertee-coil-hole d-root data-dropped
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for a `d-dropped` equal to 0, but the fold ends with a
   ; location of `(loc-dropped)` instead of `(loc-outside)`.
@@ -831,10 +864,10 @@
         #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
     [_ any/c])
   (w- ds (hypertee-dim-sys ht)
-  #/expect (dim-sys-dim=0? ds #/hypertee-degree ht) #f
+  #/expect (hypertee-drop1 ht)
+    (hypertee-coil-hole overall-degree data tails)
     ; TODO: Make this part of the contract instead.
     (error "Expected ht to be a hypertee of degree greater than 0")
-  #/dissect (hypertee-drop1 ht) (just #/list data tails)
   #/func first-nontrivial-d data
   #/hypertee-dv-map-all-degrees tails #/fn hole-degree tail
     (hypertee-fold (dim-sys-dim-max ds first-nontrivial-d hole-degree)
@@ -859,8 +892,8 @@
     #/if (dim-sys-dim<? ds d first-nontrivial-d)
       (dissect suffix (trivial)
       ; TODO: See if this is correct.
-      #/hypertee-plus1 ds (hypertee-degree ht)
-      #/just #/list (trivial) tails)
+      #/hypertee-plus1 ds
+      #/hypertee-coil-hole (hypertee-degree ht) (trivial) tails)
     #/expect
       (and
         (hypertee? suffix)
@@ -890,12 +923,13 @@
     (w- d (hypertee-degree tails)
     #/if (dim-sys-dim<? ds d first-nontrivial-d)
       (dissect data (trivial)
-      #/hypertee-plus1 ds (hypertee-degree ht)
-      #/just #/list (trivial) tails)
+      #/hypertee-plus1 ds
+      #/hypertee-coil-hole (hypertee-degree ht) (trivial) tails)
     #/w- hole
       (hypertee-dv-map-all-degrees tails #/fn d data #/trivial)
-    #/hypertee-plus1 ds (hypertee-degree ht)
-    #/just #/list (func hole data) tails)))
+    #/hypertee-plus1 ds
+    #/hypertee-coil-hole (hypertee-degree ht) (func hole data)
+      tails)))
 
 (define-imitation-simple-struct
   (hypertee-join-selective-interpolation?
@@ -1450,34 +1484,28 @@
     #f)
   (void))
 
-(define/contract (hypertee-plus1 ds degree coil)
+(define/contract (hypertee-plus1 ds coil)
   (->i
     (
       [ds dim-sys?]
-      [degree (ds) (dim-sys-dim/c ds)]
-      [coil (ds) (maybe/c #/list/c any/c #/hypertee/c ds)])
+      [coil (ds) (hypertee-coil/c ds)])
     [_ (ds) (hypertee/c ds)])
-  (expect coil (just coil)
-    (expect (dim-sys-dim=0? ds degree) #t
-      (error "Expected the degree to be zero since the coil was nothing")
-    #/hypertee ds (dim-sys-dim-zero ds) #/list)
-  #/if (dim-sys-dim=0? ds degree)
-    (error "Expected the degree to be nonzero since the coil wasn't nothing")
-  #/dissect coil (list data tails)
+  (expect coil (hypertee-coil-hole degree data tails)
+    (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/expect (dim-sys-dim<? ds (hypertee-degree tails) degree) #t
-    (error "Expected tails to be a hypertee with degree less than the given degree")
+    (error "Expected the tails of a hypertee-coil-hole to be a hypertee with degree less than the overall degree")
   #/begin
     (hypertee-dv-each-all-degrees tails #/fn d tail
       (unless
         (and (hypertee? tail)
           (dim-sys-dim=? ds degree #/hypertee-degree tail))
-        (error "Expected tails to be a hypertee with hypertees of the given degree in its holes")))
+        (error "Expected the tails of a hypertee-coil-hole to be a hypertee with hypertees of the given degree in its holes")))
   #/begin
     (hypertee-dv-each-all-degrees tails #/fn d tail
       (hypertee-dv-each-all-degrees tail #/fn d2 data
         (when (dim-sys-dim<? ds d2 d)
         #/expect data (trivial)
-          (error "Expected tails to be a hypertee containing hypertees such that a hypertee in a hole of degree N contained only trivial values at degrees less than N")
+          (error "Expected the tails of a hypertee-coil-hole to be a hypertee containing hypertees such that a hypertee in a hole of degree N contained only trivial values at degrees less than N")
         #/void)))
   #/hypertee-join-all-degrees #/hypertee-pure degree
     (hypertee-pure degree data
@@ -1498,7 +1526,8 @@
       (dim-successors-sys-dim=plus-int? dss
         expected-succ-hole-degree hole-degree 1))
   #/w-loop next is-expected-degree is-expected-degree ht ht
-    (dissect (hypertee-drop1 ht) (just #/list data tails)
+    (dissect (hypertee-drop1 ht)
+      (hypertee-coil-hole overall-degree data tails)
     #/and (is-expected-degree #/hypertee-degree tails)
     #/hypertee-dv-all-all-degrees tails #/fn d tail
       (next (fn d2 #/dim-sys-dim=? ds d d2) tail))))
@@ -1512,7 +1541,8 @@
       (maybe/c
       #/list/c any/c #/hypertee/c #/dim-successors-sys-dim-sys dss)])
   (expect (hypertee-contour? dss ht) #t (nothing)
-  #/dissect (hypertee-drop1 ht) (just #/list data tails)
+  #/dissect (hypertee-drop1 ht)
+    (hypertee-coil-hole overall-degree data tails)
   #/just #/list data #/hypertee-dv-map-all-degrees tails #/fn d data
     (dissect (dim-successors-sys-dim-plus-int dss d 1) (just succ-d)
     #/dissect

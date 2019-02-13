@@ -72,10 +72,7 @@
 
 
 (define (check-drop1-round-trip sample)
-  (check-equal?
-    (hypertee-plus1 ds (hypertee-degree sample)
-      (hypertee-drop1 sample))
-    sample))
+  (check-equal? (hypertee-plus1 ds #/hypertee-drop1 sample) sample))
 
 (check-drop1-round-trip sample-0)
 (check-drop1-round-trip sample-closing-1)
@@ -83,7 +80,7 @@
 
 (check-equal?
   (hypertee-drop1 sample-closing-3)
-  (just #/list 'a
+  (hypertee-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
     ; `(hypernest-drop1 sample-closing-3)` in test-hypernest.rkt. Make
     ; sure it's correct.
