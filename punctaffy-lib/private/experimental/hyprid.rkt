@@ -40,8 +40,8 @@
   dim-successors-sys-dim-sys dim-successors-sys-dim-plus-int
   dim-successors-sys-dim=plus-int? dim-sys-dim<? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c hyperstack-dimension
-  hyperstack-pop-trivial hyperstack-pop-uniform
-  make-hyperstack-trivial make-hyperstack-uniform)
+  hyperstack-pop-trivial hyperstack-pop make-hyperstack-trivial
+  make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
   hypertee? hypertee-bind-pred-degree hypertee-closing-bracket-degree
@@ -365,7 +365,7 @@
     
     hist
     (list (history-info 'root-island #/just root-island-state)
-      (make-hyperstack-uniform ds d #/history-info 'hole #/nothing))
+      (make-hyperstack ds d #/history-info 'hole #/nothing))
     
     (expect closing-brackets (cons closing-bracket closing-brackets)
       ; In the end, we build the root island by accessing its state to
@@ -420,7 +420,7 @@
       #t
       (error "Internal error")
     #/dissect
-      (hyperstack-pop-uniform histories-before d
+      (hyperstack-pop histories-before d
         (history-info location-before maybe-state-before))
       (list
         (history-info location-after maybe-state-after)

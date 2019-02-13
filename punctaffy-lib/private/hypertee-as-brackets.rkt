@@ -48,9 +48,8 @@
   dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys dim-sys?
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-dim-max dim-sys-dim-zero
-  hyperstack-dimension hyperstack-pop-trivial hyperstack-pop-uniform
-  hyperstack-push-uniform make-hyperstack-trivial
-  make-hyperstack-uniform)
+  hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
+  hyperstack-push make-hyperstack-trivial make-hyperstack)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -676,10 +675,9 @@
   ; location of `(loc-dropped)` instead of `(loc-outside)`.
   #/if (dim-sys-dim=0? ds d-dropped)
     (hypertee ds (dim-sys-dim-zero ds) #/list)
-  #/w- stack (make-hyperstack-uniform ds d-root #/loc-outside)
+  #/w- stack (make-hyperstack ds d-root #/loc-outside)
   #/dissect
-    (hyperstack-pop-uniform stack d-dropped
-      (loc-interpolation-uninitialized))
+    (hyperstack-pop stack d-dropped #/loc-interpolation-uninitialized)
     (list (loc-outside) stack)
   #/w-loop next
     root-brackets (list-kv-map rest #/fn k v #/list k v)
@@ -692,7 +690,7 @@
       #/dissect (hash-ref interpolations i)
         (interpolation-state-in-progress
           rev-brackets interpolation-hyperstack)
-      #/dissect (hyperstack-pop-uniform interpolation-hyperstack d #f)
+      #/dissect (hyperstack-pop interpolation-hyperstack d #f)
         (list popped-the-root? interpolation-hyperstack)
       #/hash-set interpolations i
         (interpolation-state-in-progress
@@ -731,7 +729,7 @@
     #/dissect root-bracket (list new-i closing-bracket)
     #/dissect hist (list loc stack)
     #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
-    #/dissect (hyperstack-pop-uniform stack d-bracket loc)
+    #/dissect (hyperstack-pop stack d-bracket loc)
       (list tentative-new-loc tentative-new-stack)
     #/mat loc (loc-outside)
       (dissect tentative-new-loc (loc-interpolation i d)
@@ -744,7 +742,7 @@
         (next root-brackets
           (hash-set interpolations new-i
             (interpolation-state-in-progress (list)
-              (make-hyperstack-uniform ds d-root #t)))
+              (make-hyperstack ds d-root #t)))
           (list (loc-interpolation new-i d-bracket)
             tentative-new-stack)
           (cons (htb-labeled d-bracket new-i) rev-result))
@@ -938,7 +936,7 @@
     interpolations (make-immutable-hasheq)
     hist
       (list (state-in-root)
-      #/make-hyperstack-uniform ds overall-degree #/state-in-root)
+      #/make-hyperstack ds overall-degree #/state-in-root)
     rev-result (list)
     
     (define (finish root-brackets interpolations rev-result)
@@ -1002,7 +1000,7 @@
         (htb-labeled d
           (hypertee-join-selective-non-interpolation data))
         ; We begin a non-interpolation in an interpolation.
-        (w- histories (hyperstack-push-uniform histories d state)
+        (w- histories (hyperstack-push histories d state)
         #/w- hist (list state histories)
         #/next root-brackets interpolations hist
           (cons (htb-labeled d data) rev-result))
@@ -1015,7 +1013,7 @@
       #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories)
         #t
         (error "Expected each high-degree hole of a hypertee join interpolation to be a hypertee-join-selective-non-interpolation")
-      #/dissect (hyperstack-pop-uniform histories d state)
+      #/dissect (hyperstack-pop histories d state)
         (list state histories)
       #/w- hist (list state histories)
       #/mat state (state-in-root)
@@ -1068,7 +1066,7 @@
     #/mat closing-bracket
       (htb-labeled d #/hypertee-join-selective-non-interpolation data)
       ; We begin a non-interpolation in the root.
-      (w- histories (hyperstack-push-uniform histories d state)
+      (w- histories (hyperstack-push histories d state)
       #/w- hist (list state histories)
       #/next root-brackets interpolations hist
         (cons (htb-labeled d data) rev-result))
@@ -1080,7 +1078,7 @@
     #/w- d (hypertee-closing-bracket-degree closing-bracket)
     #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories) #t
       (error "Internal error: Expected the next closing bracket of a hypertee join root to be of a degree less than the current region's degree")
-    #/dissect (hyperstack-pop-uniform histories d state)
+    #/dissect (hyperstack-pop histories d state)
       (list state histories)
     #/mat closing-bracket (htb-unlabeled d)
       (w- hist (list state histories)
@@ -1142,7 +1140,7 @@
           #/hash-set hole-states i
             (list (list) (make-hyperstack-trivial ds d))))
         (list (nothing)
-          (make-hyperstack-uniform ds overall-degree #/nothing)))
+          (make-hyperstack ds overall-degree #/nothing)))
       result
     #/fn state closing-bracket
       (dissect state
@@ -1151,8 +1149,7 @@
       #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories)
         #t
         (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
-      #/dissect
-        (hyperstack-pop-uniform histories d maybe-current-hole)
+      #/dissect (hyperstack-pop histories d maybe-current-hole)
         (list maybe-restored-hole histories)
       #/w- update-hole-state
         (fn hole-states i

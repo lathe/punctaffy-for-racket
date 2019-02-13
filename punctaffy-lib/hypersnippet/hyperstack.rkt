@@ -227,21 +227,21 @@
       
       [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
   
-  [make-hyperstack-uniform
+  [make-hyperstack
     (->i
       ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)] [elem any/c])
       [_ (ds) (hyperstack/c ds)])]
   [make-hyperstack-trivial
     (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
       [_ (ds) (hyperstack/c ds)])]
-  [hyperstack-push-uniform
+  [hyperstack-push
     (->i
       (
         [h hyperstack?]
         [bump-degree (h) (dim-sys-dim/c #/hyperstack-dim-sys h)]
         [elem any/c])
       [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
-  [hyperstack-pop-uniform
+  [hyperstack-pop
     (->i
       (
         [h hyperstack?]
@@ -504,25 +504,25 @@
           (list elem rep-chevron)))
       suspended-chevron)))
 
-(define (make-hyperstack-uniform ds dimension elem)
+(define (make-hyperstack ds dimension elem)
   (make-hyperstack-dimlist ds
   #/dim-sys-dimlist-uniform ds dimension elem))
 
 (define (make-hyperstack-trivial ds dimension)
-  (make-hyperstack-uniform ds dimension #/trivial))
+  (make-hyperstack ds dimension #/trivial))
 
-(define (hyperstack-push-uniform h bump-degree elem)
+(define (hyperstack-push h bump-degree elem)
   (w- ds (hyperstack-dim-sys h)
   #/hyperstack-push-dimlist h
   #/dim-sys-dimlist-uniform ds bump-degree elem))
 
-(define (hyperstack-pop-uniform h i elem)
+(define (hyperstack-pop h i elem)
   (w- ds (hyperstack-dim-sys h)
   #/hyperstack-pop-dimlist h #/dim-sys-dimlist-uniform ds i elem))
 
 (define (hyperstack-pop-trivial h i)
   (w- ds (hyperstack-dim-sys h)
-  #/dissect (hyperstack-pop-uniform h i #/trivial) (list elem rest)
+  #/dissect (hyperstack-pop h i #/trivial) (list elem rest)
   #/expect elem (trivial)
     (raise-arguments-error 'hyperstack-pop-trivial
       "expected the popped element to be a trivial value"
