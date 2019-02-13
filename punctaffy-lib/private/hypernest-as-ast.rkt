@@ -1,9 +1,9 @@
 #lang parendown racket/base
 
-; punctaffy/hypersnippet/hypernest
+; punctaffy/private/hypernest-as-ast
 ;
 ; A data structure for encoding hypersnippet notations that can nest
-; with themselves.
+; with themselves (represented in an AST style).
 
 ;   Copyright 2018, 2019 The Lathe Authors
 ;

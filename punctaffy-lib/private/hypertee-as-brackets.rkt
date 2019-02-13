@@ -1,9 +1,10 @@
 #lang parendown racket/base
 
-; punctaffy/hypersnippet/hypertee
+; punctaffy/private/hypertee-as-brackets
 ;
 ; A data structure for encoding the kind of higher-order structure
-; that occurs in higher quasiquotation.
+; that occurs in higher quasiquotation (represented in a
+; sequence-of-brackets style).
 
 ;   Copyright 2017-2019 The Lathe Authors
 ;
