@@ -83,26 +83,26 @@ And here are the exports from punctaffy-lib/hypersnippet/hypernest.rkt:
 In some ways this naming convention is inconvenient, in some ways it's imprecise, and in some ways it's arguably inconsistent. Let's come up with better names.
 
 
-htee?
-hnest?
-htee->hnest        ; this and counterpart would both be considered hypernest tools
-hnest->maybe-htee  ; this and counterpart would both be considered hypernest tools
-htee-degree
-hnest-degree
-htee-degree</c
-hnest-degree</c
-htee-increase-degree-to
-hnest-increase-degree-to
-htee-set-degree-maybe
-hnest-set-degree-maybe
-htee-hv-map
-hnest-holes-hv-map
-htee-dv-map
-hnest-holes-dv-map
-htee-hv-map-at
-hnest-holes-hv-map-at
-htee-v-map-at
-hnest-holes-v-map-at
+hypertee?
+hypernest?
+hypertee->hypernest        ; this and counterpart would both be considered hypernest tools
+hypernest->maybe-hypertee  ; this and counterpart would both be considered hypernest tools
+hypertee-degree
+hypernest-degree
+hypertee-degree</c
+hypernest-degree</c
+hypertee-increase-degree-to
+hypernest-increase-degree-to
+hypertee-set-degree-maybe
+hypernest-set-degree-maybe
+hypertee-hv-map
+hypernest-holes-hv-map
+hypertee-dv-map
+hypernest-holes-dv-map
+hypertee-hv-map-at
+hypernest-holes-hv-map-at
+hypertee-v-map-at
+hypernest-holes-v-map-at
   ; NOTE: Utilities with "at" only process holes of a specific degree.
   ; Utilities with "holes" only process the holes, which leaves us
   ; room to develop other utilities which process the bumps as well.
@@ -113,76 +113,76 @@ hnest-holes-v-map-at
   ; or something. But I think there are few monad-like data structures
   ; for which it makes such a drastic difference whether something is
   ; interpolated or not.
-htee-join-selective
-hnest-holes-join-selective
-htee-join
-hnest-holes-join
-htee-join-at
-hnest-holes-join-at
-htee-done
-hnest-holes-done
-htee-hv-bind
-hnest-holes-hv-bind
-htee-hv-bind-at
-hnest-holes-hv-bind-at
-htee-zip-with-htee
-hnest-holes-zip-with-htee
+hypertee-join-selective
+hypernest-holes-join-selective
+hypertee-join
+hypernest-holes-join
+hypertee-join-at
+hypernest-holes-join-at
+hypertee-done
+hypernest-holes-done
+hypertee-hv-bind
+hypernest-holes-hv-bind
+hypertee-hv-bind-at
+hypernest-holes-hv-bind-at
+hypertee-zip-with-hypertee
+hypernest-holes-zip-with-hypertee
 
-(struct-out htee-coil-zero)
-(struct-out hnest-coil-zero)
-(struct-out htee-coil-hole)
-(struct-out hnest-coil-hole)
-(struct-out hnest-coil-bump)  ; has no hypertee counterpart
-htee-furl
-hnest-furl
-htee-unfurl
-hnest-unfurl
+(struct-out hypertee-coil-zero)
+(struct-out hypernest-coil-zero)
+(struct-out hypertee-coil-hole)
+(struct-out hypernest-coil-hole)
+(struct-out hypernest-coil-bump)  ; has no hypertee counterpart
+hypertee-furl
+hypernest-furl
+hypertee-unfurl
+hypernest-unfurl
 
-htee-bracket-degree
-hnest-bracket-degree
-brackets->htee
-brackets->hnest
-htee->brackets
-hnest->brackets
-htee-by-brackets
-hnest-by-brackets
+hypertee-bracket-degree
+hypernest-bracket-degree
+brackets->hypertee
+brackets->hypernest
+hypertee->brackets
+hypernest->brackets
+hypertee-by-brackets
+hypernest-by-brackets
 
 ; used in just a few places
-htee-hv-each-unspecified-order
-hnest-holes-hv-each-unspecified-order
-htee-dv-each-unspecified-order
-hnest-holes-dv-each-unspecified-order
-htee-v-each-unspecified-order-at
-hnest-holes-v-each-unspecified-order-at
-htee-get-hole-zero
-hnest-get-hole-zero
-htee-contour
-hnest-contour
-htee-contour?
-hnest-contour?
-htee-uncontour
-hnest-uncountour
+hypertee-hv-each-unspecified-order
+hypernest-holes-hv-each-unspecified-order
+hypertee-dv-each-unspecified-order
+hypernest-holes-dv-each-unspecified-order
+hypertee-v-each-unspecified-order-at
+hypernest-holes-v-each-unspecified-order-at
+hypertee-get-hole-zero
+hypernest-get-hole-zero
+hypertee-contour
+hypernest-contour
+hypertee-contour?
+hypernest-contour?
+hypertee-uncontour
+hypernest-uncountour
 
 ; never used
-htee-dv-filter
-hnest-holes-dv-filter
-htee-filter-degree-to
-hnest-holes-filter-degree-to
+hypertee-dv-filter
+hypernest-holes-dv-filter
+hypertee-filter-degree-to
+hypernest-holes-filter-degree-to
   ; NOTE: The "filter-degree-to" utilities first filter the holes that
   ; can't exist at that degree, then demote the data structure to that
   ; degree. These were called "truncate" before.
-hnest-filter-to-hypertee
+hypernest-filter-to-hypertee
   ; NOTE: This has no hypertee counterpart.
-  ; TODO: Should we call this `hnest-bumps-filter-all` instead?
-htee-dv-any-unspecified-order
-hnest-holes-dv-any-unspecified-order
-htee-dv-all-unspecified-order
-hnest-holes-dv-all-unspecified-order
-htee-dv-map-unspecified-order
-hnest-holes-dv-map-unspecified-order
+  ; TODO: Should we call this `hypernest-bumps-filter-all` instead?
+hypertee-dv-any-unspecified-order
+hypernest-holes-dv-any-unspecified-order
+hypertee-dv-all-unspecified-order
+hypernest-holes-dv-all-unspecified-order
+hypertee-dv-map-unspecified-order
+hypernest-holes-dv-map-unspecified-order
 
 
-  notes on the naming of `htee-dv-map-unspecified-order`, which we
+  notes on the naming of `hypertee-dv-map-unspecified-order`, which we
   were calling `hypertee-dv-fold-map-any-all-degrees` before:
   
   
@@ -237,7 +237,7 @@ hnest-holes-dv-map-unspecified-order
   s -> f a -> (s -> a -> s) -> (s -> r) -> (a -> r -> r) -> r
   (s -> a -> s) -> (a -> r -> r) -> ((s -> r) -> (f a -> s -> r))
   
-  Anyway, the point of `htee-dv-fold-map-any` is to be a very
+  Anyway, the point of `hypertee-dv-fold-map-any` is to be a very
   expressive left-to-right traversal, so we probably want to upgrade
   it to the resumable one that returns a mapped structure:
   f a -> (f b -> s -> r) -> (a -> (b -> s -> r) -> (s -> r)) -> (s -> r)
@@ -265,7 +265,7 @@ hnest-holes-dv-map-unspecified-order
   ; a similar hypertee where each number is doubled. If the existing
   ; numbers total to over 100, then return a `nothing` instead.
   ;
-  (htee-v-fold-map-any 0 ht (fn state mapped #/just mapped)
+  (hypertee-v-fold-map-any 0 ht (fn state mapped #/just mapped)
   #/fn state data then
     (w- new-state (+ data state)
     #/if (< 100 new-state) (nothing)
@@ -276,7 +276,8 @@ hnest-holes-dv-map-unspecified-order
   ; hypertee where each one is replaced by its element (which must
   ; exist, since it's not a `nothing`).
   ;
-  (htee-v-fold-map-any (trivial) ht (fn state mapped #/just mapped)
+  (hypertee-v-fold-map-any (trivial) ht
+    (fn state mapped #/just mapped)
   #/fn state data then
     (maybe-bind data #/fn data
     #/then state data))
@@ -285,18 +286,18 @@ hnest-holes-dv-map-unspecified-order
   like Haskell's `mapM` operation. We can implement that operation for
   any monad like so:
   
-  (define (htee-v-mapm monad-done monad-bind ht proc)
-    (htee-v-fold-map-any (trivial) ht
+  (define (hypertee-v-mapm monad-done monad-bind ht proc)
+    (hypertee-v-fold-map-any (trivial) ht
       (fn state mapped #/monad-done mapped)
       (fn state data then
         (monad-bind (proc data) #/fn data
         #/then state data))))
   
-  If on the other hand we start with `htee-v-mapm`, I'm pretty sure we
-  can implement `htee-v-fold-map-any` using a combination of the state
-  and continuation monads:
+  If on the other hand we start with `hypertee-v-mapm`, I'm pretty
+  sure we can implement `hypertee-v-fold-map-any` using a combination
+  of the state and continuation monads:
   
-  (define (htee-v-fold-map-any state ht on-mapped on-hole)
+  (define (hypertee-v-fold-map-any state ht on-mapped on-hole)
     (define (run state traversal)
       (traversal state #/fn state result
         result))
@@ -309,27 +310,29 @@ hnest-holes-dv-map-unspecified-order
     
     (run state
     #/trav-bind
-      (htee-v-mapm trav-done trav-bind ht #/fn data #/fn state then
+      (hypertee-v-mapm trav-done trav-bind ht
+      #/fn data #/fn state then
         (on-hole state data then))
     #/fn mapped #/fn state then
     #/then state #/on-mapped state mapped))
   
   However, even with an existing library of monadic tools, passing
   around the monadic return and bind operations is somewhat
-  cumbersome without a type class system. The `htee-v-fold-map-any`
-  interface captures the same features as `htee-v-mapm` with a more
-  streamlined interface for untyped programming.
+  cumbersome without a type class system. The
+  `hypertee-v-fold-map-any` interface captures the same features as
+  `hypertee-v-mapm` with a more streamlined interface for untyped
+  programming.
   
-  We're actually dealing with `htee-dv-fold-map-any`, so each data
+  We're actually dealing with `hypertee-dv-fold-map-any`, so each data
   value would also be accompanied by its degree:
   
-  (htee-dv-fold-map-any state ht (fn state mapped ...)
+  (hypertee-dv-fold-map-any state ht (fn state mapped ...)
   #/fn state d data then
     ...)
   
   Since this is essentially an effectful map operation for any monadic
   notion of side effects, we should probably emphasize "map" in the
-  name as opposed to "fold" or "any." How about `htee-dv-mapl`,
+  name as opposed to "fold" or "any." How about `hypertee-dv-mapl`,
   calling to mind "foldl" to say that this is a traversal in a
   specific order? When the temporal order is specified, then temporal
   concepts like state and early exits make sense.
