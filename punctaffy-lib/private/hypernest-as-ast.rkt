@@ -41,10 +41,10 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   dim-successors-sys? dim-sys? dim-successors-sys-dim-sys
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dimlist-uniform
-  dim-sys-dim-max dim-sys-dim-zero hyperstack-dimension
-  hyperstack-peek-elem hyperstack-pop hyperstack-push-uniform
-  make-hyperstack)
+  dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dim-max
+  dim-sys-dim-zero hyperstack-dimension hyperstack-peek-elem
+  hyperstack-pop-uniform hyperstack-push-uniform
+  make-hyperstack-uniform)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee-bind-all-degrees
   hypertee/c hypertee-contour hypertee-degree
@@ -254,8 +254,7 @@
     (error "Expected hypernest-brackets to be nonempty since opening-degree was nonzero")
   #/w- root-i 'root
   #/w- stack
-    (make-hyperstack ds
-    #/dim-sys-dimlist-uniform ds opening-degree #/parent-same-part #t)
+    (make-hyperstack-uniform ds opening-degree #/parent-same-part #t)
   #/dissect
     (mat first-bracket (hnb-open bump-degree data)
       (list
@@ -274,8 +273,7 @@
           "first-bracket" first-bracket
           "hypernest-brackets" hypernest-brackets)
       #/dissect
-        (hyperstack-pop stack
-          (dim-sys-dimlist-uniform ds hole-degree #/parent-new-part))
+        (hyperstack-pop-uniform stack hole-degree #/parent-new-part)
         (list 'root (parent-same-part #t) stack)
       #/list
         (fn root-part
@@ -393,8 +391,7 @@
         #/void))
     #/mat parent (parent-same-part should-annotate-as-nontrivial)
       (dissect
-        (hyperstack-pop stack
-        #/dim-sys-dimlist-uniform ds hole-degree
+        (hyperstack-pop-uniform stack hole-degree
           (parent-same-part #f))
         (list _ _ updated-stack)
       #/dissect
@@ -419,8 +416,7 @@
         new-i)
     #/mat parent (parent-new-part)
       (dissect
-        (hyperstack-pop stack
-        #/dim-sys-dimlist-uniform ds hole-degree
+        (hyperstack-pop-uniform stack hole-degree
           (parent-part current-i #t))
         (list _ _ updated-stack)
       #/mat hypernest-bracket (hnb-labeled hole-degree hole-value)
@@ -452,8 +448,7 @@
     #/dissect parent (parent-part parent-i should-annotate-as-trivial)
       (dissect hole-value (trivial)
       #/dissect
-        (hyperstack-pop stack
-        #/dim-sys-dimlist-uniform ds hole-degree
+        (hyperstack-pop-uniform stack hole-degree
           (parent-part current-i #f))
         (list _ _ updated-stack)
       #/dissect (hash-ref parts parent-i)
@@ -637,8 +632,7 @@
         
         hist
         (list (state-in-root)
-          (make-hyperstack ds
-          #/dim-sys-dimlist-uniform ds
+          (make-hyperstack-uniform ds
             (dim-sys-dim-max ds overall-degree bump-degree)
             (state-in-root)))
         
@@ -692,9 +686,7 @@
             #/w- hist (list state histories)
             #/next root-brackets interpolations hist
               (cons bracket rev-result))
-          #/dissect
-            (hyperstack-pop histories
-              (dim-sys-dimlist-uniform ds d state))
+          #/dissect (hyperstack-pop-uniform histories d state)
             (list popped-barrier state histories)
           #/w- hist (list state histories)
           #/mat state (state-in-root)
@@ -753,9 +745,7 @@
           #t
           (error "Internal error: Expected each hole of a hypernest hole or bump to be of a degree less than the current region's degree")
         #/w- old-d (hyperstack-dimension histories)
-        #/dissect
-          (hyperstack-pop histories
-            (dim-sys-dimlist-uniform ds d state))
+        #/dissect (hyperstack-pop-uniform histories d state)
           (list popped-barrier state histories)
         #/expect bracket (hnb-labeled d data)
           (w- hist (list state histories)

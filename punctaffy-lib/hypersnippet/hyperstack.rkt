@@ -229,6 +229,10 @@
         (list/c (or/c 'root 'push 'pop) any/c
           (hyperstack/c #/hyperstack-dim-sys h))])]
   
+  [make-hyperstack-uniform
+    (->i
+      ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)] [elem any/c])
+      [_ (ds) (hyperstack/c ds)])]
   [make-hyperstack-n
     (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
       [_ (ds) (hyperstack/c ds)])]
@@ -239,6 +243,17 @@
         [bump-degree (h) (dim-sys-dim/c #/hyperstack-dim-sys h)]
         [elem any/c])
       [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
+  [hyperstack-pop-uniform
+    (->i
+      (
+        [h hyperstack?]
+        [i (h)
+          (w- ds (hyperstack-dim-sys h)
+          #/dim-sys-dim</c ds #/hyperstack-dimension h)]
+        [elem any/c])
+      [_ (h)
+        (list/c (or/c 'root 'push 'pop) any/c
+          (hyperstack/c #/hyperstack-dim-sys h))])]
   [hyperstack-pop-n-with-barrier
     (->i
       (
@@ -503,18 +518,23 @@
           (list 'pop elem rep-chevron)))
       suspended-chevron)))
 
+(define (make-hyperstack-uniform ds dimension elem)
+  (make-hyperstack ds #/dim-sys-dimlist-uniform ds dimension elem))
+
 (define (make-hyperstack-n ds dimension)
-  (make-hyperstack ds
-  #/dim-sys-dimlist-uniform ds dimension #/trivial))
+  (make-hyperstack-uniform ds dimension #/trivial))
 
 (define (hyperstack-push-uniform h bump-degree elem)
   (w- ds (hyperstack-dim-sys h)
   #/hyperstack-push h #/dim-sys-dimlist-uniform ds bump-degree elem))
 
+(define (hyperstack-pop-uniform h i elem)
+  (w- ds (hyperstack-dim-sys h)
+  #/hyperstack-pop h #/dim-sys-dimlist-uniform ds i elem))
+
 (define (hyperstack-pop-n-with-barrier h i)
   (w- ds (hyperstack-dim-sys h)
-  #/dissect
-    (hyperstack-pop h #/dim-sys-dimlist-uniform ds i #/trivial)
+  #/dissect (hyperstack-pop-uniform h i #/trivial)
     (list popped-barrier elem rest)
   #/list popped-barrier rest))
 
