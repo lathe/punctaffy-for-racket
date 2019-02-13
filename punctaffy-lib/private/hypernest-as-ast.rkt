@@ -264,7 +264,7 @@
         (part-state #t (dim-sys-dim-zero ds) bump-degree
           (dim-sys-dim-max ds opening-degree bump-degree)
           (list))
-        (hyperstack-push stack bump-degree #/parent-new-part))
+        (hyperstack-push bump-degree stack #/parent-new-part))
     #/mat first-bracket (hnb-labeled hole-degree data)
       (expect (dim-sys-dim<? ds hole-degree opening-degree) #t
         (raise-arguments-error 'degree-and-brackets->hypernest
@@ -272,7 +272,7 @@
           "opening-degree" opening-degree
           "first-bracket" first-bracket
           "hypernest-brackets" hypernest-brackets)
-      #/dissect (hyperstack-pop stack hole-degree #/parent-new-part)
+      #/dissect (hyperstack-pop hole-degree stack #/parent-new-part)
         (list (parent-same-part #t) stack)
       #/list
         (fn root-part
@@ -349,7 +349,7 @@
             current-first-non-interpolation-degree
             current-overall-degree
             (cons hypernest-bracket current-rev-brackets)))
-        (hyperstack-push stack bump-degree #/parent-same-part #f)
+        (hyperstack-push bump-degree stack #/parent-same-part #f)
         current-i
         new-i)
     #/dissect
@@ -389,7 +389,7 @@
         #/void))
     #/mat parent (parent-same-part should-annotate-as-nontrivial)
       (dissect
-        (hyperstack-pop stack hole-degree #/parent-same-part #f)
+        (hyperstack-pop hole-degree stack #/parent-same-part #f)
         (list _ updated-stack)
       #/dissect
         (eq? should-annotate-as-nontrivial
@@ -413,7 +413,7 @@
         new-i)
     #/mat parent (parent-new-part)
       (dissect
-        (hyperstack-pop stack hole-degree #/parent-part current-i #t)
+        (hyperstack-pop hole-degree stack #/parent-part current-i #t)
         (list _ updated-stack)
       #/mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         ; TODO: Is this really an internal error, or is there some way
@@ -444,7 +444,7 @@
     #/dissect parent (parent-part parent-i should-annotate-as-trivial)
       (dissect hole-value (trivial)
       #/dissect
-        (hyperstack-pop stack hole-degree #/parent-part current-i #f)
+        (hyperstack-pop hole-degree stack #/parent-part current-i #f)
         (list _ updated-stack)
       #/dissect (hash-ref parts parent-i)
         (part-state
@@ -677,11 +677,11 @@
             (mat bracket (hnb-open d data) #t
               (dim-sys-dim<=? ds (hyperstack-dimension histories) d))
             ; We begin a non-interpolation in an interpolation.
-            (w- histories (hyperstack-push histories d state)
+            (w- histories (hyperstack-push d histories state)
             #/w- hist (list state histories)
             #/next root-brackets interpolations hist
               (cons bracket rev-result))
-          #/dissect (hyperstack-pop histories d state)
+          #/dissect (hyperstack-pop d histories state)
             (list state histories)
           #/w- hist (list state histories)
           #/mat state (state-in-root)
@@ -732,7 +732,7 @@
         #/w- d (hypernest-bracket-degree bracket)
         #/mat bracket (hnb-open _ _)
           ; We begin a non-interpolation in the root.
-          (w- histories (hyperstack-push histories d state)
+          (w- histories (hyperstack-push d histories state)
           #/w- hist (list state histories)
           #/next root-brackets interpolations hist
             (cons bracket rev-result))
@@ -740,7 +740,7 @@
           #t
           (error "Internal error: Expected each hole of a hypernest hole or bump to be of a degree less than the current region's degree")
         #/w- old-d (hyperstack-dimension histories)
-        #/dissect (hyperstack-pop histories d state)
+        #/dissect (hyperstack-pop d histories state)
           (list state histories)
         #/expect bracket (hnb-labeled d data)
           (w- hist (list state histories)

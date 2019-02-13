@@ -508,7 +508,7 @@
         #t
         (error "Encountered a closing bracket of degree higher than the current region's degree")
       #/w- restored-history
-        (hyperstack-pop-trivial histories closing-degree)
+        (hyperstack-pop-trivial closing-degree histories)
       #/begin
         (if
           (dim-sys-dim=? ds closing-degree
@@ -678,7 +678,7 @@
     (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/w- stack (make-hyperstack ds d-root #/loc-outside)
   #/dissect
-    (hyperstack-pop stack d-dropped #/loc-interpolation-uninitialized)
+    (hyperstack-pop d-dropped stack #/loc-interpolation-uninitialized)
     (list (loc-outside) stack)
   #/w-loop next
     root-brackets (list-kv-map rest #/fn k v #/list k v)
@@ -691,7 +691,7 @@
       #/dissect (hash-ref interpolations i)
         (interpolation-state-in-progress
           rev-brackets interpolation-hyperstack)
-      #/dissect (hyperstack-pop interpolation-hyperstack d #f)
+      #/dissect (hyperstack-pop d interpolation-hyperstack #f)
         (list popped-the-root? interpolation-hyperstack)
       #/hash-set interpolations i
         (interpolation-state-in-progress
@@ -730,7 +730,7 @@
     #/dissect root-bracket (list new-i closing-bracket)
     #/dissect hist (list loc stack)
     #/w- d-bracket (hypertee-closing-bracket-degree closing-bracket)
-    #/dissect (hyperstack-pop stack d-bracket loc)
+    #/dissect (hyperstack-pop d-bracket stack loc)
       (list tentative-new-loc tentative-new-stack)
     #/mat loc (loc-outside)
       (dissect tentative-new-loc (loc-interpolation i d)
@@ -1001,7 +1001,7 @@
         (htb-labeled d
           (hypertee-join-selective-non-interpolation data))
         ; We begin a non-interpolation in an interpolation.
-        (w- histories (hyperstack-push histories d state)
+        (w- histories (hyperstack-push d histories state)
         #/w- hist (list state histories)
         #/next root-brackets interpolations hist
           (cons (htb-labeled d data) rev-result))
@@ -1014,7 +1014,7 @@
       #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories)
         #t
         (error "Expected each high-degree hole of a hypertee join interpolation to be a hypertee-join-selective-non-interpolation")
-      #/dissect (hyperstack-pop histories d state)
+      #/dissect (hyperstack-pop d histories state)
         (list state histories)
       #/w- hist (list state histories)
       #/mat state (state-in-root)
@@ -1067,7 +1067,7 @@
     #/mat closing-bracket
       (htb-labeled d #/hypertee-join-selective-non-interpolation data)
       ; We begin a non-interpolation in the root.
-      (w- histories (hyperstack-push histories d state)
+      (w- histories (hyperstack-push d histories state)
       #/w- hist (list state histories)
       #/next root-brackets interpolations hist
         (cons (htb-labeled d data) rev-result))
@@ -1079,7 +1079,7 @@
     #/w- d (hypertee-closing-bracket-degree closing-bracket)
     #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories) #t
       (error "Internal error: Expected the next closing bracket of a hypertee join root to be of a degree less than the current region's degree")
-    #/dissect (hyperstack-pop histories d state)
+    #/dissect (hyperstack-pop d histories state)
       (list state histories)
     #/mat closing-bracket (htb-unlabeled d)
       (w- hist (list state histories)
@@ -1150,14 +1150,14 @@
       #/expect (dim-sys-dim<? ds d #/hyperstack-dimension histories)
         #t
         (error "Internal error: Encountered a closing bracket of degree higher than the root's current region")
-      #/dissect (hyperstack-pop histories d maybe-current-hole)
+      #/dissect (hyperstack-pop d histories maybe-current-hole)
         (list maybe-restored-hole histories)
       #/w- update-hole-state
         (fn hole-states i
           (dissect (hash-ref hole-states i) (list rev-brackets hist)
           #/expect (dim-sys-dim<? ds d #/hyperstack-dimension hist) #t
             (error "Internal error: Encountered a closing bracket of degree higher than the hole's current region")
-          #/w- hist (hyperstack-pop-trivial hist d)
+          #/w- hist (hyperstack-pop-trivial d hist)
           #/hash-set hole-states i
             (list
               (cons

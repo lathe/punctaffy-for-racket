@@ -421,7 +421,7 @@
       #t
       (error "Internal error")
     #/dissect
-      (hyperstack-pop histories-before d
+      (hyperstack-pop d histories-before
         (history-info location-before maybe-state-before))
       (list
         (history-info location-after maybe-state-after)
@@ -450,8 +450,8 @@
               (htb-labeled pred-pred-unstriped-degrees
                 (unfinished-lake-cane data rest-state))
               rev-brackets)
-            (hyperstack-pop-trivial hist
-              pred-pred-unstriped-degrees)))
+            (hyperstack-pop-trivial pred-pred-unstriped-degrees
+              hist)))
       #/next closing-brackets stripe-states
         (list (history-info 'lake #/just rest-state) histories-after))
     
@@ -475,7 +475,7 @@
           (hash-set stripe-states state
             (stripe-state
               (cons (htb-labeled d #/non-lake-cane data) rev-brackets)
-              (hyperstack-pop-trivial hist d)))
+              (hyperstack-pop-trivial d hist)))
           (list (history-info 'non-lake #/nothing) histories-after))
         
         ; This bracket is closing an even higher-degree bracket, which
@@ -494,7 +494,7 @@
           (hash-set stripe-states state
             (stripe-state
               (cons (htb-labeled d new-state) rev-brackets)
-              (hyperstack-pop-trivial hist d)))
+              (hyperstack-pop-trivial d hist)))
         #/next closing-brackets stripe-states
           (list (history-info 'inner-island #/just new-state)
             histories-after)))
@@ -512,7 +512,7 @@
       (expect maybe-state-before (just state) stripe-states
       #/dissect (hash-ref stripe-states state)
         (stripe-state rev-brackets hist)
-      #/w- hist (hyperstack-pop-trivial hist d)
+      #/w- hist (hyperstack-pop-trivial d hist)
       #/hash-set stripe-states state
         (stripe-state
           (cons
@@ -529,7 +529,7 @@
       #/hash-set stripe-states state
         (stripe-state
           (cons (htb-unlabeled d) rev-brackets)
-          (hyperstack-pop-trivial hist d)))
+          (hyperstack-pop-trivial d hist)))
     #/next closing-brackets stripe-states
       (list (history-info location-after maybe-state-after)
         histories-after))))
