@@ -76,7 +76,13 @@
     (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)])
       [_ boolean?])]
   [dim-sys-0<dim/c (-> dim-sys? contract?)]
+  
+  ; TODO: If we ever need these exports, document and uncomment them.
+  ; For now, dimension-indexed lists are an implementation detail of
+  ; hyperstacks.
+  #;
   [dim-sys-dimlist/c (-> dim-sys? contract?)]
+  #;
   [dim-sys-dimlist-build
     (->i
       (
@@ -84,12 +90,15 @@
         [length (ds) (dim-sys-dim/c ds)]
         [func (ds) (-> (dim-sys-dim/c ds) any/c)])
       [_ (ds) (dim-sys-dimlist/c ds)])]
+  #;
   [dim-sys-dimlist-uniform
     (->i ([ds dim-sys?] [length (ds) (dim-sys-dim/c ds)] [elem any/c])
       [_ (ds) (dim-sys-dimlist/c ds)])]
+  #;
   [dim-sys-dimlist-length
     (->i ([ds dim-sys?] [lst (ds) (dim-sys-dimlist/c ds)])
       [_ (ds) (dim-sys-dim/c ds)])]
+  #;
   [dim-sys-dimlist-map
     (->i
       (
@@ -97,6 +106,7 @@
         [lst (ds) (dim-sys-dimlist/c ds)]
         [v->v (-> any/c any/c)])
       [_ (ds) (dim-sys-dimlist/c ds)])]
+  #;
   [dim-sys-dimlist-zip-map
     (->i
       (
@@ -111,14 +121,17 @@
         (dim-sys-dimlist-length ds b))
       
       [_ (ds) (dim-sys-dimlist/c ds)])]
+  #;
   [dim-sys-dimlist-zero
     (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dimlist/c ds)])]
+  #;
   [dim-sys-dimlist-chevrons
     ; TODO: See if we should make this contract more specific. The
     ; result value is a dimension-indexed list of dimension-indexed
     ; lists.
     (->i ([ds dim-sys?] [lst (ds) (dim-sys-dimlist/c ds)])
       [_ (ds) (dim-sys-dimlist/c ds)])]
+  
   [prop:dim-sys (struct-type-property/c dim-sys-impl?)]
   [make-dim-sys-impl-from-max
     (->
@@ -203,9 +216,14 @@
           #/dim-sys-dim</c ds #/hyperstack-dimension h)])
       [_ any/c])]
   
+  ; TODO: If we ever need these exports, document and uncomment them.
+  ; For now, dimension-indexed lists are an implementation detail of
+  ; hyperstacks.
+  #;
   [make-hyperstack-dimlist
     (->i ([ds dim-sys?] [elems (ds) (dim-sys-dimlist/c ds)])
       [_ (ds) (hyperstack/c ds)])]
+  #;
   [hyperstack-push-dimlist
     (->i
       (
@@ -213,6 +231,7 @@
         [elems-to-push (h)
           (dim-sys-dimlist/c #/hyperstack-dim-sys h)])
       [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
+  #;
   [hyperstack-pop-dimlist
     (->i
       (
