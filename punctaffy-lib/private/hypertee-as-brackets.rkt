@@ -43,11 +43,12 @@
   auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require #/only-in punctaffy/hypersnippet/hyperstack
+(require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-dim-plus-int
   dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys dim-sys?
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c dim-sys-dim-max dim-sys-dim-zero
+  dim-sys-dim=0? dim-sys-dim/c dim-sys-dim-max dim-sys-dim-zero)
+(require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   hyperstack-push make-hyperstack-trivial make-hyperstack)
 (require #/only-in punctaffy/private/suppress-internal-errors

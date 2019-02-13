@@ -47,7 +47,7 @@
     ht-tag-1-other ht-tag-1-s-expr-stx ht-tag-2-list ht-tag-2-list*
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
     s-expr-stx->ht-expr simple-ht-builder-syntax)
-  (require #/only-in punctaffy/hypersnippet/hyperstack
+  (require #/only-in punctaffy/hypersnippet/dim
     dim-successors-sys-dim-sys dim-sys-dim<?
     extended-nat-dim-successors-sys omega)
   (require #/only-in punctaffy/hypersnippet/hypertee

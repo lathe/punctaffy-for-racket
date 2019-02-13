@@ -27,7 +27,7 @@
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require punctaffy/hypersnippet/hyperstack)
+(require punctaffy/hypersnippet/dim)
 (require punctaffy/hypersnippet/hypertee)
 
 ; (We provide nothing from this module.)

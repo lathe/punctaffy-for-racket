@@ -32,6 +32,10 @@
 (require #/for-syntax #/only-in lathe-comforts/maybe just)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
+(require #/for-syntax #/only-in punctaffy/hypersnippet/dim
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
+  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-zero nat-dim-successors-sys
+  successorless-dim-successors-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
   hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
@@ -40,10 +44,6 @@
   hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
   hypernest-promote hypernest-set-degree hypernest-v-map-one-degree
   hypernest-zip hypertee->hypernest)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hyperstack
-  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
-  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-zero nat-dim-successors-sys
-  successorless-dim-successors-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-dv-map-all-degrees hypertee-promote
   hypertee-set-degree-maybe hypertee-uncontour

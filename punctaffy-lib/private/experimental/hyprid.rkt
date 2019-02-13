@@ -35,13 +35,14 @@
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require #/only-in punctaffy/hypersnippet/hyperstack
+(require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-accepts?
   dim-successors-sys-dim-sys dim-successors-sys-dim-plus-int
   dim-successors-sys-dim=plus-int? dim-sys-dim<? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c hyperstack-dimension
-  hyperstack-pop-trivial hyperstack-pop make-hyperstack-trivial
-  make-hyperstack)
+  dim-sys-dim=0? dim-sys-dim/c)
+(require #/only-in punctaffy/hypersnippet/hyperstack
+  hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
+  make-hyperstack-trivial make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
   hypertee? hypertee-bind-pred-degree hypertee-closing-bracket-degree

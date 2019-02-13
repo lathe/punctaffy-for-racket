@@ -32,6 +32,11 @@
 (require #/for-syntax #/only-in lathe-comforts/maybe just)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
+(require #/for-syntax #/only-in punctaffy/hypersnippet/dim
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
+  dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
+  dim-sys-dim-max dim-sys-dim-zero nat-dim-successors-sys
+  successorless-dim-successors-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
   hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
@@ -43,11 +48,6 @@
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hyperstack
-  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys
-  dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
-  dim-sys-dim-max dim-sys-dim-zero nat-dim-successors-sys
-  successorless-dim-successors-sys)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
   hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-nest

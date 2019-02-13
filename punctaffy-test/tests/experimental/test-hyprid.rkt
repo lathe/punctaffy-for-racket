@@ -26,7 +26,7 @@
 (require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require punctaffy/hypersnippet/hyperstack)
+(require punctaffy/hypersnippet/dim)
 (require punctaffy/hypersnippet/hypertee)
 (require punctaffy/private/experimental/hyprid)
 

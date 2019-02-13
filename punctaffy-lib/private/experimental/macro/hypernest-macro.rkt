@@ -30,14 +30,14 @@
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 
+(require #/only-in punctaffy/hypersnippet/dim
+  dim-successors-sys? dim-successors-sys-dim-plus-int
+  dim-successors-sys-dim-sys dim-sys-dim-zero
+  successorless-dim-successors-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
   hypernest-bind-one-degree hypernest/c hypernest-promote
   hypernest-set-degree)
-(require #/only-in punctaffy/hypersnippet/hyperstack
-  dim-successors-sys? dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim-sys dim-sys-dim-zero
-  successorless-dim-successors-sys)
 
 (provide
   (struct-out hn-tag-0-s-expr-stx)

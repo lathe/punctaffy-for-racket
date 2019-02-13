@@ -38,12 +38,14 @@
   auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require #/only-in punctaffy/hypersnippet/hyperstack
+(require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-sys? dim-successors-sys-dim-sys
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dim-max
-  dim-sys-dim-zero hyperstack-dimension hyperstack-peek hyperstack-pop
-  hyperstack-push make-hyperstack)
+  dim-sys-dim-zero)
+(require #/only-in punctaffy/hypersnippet/hyperstack
+  hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
+  make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee-bind-all-degrees
   hypertee/c hypertee-contour hypertee-degree

@@ -30,7 +30,7 @@
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require #/only-in punctaffy/hypersnippet/hyperstack
+(require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys-dim-sys extended-nat-dim-successors-sys omega)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
