@@ -42,7 +42,7 @@
   dim-successors-sys? dim-sys? dim-successors-sys-dim-sys
   dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dim-max
-  dim-sys-dim-zero hyperstack-dimension hyperstack-peek-elem
+  dim-sys-dim-zero hyperstack-dimension hyperstack-peek
   hyperstack-pop-uniform hyperstack-push-uniform
   make-hyperstack-uniform)
 (require #/only-in punctaffy/hypersnippet/hypertee
@@ -368,7 +368,7 @@
         "hypernest-brackets-remaining"
         hypernest-brackets-remaining
         "hypernest-brackets" hypernest-brackets)
-    #/w- parent (hyperstack-peek-elem stack hole-degree)
+    #/w- parent (hyperstack-peek stack hole-degree)
     #/begin
       (mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         (expect parent (parent-same-part #t)

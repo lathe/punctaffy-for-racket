@@ -197,7 +197,7 @@
   [hyperstack-dimension
     (->i ([h hyperstack?])
       [_ (h) (dim-sys-dim/c #/hyperstack-dim-sys h)])]
-  [hyperstack-peek-elem
+  [hyperstack-peek
     (->i
       (
         [h hyperstack?]
@@ -474,7 +474,7 @@
   (dissect h (hyperstack ds rep)
   #/dim-sys-dimlist-length ds rep))
 
-(define (hyperstack-peek-elem h i)
+(define (hyperstack-peek h i)
   (dissect h (hyperstack ds rep)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
     (list elem suspended-chevron)
