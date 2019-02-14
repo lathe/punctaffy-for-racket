@@ -53,7 +53,7 @@
   hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
   hypertee-get-hole-zero hypertee-increase-degree-to hypertee-plus1
-  hypertee-pure hypertee-set-degree hypertee-zip-low-degrees
+  hypertee-pure hypertee-set-degree-force hypertee-zip-low-degrees
   hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
   unsafe-degree-and-closing-brackets->hypertee)
@@ -106,7 +106,7 @@
   degree-and-brackets->hypernest
   hypernest->degree-and-brackets
   hypernest-increase-degree-to
-  hypernest-set-degree
+  hypernest-set-degree-force
   hypertee->hypernest
   hypernest->maybe-hypertee
   hypernest-truncate-to-hypertee
@@ -828,13 +828,14 @@
       (dim-sys-dim-max ds new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (dim-sys-dim<? ds d bump-degree)
-        (hypernest-set-degree (dim-sys-dim-max ds d new-degree) data)
+        (hypernest-set-degree-force (dim-sys-dim-max ds d new-degree)
+          data)
         data))))
 
 ; Takes a nonzero-degree hypernest with no holes of degree N or
 ; greater and returns a degree-N hypernest with the same bumps and
 ; holes.
-(define/contract (hypernest-set-degree new-degree hn)
+(define/contract (hypernest-set-degree-force new-degree hn)
   (->i
     (
       [new-degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
@@ -846,7 +847,7 @@
   #/mat coil (hypernest-coil-hole d data tails)
     (if (dim-sys-dim=? ds d new-degree) hn
     #/expect (dim-sys-dim<? ds (hypertee-degree tails) new-degree) #t
-      (raise-arguments-error 'hypernest-set-degree
+      (raise-arguments-error 'hypernest-set-degree-force
         "expected hn to have no holes of degree new-degree or greater"
         "hn" hn
         "new-degree" new-degree
@@ -854,16 +855,18 @@
         "data" data)
     #/hypernest-careful ds #/hypernest-coil-hole new-degree data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
-      (hypernest-set-degree new-degree tail))
+      (hypernest-set-degree-force new-degree tail))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (if (dim-sys-dim=? ds overall-degree new-degree) hn
     #/hypernest-careful ds
     #/hypernest-coil-bump new-degree data bump-degree
-    #/hypernest-set-degree (dim-sys-dim-max ds new-degree bump-degree)
+    #/hypernest-set-degree-force
+      (dim-sys-dim-max ds new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (dim-sys-dim<? ds d bump-degree)
-        (hypernest-set-degree (dim-sys-dim-max ds d new-degree) data)
+        (hypernest-set-degree-force (dim-sys-dim-max ds d new-degree)
+          data)
         data))))
 
 (define/contract (hypertee->hypernest ht)
@@ -907,7 +910,7 @@
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (w- intermediate-degree
       (dim-sys-dim-max ds overall-degree bump-degree)
-    #/hypertee-set-degree overall-degree
+    #/hypertee-set-degree-force overall-degree
     #/hypertee-bind-all-degrees
       (hypertee-increase-degree-to intermediate-degree
       #/hypernest-truncate-to-hypertee tails)

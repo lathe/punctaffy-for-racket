@@ -37,7 +37,7 @@
 (require #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
   hypernest-bind-one-degree hypernest/c hypernest-increase-degree-to
-  hypernest-set-degree)
+  hypernest-set-degree-force)
 
 (provide
   (struct-out hn-tag-0-s-expr-stx)
@@ -348,7 +348,7 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-1 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (hypernest-set-degree (n-d dss 1)
+      (hypernest-set-degree-force (n-d dss 1)
       #/hypernest-bind-one-degree (n-d dss 1)
         (n-hn dss 2
           (hnb-open 1 metadata)

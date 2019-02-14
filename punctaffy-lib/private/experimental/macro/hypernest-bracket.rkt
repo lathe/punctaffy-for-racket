@@ -43,7 +43,7 @@
   hypernest-contour hypernest-degree hypernest-drop1
   hypernest-dv-map-all-degrees hypernest-increase-degree-to
   hypernest-join-all-degrees hypernest-join-one-degree
-  hypernest->maybe-hypertee hypernest-plus1 hypernest-set-degree
+  hypernest->maybe-hypertee hypernest-plus1
   hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees

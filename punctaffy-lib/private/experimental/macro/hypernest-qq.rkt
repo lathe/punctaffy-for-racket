@@ -42,11 +42,10 @@
   hypernest-contour hypernest-degree hypernest-drop1
   hypernest-dv-bind-all-degrees hypernest-get-hole-zero
   hypernest-increase-degree-to hypernest-join-all-degrees
-  hypernest->maybe-hypertee hypernest-plus1 hypernest-set-degree
+  hypernest->maybe-hypertee hypernest-plus1 hypernest-set-degree-force
   hypernest-v-map-one-degree hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-degree hypertee-dv-map-all-degrees
-  hypertee-set-degree-maybe hypertee-uncontour
+  hypertee-degree hypertee-dv-map-all-degrees hypertee-uncontour
   hypertee-v-each-one-degree)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
@@ -282,7 +281,7 @@
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
-    #/hypernest-set-degree (n-d dss 2)
+    #/hypernest-set-degree-force (n-d dss 2)
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
       (hypernest-increase-degree-to (n-d dss 4) tail))
@@ -375,7 +374,7 @@
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
-    #/hypernest-set-degree (n-d dss 2)
+    #/hypernest-set-degree-force (n-d dss 2)
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
       (hypernest-increase-degree-to (n-d dss 4) tail))
@@ -423,7 +422,7 @@
     (just zipped)
   #/expect
     (hn-expr->s-expr-stx-list dss
-      (hypernest-set-degree (n-d dss 1)
+      (hypernest-set-degree-force (n-d dss 1)
       #/hypernest-join-all-degrees zipped))
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")

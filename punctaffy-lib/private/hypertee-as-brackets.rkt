@@ -99,7 +99,7 @@
       [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])])
 (provide
   hypertee-set-degree-maybe
-  hypertee-set-degree
+  hypertee-set-degree-force
   hypertee-contour
   hypertee-coil-zero
   (contract-out
@@ -637,7 +637,7 @@
 
 ; Takes a nonzero-degree hypertee with no holes of degree N or greater
 ; and returns a degree-N hypertee with the same holes.
-(define/contract (hypertee-set-degree new-degree ht)
+(define/contract (hypertee-set-degree-force new-degree ht)
   (->i
     (
       [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
@@ -1546,7 +1546,7 @@
   #/just #/list data #/hypertee-dv-map-all-degrees tails #/fn d data
     (dissect (dim-successors-sys-dim-plus-int dss d 1) (just succ-d)
     #/dissect
-      (hypertee-uncontour dss #/hypertee-set-degree succ-d data)
+      (hypertee-uncontour dss #/hypertee-set-degree-force succ-d data)
       (just #/list hole-value ht)
       hole-value)))
 
