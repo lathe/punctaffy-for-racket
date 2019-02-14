@@ -106,7 +106,7 @@
     (hnb-labeled 0 'a)))
 
 
-(define sample-opening-1
+(define sample-opening-1a
   (make-sample 1
     (hnb-open 1 'a)
     0
@@ -117,6 +117,17 @@
     0
     0
     (hnb-labeled 0 'a)))
+
+(define sample-opening-1b
+  (make-sample 1 (hnb-open 0 'a) (hnb-labeled 0 'a)))
+
+(define sample-opening-2
+  (make-sample 2
+    (hnb-open 0 'a)
+    (hnb-labeled 1 'a)
+    0
+    (hnb-labeled 0 'a)))
+
 
 
 (define (db->hn degree-and-brackets)
@@ -133,7 +144,9 @@
 (check-brackets-round-trip sample-closing-3)
 (check-brackets-round-trip sample-closing-4)
 (check-brackets-round-trip sample-closing-5)
-(check-brackets-round-trip sample-opening-1)
+(check-brackets-round-trip sample-opening-1a)
+(check-brackets-round-trip sample-opening-1b)
+(check-brackets-round-trip sample-opening-2)
 
 (define (check-drop1-round-trip sample)
   (w- sample (db->hn sample)
@@ -161,7 +174,9 @@
 (check-drop1-round-trip sample-closing-3)
 (check-drop1-round-trip sample-closing-4)
 (check-drop1-round-trip sample-closing-5)
-(check-drop1-round-trip sample-opening-1)
+(check-drop1-round-trip sample-opening-1a)
+(check-drop1-round-trip sample-opening-1b)
+(check-drop1-round-trip sample-opening-2)
 
 
 

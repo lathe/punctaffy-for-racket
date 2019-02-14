@@ -735,7 +735,12 @@
           #/finish root-brackets interpolations rev-result)
         #/dissect root-bracket (list root-bracket-i bracket)
         #/w- d (hypernest-bracket-degree bracket)
-        #/mat bracket (hnb-open _ _)
+        #/if
+          (mat bracket (hnb-open _ _) #t
+          #/mat bracket (hnb-labeled d _)
+            (dim-sys-dim<=? ds bump-degree d)
+          #/dissect bracket (hnb-unlabeled _)
+            #f)
           ; We begin a non-interpolation in the root.
           (w- histories (hyperstack-push d histories state)
           #/w- hist (list state histories)
