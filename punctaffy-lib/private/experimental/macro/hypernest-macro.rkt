@@ -36,8 +36,8 @@
   successorless-dim-successors-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
-  hypernest-bind-one-degree hypernest/c hypernest-increase-degree-to
-  hypernest-set-degree-force)
+  hypernest-bind-one-degree hypernest/c
+  hypernest-set-degree-and-bind-highest-degrees)
 
 (provide
   (struct-out hn-tag-0-s-expr-stx)
@@ -348,8 +348,8 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-1 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (hypernest-set-degree-force (n-d dss 1)
-      #/hypernest-bind-one-degree (n-d dss 1)
+      (hypernest-set-degree-and-bind-highest-degrees
+        (n-d dss 1)
         (n-hn dss 2
           (hnb-open 1 metadata)
           (hnb-labeled 1 #/trivial)
@@ -357,8 +357,7 @@
           0
         #/hnb-labeled 0 #/trivial)
       #/fn hole data
-        (hypernest-increase-degree-to (n-d dss 2)
-        #/n-hn-append0 dss 1 elems)))
+        (n-hn-append0 dss 1 elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)

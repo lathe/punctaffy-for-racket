@@ -40,10 +40,10 @@
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
   hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
   hypernest-contour hypernest-degree hypernest-drop1
-  hypernest-dv-bind-all-degrees hypernest-get-hole-zero
-  hypernest-increase-degree-to hypernest-join-all-degrees
-  hypernest->maybe-hypertee hypernest-plus1 hypernest-set-degree-force
-  hypernest-v-map-one-degree hypernest-zip hypertee->hypernest)
+  hypernest-get-hole-zero hypernest-join-all-degrees
+  hypernest->maybe-hypertee hypernest-plus1
+  hypernest-set-degree-and-join-all-degrees hypernest-v-map-one-degree
+  hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-dv-map-all-degrees hypertee-uncontour
   hypertee-v-each-one-degree)
@@ -281,10 +281,8 @@
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
-    #/hypernest-set-degree-force (n-d dss 2)
-    #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
-    #/fn d tail
-      (hypernest-increase-degree-to (n-d dss 4) tail))
+    #/hypernest-set-degree-and-join-all-degrees (n-d dss 2)
+      (hypertee->hypernest tails))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
 (define-for-syntax (hn-expr-2->s-expr-stx-generator dss hn)
@@ -374,10 +372,8 @@
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
-    #/hypernest-set-degree-force (n-d dss 2)
-    #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
-    #/fn d tail
-      (hypernest-increase-degree-to (n-d dss 4) tail))
+    #/hypernest-set-degree-and-join-all-degrees (n-d dss 2)
+      (hypertee->hypernest tails))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 
 (define-syntax (my-quasiquote stx)
@@ -417,13 +413,11 @@
       (dissect quotation-data (trivial)
       #/dissect (dim-sys-dim=? ds (hypernest-degree tail) (n-d dss 1))
         #t
-      #/hypernest-increase-degree-to (n-d dss 2)
         tail))
     (just zipped)
   #/expect
     (hn-expr->s-expr-stx-list dss
-      (hypernest-set-degree-force (n-d dss 1)
-      #/hypernest-join-all-degrees zipped))
+      (hypernest-set-degree-and-join-all-degrees (n-d dss 1) zipped))
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")
   #/syntax-protect

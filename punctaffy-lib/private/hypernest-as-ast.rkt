@@ -47,14 +47,14 @@
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  htb-labeled htb-unlabeled hypertee? hypertee-bind-all-degrees
-  hypertee/c hypertee-coil-hole hypertee-coil-zero hypertee-contour
-  hypertee-degree hypertee->degree-and-closing-brackets
-  hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
+  htb-labeled htb-unlabeled hypertee? hypertee/c hypertee-coil-hole
+  hypertee-coil-zero hypertee-contour hypertee-degree
+  hypertee->degree-and-closing-brackets hypertee-dim-sys
+  hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
-  hypertee-get-hole-zero hypertee-increase-degree-to hypertee-plus1
-  hypertee-pure hypertee-set-degree-and-bind-all-degrees
-  hypertee-zip-low-degrees hypertee-zip-selective)
+  hypertee-get-hole-zero hypertee-plus1 hypertee-pure
+  hypertee-set-degree-and-bind-all-degrees hypertee-zip-low-degrees
+  hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
   unsafe-degree-and-closing-brackets->hypertee)
 (require #/only-in punctaffy/private/suppress-internal-errors
@@ -134,6 +134,8 @@
   hypernest-bind-all-degrees
   hypernest-bind-one-degree
   hypernest-join-one-degree
+  hypernest-set-degree-and-bind-highest-degrees
+  hypernest-set-degree-and-join-all-degrees
   hypernest-plus1)
 
 
@@ -839,7 +841,7 @@
 (define/contract (hypernest-set-degree-force new-degree hn)
   (->i
     (
-      [new-degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
+      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
       [hn hypernest?])
     [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
   (dissect hn (hypernest ds coil)
@@ -1445,8 +1447,129 @@
   (hypernest-bind-one-degree degree hn #/fn hole data
     data))
 
-; TODO IMPLEMENT: Implement operations analogous to
-; `hypertee-set-degree-and-bind-all-degrees`.
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+(define/contract
+  (hypernest-set-degree-and-bind-all-degrees new-degree hn hole-to-hn)
+  (->i
+    (
+      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+      [hn hypernest?]
+      [hole-to-hn (hn)
+        (w- ds (hypernest-dim-sys hn)
+        #/-> (hypertee/c ds) any/c (hypernest/c ds))])
+    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+  (w- ds (hypernest-dim-sys hn)
+  #/w- intermediate-degree
+    (dim-sys-dim-max ds new-degree (hypernest-degree hn))
+  #/hypernest-set-degree-force new-degree
+  #/hypernest-bind-all-degrees
+    (hypernest-increase-degree-to intermediate-degree hn)
+  #/fn hole data
+    (w- hole-degree (hypertee-degree hole)
+    #/w- result (hole-to-hn hole data)
+    #/expect
+      (dim-sys-dim=? ds (hypernest-degree result)
+        (dim-sys-dim-max ds new-degree hole-degree))
+      #t
+      (raise-arguments-error
+        'hypernest-set-degree-and-bind-all-degrees
+        "expected each result of hole-to-hn to be a hypernest of the same degree as new-degree or the degree of the hole it appeared in, whichever was greater"
+        "new-degree" new-degree
+        "hole-degree" hole-degree
+        "hole-to-hn-result" result)
+    #/hypernest-increase-degree-to intermediate-degree result)))
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+;
+; TODO IMPLEMENT: Implement an operation analogous to this, but for
+; hypertees instead of hypernests.
+;
+(define/contract
+  (hypernest-set-degree-and-bind-highest-degrees
+    new-degree hn hole-to-hn)
+  (->i
+    (
+      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+      [hn hypernest?]
+      [hole-to-hn (hn)
+        (w- ds (hypernest-dim-sys hn)
+        #/-> (hypertee/c ds) any/c (hypernest/c ds))])
+    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+  (w- ds (hypernest-dim-sys hn)
+  #/hypernest-set-degree-and-bind-all-degrees new-degree hn
+  #/fn hole data
+    (if (dim-sys-dim<=? ds new-degree (hypertee-degree hole))
+      (hole-to-hn hole data)
+      (hypernest-pure new-degree data hole))))
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+;
+; TODO IMPLEMENT: Implement an operation analogous to this, but for
+; hypertees instead of hypernests.
+;
+(define/contract
+  (hypernest-set-degree-and-dv-bind-all-degrees
+    new-degree hn dv-to-hn)
+  (->i
+    (
+      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+      [hn hypernest?]
+      [dv-to-hn (hn)
+        (w- ds (hypernest-dim-sys hn)
+        #/-> (dim-sys-dim/c ds) any/c (hypernest/c ds))])
+    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+  (w- ds (hypernest-dim-sys hn)
+  #/w- intermediate-degree
+    (dim-sys-dim-max ds new-degree (hypernest-degree hn))
+  #/hypernest-set-degree-force new-degree
+  #/hypernest-dv-bind-all-degrees
+    (hypernest-increase-degree-to intermediate-degree hn)
+  #/fn hole-degree data
+    (w- result (dv-to-hn hole-degree data)
+    #/expect
+      (dim-sys-dim=? ds (hypernest-degree result)
+        (dim-sys-dim-max ds new-degree hole-degree))
+      #t
+      (raise-arguments-error
+        'hypernest-set-degree-and-dv-bind-all-degrees
+        "expected each result of dv-to-hn to be a hypernest of the same degree as new-degree or the degree of the hole it appeared in, whichever was greater"
+        "new-degree" new-degree
+        "hole-degree" hole-degree
+        "dv-to-hn-result" result)
+    #/hypernest-increase-degree-to intermediate-degree result)))
+
+; TODO IMPLEMENT: Implement operations analogous to this, but for
+; bumps instead of holes.
+;
+; TODO IMPLEMENT: Implement an operation analogous to this, but for
+; hypertees instead of hypernests.
+;
+(define/contract
+  (hypernest-set-degree-and-join-all-degrees new-degree hn)
+  (->i
+    (
+      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+      [hn hypernest?])
+    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+  (w- ds (hypernest-dim-sys hn)
+  #/hypernest-set-degree-and-dv-bind-all-degrees new-degree hn
+  #/fn hole-degree data
+    ; TODO: See if we can give a better error message when `data`
+    ; doesn't conform to the contract `(hypernest/c ds)`.
+    (expect
+      (dim-sys-dim=? ds (hypernest-degree data)
+        (dim-sys-dim-max ds new-degree hole-degree))
+      #t
+      (raise-arguments-error
+        'hypernest-set-degree-and-dv-bind-all-degrees
+        "expected each hole of hn to contain a hypernest of the same degree as new-degree or the degree of the hole, whichever was greater"
+        "new-degree" new-degree
+        "hole-degree" hole-degree
+        "data" data)
+      data)))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.

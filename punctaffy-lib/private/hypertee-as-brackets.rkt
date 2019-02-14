@@ -1405,9 +1405,9 @@
     (
       [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
       [ht hypertee?]
-      [func (ht)
-        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
-          (hypertee/c #/hypertee-dim-sys ht))])
+      [hole-to-ht (ht)
+        (w- ds (hypertee-dim-sys ht)
+        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
     [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (w- ds (hypertee-dim-sys ht)
   #/w- intermediate-degree
