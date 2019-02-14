@@ -41,11 +41,11 @@
   hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
   hypernest-contour hypernest-degree hypernest-drop1
   hypernest-dv-bind-all-degrees hypernest-get-hole-zero
-  hypernest-join-all-degrees hypernest->maybe-hypertee hypernest-plus1
-  hypernest-promote hypernest-set-degree hypernest-v-map-one-degree
-  hypernest-zip hypertee->hypernest)
+  hypernest-increase-degree-to hypernest-join-all-degrees
+  hypernest->maybe-hypertee hypernest-plus1 hypernest-set-degree
+  hypernest-v-map-one-degree hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-degree hypertee-dv-map-all-degrees hypertee-promote
+  hypertee-degree hypertee-dv-map-all-degrees
   hypertee-set-degree-maybe hypertee-uncontour
   hypertee-v-each-one-degree)
 (require #/for-syntax #/only-in
@@ -285,7 +285,7 @@
     #/hypernest-set-degree (n-d dss 2)
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
-      (hypernest-promote (n-d dss 4) tail))
+      (hypernest-increase-degree-to (n-d dss 4) tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
 (define-for-syntax (hn-expr-2->s-expr-stx-generator dss hn)
@@ -378,7 +378,7 @@
     #/hypernest-set-degree (n-d dss 2)
     #/hypernest-dv-bind-all-degrees (hypertee->hypernest tails)
     #/fn d tail
-      (hypernest-promote (n-d dss 4) tail))
+      (hypernest-increase-degree-to (n-d dss 4) tail))
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 
 (define-syntax (my-quasiquote stx)
@@ -418,7 +418,7 @@
       (dissect quotation-data (trivial)
       #/dissect (dim-sys-dim=? ds (hypernest-degree tail) (n-d dss 1))
         #t
-      #/hypernest-promote (n-d dss 2)
+      #/hypernest-increase-degree-to (n-d dss 2)
         tail))
     (just zipped)
   #/expect

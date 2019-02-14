@@ -36,7 +36,7 @@
   successorless-dim-successors-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
-  hypernest-bind-one-degree hypernest/c hypernest-promote
+  hypernest-bind-one-degree hypernest/c hypernest-increase-degree-to
   hypernest-set-degree)
 
 (provide
@@ -357,7 +357,7 @@
           0
         #/hnb-labeled 0 #/trivial)
       #/fn hole data
-        (hypernest-promote (n-d dss 2)
+        (hypernest-increase-degree-to (n-d dss 2)
         #/n-hn-append0 dss 1 elems)))
   
   ; We traverse into proper and improper lists.

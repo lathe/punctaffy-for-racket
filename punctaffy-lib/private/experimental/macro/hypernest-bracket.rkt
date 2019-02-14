@@ -41,9 +41,9 @@
   degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
   hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
   hypernest-contour hypernest-degree hypernest-drop1
-  hypernest-dv-map-all-degrees hypernest-join-all-degrees
-  hypernest-join-one-degree hypernest->maybe-hypertee hypernest-plus1
-  hypernest-promote hypernest-set-degree
+  hypernest-dv-map-all-degrees hypernest-increase-degree-to
+  hypernest-join-all-degrees hypernest-join-one-degree
+  hypernest->maybe-hypertee hypernest-plus1 hypernest-set-degree
   hypernest-truncate-to-hypertee)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
@@ -244,8 +244,9 @@
           (dissect data (trivial)
           #/n-hn dss degree-plus-one #/hnb-labeled 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
-        ; TODO: See if we need this `hypernest-promote` call.
-        #/hypernest-promote degree-plus-one
+        ; TODO: See if we need this `hypernest-increase-degree-to`
+        ; call.
+        #/hypernest-increase-degree-to degree-plus-one
           bracket-syntax))
       0
       

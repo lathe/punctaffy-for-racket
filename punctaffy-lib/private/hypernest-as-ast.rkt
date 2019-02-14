@@ -52,8 +52,9 @@
   hypertee-degree hypertee->degree-and-closing-brackets
   hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
-  hypertee-get-hole-zero hypertee-plus1 hypertee-promote hypertee-pure
-  hypertee-set-degree hypertee-zip-low-degrees hypertee-zip-selective)
+  hypertee-get-hole-zero hypertee-increase-degree-to hypertee-plus1
+  hypertee-pure hypertee-set-degree hypertee-zip-low-degrees
+  hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
   unsafe-degree-and-closing-brackets->hypertee)
 (require #/only-in punctaffy/private/suppress-internal-errors
@@ -104,7 +105,7 @@
     [hypernest-coil/c (-> dim-sys? contract?)])
   degree-and-brackets->hypernest
   hypernest->degree-and-brackets
-  hypernest-promote
+  hypernest-increase-degree-to
   hypernest-set-degree
   hypertee->hypernest
   hypernest->maybe-hypertee
@@ -799,7 +800,7 @@
 ; Takes a hypernest of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its bumps and holes the way they
 ; are.
-(define/contract (hypernest-promote new-degree hn)
+(define/contract (hypernest-increase-degree-to new-degree hn)
   (->i
     (
       [new-degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
@@ -809,7 +810,7 @@
   #/mat coil (hypernest-coil-zero)
     (error "Expected hn to be a hypernest of nonzero degree")
   #/expect (dim-sys-dim<=? ds (hypernest-degree hn) new-degree) #t
-    (raise-arguments-error 'hypernest-promote
+    (raise-arguments-error 'hypernest-increase-degree-to
       "expected hn to be a hypernest of degree no greater than new-degree"
       "new-degree" new-degree
       "hn" hn)
@@ -817,13 +818,14 @@
     (if (dim-sys-dim=? ds d new-degree) hn
     #/hypernest-careful ds #/hypernest-coil-hole new-degree data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
-      (hypernest-promote new-degree tail))
+      (hypernest-increase-degree-to new-degree tail))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (if (dim-sys-dim=? ds overall-degree new-degree) hn
     #/hypernest-careful ds
     #/hypernest-coil-bump new-degree data bump-degree
-    #/hypernest-promote (dim-sys-dim-max ds new-degree bump-degree)
+    #/hypernest-increase-degree-to
+      (dim-sys-dim-max ds new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (dim-sys-dim<? ds d bump-degree)
         (hypernest-set-degree (dim-sys-dim-max ds d new-degree) data)
@@ -907,10 +909,10 @@
       (dim-sys-dim-max ds overall-degree bump-degree)
     #/hypertee-set-degree overall-degree
     #/hypertee-bind-all-degrees
-      (hypertee-promote intermediate-degree
+      (hypertee-increase-degree-to intermediate-degree
       #/hypernest-truncate-to-hypertee tails)
     #/fn hole data
-      (hypertee-promote intermediate-degree
+      (hypertee-increase-degree-to intermediate-degree
       #/if (dim-sys-dim<? ds (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
         (hypertee-pure intermediate-degree data hole)))))
@@ -1291,8 +1293,9 @@
         #/mat data
           (hypernest-join-selective-interpolation interpolation)
           (hypernest-join-selective-interpolation
-          ; TODO: See if we really need this `hypernest-promote` call.
-          #/hypernest-promote
+          ; TODO: See if we really need this
+          ; `hypernest-increase-degree-to` call.
+          #/hypernest-increase-degree-to
             (dim-sys-dim-max ds bump-degree overall-degree)
             interpolation)
         #/dissect data

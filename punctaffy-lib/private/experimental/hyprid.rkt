@@ -48,8 +48,8 @@
   hypertee? hypertee-bind-pred-degree hypertee-closing-bracket-degree
   hypertee-contour hypertee-degree
   hypertee->degree-and-closing-brackets hypertee-dv-each-all-degrees
-  hypertee-map-highest-degree hypertee-promote hypertee-pure
-  hypertee-v-map-highest-degree)
+  hypertee-increase-degree-to hypertee-map-highest-degree
+  hypertee-pure hypertee-v-map-highest-degree)
 
 (provide
   ; TODO: See if there's anything more abstract we can export in place
@@ -230,7 +230,7 @@
   #/expect (nat->maybe pred-striped-degrees)
     (just pred-pred-striped-degrees)
     (hypertee-bind-pred-degree dss unstriped-degrees
-      (hypertee-promote succ-unstriped-degrees rest)
+      (hypertee-increase-degree-to succ-unstriped-degrees rest)
     #/fn hole rest
       (mat rest (lake-cane _ data rest)
         (hypertee-bind-pred-degree dss unstriped-degrees

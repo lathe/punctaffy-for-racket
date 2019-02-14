@@ -54,7 +54,7 @@
     degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
     hypertee? hypertee-bind-one-degree hypertee-coil-hole
     hypertee-coil-zero hypertee-degree hypertee-drop1 hypertee-fold
-    hypertee-join-one-degree hypertee-promote hypertee-pure
+    hypertee-increase-degree-to hypertee-join-one-degree hypertee-pure
     hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
   
@@ -161,7 +161,7 @@
           (expect data
             (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
               closing-bracket interpolation)
-            (hypertee-promote (omega) hole)
+            (hypertee-increase-degree-to (omega) hole)
           #/hypertee-pure (omega)
             (s-expr-stx->ht-expr interpolation)
             hole)))))

@@ -91,7 +91,7 @@
         (w- ds (hypertee-dim-sys ht)
         #/list/c (dim-sys-dim/c ds)
         #/listof #/htb/c #/dim-sys-dim/c ds)])]
-  [hypertee-promote
+  [hypertee-increase-degree-to
     (->i
       (
         [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
@@ -599,14 +599,14 @@
 
 ; Takes a hypertee of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its holes the way they are.
-(define (hypertee-promote new-degree ht)
+(define (hypertee-increase-degree-to new-degree ht)
   (dissect ht (hypertee ds d closing-brackets)
   #/if (dim-sys-dim=0? ds d)
-    (raise-arguments-error 'hypertee-promote
+    (raise-arguments-error 'hypertee-increase-degree-to
       "expected ht to be a hypertee of nonzero degree"
       "ht" ht)
   #/expect (dim-sys-dim<=? ds d new-degree) #t
-    (raise-arguments-error 'hypertee-promote
+    (raise-arguments-error 'hypertee-increase-degree-to
       "expected ht to be a hypertee of degree no greater than new-degree"
       "new-degree" new-degree
       "ht" ht)
@@ -1579,7 +1579,7 @@
       (hypertee-pure d data hole)
     #/if (dim-sys-dim=0? ds #/hypertee-degree hole)
       (error "Expected should-keep? to accept the degree-zero hole")
-      (hypertee-promote d hole))))
+      (hypertee-increase-degree-to d hole))))
 
 ; This takes a hypertee, removes all holes of degree equal to or
 ; greater than a given degree, and demotes the hypertee to that
