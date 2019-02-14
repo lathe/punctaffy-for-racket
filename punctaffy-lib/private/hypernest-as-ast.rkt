@@ -828,7 +828,8 @@
       (dim-sys-dim-max ds new-degree bump-degree)
     #/hypernest-dv-map-all-degrees tails #/fn d data
       (if (dim-sys-dim<? ds d bump-degree)
-        (hypernest-set-degree-force (dim-sys-dim-max ds d new-degree)
+        (hypernest-increase-degree-to
+          (dim-sys-dim-max ds d new-degree)
           data)
         data))))
 
@@ -861,9 +862,11 @@
     (if (dim-sys-dim=? ds overall-degree new-degree) hn
     #/hypernest-careful ds
     #/hypernest-coil-bump new-degree data bump-degree
-    #/hypernest-set-degree-force
-      (dim-sys-dim-max ds new-degree bump-degree)
-    #/hypernest-dv-map-all-degrees tails #/fn d data
+    #/hypernest-dv-map-all-degrees
+      (hypernest-set-degree-force
+        (dim-sys-dim-max ds new-degree bump-degree)
+        tails)
+    #/fn d data
       (if (dim-sys-dim<? ds d bump-degree)
         (hypernest-set-degree-force (dim-sys-dim-max ds d new-degree)
           data)
@@ -918,7 +921,7 @@
       (hypertee-increase-degree-to intermediate-degree
       #/if (dim-sys-dim<? ds (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
-        (hypertee-pure intermediate-degree data hole)))))
+        (hypertee-pure overall-degree data hole)))))
 
 ; Takes a hypertee of any degree N and returns a hypernest of degree
 ; N+1 with all the same degree-less-than-N holes as well as a single
