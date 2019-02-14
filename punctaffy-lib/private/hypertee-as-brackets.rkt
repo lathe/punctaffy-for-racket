@@ -140,6 +140,7 @@
   hypertee-bind-one-degree
   hypertee-bind-pred-degree
   hypertee-join-one-degree
+  hypertee-set-degree-and-bind-all-degrees
   hypertee-dv-any-all-degrees
   hypertee-dv-all-all-degrees
   hypertee-dv-each-all-degrees
@@ -619,7 +620,7 @@
 (define/contract (hypertee-set-degree-maybe new-degree ht)
   (->i
     (
-      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
       [ht hypertee?])
     [_ (ht) (maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
   (dissect ht (hypertee ds d closing-brackets)
@@ -640,7 +641,7 @@
 (define/contract (hypertee-set-degree-force new-degree ht)
   (->i
     (
-      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
       [ht hypertee?])
     [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (expect (hypertee-set-degree-maybe new-degree ht) (just result)
@@ -1397,6 +1398,36 @@
     [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (hypertee-bind-one-degree degree ht #/fn hole data
     data))
+
+(define/contract
+  (hypertee-set-degree-and-bind-all-degrees new-degree ht hole-to-ht)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht)
+        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+          (hypertee/c #/hypertee-dim-sys ht))])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+  (w- ds (hypertee-dim-sys ht)
+  #/w- intermediate-degree
+    (dim-sys-dim-max ds new-degree (hypertee-degree ht))
+  #/hypertee-set-degree-force new-degree
+  #/hypertee-bind-all-degrees
+    (hypertee-increase-degree-to intermediate-degree ht)
+  #/fn hole data
+    (w- hole-degree (hypertee-degree hole)
+    #/w- result (hole-to-ht hole data)
+    #/expect
+      (dim-sys-dim=? ds (hypertee-degree result)
+        (dim-sys-dim-max ds new-degree hole-degree))
+      #t
+      (raise-arguments-error 'hypertee-set-degree-and-bind-all-degrees
+        "expected each result of hole-to-ht to be a hypertee of the same degree as new-degree or the degree of the hole it appeared in, whichever was greater"
+        "new-degree" new-degree
+        "hole-degree" hole-degree
+        "hole-to-ht-result" result)
+    #/hypertee-increase-degree-to intermediate-degree result)))
 
 (define/contract (hypertee-dv-any-all-degrees ht func)
   (->i

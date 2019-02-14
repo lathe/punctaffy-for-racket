@@ -53,8 +53,8 @@
   hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
   hypertee-get-hole-zero hypertee-increase-degree-to hypertee-plus1
-  hypertee-pure hypertee-set-degree-force hypertee-zip-low-degrees
-  hypertee-zip-selective)
+  hypertee-pure hypertee-set-degree-and-bind-all-degrees
+  hypertee-zip-low-degrees hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
   unsafe-degree-and-closing-brackets->hypertee)
 (require #/only-in punctaffy/private/suppress-internal-errors
@@ -911,15 +911,10 @@
       (hypernest-truncate-to-hypertee tail))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
-    (w- intermediate-degree
-      (dim-sys-dim-max ds overall-degree bump-degree)
-    #/hypertee-set-degree-force overall-degree
-    #/hypertee-bind-all-degrees
-      (hypertee-increase-degree-to intermediate-degree
-      #/hypernest-truncate-to-hypertee tails)
+    (hypertee-set-degree-and-bind-all-degrees overall-degree
+      (hypernest-truncate-to-hypertee tails)
     #/fn hole data
-      (hypertee-increase-degree-to intermediate-degree
-      #/if (dim-sys-dim<? ds (hypertee-degree hole) bump-degree)
+      (if (dim-sys-dim<? ds (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
         (hypertee-pure overall-degree data hole)))))
 
@@ -1449,6 +1444,9 @@
     [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
   (hypernest-bind-one-degree degree hn #/fn hole data
     data))
+
+; TODO IMPLEMENT: Implement operations analogous to
+; `hypertee-set-degree-and-bind-all-degrees`.
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
