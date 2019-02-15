@@ -42,7 +42,7 @@
   (hypernest-plus1 ds
   #/hypernest-coil-hole overall-degree data tails-hypertee))
 
-(define (hnb overall-degree data bump-degree tails-hypertee)
+(define (hno overall-degree data bump-degree tails-hypertee)
   (hypernest-plus1 ds
   #/hypernest-coil-bump
     overall-degree data bump-degree tails-hypertee))
@@ -272,13 +272,13 @@
 ; A `hypernest-join-all-degrees` call on a value of this shape came up
 ; while debugging a test in test-hypernest-qq.rkt.
 (define sample-hn-expr-shape-as-ast
-  (hnb 1 'a 3
+  (hno 1 'a 3
     (hnh 3
-      (hnb 2 'a 4
+      (hno 2 'a 4
         (hnh 4
-          (hnb 2 'a 3
+          (hno 2 'a 3
             (hnh 3
-              (hnb 2 'a 3
+              (hno 2 'a 3
                 (hnh 3
                   (hnh 2 (trivial)
                     (ht-bracs ds 1
@@ -294,13 +294,13 @@
       (ht-bracs ds 2
         (htb-labeled 1
           (hnh 3
-            (hnb 1 'a 4
+            (hno 1 'a 4
               (hnh 4
-                (hnb 1 'a 3
+                (hno 1 'a 3
                   (hnh 3
-                    (hnb 1 'a 3
+                    (hno 1 'a 3
                       (hnh 3
-                        (hnb 1 'a 3
+                        (hno 1 'a 3
                           (hnh 3
                             (hnh 1 (trivial) (ht-bracs ds 0))
                             (ht-bracs ds 0)))
@@ -323,7 +323,7 @@
 ; `sample-hn-expr-shape-as-ast`, which was adapted from log output, is
 ; equivalent to this implementation that I find to be more readable.
 (check-equal?
-  (hnb 1 'a 3
+  (hno 1 'a 3
     (hn-bracs ds 3
       (hnb-labeled 2
         (hn-bracs ds 2

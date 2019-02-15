@@ -15,9 +15,9 @@ Suppose we have the following operations:
 
 `(hnh d data tails-hypertee)`: Constructs a degree-`d` hypernest that begins with a hole.
 
-`(hnb overall-degree data bump-degree tails-hypernest)`: Constructs a degree-`overall-degree` hypernest that begins with a bump.
+`(hno overall-degree data bump-degree tails-hypernest)`: Constructs a degree-`overall-degree` hypernest that begins with a bump.
 
-As of the time of this writing, we're trying to implement `n-hn` in terms of `htz`, `hth`, `hnz`, `hnh`, and `hnb` (with no use of `n-ht` if possible), although we use substantially more verbose notation (such as `(hypernest-plus1 #/hypernest-coil-hole d data tails-hypertee)`).
+As of the time of this writing, we're trying to implement `n-hn` in terms of `htz`, `hth`, `hnz`, `hnh`, and `hno` (with no use of `n-ht` if possible), although we use substantially more verbose notation (such as `(hypernest-plus1 #/hypernest-coil-hole d data tails-hypertee)`).
 
 What do we need to do for a simple degree-2 input like this one?
 
@@ -262,7 +262,7 @@ Aside:
 
 The reason we postpone the `(htz)` writes to the end in the above example is so that we can now ponder the question of whether a degree-0 hypernest should be able to have bumps. If it should, then we can't write an `(hnz)` to it right away, because we don't know if we've yet to encounter its bumps. So we treat `(htz)` that way as well, to keep the option open.
 
-Degree-0 hypernests are almost never used. An `hnb` node uses a hypernest of degree equal to the max of its `overall-degree` and its `bump-degree`, so it'll never use a degree-0 hypernest unless both those things are zero. Since `hnz` and `hnb` would be the only ways to make degree-0 hypernests, it seems we don't have to care how a degree-0 hypernest works unless we set out to make one in the first place.
+Degree-0 hypernests are almost never used. An `hno` node uses a hypernest of degree equal to the max of its `overall-degree` and its `bump-degree`, so it'll never use a degree-0 hypernest unless both those things are zero. Since `hnz` and `hno` would be the only ways to make degree-0 hypernests, it seems we don't have to care how a degree-0 hypernest works unless we set out to make one in the first place.
 
 Suppose we do. Then we have a bit of a conundrum with regard to the bracket notation: Once we've opened a degree-0 bump in a degree-0 hypernest...
 
@@ -272,9 +272,9 @@ Suppose we do. Then we have a bit of a conundrum with regard to the bracket nota
 
 ...then we have two degree-0 hypernests in progress. If we have another bump after that, which one of them is it a bump for?
 
-This isn't a problem we have to worry about if we decide by fiat that `hnb` cannot construct degree-0 hypernests. On the other hand, it's a problem we don't have to worry about if we don't use bracket notation, so if it turns out to be elegant in an algebraic way, we will have regretted choosing a notation that doesn't support it. All it would take is a little extension to support this -- just another bracket of the form "we're done specifying bumps for the nearest degree-0 bump now."
+This isn't a problem we have to worry about if we decide by fiat that `hno` cannot construct degree-0 hypernests. On the other hand, it's a problem we don't have to worry about if we don't use bracket notation, so if it turns out to be elegant in an algebraic way, we will have regretted choosing a notation that doesn't support it. All it would take is a little extension to support this -- just another bracket of the form "we're done specifying bumps for the nearest degree-0 bump now."
 
-For now, since hypernests are pretty much entirely motivated by syntactic needs, we will embrace the bracket notation and disallow `hnb` from constructing degree-0 hyprnests.
+For now, since hypernests are pretty much entirely motivated by syntactic needs, we will embrace the bracket notation and disallow `hno` from constructing degree-0 hyprnests.
 
 This means that in the above example, we didn't really have to postpone the `(htz)` writes until the end after all. We can write those values immediately, and that means we don't even need to keep track of them in the "pending" information.
 
