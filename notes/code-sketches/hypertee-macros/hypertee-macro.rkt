@@ -33,8 +33,8 @@
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys-dim-sys extended-nat-dim-successors-sys omega)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
-  hypertee? hypertee-bind-one-degree)
+  htb-labeled htb-unlabeled hypertee? hypertee-bind-one-degree
+  hypertee-from-brackets)
 
 (provide
   (struct-out ht-tag-1-s-expr-stx)
@@ -150,7 +150,7 @@
 (define (omega-ht . closing-brackets)
   (w- dss (extended-nat-dim-successors-sys)
   #/w- ds (dim-successors-sys-dim-sys dss)
-  #/degree-and-closing-brackets->hypertee ds (omega)
+  #/hypertee-from-brackets ds (omega)
   #/list-map closing-brackets #/fn closing-bracket
     (mat closing-bracket (htb-labeled d data) closing-bracket
     #/mat closing-bracket (htb-unlabeled d) closing-bracket

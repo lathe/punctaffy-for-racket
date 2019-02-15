@@ -36,14 +36,14 @@
 (define ds (nat-dim-sys))
 
 (define (n-ht degree . brackets)
-  (degree-and-closing-brackets->hypertee ds degree
+  (hypertee-from-brackets ds degree
   #/list-map brackets #/fn bracket
     (mat bracket (htb-labeled d data) bracket
     #/mat bracket (htb-unlabeled d) bracket
     #/htb-unlabeled bracket)))
 
 (define (n-hn degree . brackets)
-  (degree-and-brackets->hypernest ds degree
+  (hypernest-from-brackets ds degree
   #/list-map brackets #/fn bracket
     (mat bracket (hnb-open d data) bracket
     #/mat bracket (hnb-labeled d data) bracket
@@ -65,8 +65,7 @@
 
 
 ; ====================================================================
-; Testing `degree-and-brackets->hypernest` (`n-hn`) and
-; `hypernest-plus1`
+; Testing `hypernest-from-brackets` (`n-hn`) and `hypernest-plus1`
 ; ====================================================================
 
 (define (make-sample degree . brackets)
@@ -132,10 +131,12 @@
 
 (define (db->hn degree-and-brackets)
   (dissect degree-and-brackets (list degree brackets)
-  #/degree-and-brackets->hypernest ds degree brackets))
+  #/hypernest-from-brackets ds degree brackets))
 
 (define (check-brackets-round-trip sample)
-  (check-equal? (hypernest->degree-and-brackets #/db->hn sample)
+  (w- hn (db->hn sample)
+  #/check-equal?
+    (list (hypernest-degree hn) (hypernest-get-brackets hn))
     sample))
 
 (check-brackets-round-trip sample-0)

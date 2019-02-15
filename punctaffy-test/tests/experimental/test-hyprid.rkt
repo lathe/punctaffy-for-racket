@@ -37,7 +37,7 @@
 (define dss (nat-dim-successors-sys))
 
 (define (n-ht degree . brackets)
-  (degree-and-closing-brackets->hypertee ds degree
+  (hypertee-from-brackets ds degree
   #/list-map brackets #/fn bracket
     (mat bracket (htb-labeled d data) bracket
     #/mat bracket (htb-unlabeled d) bracket

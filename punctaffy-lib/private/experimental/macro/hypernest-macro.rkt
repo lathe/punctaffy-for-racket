@@ -35,8 +35,8 @@
   dim-successors-sys-dim-sys dim-sys-dim-zero
   successorless-dim-successors-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
-  hypernest-bind-one-degree hypernest/c
+  hnb-labeled hnb-open hnb-unlabeled hypernest-bind-one-degree
+  hypernest/c hypernest-from-brackets
   hypernest-set-degree-and-bind-highest-degrees)
 
 (provide
@@ -186,7 +186,7 @@
 
 (define (n-hn dss degree . brackets)
   (w- ds (dim-successors-sys-dim-sys dss)
-  #/degree-and-brackets->hypernest ds (n-d dss degree)
+  #/hypernest-from-brackets ds (n-d dss degree)
   #/list-map brackets #/fn bracket
     (mat bracket (hnb-open d data) (hnb-open (n-d dss d) data)
     #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d dss d) data)

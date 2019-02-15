@@ -51,9 +51,9 @@
     dim-successors-sys-dim-sys dim-sys-dim<?
     extended-nat-dim-successors-sys omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
-    degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
-    hypertee? hypertee-bind-one-degree hypertee-coil-hole
-    hypertee-coil-zero hypertee-degree hypertee-drop1 hypertee-fold
+    htb-labeled htb-unlabeled hypertee? hypertee-bind-one-degree
+    hypertee-coil-hole hypertee-coil-zero hypertee-degree
+    hypertee-drop1 hypertee-fold hypertee-from-brackets
     hypertee-increase-degree-to hypertee-join-one-degree hypertee-pure
     hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
@@ -64,7 +64,7 @@
   (define (omega-ht . closing-brackets)
     (w- dss (extended-nat-dim-successors-sys)
     #/w- ds (dim-successors-sys-dim-sys dss)
-    #/degree-and-closing-brackets->hypertee ds (omega)
+    #/hypertee-from-brackets ds (omega)
     #/list-map closing-brackets #/fn closing-bracket
       (mat closing-bracket (htb-labeled d data) closing-bracket
       #/mat closing-bracket (htb-unlabeled d) closing-bracket

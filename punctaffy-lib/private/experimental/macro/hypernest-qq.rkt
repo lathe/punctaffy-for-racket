@@ -37,9 +37,9 @@
   dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-zero nat-dim-successors-sys
   successorless-dim-successors-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  degree-and-brackets->hypernest hnb-labeled hnb-open hnb-unlabeled
-  hypernest-bind-one-degree hypernest-coil-bump hypernest-coil-hole
-  hypernest-contour hypernest-degree hypernest-drop1
+  hnb-labeled hnb-open hnb-unlabeled hypernest-bind-one-degree
+  hypernest-coil-bump hypernest-coil-hole hypernest-contour
+  hypernest-degree hypernest-drop1 hypernest-from-brackets
   hypernest-get-hole-zero hypernest-join-all-degrees
   hypernest->maybe-hypertee hypernest-plus1
   hypernest-set-degree-and-join-all-degrees hypernest-v-map-one-degree
@@ -136,7 +136,7 @@
 
 (define-for-syntax (n-hn dss degree . brackets)
   (w- ds (dim-successors-sys-dim-sys dss)
-  #/degree-and-brackets->hypernest ds (n-d dss degree)
+  #/hypernest-from-brackets ds (n-d dss degree)
   #/list-map brackets #/fn bracket
     (mat bracket (hnb-open d data) (hnb-open (n-d dss d) data)
     #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d dss d) data)

@@ -44,12 +44,12 @@
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   make-hyperstack-trivial make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
-  hypertee? hypertee-bind-pred-degree hypertee-bracket-degree
-  hypertee-contour hypertee-degree
-  hypertee->degree-and-closing-brackets hypertee-dv-each-all-degrees
-  hypertee-increase-degree-to hypertee-map-highest-degree
-  hypertee-pure hypertee-v-map-highest-degree)
+  htb-labeled htb-unlabeled hypertee? hypertee-bind-pred-degree
+  hypertee-bracket-degree hypertee-contour hypertee-degree
+  hypertee-dv-each-all-degrees hypertee-from-brackets
+  hypertee-get-brackets hypertee-increase-degree-to
+  hypertee-map-highest-degree hypertee-pure
+  hypertee-v-map-highest-degree)
 
 (provide
   ; TODO: See if there's anything more abstract we can export in place
@@ -100,9 +100,8 @@
     (expect (nat->maybe striped-degrees) (just pred-striped-degrees)
       (expect (hypertee? striped-hypertee) #t
         (error "Expected striped-hypertee to be a hypertee since striped-degrees was zero")
-      #/dissect
-        (hypertee->degree-and-closing-brackets striped-hypertee)
-        (list degree closing-brackets)
+      #/w- degree (hypertee-degree striped-hypertee)
+      #/w- closing-brackets (hypertee-get-brackets striped-hypertee)
       #/unless (dim-sys-dim=? ds unstriped-degrees degree)
         (error "Expected striped-hypertee to be a hypertee of degree unstriped-degrees"))
       (expect striped-hypertee
@@ -344,8 +343,8 @@
             striped-rest))
       #/mat rest (non-lake-cane data) (non-lake-cane data)
       #/error "Internal error"))
-  #/dissect (hypertee->degree-and-closing-brackets striped-hypertee)
-    (list d closing-brackets)
+  #/w- d (hypertee-degree striped-hypertee)
+  #/w- closing-brackets (hypertee-get-brackets striped-hypertee)
   #/expect (dim-sys-dim=? ds d unstriped-degrees) #t
     (error "Internal error")
   ; We begin a `stripe-states` entry to place the root island's
@@ -383,8 +382,7 @@
         #/island-cane (trivial)
         
         #/hyprid dss pred-unstriped-degrees 0
-        #/degree-and-closing-brackets->hypertee ds
-          pred-unstriped-degrees
+        #/hypertee-from-brackets ds pred-unstriped-degrees
         #/list-map (reverse rev-brackets) #/fn closing-bracket
           (expect closing-bracket (htb-labeled d data) closing-bracket
           #/expect (dim-sys-dim=? ds d pred-pred-unstriped-degrees) #t
@@ -396,8 +394,7 @@
             #/dissect (dim-sys-dim=0? ds #/hyperstack-dimension hist)
               #t
             #/htb-labeled d #/lake-cane dss data
-            #/degree-and-closing-brackets->hypertee ds
-              pred-unstriped-degrees
+            #/hypertee-from-brackets ds pred-unstriped-degrees
             #/list-map (reverse rev-brackets) #/fn closing-bracket
               (expect closing-bracket (htb-labeled d data)
                 closing-bracket

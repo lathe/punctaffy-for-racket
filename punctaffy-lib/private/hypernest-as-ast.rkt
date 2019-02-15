@@ -49,14 +49,13 @@
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee/c hypertee-coil-hole
   hypertee-coil-zero hypertee-contour hypertee-degree
-  hypertee->degree-and-closing-brackets hypertee-dim-sys
-  hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
+  hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees
-  hypertee-get-hole-zero hypertee-plus1 hypertee-pure
-  hypertee-set-degree-and-bind-all-degrees hypertee-zip-low-degrees
-  hypertee-zip-selective)
+  hypertee-get-brackets hypertee-get-hole-zero hypertee-plus1
+  hypertee-pure hypertee-set-degree-and-bind-all-degrees
+  hypertee-zip-low-degrees hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
-  unsafe-degree-and-closing-brackets->hypertee)
+  unsafe-hypertee-from-brackets)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
@@ -103,8 +102,8 @@
   (contract-out
     [hypernest/c (-> dim-sys? contract?)]
     [hypernest-coil/c (-> dim-sys? contract?)])
-  degree-and-brackets->hypernest
-  hypernest->degree-and-brackets
+  hypernest-from-brackets
+  hypernest-get-brackets
   hypernest-increase-degree-to
   hypernest-set-degree-force
   hypertee->hypernest
@@ -166,11 +165,12 @@
   'hypernest (current-inspector) (auto-equal)
   (#:prop prop:custom-write #/make-constructor-style-printer
     ; We write hypernests using a sequence-of-brackets representation.
-    (fn self 'n-hn)
+    (fn self 'hypernest-from-brackets)
     (fn self
-      (dissect (hypernest->degree-and-brackets self)
-        (list degree brackets)
-      #/cons degree brackets))))
+      (list
+        (hypernest-dim-sys self)
+        (hypernest-degree self)
+        (hypernest-get-brackets self)))))
 
 (define (hypernest/c ds)
   (rename-contract
@@ -231,8 +231,7 @@
   (hypernest ds coil))
 
 (define/contract
-  (degree-and-brackets->hypernest
-    ds opening-degree hypernest-brackets)
+  (hypernest-from-brackets ds opening-degree hypernest-brackets)
   (->i
     (
       [ds dim-sys?]
@@ -273,7 +272,7 @@
         (hyperstack-push bump-degree stack #/parent-new-part))
     #/mat first-bracket (hnb-labeled hole-degree data)
       (expect (dim-sys-dim<? ds hole-degree opening-degree) #t
-        (raise-arguments-error 'degree-and-brackets->hypernest
+        (raise-arguments-error 'hypernest-from-brackets
           "encountered a closing bracket of degree too high for where it occurred, and it was the first bracket"
           "opening-degree" opening-degree
           "first-bracket" first-bracket
@@ -326,19 +325,17 @@
                 data))
           #/if is-hypernest
             (hypernest-dv-map-all-degrees
-              (degree-and-brackets->hypernest ds overall-degree
+              (hypernest-from-brackets ds overall-degree
                 (reverse rev-brackets))
             #/fn d data
               (get-subpart d data))
             (hypertee-dv-map-all-degrees
-              (unsafe-degree-and-closing-brackets->hypertee
-                ds
-                overall-degree
-                (reverse #/list-map rev-brackets #/fn closing-bracket
-                  (mat closing-bracket (hnb-labeled d data)
-                    (htb-labeled d data)
-                  #/dissect closing-bracket (hnb-unlabeled d)
-                    (htb-unlabeled d))))
+              (unsafe-hypertee-from-brackets ds overall-degree
+              #/reverse #/list-map rev-brackets #/fn closing-bracket
+                (mat closing-bracket (hnb-labeled d data)
+                  (htb-labeled d data)
+                #/dissect closing-bracket (hnb-unlabeled d)
+                  (htb-unlabeled d)))
             #/fn d data
               (get-subpart d data))))
       #/finish #/get-part root-i)
@@ -365,7 +362,7 @@
         (list hole-degree (trivial)))
       (list hole-degree hole-value)
     #/expect (dim-sys-dim<? ds hole-degree current-d) #t
-      (raise-arguments-error 'degree-and-brackets->hypernest
+      (raise-arguments-error 'hypernest-from-brackets
         "encountered a closing bracket of degree too high for where it occurred"
         "current-d" current-d
         "hypernest-bracket" hypernest-bracket
@@ -376,7 +373,7 @@
     #/begin
       (mat hypernest-bracket (hnb-labeled hole-degree hole-value)
         (expect parent (parent-same-part #t)
-          (raise-arguments-error 'degree-and-brackets->hypernest
+          (raise-arguments-error 'hypernest-from-brackets
             "encountered an annotated closing bracket of degree too low for where it occurred"
             "current-d" current-d
             "hypernest-bracket" hypernest-bracket
@@ -385,7 +382,7 @@
             "hypernest-brackets" hypernest-brackets)
         #/void)
         (mat parent (parent-same-part #t)
-          (raise-arguments-error 'degree-and-brackets->hypernest
+          (raise-arguments-error 'hypernest-from-brackets
             "encountered an unannotated closing bracket of degree too high for where it occurred"
             "current-d" current-d
             "hypernest-bracket" hypernest-bracket
@@ -576,7 +573,7 @@
         #/void)))))
 
 ; TODO: See if we'll ever use this. For now, we just have it here as
-; an analogue to `unsafe-degree-and-closing-brackets->hypertee`.
+; an analogue to `unsafe-hypertee-from-brackets`.
 (define/contract (unsafe-hypernest-plus1 ds coil)
   (-> dim-sys? any/c any)
   (unless (punctaffy-suppress-internal-errors)
@@ -613,12 +610,12 @@
     (hypernest-coil-bump overall-degree data bump-degree tails)
     overall-degree))
 
-(define/contract (hypernest->degree-and-brackets hn)
+(define/contract (hypernest-get-brackets hn)
   (->i
     ([hn hypernest?])
     [_ (hn)
-      (w- dim/c (dim-sys-dim/c #/hypernest-dim-sys hn)
-      #/list/c dim/c #/listof #/hypernest-bracket/c dim/c)])
+      (listof
+      #/hypernest-bracket/c #/dim-sys-dim/c #/hypernest-dim-sys hn)])
   (dissect hn (hypernest ds coil)
   #/w- interleave
     (fn overall-degree bump-degree tails #/let ()
@@ -779,14 +776,15 @@
           (hash-set interpolations root-bracket-i data-brackets)
           (list (state-in-interpolation root-bracket-i) histories)
           (cons (hnb-unlabeled d) rev-result))))
-  #/mat coil (hypernest-coil-zero) (list (dim-sys-dim-zero ds) #/list)
+  #/mat coil (hypernest-coil-zero) (list)
   #/mat coil (hypernest-coil-hole overall-degree data tails)
-    (list overall-degree
-    #/dissect
-      (hypertee->degree-and-closing-brackets
+    (w- hole-degree (hypertee-degree tails)
+    #/w- tails
+      (hypertee-get-brackets
       #/hypertee-dv-map-all-degrees tails #/fn d tail
-        (hypernest->degree-and-brackets tail))
-      (list hole-degree tails)
+        (list
+          (hypernest-degree tail)
+          (hypernest-get-brackets tail)))
     #/cons (hnb-labeled hole-degree data)
     #/interleave overall-degree hole-degree
     #/list-map tails #/fn closing-bracket
@@ -794,16 +792,15 @@
       #/dissect closing-bracket (htb-unlabeled d) (hnb-unlabeled d)))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
-    (list overall-degree
-    #/dissect
-      (hypernest->degree-and-brackets
+    (cons (hnb-open bump-degree data)
+    #/interleave overall-degree bump-degree
+      (hypernest-get-brackets
       #/hypernest-dv-map-all-degrees tails #/fn d data
         (if (dim-sys-dim<? ds d bump-degree)
-          (hypernest->degree-and-brackets data)
-          data))
-      (list _ tails)
-    #/cons (hnb-open bump-degree data)
-    #/interleave overall-degree bump-degree tails)))
+          (list
+            (hypernest-degree data)
+            (hypernest-get-brackets data))
+          data)))))
 
 ; Takes a hypernest of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its bumps and holes the way they

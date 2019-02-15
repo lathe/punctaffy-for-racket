@@ -75,10 +75,9 @@
       [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
   [hypertee/c (-> dim-sys? contract?)])
 (module+ unsafe #/provide #/contract-out
-  [unsafe-degree-and-closing-brackets->hypertee
-    (-> dim-sys? any/c any/c any)])
+  [unsafe-hypertee-from-brackets (-> dim-sys? any/c any/c any)])
 (provide #/contract-out
-  [degree-and-closing-brackets->hypertee
+  [hypertee-from-brackets
     (->i
       (
         [ds dim-sys?]
@@ -86,12 +85,11 @@
         [closing-brackets (ds)
           (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
       [_ (ds) (hypertee/c ds)])]
-  [hypertee->degree-and-closing-brackets
+  [hypertee-get-brackets
     (->i ([ht hypertee?])
       [_ (ht)
-        (w- ds (hypertee-dim-sys ht)
-        #/list/c (dim-sys-dim/c ds)
-        #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])]
+        (listof
+        #/hypertee-bracket/c #/dim-sys-dim/c #/hypertee-dim-sys ht)])]
   [hypertee-increase-degree-to
     (->i
       (
@@ -579,24 +577,20 @@
       (and (hypertee? v) (dim-sys-accepts? ds #/hypertee-dim-sys v)))
     `(hypertee/c ,ds)))
 
-(define
-  (unsafe-degree-and-closing-brackets->hypertee
-    ds degree closing-brackets)
+(define (unsafe-hypertee-from-brackets ds degree closing-brackets)
   (unless (punctaffy-suppress-internal-errors)
-    (assert-valid-hypertee-brackets
-      'unsafe-degree-and-closing-brackets->hypertee
+    (assert-valid-hypertee-brackets 'unsafe-hypertee-from-brackets
       ds degree closing-brackets))
   (unguarded-hypertee ds degree closing-brackets))
 
-(define
-  (degree-and-closing-brackets->hypertee ds degree closing-brackets)
-  (assert-valid-hypertee-brackets
-    'degree-and-closing-brackets->hypertee ds degree closing-brackets)
+(define (hypertee-from-brackets ds degree closing-brackets)
+  (assert-valid-hypertee-brackets 'hypertee-from-brackets
+    ds degree closing-brackets)
   (unguarded-hypertee ds degree closing-brackets))
 
-(define (hypertee->degree-and-closing-brackets ht)
+(define (hypertee-get-brackets ht)
   (dissect ht (hypertee ds d closing-brackets)
-  #/list d closing-brackets))
+    closing-brackets))
 
 ; Takes a hypertee of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its holes the way they are.
