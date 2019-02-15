@@ -26,7 +26,7 @@
   or/c rename-contract)
 (require #/only-in racket/contract/combinator coerce-contract)
 (require #/only-in racket/contract/region define/contract)
-(require #/only-in racket/list make-list)
+(require #/only-in racket/struct make-constructor-style-printer)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
@@ -73,6 +73,8 @@
   [hypertee-degree
     (->i ([ht hypertee?])
       [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
+  ; TODO DOCS: Consider more expressive hypertee contract combinators
+  ; than `hypertee/c`, and come up with a new name for it.
   [hypertee/c (-> dim-sys? contract?)])
 (module+ unsafe #/provide #/contract-out
   [unsafe-hypertee-from-brackets (-> dim-sys? any/c any/c any)])
@@ -555,8 +557,16 @@
   (hypertee?
     hypertee-dim-sys hypertee-degree hypertee-closing-brackets)
   unguarded-hypertee 'hypertee (current-inspector)
-  (auto-write)
-  (auto-equal))
+  (auto-equal)
+  (#:prop prop:custom-write #/make-constructor-style-printer
+    ; We write hypernests using a sequence-of-brackets representation
+    ; (which happens to be the same way we represent them).
+    (fn self 'hypertee-from-brackets)
+    (fn self
+      (list
+        (hypertee-dim-sys self)
+        (hypertee-degree self)
+        (hypertee-get-brackets self)))))
 
 (define-match-expander-attenuated
   attenuated-hypertee unguarded-hypertee
