@@ -75,7 +75,7 @@
   [hnb-unlabeled? (-> any/c boolean?)]
   [hnb-unlabeled-degree (-> hnb-unlabeled? any/c)])
 (provide #/contract-out
-  [hnb/c (-> contract? contract?)])
+  [hypernest-bracket/c (-> contract? contract?)])
 (provide
   hypernest-coil-zero
   (contract-out
@@ -206,20 +206,20 @@
   hnb-unlabeled
   'hnb-unlabeled (current-inspector) (auto-write) (auto-equal))
 
-(define (hnb/c dim/c)
-  (w- dim/c (coerce-contract 'hnb/c dim/c)
+(define (hypernest-bracket/c dim/c)
+  (w- dim/c (coerce-contract 'hypernest-bracket/c dim/c)
   #/rename-contract
     (or/c
       (match/c hnb-open dim/c any/c)
       (match/c hnb-labeled dim/c any/c)
       (match/c hnb-unlabeled dim/c))
-    `(hnb/c ,(contract-name dim/c))))
+    `(hypernest-bracket/c ,(contract-name dim/c))))
 
 (define/contract (hypernest-bracket-degree bracket)
   ; TODO: Change this representation so we can more decisively
   ; distinguish closing brackets from dimension numbers if the
   ; dimension numbers are represented as lists.
-  (-> (hnb/c any/c) any/c)
+  (-> (hypernest-bracket/c any/c) any/c)
   (mat bracket (hnb-open d data) d
   #/mat bracket (hnb-labeled d data) d
   #/dissect bracket (hnb-unlabeled d) d))
@@ -237,7 +237,8 @@
     (
       [ds dim-sys?]
       [opening-degree (ds) (dim-sys-dim/c ds)]
-      [hypernest-brackets (ds) (listof #/hnb/c #/dim-sys-dim/c ds)])
+      [hypernest-brackets (ds)
+        (listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
     [_ (ds) (hypernest/c ds)])
   
   (struct-easy (parent-same-part should-annotate-as-nontrivial))
@@ -617,7 +618,7 @@
     ([hn hypernest?])
     [_ (hn)
       (w- dim/c (dim-sys-dim/c #/hypernest-dim-sys hn)
-      #/list/c dim/c #/listof #/hnb/c dim/c)])
+      #/list/c dim/c #/listof #/hypernest-bracket/c dim/c)])
   (dissect hn (hypernest ds coil)
   #/w- interleave
     (fn overall-degree bump-degree tails #/let ()
