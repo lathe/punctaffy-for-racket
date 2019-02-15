@@ -23,7 +23,7 @@
 
 (require #/only-in racket/contract/base
   -> ->i any any/c contract? contract-name contract-out list/c listof
-  or/c rename-contract)
+  not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator coerce-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/struct make-constructor-style-printer)
@@ -65,6 +65,7 @@
   [htb-unlabeled? (-> any/c boolean?)]
   [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
 (provide #/contract-out
+  [hypertee-bracket? (-> any/c boolean?)]
   [hypertee-bracket/c (-> contract? contract?)])
 (provide #/contract-out
   [hypertee-bracket-degree (-> (hypertee-bracket/c any/c) any/c)]
@@ -84,8 +85,16 @@
       (
         [ds dim-sys?]
         [degree (ds) (dim-sys-dim/c ds)]
-        [closing-brackets (ds)
+        [brackets (ds)
           (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
+      [_ (ds) (hypertee/c ds)])]
+  [ht-bracs
+    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+      #:rest
+      [brackets (ds)
+        (listof #/or/c
+          (hypertee-bracket/c #/dim-sys-dim/c ds)
+          (not/c hypertee-bracket?))]
       [_ (ds) (hypertee/c ds)])]
   [hypertee-get-brackets
     (->i ([ht hypertee?])
@@ -495,6 +504,9 @@
   htb-unlabeled
   'htb-unlabeled (current-inspector) (auto-write) (auto-equal))
 
+(define (hypertee-bracket? v)
+  (or (htb-labeled? v) (htb-unlabeled? v)))
+
 (define (hypertee-bracket/c dim/c)
   (w- dim/c (coerce-contract 'hypertee-bracket/c dim/c)
   #/rename-contract
@@ -561,12 +573,14 @@
   (#:prop prop:custom-write #/make-constructor-style-printer
     ; We write hypernests using a sequence-of-brackets representation
     ; (which happens to be the same way we represent them).
-    (fn self 'hypertee-from-brackets)
+    (fn self 'ht-bracs)
     (fn self
-      (list
-        (hypertee-dim-sys self)
-        (hypertee-degree self)
-        (hypertee-get-brackets self)))))
+      (list* (hypertee-dim-sys self) (hypertee-degree self)
+      #/list-map (hypertee-get-brackets self) #/fn bracket
+        (expect bracket (htb-unlabeled bracket) bracket
+        #/if (hypertee-bracket? bracket)
+          (htb-unlabeled bracket)
+          bracket)))))
 
 (define-match-expander-attenuated
   attenuated-hypertee unguarded-hypertee
@@ -593,10 +607,20 @@
       ds degree closing-brackets))
   (unguarded-hypertee ds degree closing-brackets))
 
-(define (hypertee-from-brackets ds degree closing-brackets)
-  (assert-valid-hypertee-brackets 'hypertee-from-brackets
-    ds degree closing-brackets)
-  (unguarded-hypertee ds degree closing-brackets))
+(define (explicit-hypertee-from-brackets err-name ds degree brackets)
+  (assert-valid-hypertee-brackets err-name ds degree brackets)
+  (unguarded-hypertee ds degree brackets))
+
+(define (hypertee-from-brackets ds degree brackets)
+  (explicit-hypertee-from-brackets 'hypertee-from-brackets
+    ds degree brackets))
+
+(define (ht-bracs ds degree . brackets)
+  (explicit-hypertee-from-brackets 'ht-bracs ds degree
+  #/list-map brackets #/fn closing-bracket
+    (if (hypertee-bracket? closing-bracket)
+      closing-bracket
+      (htb-unlabeled closing-bracket))))
 
 (define (hypertee-get-brackets ht)
   (dissect ht (hypertee ds d closing-brackets)
