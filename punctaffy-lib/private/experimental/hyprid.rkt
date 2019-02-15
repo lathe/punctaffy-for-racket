@@ -45,7 +45,7 @@
   make-hyperstack-trivial make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
   degree-and-closing-brackets->hypertee htb-labeled htb-unlabeled
-  hypertee? hypertee-bind-pred-degree hypertee-closing-bracket-degree
+  hypertee? hypertee-bind-pred-degree hypertee-bracket-degree
   hypertee-contour hypertee-degree
   hypertee->degree-and-closing-brackets hypertee-dv-each-all-degrees
   hypertee-increase-degree-to hypertee-map-highest-degree
@@ -415,7 +415,7 @@
     #/dissect hist
       (list (history-info location-before maybe-state-before)
         histories-before)
-    #/w- d (hypertee-closing-bracket-degree closing-bracket)
+    #/w- d (hypertee-bracket-degree closing-bracket)
     #/expect
       (dim-sys-dim<? ds d #/hyperstack-dimension histories-before)
       #t
