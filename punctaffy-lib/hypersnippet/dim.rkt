@@ -93,6 +93,10 @@
         [n exact-integer?])
       [_ (dss)
         (maybe/c #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])]
+  [dim-successors-sys-dim-from-int
+    (->i ([dss dim-successors-sys?] [n exact-integer?])
+      [_ (dss)
+        (maybe/c #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])]
   [dim-successors-sys-dim=plus-int?
     (->i
       (
@@ -113,16 +117,18 @@
           [d (dss)
             (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
           [n exact-integer?])
-        [_ (dss)
+        [_ (dss n)
           (maybe/c
           #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
       dim-successors-sys-impl?)]
   
   )
 
-(provide successorless-dim-successors-sys)
-(provide #/contract-out
-  [successorless-dim-successors-sys? (-> any/c boolean?)])
+; TODO: Document and uncomment the `successorless-...` exports if we
+; ever need them.
+;(provide successorless-dim-successors-sys)
+;(provide #/contract-out
+;  [successorless-dim-successors-sys? (-> any/c boolean?)])
 (provide nat-dim-sys)
 (provide #/contract-out
   [nat-dim-sys? (-> any/c boolean?)])
@@ -187,6 +193,10 @@
 
 (define (dim-successors-sys-accepts? dss other)
   (equal? dss other))
+
+(define (dim-successors-sys-dim-from-int dss n)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/dim-successors-sys-dim-plus-int dss (dim-sys-dim-zero ds) n))
 
 (define (dim-successors-sys-dim=plus-int? dss candidate d n)
   (w- ds (dim-successors-sys-dim-sys dss)

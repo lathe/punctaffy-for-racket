@@ -232,7 +232,7 @@
 (require punctaffy/hypersnippet/hypertee)
 
 (writeln #/hypertee-drop1
-  (n-ht (nat-dim-successors-sys) 3
+  (ht-bracs (nat-dim-sys) 3
     (list 2 'a)
       1
         (list 2 'b)

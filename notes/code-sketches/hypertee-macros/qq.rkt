@@ -32,13 +32,10 @@
   
   (require #/for-template racket/base)
   
-  (require #/only-in racket/contract/base -> any/c list/c)
-  (require #/only-in racket/contract/region define/contract)
   (require #/only-in syntax/parse expr id syntax-parse)
   
   (require #/only-in lathe-comforts dissect expect fn mat w-)
-  (require #/only-in lathe-comforts/list list-foldr list-map)
-  (require #/only-in lathe-comforts/maybe just maybe/c)
+  (require #/only-in lathe-comforts/maybe just)
   (require #/only-in lathe-comforts/struct struct-easy)
   (require #/only-in lathe-comforts/trivial trivial)
   
@@ -48,12 +45,11 @@
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
     s-expr-stx->ht-expr simple-ht-builder-syntax)
   (require #/only-in punctaffy/hypersnippet/dim
-    dim-successors-sys-dim-sys dim-sys-dim<?
-    extended-nat-dim-successors-sys omega)
+    dim-successors-sys-dim-sys dim-sys-dim<? extended-nat-dim-sys
+    omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
-    htb-labeled htb-unlabeled hypertee? hypertee-bind-one-degree
-    hypertee-coil-hole hypertee-coil-zero hypertee-degree
-    hypertee-drop1 hypertee-fold hypertee-from-brackets
+    htb-labeled ht-bracs hypertee-bind-one-degree hypertee-coil-hole
+    hypertee-coil-zero hypertee-degree hypertee-drop1 hypertee-fold
     hypertee-increase-degree-to hypertee-join-one-degree hypertee-pure
     hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
@@ -61,23 +57,7 @@
   (provide #/all-defined-out)
   
   
-  (define (omega-ht . closing-brackets)
-    (w- dss (extended-nat-dim-successors-sys)
-    #/w- ds (dim-successors-sys-dim-sys dss)
-    #/hypertee-from-brackets ds (omega)
-    #/list-map closing-brackets #/fn closing-bracket
-      (mat closing-bracket (htb-labeled d data) closing-bracket
-      #/mat closing-bracket (htb-unlabeled d) closing-bracket
-      #/htb-unlabeled closing-bracket)))
-  
-  (define (omega-ht-append0 hts)
-    ; When we call this, the elements of `hts` are degree-omega
-    ; hypertees, and their degree-0 holes have trivial values as
-    ; contents. We return their degree-0 concatenation.
-    (list-foldr hts (omega-ht #/htb-labeled 0 #/trivial) #/fn ht tail
-      (hypertee-bind-one-degree 0 ht #/fn hole data
-        (dissect data (trivial)
-          tail))))
+  (define ds (extended-nat-dim-sys))
   
   
   (struct-easy (my-quasiquote-tag-1-expanded-expr stx) #:equal)
@@ -96,7 +76,7 @@
   
   (define (make-op-bracket call-stx)
     (syntax-parse call-stx #/ (op body)
-    #/omega-ht
+    #/ht-bracs ds (omega)
       (htb-labeled 2 #/ht-tag-2-list #/datum->syntax call-stx #/list)
       1
       (htb-labeled 1 #/ht-tag-1-s-expr-stx #'op)
@@ -117,10 +97,12 @@
           ; makes it possible to nest `(my-quasiquote uq #/qq ...)`
           ; within itself, without the inner `uq` being treated as a
           ; closing bracket.
-          (omega-ht (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+          (ht-bracs ds (omega)
+            (htb-labeled 1 #/ht-tag-1-s-expr-stx stx)
+            0
           #/htb-labeled 0 #/trivial)]
       #/ (op interpolation)
-      #/omega-ht
+      #/ht-bracs ds (omega)
         (htb-labeled 1
         #/ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
           (make-op-bracket stx)
@@ -135,7 +117,9 @@
           ; If this syntax transformer is used in an identifier
           ; position, we just expand as though the identifier isn't
           ; bound to a syntax transformer at all.
-          (omega-ht (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+          (ht-bracs ds (omega)
+            (htb-labeled 1 #/ht-tag-1-s-expr-stx stx)
+            0
           #/htb-labeled 0 #/trivial)]
       #/ (op body)
       #/w- body (s-expr-stx->ht-expr #'body)
@@ -167,9 +151,7 @@
             hole)))))
   
   (define (my-quasiquote-ht-expr->stx ht-expr)
-    (w- dss (extended-nat-dim-successors-sys)
-    #/w- ds (dim-successors-sys-dim-sys dss)
-    #/expect
+    (expect
       (hypertee-fold 1 ht-expr #/fn first-nontrivial-d data tails
         (w- d (hypertee-degree tails)
         #/w- is-trivial (dim-sys-dim<? ds d first-nontrivial-d)
@@ -284,7 +266,7 @@
               (my-quasiquote-ht-expr->stx body-and-tails)
             #/expect
               (zip-bracket-ends
-                (omega-ht (htb-labeled 1 body-and-tails) 0
+                (ht-bracs ds (omega) (htb-labeled 1 body-and-tails) 0
                 #/htb-labeled 0 #/trivial)
                 opening-bracket
               #/fn body-and-tails

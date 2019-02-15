@@ -24,19 +24,17 @@
 (require #/only-in syntax/parse id syntax-parse)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/list list-foldr list-map)
+(require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/maybe
-  just maybe? maybe-bind maybe-map nothing)
+  just just-value maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys? dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim-sys dim-sys-dim-zero
-  successorless-dim-successors-sys)
+  dim-successors-sys? dim-successors-sys-dim-from-int
+  dim-successors-sys-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hnb-unlabeled hypernest-bind-one-degree
-  hypernest/c hypernest-from-brackets
+  hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero hypernest/c
   hypernest-set-degree-and-bind-highest-degrees)
 
 (provide
@@ -171,38 +169,6 @@
     (just #/hn-builder-syntax-ref x)
     (nothing)))
 
-(define (n-d-maybe dss dim-as-nat)
-  (w- ds (dim-successors-sys-dim-sys dss)
-  #/dim-successors-sys-dim-plus-int dss (dim-sys-dim-zero ds)
-    dim-as-nat))
-
-(define (n-d dss dim-as-nat)
-  (expect (n-d-maybe dss dim-as-nat) (just dim)
-    (raise-arguments-error 'n-d
-      "expected the given number of successors to exist for the zero dimension"
-      "dss" dss
-      "dim-as-nat" dim-as-nat)
-    dim))
-
-(define (n-hn dss degree . brackets)
-  (w- ds (dim-successors-sys-dim-sys dss)
-  #/hypernest-from-brackets ds (n-d dss degree)
-  #/list-map brackets #/fn bracket
-    (mat bracket (hnb-open d data) (hnb-open (n-d dss d) data)
-    #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d dss d) data)
-    #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d dss d))
-    #/hnb-unlabeled (n-d dss bracket))))
-
-(define (n-hn-append0 dss degree hns)
-  ; When we call this, the elements of `hns` are hypernests of degree
-  ; `degree`, and their degree-0 holes have trivial values as
-  ; contents. We return their degree-0 concatenation.
-  (list-foldr hns (n-hn dss degree #/hnb-labeled 0 #/trivial)
-  #/fn hn tail
-    (hypernest-bind-one-degree (n-d dss 0) hn #/fn hole data
-      (dissect data (trivial)
-        tail))))
-
 
 ; Each of these tags can occur as a bump of the indicated degree. They
 ; represent data that was carried over from the original
@@ -289,8 +255,10 @@
       [dss dim-successors-sys?]
       [stx syntax?])
     [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
-  (expect (n-d-maybe dss 2) (just _)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (dim-successors-sys-dim-from-int dss 2) (just _)
     (error "Expected at least 2 successors to exist for the zero dimension")
+  #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
   #/mat
     (syntax-parse stx
       [ (op:id arg ...)
@@ -348,16 +316,15 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-1 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (hypernest-set-degree-and-bind-highest-degrees
-        (n-d dss 1)
-        (n-hn dss 2
+      (hypernest-set-degree-and-bind-highest-degrees (n-d 1)
+        (hn-bracs-dss dss 2
           (hnb-open 1 metadata)
           (hnb-labeled 1 #/trivial)
           0
           0
         #/hnb-labeled 0 #/trivial)
       #/fn hole data
-        (n-hn-append0 dss 1 elems)))
+        (hypernest-append-zero ds (n-d 1) elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)
@@ -402,7 +369,7 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (n-hn dss 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      (hn-bracs-dss dss 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
       #/hnb-labeled 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
@@ -421,9 +388,11 @@
       [dss dim-successors-sys?]
       [stx syntax?])
     [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
-  (expect (n-d-maybe dss 2) (just _)
-    (error "Expected 2 successors to exist for the zero dimension")
-  #/n-hn-append0 dss 1
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/expect (dim-successors-sys-dim-from-int dss 2) (just _)
+    (error "Expected at least 2 successors to exist for the zero dimension")
+  #/hypernest-append-zero ds
+    (just-value #/dim-successors-sys-dim-from-int dss 1)
   #/list-map (syntax->list stx) #/fn elem
     (s-expr-stx->hn-expr dss elem)))
 

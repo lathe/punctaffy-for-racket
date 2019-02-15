@@ -22,18 +22,19 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->i any any/c contract? contract-name contract-out list/c listof
-  not/c or/c rename-contract)
+  -> ->i and/c any any/c contract? contract-name contract-out list/c
+  listof not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator coerce-contract)
 (require #/only-in racket/contract/region define/contract)
+(require #/only-in racket/math natural?)
 (require #/only-in racket/struct make-constructor-style-printer)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each)
 (require #/only-in lathe-comforts/list
-  list-all list-any list-bind list-each list-foldl list-kv-map
-  list-map)
+  list-all list-any list-bind list-each list-foldl list-foldr
+  list-kv-map list-map)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make match/c)
@@ -44,11 +45,11 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys? dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys dim-sys?
-  dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dim-max
-  dim-sys-dim-zero)
+  dim-successors-sys? dim-successors-sys-dim-from-int
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim=plus-int?
+  dim-successors-sys-dim-sys dim-sys? dim-sys-accepts? dim-sys-dim<?
+  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
+  dim-sys-0<dim/c dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   hyperstack-push make-hyperstack-trivial make-hyperstack)
@@ -92,10 +93,27 @@
     (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
       #:rest
       [brackets (ds)
-        (listof #/or/c
-          (hypertee-bracket/c #/dim-sys-dim/c ds)
-          (not/c hypertee-bracket?))]
+        (w- dim/c (dim-sys-dim/c ds)
+        #/listof #/or/c
+          (hypertee-bracket/c dim/c)
+          (and/c (not/c hypertee-bracket?) dim/c))]
       [_ (ds) (hypertee/c ds)])]
+  [ht-bracs-dss
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [degree (dss)
+          (or/c natural?
+          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
+      #:rest
+      [brackets (dss)
+        (w- dim/c
+          (or/c natural?
+          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)
+        #/listof #/or/c
+          (hypertee-bracket/c dim/c)
+          (and/c (not/c hypertee-bracket?) dim/c))]
+      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
   [hypertee-get-brackets
     (->i ([ht hypertee?])
       [_ (ht)
@@ -151,6 +169,14 @@
   hypertee-bind-pred-degree
   hypertee-join-one-degree
   hypertee-set-degree-and-bind-all-degrees
+  (contract-out
+    [hypertee-append-zero
+      (->i
+        (
+          [ds dim-sys?]
+          [degree (ds) (dim-sys-0<dim/c ds)]
+          [hts (ds) (listof #/hypertee/c ds)])
+        [_ (ds) (hypertee/c ds)])])
   hypertee-dv-any-all-degrees
   hypertee-dv-all-all-degrees
   hypertee-dv-each-all-degrees
@@ -621,6 +647,22 @@
     (if (hypertee-bracket? closing-bracket)
       closing-bracket
       (htb-unlabeled closing-bracket))))
+
+(define (ht-bracs-dss dss degree . brackets)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/w- n-d
+    (fn n
+      (expect (natural? n) #t n
+      #/mat (dim-successors-sys-dim-from-int dss n) (just d) d
+      #/raise-arguments-error 'ht-bracs-dss
+        "expected the given number of successors to exist for the zero dimension"
+        "n" n
+        "dss" dss))
+  #/hypertee-from-brackets ds (n-d degree)
+  #/list-map brackets #/fn bracket
+    (mat bracket (htb-labeled d data) (htb-labeled (n-d d) data)
+    #/mat bracket (htb-unlabeled d) (htb-unlabeled (n-d d))
+    #/htb-unlabeled (n-d bracket))))
 
 (define (hypertee-get-brackets ht)
   (dissect ht (hypertee ds d closing-brackets)
@@ -1454,6 +1496,32 @@
         "hole-degree" hole-degree
         "hole-to-ht-result" result)
     #/hypertee-increase-degree-to intermediate-degree result)))
+
+(define (hypertee-append-zero ds degree hts)
+  (begin
+    ; TODO DOCS: See if we can verify these things in the contract.
+    (list-each hts #/fn ht
+      (expect (dim-sys-dim=? ds degree (hypertee-degree ht)) #t
+        (raise-arguments-error 'hypertee-append-zero
+          "expected each element of hts to be a hypertee of the given degree"
+          "degree" degree
+          "ht" ht)
+      #/w- hole-value (hypertee-get-hole-zero ht)
+      #/expect hole-value (just #/trivial)
+        (raise-arguments-error 'hypertee-append-zero
+          "expected each element of hts to have a trivial value in its degree-zero hole"
+          "hole-value" hole-value
+          "ht" ht)
+      #/void))
+  ; Now we know that the elements of `hts` are hypertees of degree
+  ; `degree` andthat  their degree-0 holes have trivial values as
+  ; contents. We return their degree-0 concatenation.
+  #/list-foldr hts
+    (ht-bracs ds degree #/htb-labeled (dim-sys-dim-zero ds) #/trivial)
+  #/fn ht tail
+    (hypertee-bind-one-degree (dim-sys-dim-zero ds) ht #/fn hole data
+      (dissect data (trivial)
+        tail))))
 
 (define/contract (hypertee-dv-any-all-degrees ht func)
   (->i

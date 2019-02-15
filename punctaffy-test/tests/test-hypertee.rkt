@@ -22,8 +22,7 @@
 
 (require rackunit)
 
-(require #/only-in lathe-comforts fn mat)
-(require #/only-in lathe-comforts/list list-map)
+(require #/only-in lathe-comforts fn)
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/trivial trivial)
 
@@ -36,32 +35,25 @@
 (define ds (nat-dim-sys))
 (define dss (nat-dim-successors-sys))
 
-(define (n-ht degree . brackets)
-  (hypertee-from-brackets ds degree
-  #/list-map brackets #/fn bracket
-    (mat bracket (htb-labeled d data) bracket
-    #/mat bracket (htb-unlabeled d) bracket
-    #/htb-unlabeled bracket)))
 
-
-(define sample-0 (n-ht 0))
-(define sample-closing-1 (n-ht 1 (htb-labeled 0 'a)))
+(define sample-0 (ht-bracs ds 0))
+(define sample-closing-1 (ht-bracs ds 1 (htb-labeled 0 'a)))
 (define sample-closing-2
-  (n-ht 2
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0 (htb-labeled 0 'a)))
 (define sample-closing-3
-  (n-ht 3
+  (ht-bracs ds 3
     (htb-labeled 2 'a)
     1 (htb-labeled 1 'a) 0 0 0 (htb-labeled 0 'a)))
 (define sample-closing-4
-  (n-ht 4
+  (ht-bracs ds 4
     (htb-labeled 3 'a)
     2 (htb-labeled 2 'a) 1 1 1 (htb-labeled 1 'a) 0 0 0 0 0 0
     0
     (htb-labeled 0 'a)))
 (define sample-closing-5
-  (n-ht 5
+  (ht-bracs ds 5
     (htb-labeled 4 'a)
     3 (htb-labeled 3 'a) 2 2 2 (htb-labeled 2 'a)
     1 1 1 1 1 1 1 (htb-labeled 1 'a)
@@ -84,13 +76,13 @@
     ; TODO: We basically just transcribed this from the result of
     ; `(hypernest-drop1 sample-closing-3)` in test-hypernest.rkt. Make
     ; sure it's correct.
-    (n-ht 2
-      (htb-labeled 1 #/n-ht 3
+    (ht-bracs ds 2
+      (htb-labeled 1 #/ht-bracs ds 3
         (htb-labeled 1 'a)
         0
       #/htb-labeled 0 #/trivial)
       0
-    #/htb-labeled 0 #/n-ht 3 #/htb-labeled 0 'a)))
+    #/htb-labeled 0 #/ht-bracs ds 3 #/htb-labeled 0 'a)))
 
 (check-drop1-round-trip sample-closing-3)
 (check-drop1-round-trip sample-closing-4)
@@ -124,37 +116,37 @@
 
 
 (check-equal?
-  (hypertee-join-all-degrees #/n-ht 2
-    (htb-labeled 1 #/n-ht 2
+  (hypertee-join-all-degrees #/ht-bracs ds 2
+    (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 1 #/n-ht 2
+    (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-pure 2 'a #/n-ht 0))
-  (n-ht 2
+    (htb-labeled 0 #/hypertee-pure 2 'a #/ht-bracs ds 0))
+  (ht-bracs ds 2
     (htb-labeled 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
 
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
-  (hypertee-join-all-degrees #/n-ht 2
-    (htb-labeled 1 #/n-ht 2
+  (hypertee-join-all-degrees #/ht-bracs ds 2
+    (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 1 'a)
       0
       (htb-labeled 1 'a)
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 1 #/n-ht 2
+    (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 1 'a)
       0
       (htb-labeled 1 'a)
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-pure 2 'a #/n-ht 0))
-  (n-ht 2
+    (htb-labeled 0 #/hypertee-pure 2 'a #/ht-bracs ds 0))
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 1 'a)
@@ -168,22 +160,22 @@
 
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
-  (hypertee-join-all-degrees #/n-ht 2
-    (htb-labeled 1 #/hypertee-pure 2 'a #/n-ht 1
+  (hypertee-join-all-degrees #/ht-bracs ds 2
+    (htb-labeled 1 #/hypertee-pure 2 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 1 #/n-ht 2
+    (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 1 'a)
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 1 #/n-ht 2
+    (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 1 'a)
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-pure 2 'a #/n-ht 0))
-  (n-ht 2
+    (htb-labeled 0 #/hypertee-pure 2 'a #/ht-bracs ds 0))
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 1 'a)
@@ -195,14 +187,14 @@
 
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
-  (hypertee-join-all-degrees #/n-ht 3
+  (hypertee-join-all-degrees #/ht-bracs ds 3
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/hypertee-pure 3 'a #/n-ht 1
+    (htb-labeled 1 #/hypertee-pure 3 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     
-    (htb-labeled 2 #/n-ht 3
+    (htb-labeled 2 #/ht-bracs ds 3
       
       ; This is propagated to the result.
       (htb-labeled 2 'a)
@@ -227,12 +219,12 @@
     0
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/hypertee-pure 3 'a #/n-ht 1
+    (htb-labeled 1 #/hypertee-pure 3 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     
-    (htb-labeled 0 #/hypertee-pure 3 'a #/n-ht 0))
-  (n-ht 3
+    (htb-labeled 0 #/hypertee-pure 3 'a #/ht-bracs ds 0))
+  (ht-bracs ds 3
     (htb-labeled 1 'a)
     0
     (htb-labeled 2 'a)
@@ -252,15 +244,15 @@
   (hypertee-join-selective-non-interpolation val))
 
 (check-equal?
-  (hypertee-join-all-degrees-selective #/n-ht 2
-    (htb-labeled 1 #/htterp #/n-ht 2
+  (hypertee-join-all-degrees-selective #/ht-bracs ds 2
+    (htb-labeled 1 #/htterp #/ht-bracs ds 2
       (htb-labeled 1 #/htnonterp 'a)
       0
       (htb-labeled 1 #/htnonterp 'a)
       0
       (htb-labeled 0 #/htterp #/trivial))
     0
-    (htb-labeled 1 #/htterp #/n-ht 2
+    (htb-labeled 1 #/htterp #/ht-bracs ds 2
       (htb-labeled 1 #/htnonterp 'a)
       0
       (htb-labeled 1 #/htnonterp 'a)
@@ -268,8 +260,8 @@
       (htb-labeled 0 #/htterp #/trivial))
     0
     (htb-labeled 0
-      (htterp #/hypertee-pure 2 (htnonterp 'a) #/n-ht 0)))
-  (n-ht 2
+      (htterp #/hypertee-pure 2 (htnonterp 'a) #/ht-bracs ds 0)))
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 1 'a)
@@ -282,8 +274,8 @@
   "Joining hypertees selectively when there isn't any selectiveness being exercised")
 
 (check-equal?
-  (hypertee-join-all-degrees-selective #/n-ht 2
-    (htb-labeled 1 #/htterp #/n-ht 2
+  (hypertee-join-all-degrees-selective #/ht-bracs ds 2
+    (htb-labeled 1 #/htterp #/ht-bracs ds 2
       (htb-labeled 1 #/htnonterp 'a)
       0
       (htb-labeled 1 #/htnonterp 'a)
@@ -293,8 +285,8 @@
     (htb-labeled 1 #/htnonterp 'a)
     0
     (htb-labeled 0
-      (htterp #/hypertee-pure 2 (htnonterp 'a) #/n-ht 0)))
-  (n-ht 2
+      (htterp #/hypertee-pure 2 (htnonterp 'a) #/ht-bracs ds 0)))
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 1 'a)
@@ -305,8 +297,8 @@
   "Joining hypertees selectively when there's a degree-1 non-interpolation in the root")
 
 (check-equal?
-  (hypertee-join-all-degrees-selective #/n-ht 2
-    (htb-labeled 1 #/htterp #/n-ht 2
+  (hypertee-join-all-degrees-selective #/ht-bracs ds 2
+    (htb-labeled 1 #/htterp #/ht-bracs ds 2
       (htb-labeled 1 #/htnonterp 'a)
       0
       (htb-labeled 1 #/htnonterp 'a)
@@ -316,7 +308,7 @@
     (htb-labeled 1 #/htnonterp 'a)
     0
     (htb-labeled 0 #/htnonterp 'a))
-  (n-ht 2
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 1 'a)

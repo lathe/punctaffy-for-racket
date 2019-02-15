@@ -31,10 +31,10 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys-dim-sys extended-nat-dim-successors-sys omega)
+  dim-successors-sys-dim-sys extended-nat-dim-sys omega)
 (require #/only-in punctaffy/hypersnippet/hypertee
-  htb-labeled htb-unlabeled hypertee? hypertee-bind-one-degree
-  hypertee-from-brackets)
+  htb-labeled ht-bracs htb-unlabeled hypertee? hypertee-append-zero
+  hypertee-bind-one-degree hypertee-from-brackets)
 
 (provide
   (struct-out ht-tag-1-s-expr-stx)
@@ -147,23 +147,7 @@
     (just #/ht-builder-syntax-ref x)
     (nothing)))
 
-(define (omega-ht . closing-brackets)
-  (w- dss (extended-nat-dim-successors-sys)
-  #/w- ds (dim-successors-sys-dim-sys dss)
-  #/hypertee-from-brackets ds (omega)
-  #/list-map closing-brackets #/fn closing-bracket
-    (mat closing-bracket (htb-labeled d data) closing-bracket
-    #/mat closing-bracket (htb-unlabeled d) closing-bracket
-    #/htb-unlabeled closing-bracket)))
-
-(define (omega-ht-append0 hts)
-  ; When we call this, the elements of `hts` are degree-omega
-  ; hypertees, and their degree-0 holes have trivial values as
-  ; contents. We return their degree-0 concatenation.
-  (list-foldr hts (omega-ht #/htb-labeled 0 #/trivial) #/fn ht tail
-    (hypertee-bind-one-degree 0 ht #/fn hole data
-      (dissect data (trivial)
-        tail))))
+(define ds (extended-nat-dim-sys))
 
 (struct-easy (ht-tag-1-s-expr-stx stx) #:equal)
 (struct-easy (ht-tag-1-other val) #:equal)
@@ -241,13 +225,13 @@
       ; degree-2 hole around that, holding the given metadata. We
       ; return the degree-omega hypertee that results.
       (hypertee-bind-one-degree 1
-        (omega-ht
+        (ht-bracs ds (omega)
           (htb-labeled 2 metadata)
             1 (htb-labeled 1 #/trivial) 0 0
           0
         #/htb-labeled 0 #/trivial)
       #/fn hole data
-        (omega-ht-append0 elems)))
+        (hypertee-append-zero ds (omega) elems)))
   
   ; We traverse into proper and improper lists.
   #/if (pair? s)
@@ -292,7 +276,7 @@
       ; `stx` itself (perhaps put in some kind of container so that it
       ; can be distinguished from degree-1 holes that a user-defined
       ; syntax introduces for a different reason).
-      (omega-ht (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+      (ht-bracs ds (omega) (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
       #/htb-labeled 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
@@ -308,7 +292,8 @@
 ;
 (define/contract (splicing-s-expr-stx->ht-expr stx)
   (-> syntax? hypertee?)
-  (omega-ht-append0 #/list-map (syntax->list stx) #/fn elem
+  (hypertee-append-zero ds (omega)
+  #/list-map (syntax->list stx) #/fn elem
     (s-expr-stx->ht-expr elem)))
 
 

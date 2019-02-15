@@ -22,8 +22,7 @@
 
 (require rackunit)
 
-(require #/only-in lathe-comforts fn mat)
-(require #/only-in lathe-comforts/list list-map)
+(require #/only-in lathe-comforts fn)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
@@ -36,21 +35,14 @@
 (define ds (nat-dim-sys))
 (define dss (nat-dim-successors-sys))
 
-(define (n-ht degree . brackets)
-  (hypertee-from-brackets ds degree
-  #/list-map brackets #/fn bracket
-    (mat bracket (htb-labeled d data) bracket
-    #/mat bracket (htb-unlabeled d) bracket
-    #/htb-unlabeled bracket)))
-
 
 (check-equal?
   (hyprid-destripe-once
     (hyprid dss 1 1
     #/island-cane "Hello."
-    #/hyprid dss 1 0 #/n-ht 1 #/htb-labeled 0
+    #/hyprid dss 1 0 #/ht-bracs ds 1 #/htb-labeled 0
     #/non-lake-cane #/trivial))
-  (hyprid dss 2 0 #/n-ht 2
+  (hyprid dss 2 0 #/ht-bracs ds 2
     (htb-labeled 0 #/trivial))
   "Destriping a hyprid-encoded interpolated string with no interpolations gives a degree-2 hyprid with no nonzero-degree holes")
 
@@ -58,15 +50,15 @@
   (hyprid-fully-destripe
     (hyprid dss 1 1
     #/island-cane "Hello, "
-    #/hyprid dss 1 0 #/n-ht 1 #/htb-labeled 0
-    #/lake-cane dss 'name #/n-ht 1 #/htb-labeled 0
+    #/hyprid dss 1 0 #/ht-bracs ds 1 #/htb-labeled 0
+    #/lake-cane dss 'name #/ht-bracs ds 1 #/htb-labeled 0
     #/island-cane "! It's "
-    #/hyprid dss 1 0 #/n-ht 1 #/htb-labeled 0
-    #/lake-cane dss 'weather #/n-ht 1 #/htb-labeled 0
+    #/hyprid dss 1 0 #/ht-bracs ds 1 #/htb-labeled 0
+    #/lake-cane dss 'weather #/ht-bracs ds 1 #/htb-labeled 0
     #/island-cane " today."
-    #/hyprid dss 1 0 #/n-ht 1 #/htb-labeled 0
+    #/hyprid dss 1 0 #/ht-bracs ds 1 #/htb-labeled 0
     #/non-lake-cane #/trivial))
-  (n-ht 2
+  (ht-bracs ds 2
     (htb-labeled 1 'name)
     0
     (htb-labeled 1 'weather)
@@ -76,7 +68,7 @@
 
 (check-equal?
   (hyprid-stripe-once
-  #/hyprid dss 3 0 #/n-ht 3
+  #/hyprid dss 3 0 #/ht-bracs ds 3
     (htb-labeled 2 'a)
     1
     (htb-labeled 1 'a)
@@ -85,10 +77,10 @@
     0
     (htb-labeled 0 'a))
   (hyprid dss 2 1
-  #/island-cane (trivial) #/hyprid dss 2 0 #/n-ht 2
-    (htb-labeled 1 #/lake-cane dss 'a #/n-ht 2
+  #/island-cane (trivial) #/hyprid dss 2 0 #/ht-bracs ds 2
+    (htb-labeled 1 #/lake-cane dss 'a #/ht-bracs ds 2
       (htb-labeled 1
-      #/island-cane (trivial) #/hyprid dss 2 0 #/n-ht 2
+      #/island-cane (trivial) #/hyprid dss 2 0 #/ht-bracs ds 2
         (htb-labeled 1 #/non-lake-cane 'a)
         0
         (htb-labeled 0 #/trivial))
@@ -102,7 +94,7 @@
   
   (hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid dss 3 0 #/n-ht 3
+  #/hyprid dss 3 0 #/ht-bracs ds 3
     (htb-labeled 2 'a)
     1
     (htb-labeled 1 'a)
@@ -116,21 +108,21 @@
   (hyprid dss 1 2
   #/island-cane (trivial) #/hyprid dss 1 1
   #/island-cane (trivial) #/hyprid dss 1 0
-  #/n-ht 1 #/htb-labeled 0 #/lake-cane dss
-    (lake-cane dss 'a #/n-ht 2
+  #/ht-bracs ds 1 #/htb-labeled 0 #/lake-cane dss
+    (lake-cane dss 'a #/ht-bracs ds 2
       (htb-labeled 1
       #/island-cane (trivial) #/hyprid dss 1 1
       #/island-cane (trivial) #/hyprid dss 1 0
-      #/n-ht 1 #/htb-labeled 0 #/lake-cane dss
+      #/ht-bracs ds 1 #/htb-labeled 0 #/lake-cane dss
         (non-lake-cane 'a)
-      #/n-ht 1 #/htb-labeled 0
+      #/ht-bracs ds 1 #/htb-labeled 0
       #/island-cane (trivial) #/hyprid dss 1 0
-      #/n-ht 1 #/htb-labeled 0 #/non-lake-cane #/trivial)
+      #/ht-bracs ds 1 #/htb-labeled 0 #/non-lake-cane #/trivial)
       0
       (htb-labeled 0 #/trivial))
-  #/n-ht 1 #/htb-labeled 0
+  #/ht-bracs ds 1 #/htb-labeled 0
   #/island-cane (trivial) #/hyprid dss 1 0
-  #/n-ht 1 #/htb-labeled 0 #/non-lake-cane 'a)
+  #/ht-bracs ds 1 #/htb-labeled 0 #/non-lake-cane 'a)
   
   "Striping a hyprid twice")
 
@@ -139,7 +131,7 @@
   #/hyprid-stripe-once
   #/hyprid-stripe-once
   #/hyprid-stripe-once
-  #/hyprid dss 3 0 #/n-ht 3
+  #/hyprid dss 3 0 #/ht-bracs ds 3
     (htb-labeled 2 'a)
     1
     (htb-labeled 1 'a)

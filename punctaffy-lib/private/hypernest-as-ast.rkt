@@ -21,16 +21,18 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->i any any/c contract? contract-name contract-out list/c listof
-  not/c or/c rename-contract)
+  -> ->i and/c any any/c contract? contract-name contract-out list/c
+  listof not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator coerce-contract)
 (require #/only-in racket/contract/region define/contract)
+(require #/only-in racket/math natural?)
 (require #/only-in racket/struct make-constructor-style-printer)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/hash hash-kv-each hash-ref-maybe)
-(require #/only-in lathe-comforts/list list-kv-map list-map)
+(require #/only-in lathe-comforts/list
+  list-each list-foldr list-kv-map list-map)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe/c maybe-map nothing)
@@ -39,10 +41,10 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys? dim-sys? dim-successors-sys-dim-sys
-  dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c dim-sys-dim-max
-  dim-sys-dim-zero)
+  dim-successors-sys? dim-sys? dim-successors-sys-dim-from-int
+  dim-successors-sys-dim-sys dim-sys-accepts? dim-sys-dim<?
+  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
+  dim-sys-0<dim/c dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -115,10 +117,27 @@
       (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
         #:rest
         [brackets (ds)
-          (listof #/or/c
-            (hypernest-bracket/c #/dim-sys-dim/c ds)
-            (not/c hypernest-bracket?))]
-        [_ (ds) (hypernest/c ds)])])
+          (w- dim/c (dim-sys-dim/c ds)
+          #/listof #/or/c
+            (hypernest-bracket/c dim/c)
+            (and/c (not/c hypernest-bracket?) dim/c))]
+        [_ (ds) (hypernest/c ds)])]
+    [hn-bracs-dss
+      (->i
+        (
+          [dss dim-successors-sys?]
+          [degree (dss)
+            (or/c natural?
+            #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
+        #:rest
+        [brackets (dss)
+          (w- dim/c
+            (or/c natural?
+            #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)
+          #/listof #/or/c
+            (hypernest-bracket/c dim/c)
+            (and/c (not/c hypernest-bracket?) dim/c))]
+        [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])])
   hypernest-get-brackets
   hypernest-increase-degree-to
   hypernest-set-degree-force
@@ -151,6 +170,14 @@
   hypernest-join-one-degree
   hypernest-set-degree-and-bind-highest-degrees
   hypernest-set-degree-and-join-all-degrees
+  (contract-out
+    [hypernest-append-zero
+      (->i
+        (
+          [ds dim-sys?]
+          [degree (ds) (dim-sys-0<dim/c ds)]
+          [hns (ds) (listof #/hypernest/c ds)])
+        [_ (ds) (hypernest/c ds)])])
   hypernest-plus1)
 
 
@@ -488,6 +515,23 @@
     (if (hypernest-bracket? bracket)
       bracket
       (hnb-unlabeled bracket))))
+
+(define (hn-bracs-dss dss degree . brackets)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/w- n-d
+    (fn n
+      (expect (natural? n) #t n
+      #/mat (dim-successors-sys-dim-from-int dss n) (just d) d
+      #/raise-arguments-error 'hn-bracs-dss
+        "expected the given number of successors to exist for the zero dimension"
+        "n" n
+        "dss" dss))
+  #/hypernest-from-brackets ds (n-d degree)
+  #/list-map brackets #/fn bracket
+    (mat bracket (hnb-open d data) (hnb-open (n-d d) data)
+    #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d d) data)
+    #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d d))
+    #/hnb-unlabeled (n-d bracket))))
 
 (define (assert-valid-hypernest-coil err-name ds coil)
   (mat coil (hypernest-coil-zero) (void)
@@ -1579,6 +1623,32 @@
         "hole-degree" hole-degree
         "data" data)
       data)))
+
+(define (hypernest-append-zero ds degree hns)
+  (begin
+    ; TODO DOCS: See if we can verify these things in the contract.
+    (list-each hns #/fn hn
+      (expect (dim-sys-dim=? ds degree (hypernest-degree hn)) #t
+        (raise-arguments-error 'hypernest-append-zero
+          "expected each element of hns to be a hypertee of the given degree"
+          "degree" degree
+          "hn" hn)
+      #/w- hole-value (hypernest-get-hole-zero hn)
+      #/expect hole-value (just #/trivial)
+        (raise-arguments-error 'hypernest-append-zero
+          "expected each element of hns to have a trivial value in its degree-zero hole"
+          "hole-value" hole-value
+          "hn" hn)
+      #/void))
+  ; Now we know that the elements of `hns` are hypernests of degree
+  ; `degree` andthat  their degree-0 holes have trivial values as
+  ; contents. We return their degree-0 concatenation.
+  #/list-foldr hns
+    (hn-bracs ds degree #/hnb-labeled (dim-sys-dim-zero ds) #/trivial)
+  #/fn hn tail
+    (hypernest-bind-one-degree (dim-sys-dim-zero ds) hn #/fn hole data
+      (dissect data (trivial)
+        tail))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.

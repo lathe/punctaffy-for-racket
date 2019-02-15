@@ -35,21 +35,6 @@
 
 (define ds (nat-dim-sys))
 
-(define (n-ht degree . brackets)
-  (hypertee-from-brackets ds degree
-  #/list-map brackets #/fn bracket
-    (mat bracket (htb-labeled d data) bracket
-    #/mat bracket (htb-unlabeled d) bracket
-    #/htb-unlabeled bracket)))
-
-(define (n-hn degree . brackets)
-  (hypernest-from-brackets ds degree
-  #/list-map brackets #/fn bracket
-    (mat bracket (hnb-open d data) bracket
-    #/mat bracket (hnb-labeled d data) bracket
-    #/mat bracket (hnb-unlabeled d) bracket
-    #/hnb-unlabeled bracket)))
-
 (define (hnz)
   (hypernest-plus1 ds #/hypernest-coil-zero))
 
@@ -65,7 +50,7 @@
 
 
 ; ====================================================================
-; Testing `hypernest-from-brackets` (`n-hn`) and `hypernest-plus1`
+; Testing `hypernest-from-brackets` (`hn-bracs`) and `hypernest-plus1`
 ; ====================================================================
 
 (define (make-sample degree . brackets)
@@ -164,13 +149,13 @@
     ; TODO: We basically just transcribed this from the result of
     ; `(hypernest-drop1 #/db->hn sample-closing-3)`. Make sure it's
     ; correct.
-    (n-ht 2
-      (htb-labeled 1 #/n-hn 3
+    (ht-bracs ds 2
+      (htb-labeled 1 #/hn-bracs ds 3
         (hnb-labeled 1 'a)
         0
       #/hnb-labeled 0 #/trivial)
       0
-    #/htb-labeled 0 #/n-hn 3 #/hnb-labeled 0 'a)))
+    #/htb-labeled 0 #/hn-bracs ds 3 #/hnb-labeled 0 'a)))
 
 (check-drop1-round-trip sample-closing-3)
 (check-drop1-round-trip sample-closing-4)
@@ -185,67 +170,67 @@
 
 ; TODO: Put a similar test in test-hypertee.rkt.
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 2
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/n-ht 0))
-  (n-hn 2
+  (hypernest-join-all-degrees #/hn-bracs ds 2
+    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+  (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out a simple degree-0 hole")
 
 ; TODO: Put a similar test in test-hypertee.rkt.
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 2
-    (hnb-labeled 1 #/n-hn 2
+  (hypernest-join-all-degrees #/hn-bracs ds 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/n-ht 0))
-  (n-hn 2
+    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+  (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out a single simple degree-1 hole")
 
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 2
-    (hnb-labeled 1 #/n-hn 2
+  (hypernest-join-all-degrees #/hn-bracs ds 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 1 #/n-hn 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/n-ht 0))
-  (n-hn 2
+    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+  (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes")
 
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 2
-    (hnb-labeled 1 #/n-hn 2
+  (hypernest-join-all-degrees #/hn-bracs ds 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
     (hnb-open 1 'a)
     0
-    (hnb-labeled 1 #/n-hn 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/n-ht 0))
-  (n-hn 2
+    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+  (hn-bracs ds 2
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes with a degree-1 bump in between")
 
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 2
-    (hnb-labeled 1 #/n-hn 2
+  (hypernest-join-all-degrees #/hn-bracs ds 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
     (hnb-open 2 'a)
     1
-    (hnb-labeled 1 #/n-hn 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
     0
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/n-ht 0))
-  (n-hn 2
+    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+  (hn-bracs ds 2
     (hnb-open 2 'a)
     1
     0
@@ -254,21 +239,21 @@
   "Joining hypernests to cancel out simple degree-1 holes with a degree-2 bump in between")
 
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 2
-    (hnb-labeled 1 #/n-hn 2
+  (hypernest-join-all-degrees #/hn-bracs ds 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
     (hnb-open 2 'a)
     (hnb-open 1 'a)
     0
     1
-    (hnb-labeled 1 #/n-hn 2
+    (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
     0
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/n-ht 0))
-  (n-hn 2
+    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+  (hn-bracs ds 2
     (hnb-open 2 'a)
     (hnb-open 1 'a)
     0
@@ -296,14 +281,17 @@
               (hnb 2 'a 3
                 (hnh 3
                   (hnh 2 (trivial)
-                    (n-ht 1
-                      (htb-labeled 0 (hnh 2 (trivial) (n-ht 0)))))
-                  (n-ht 0)))
-              (n-ht 0)))
-          (n-ht 1
+                    (ht-bracs ds 1
+                      (htb-labeled 0
+                        (hnh 2 (trivial) (ht-bracs ds 0)))))
+                  (ht-bracs ds 0)))
+              (ht-bracs ds 0)))
+          (ht-bracs ds 1
             (htb-labeled 0
-              (hnh 4 (hnh 2 (trivial) (n-ht 0)) (n-ht 0))))))
-      (n-ht 2
+              (hnh 4
+                (hnh 2 (trivial) (ht-bracs ds 0))
+                (ht-bracs ds 0))))))
+      (ht-bracs ds 2
         (htb-labeled 1
           (hnh 3
             (hnb 1 'a 4
@@ -313,27 +301,32 @@
                     (hnb 1 'a 3
                       (hnh 3
                         (hnb 1 'a 3
-                          (hnh 3 (hnh 1 (trivial) (n-ht 0)) (n-ht 0)))
-                        (n-ht 0)))
-                    (n-ht 0)))
-                (n-ht 1
+                          (hnh 3
+                            (hnh 1 (trivial) (ht-bracs ds 0))
+                            (ht-bracs ds 0)))
+                        (ht-bracs ds 0)))
+                    (ht-bracs ds 0)))
+                (ht-bracs ds 1
                   (htb-labeled 0
-                    (hnh 4 (hnh 1 (trivial) (n-ht 0)) (n-ht 0))))))
-            (n-ht 1 (htb-labeled 0 (hnh 3 (trivial) (n-ht 0))))))
+                    (hnh 4
+                      (hnh 1 (trivial) (ht-bracs ds 0))
+                      (ht-bracs ds 0))))))
+            (ht-bracs ds 1
+              (htb-labeled 0 (hnh 3 (trivial) (ht-bracs ds 0))))))
         0
         (htb-labeled 0
           (hnh 3
-            (hnh 1 (hnh 1 (trivial) (n-ht 0)) (n-ht 0))
-            (n-ht 0)))))))
+            (hnh 1 (hnh 1 (trivial) (ht-bracs ds 0)) (ht-bracs ds 0))
+            (ht-bracs ds 0)))))))
 
 ; We check that the above implementation of
 ; `sample-hn-expr-shape-as-ast`, which was adapted from log output, is
 ; equivalent to this implementation that I find to be more readable.
 (check-equal?
   (hnb 1 'a 3
-    (n-hn 3
+    (hn-bracs ds 3
       (hnb-labeled 2
-        (n-hn 2
+        (hn-bracs ds 2
           (hnb-open 4 'a)
           1
           (hnb-open 3 'a)
@@ -347,7 +340,7 @@
           (hnb-labeled 0 (trivial))))
       1
       (hnb-labeled 1
-        (n-hn 1
+        (hn-bracs ds 1
           (hnb-open 4 'a)
           1
           (hnb-open 3 'a)
@@ -363,7 +356,9 @@
       0
       0
       (hnb-labeled 0
-        (n-hn 1 (hnb-labeled 0 (n-hn 1 (hnb-labeled 0 (trivial))))))))
+        (hn-bracs ds 1
+          (hnb-labeled 0
+            (hn-bracs ds 1 (hnb-labeled 0 (trivial))))))))
   sample-hn-expr-shape-as-ast
   "Making sure a certain hn-expression shape we're testing is equivalent to one constructed by mostly bracket representations")
 
@@ -373,7 +368,7 @@
 ; `hypernest-join-all-degrees` *should* work because the only hole it
 ; has to deal with is a degree-0 hole with contents that properly fit.
 (check-equal?
-  (n-hn 1
+  (hn-bracs ds 1
     (hnb-open 3 'a)
     2
     (hnb-open 4 'a)
@@ -400,7 +395,7 @@
     0
     0
     0
-    (hnb-labeled 0 (n-hn 1 (hnb-labeled 0 (trivial)))))
+    (hnb-labeled 0 (hn-bracs ds 1 (hnb-labeled 0 (trivial)))))
   sample-hn-expr-shape-as-ast
   "A certain hn-expression shape we're testing is equivalent to one constructed by a bracket representation")
 
@@ -408,15 +403,15 @@
 ; had trouble with, here's a simplified test that still fails in the
 ; same way.
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 1
+  (hypernest-join-all-degrees #/hn-bracs ds 1
     (hnb-open 3 'a)
     2
     1
     0
     0
     0
-    (hnb-labeled 0 (n-hn 1 (hnb-labeled 0 (trivial)))))
-  (n-hn 1
+    (hnb-labeled 0 (hn-bracs ds 1 (hnb-labeled 0 (trivial)))))
+  (hn-bracs ds 1
     (hnb-open 3 'a)
     2
     1
@@ -427,7 +422,7 @@
   "Joining with a complex degree-3 bump in the way")
 
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 1
+  (hypernest-join-all-degrees #/hn-bracs ds 1
     (hnb-open 3 'a)
     2
     (hnb-open 4 'a)
@@ -454,8 +449,8 @@
     0
     0
     0
-    (hnb-labeled 0 (n-hn 1 (hnb-labeled 0 (trivial)))))
-  (n-hn 1
+    (hnb-labeled 0 (hn-bracs ds 1 (hnb-labeled 0 (trivial)))))
+  (hn-bracs ds 1
     (hnb-open 3 'a)
     2
     (hnb-open 4 'a)
@@ -492,10 +487,10 @@
 ; ====================================================================
 
 (check-equal?
-  (hypernest-join-all-degrees #/n-hn 1
+  (hypernest-join-all-degrees #/hn-bracs ds 1
     (hnb-open 0 'a)
-    (hnb-labeled 0 (n-hn 1 (hnb-labeled 0 (trivial)))))
-  (n-hn 1
+    (hnb-labeled 0 (hn-bracs ds 1 (hnb-labeled 0 (trivial)))))
+  (hn-bracs ds 1
     (hnb-open 0 'a)
     (hnb-labeled 0 (trivial)))
   "Joining with a bump of degree 0 in the way")
@@ -511,15 +506,15 @@
   (hypernest-join-selective-non-interpolation val))
 
 (check-equal?
-  (hypernest-join-all-degrees-selective #/n-hn 2
-    (hnb-labeled 1 #/hnterp #/n-hn 2
+  (hypernest-join-all-degrees-selective #/hn-bracs ds 2
+    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
       (hnb-labeled 1 #/hnnonterp 'a)
       0
       (hnb-labeled 1 #/hnnonterp 'a)
       0
       (hnb-labeled 0 #/hnterp #/trivial))
     0
-    (hnb-labeled 1 #/hnterp #/n-hn 2
+    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
       (hnb-labeled 1 #/hnnonterp 'a)
       0
       (hnb-labeled 1 #/hnnonterp 'a)
@@ -527,8 +522,8 @@
       (hnb-labeled 0 #/hnterp #/trivial))
     0
     (hnb-labeled 0
-      (hnterp #/hypernest-pure 2 (hnnonterp 'a) #/n-ht 0)))
-  (n-hn 2
+      (hnterp #/hypernest-pure 2 (hnnonterp 'a) #/ht-bracs ds 0)))
+  (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -541,8 +536,8 @@
   "Joining hypernests selectively when there isn't any selectiveness being exercised")
 
 (check-equal?
-  (hypernest-join-all-degrees-selective #/n-hn 2
-    (hnb-labeled 1 #/hnterp #/n-hn 2
+  (hypernest-join-all-degrees-selective #/hn-bracs ds 2
+    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
       (hnb-labeled 1 #/hnnonterp 'a)
       0
       (hnb-labeled 1 #/hnnonterp 'a)
@@ -552,8 +547,8 @@
     (hnb-labeled 1 #/hnnonterp 'a)
     0
     (hnb-labeled 0
-      (hnterp #/hypernest-pure 2 (hnnonterp 'a) #/n-ht 0)))
-  (n-hn 2
+      (hnterp #/hypernest-pure 2 (hnnonterp 'a) #/ht-bracs ds 0)))
+  (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -564,8 +559,8 @@
   "Joining hypernests selectively when there's a degree-1 non-interpolation in the root")
 
 (check-equal?
-  (hypernest-join-all-degrees-selective #/n-hn 2
-    (hnb-labeled 1 #/hnterp #/n-hn 2
+  (hypernest-join-all-degrees-selective #/hn-bracs ds 2
+    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
       (hnb-labeled 1 #/hnnonterp 'a)
       0
       (hnb-labeled 1 #/hnnonterp 'a)
@@ -575,7 +570,7 @@
     (hnb-labeled 1 #/hnnonterp 'a)
     0
     (hnb-labeled 0 #/hnnonterp 'a))
-  (n-hn 2
+  (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -590,16 +585,16 @@
 ; ===== Testing `hypernest-truncate-to-hypertee` =====================
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/n-hn 1
+  (hypernest-truncate-to-hypertee #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
-  (n-ht 1
+  (ht-bracs ds 1
     (htb-labeled 0 'a))
   "Truncating a degree-1 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/n-hn 1
+  (hypernest-truncate-to-hypertee #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-open 1 'a)
@@ -607,12 +602,12 @@
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
-  (n-ht 1
+  (ht-bracs ds 1
     (htb-labeled 0 'a))
   "Truncating a degree-1 hypernest with multiple bumps to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/n-hn 1
+  (hypernest-truncate-to-hypertee #/hn-bracs ds 1
     (hnb-open 2 'a)
     1
     (hnb-open 1 'a)
@@ -622,12 +617,12 @@
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
-  (n-ht 1
+  (ht-bracs ds 1
     (htb-labeled 0 'a))
   "Truncating a degree-1 hypernest with a degree-2 bump to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/n-hn 2
+  (hypernest-truncate-to-hypertee #/hn-bracs ds 2
     (hnb-open 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -635,14 +630,14 @@
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
-  (n-ht 2
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 0 'a))
   "Truncating a degree-2 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/n-hn 2
+  (hypernest-truncate-to-hypertee #/hn-bracs ds 2
     (hnb-open 2 'a)
     1
     (hnb-labeled 1 'a)
@@ -650,7 +645,7 @@
     0
     0
     (hnb-labeled 0 'a))
-  (n-ht 2
+  (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
     (htb-labeled 0 'a))
