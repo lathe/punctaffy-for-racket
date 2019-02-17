@@ -101,12 +101,12 @@
   [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-tails-hypernest
-    (-> hypernest-coil-bump? any/c)])
-(provide
-  hypernest-bracket-degree
-  hypernest?
-  hypernest-degree)
-(provide #/contract-out
+    (-> hypernest-coil-bump? any/c)]
+  [hypernest-bracket-degree (-> (hypernest-bracket/c any/c) any/c)]
+  [hypernest? (-> any/c boolean?)]
+  [hypernest-degree
+    (->i ([hn hypernest?])
+      [_ (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)])]
   [hypernest/c (-> dim-sys? contract?)]
   [hypernest-coil/c (-> dim-sys? contract?)]
   [hypernest-from-brackets
@@ -141,19 +141,64 @@
         #/listof #/or/c
           (hypernest-bracket/c dim/c)
           (and/c (not/c hypernest-bracket?) dim/c))]
-      [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])])
+      [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])]
+  [hypernest-get-brackets
+    (->i
+      ([hn hypernest?])
+      [_ (hn)
+        (listof
+        #/hypernest-bracket/c
+        #/dim-sys-dim/c #/hypernest-dim-sys hn)])]
+  [hypernest-increase-degree-to
+    (->i
+      (
+        [new-degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-set-degree-force
+    (->i
+      (
+        [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypertee->hypernest (-> hypertee? hypernest?)]
+  [hypernest->maybe-hypertee (-> hypernest? #/maybe/c hypertee?)]
+  [hypernest-truncate-to-hypertee
+    (->i ([hn hypernest?])
+      [_ (hn) (hypertee/c #/hypernest-dim-sys hn)])]
+  [hypernest-contour
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [hole-value any/c]
+        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+      [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])]
+  [hypernest-zip
+    (->i
+      (
+        [ht (hn) (hypertee/c #/hypernest-dim-sys hn)]
+        [hn hypernest?]
+        [func (hn)
+          (-> (hypertee/c #/hypernest-dim-sys hn) any/c any/c any/c)])
+      [_ (hn) (maybe/c #/hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-drop1
+    (->i ([hn hypernest?])
+      [_ (hn) (hypernest-coil/c #/hypernest-dim-sys hn)])]
+  [hypernest-dv-map-all-degrees
+    (->i
+      (
+        [hn hypernest?]
+        [func (hn)
+          (-> (dim-sys-dim/c #/hypernest-dim-sys hn) any/c any/c)])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-v-map-one-degree
+    (->i
+      (
+        [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?]
+        [func (-> any/c any/c)])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])])
 (provide
-  hypernest-get-brackets
-  hypernest-increase-degree-to
-  hypernest-set-degree-force
-  hypertee->hypernest
-  hypernest->maybe-hypertee
-  hypernest-truncate-to-hypertee
-  hypernest-contour
-  hypernest-zip
-  hypernest-drop1
-  hypernest-dv-map-all-degrees
-  hypernest-v-map-one-degree
   hypernest-join-selective-interpolation)
 (provide #/contract-out
   [hypernest-join-selective-interpolation? (-> any/c boolean?)]
@@ -164,29 +209,77 @@
 (provide #/contract-out
   [hypernest-join-selective-non-interpolation? (-> any/c boolean?)]
   [hypernest-join-selective-non-interpolation-val
-    (-> hypernest-join-selective-interpolation? any/c)])
-(provide
-  hypernest-join-all-degrees-selective
-  hypernest-map-all-degrees
-  hypernest-pure
-  hypernest-get-hole-zero
-  hypernest-join-all-degrees
-  hypernest-dv-bind-all-degrees
-  hypernest-bind-all-degrees
-  hypernest-bind-one-degree
-  hypernest-join-one-degree
-  hypernest-set-degree-and-bind-highest-degrees
-  hypernest-set-degree-and-join-all-degrees)
-(provide #/contract-out
+    (-> hypernest-join-selective-interpolation? any/c)]
+  [hypernest-join-all-degrees-selective (-> hypernest? hypernest?)]
+  [hypernest-map-all-degrees
+    (-> hypernest? (-> hypertee? any/c any/c) hypernest?)]
+  [hypernest-pure
+    (->i
+      (
+        [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
+        [data any/c]
+        [hole hypertee?])
+      [_ (hole) (hypernest/c #/hypertee-dim-sys hole)])]
+  [hypernest-get-hole-zero (-> hypernest? maybe?)]
+  [hypernest-join-all-degrees
+    (->i ([hn hypernest?])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-dv-bind-all-degrees
+    (->i
+      (
+        [hn hypernest?]
+        [dv-to-hn (hn)
+          (w- ds (hypernest-dim-sys hn)
+          #/-> (dim-sys-dim/c ds) any/c (hypernest/c ds))])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-bind-all-degrees
+    (->i
+      (
+        [hn hypernest?]
+        [hole-to-hn (hn)
+          (w- ds (hypernest-dim-sys hn)
+          #/-> (hypertee/c ds) any/c (hypernest/c ds))])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-bind-one-degree
+    (->i
+      (
+        [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?]
+        [hole-to-hn (hn)
+          (w- ds (hypernest-dim-sys hn)
+          #/-> (hypertee/c ds) any/c (hypernest/c ds))])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-join-one-degree
+    (->i
+      (
+        [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-set-degree-and-bind-highest-degrees
+    (->i
+      (
+        [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?]
+        [hole-to-hn (hn)
+          (w- ds (hypernest-dim-sys hn)
+          #/-> (hypertee/c ds) any/c (hypernest/c ds))])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  [hypernest-set-degree-and-join-all-degrees
+    (->i
+      (
+        [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
+        [hn hypernest?])
+      [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
   [hypernest-append-zero
     (->i
       (
         [ds dim-sys?]
         [degree (ds) (dim-sys-0<dim/c ds)]
         [hns (ds) (listof #/hypernest/c ds)])
+      [_ (ds) (hypernest/c ds)])]
+  [hypernest-plus1
+    (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
       [_ (ds) (hypernest/c ds)])])
-(provide
-  hypernest-plus1)
 
 
 ; ===== Hypernests ===================================================
@@ -271,8 +364,7 @@
       (match/c hnb-unlabeled dim/c))
     `(hypernest-bracket/c ,(contract-name dim/c))))
 
-(define/contract (hypernest-bracket-degree bracket)
-  (-> (hypernest-bracket/c any/c) any/c)
+(define (hypernest-bracket-degree bracket)
   (mat bracket (hnb-open d data) d
   #/mat bracket (hnb-labeled d data) d
   #/dissect bracket (hnb-unlabeled d) d))
@@ -642,9 +734,7 @@
       (assert-valid-hypernest-coil 'unsafe-hypernest-plus1 ds coil)))
   (hypernest ds coil))
 
-(define/contract (hypernest-plus1 ds coil)
-  (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
-    [_ (ds) (hypernest/c ds)])
+(define (hypernest-plus1 ds coil)
   ; NOTE: At this point we don't expect `assert-valid-hypernest-coil`
   ; itself to be very buggy. Since its implementation involves the
   ; construction of other hypertees and hypernests, we can save a
@@ -655,9 +745,7 @@
     (assert-valid-hypernest-coil 'hypernest-plus1 ds coil))
   (hypernest ds coil))
 
-(define/contract (hypernest-degree hn)
-  (->i ([hn hypernest?])
-    [_ (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)])
+(define (hypernest-degree hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero) (dim-sys-dim-zero ds)
   #/mat coil (hypernest-coil-hole d data tails) d
@@ -665,12 +753,7 @@
     (hypernest-coil-bump overall-degree data bump-degree tails)
     overall-degree))
 
-(define/contract (hypernest-get-brackets hn)
-  (->i
-    ([hn hypernest?])
-    [_ (hn)
-      (listof
-      #/hypernest-bracket/c #/dim-sys-dim/c #/hypernest-dim-sys hn)])
+(define (hypernest-get-brackets hn)
   (dissect hn (hypernest ds coil)
   #/w- interleave
     (fn overall-degree bump-degree tails #/let ()
@@ -860,12 +943,7 @@
 ; Takes a hypernest of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its bumps and holes the way they
 ; are.
-(define/contract (hypernest-increase-degree-to new-degree hn)
-  (->i
-    (
-      [new-degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-increase-degree-to new-degree hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (error "Expected hn to be a hypernest of nonzero degree")
@@ -896,12 +974,7 @@
 ; Takes a nonzero-degree hypernest with no holes of degree N or
 ; greater and returns a degree-N hypernest with the same bumps and
 ; holes.
-(define/contract (hypernest-set-degree-force new-degree hn)
-  (->i
-    (
-      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-set-degree-force new-degree hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (error "Expected hn to be a hypernest of nonzero degree")
@@ -932,8 +1005,7 @@
           data)
         data))))
 
-(define/contract (hypertee->hypernest ht)
-  (-> hypertee? hypernest?)
+(define (hypertee->hypernest ht)
   (w- ds (hypertee-dim-sys ht)
   #/hypernest-careful ds
   #/expect (hypertee-drop1 ht)
@@ -943,8 +1015,7 @@
   #/hypertee-dv-map-all-degrees tails #/fn d tail
     (hypertee->hypernest tail)))
 
-(define/contract (hypernest->maybe-hypertee hn)
-  (-> hypernest? #/maybe/c hypertee?)
+(define (hypernest->maybe-hypertee hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (just #/hypertee-plus1 ds #/hypertee-coil-zero)
@@ -960,8 +1031,7 @@
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (nothing)))
 
-(define/contract (hypernest-truncate-to-hypertee hn)
-  (->i ([hn hypernest?]) [_ (hn) (hypertee/c #/hypernest-dim-sys hn)])
+(define (hypernest-truncate-to-hypertee hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (hypertee-plus1 ds #/hypertee-coil-zero)
@@ -982,13 +1052,7 @@
 ; N+1 with all the same degree-less-than-N holes as well as a single
 ; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
-(define/contract (hypernest-contour dss hole-value ht)
-  (->i
-    (
-      [dss dim-successors-sys?]
-      [hole-value any/c]
-      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
-    [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
+(define (hypernest-contour dss hole-value ht)
   (hypertee->hypernest #/hypertee-contour dss hole-value ht))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
@@ -1118,14 +1182,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-zip ht hn func)
-  (->i
-    (
-      [ht (hn) (hypertee/c #/hypernest-dim-sys hn)]
-      [hn hypernest?]
-      [func (hn)
-        (-> (hypertee/c #/hypernest-dim-sys hn) any/c any/c any/c)])
-    [_ (hn) (maybe/c #/hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-zip ht hn func)
   (w- ds (hypernest-dim-sys hn)
   #/expect
     (dim-sys-dim=? ds (hypertee-degree ht) (hypernest-degree hn))
@@ -1133,9 +1190,7 @@
     (error "Expected the hypertee and the hypernest to have the same degree")
   #/hypernest-zip-low-degrees ht hn func))
 
-(define/contract (hypernest-drop1 hn)
-  (->i ([hn hypernest?])
-    [_ (hn) (hypernest-coil/c #/hypernest-dim-sys hn)])
+(define (hypernest-drop1 hn)
   (dissect hn (hypernest ds coil)
     coil))
 
@@ -1182,23 +1237,11 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-dv-map-all-degrees hn func)
-  (->i
-    (
-      [hn hypernest?]
-      [func (hn)
-        (-> (dim-sys-dim/c #/hypernest-dim-sys hn) any/c any/c)])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-dv-map-all-degrees hn func)
   (hypernest-dgv-map-all-degrees hn #/fn d get-hole data
     (func d data)))
 
-(define/contract (hypernest-v-map-one-degree degree hn func)
-  (->i
-    (
-      [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?]
-      [func (-> any/c any/c)])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-v-map-one-degree degree hn func)
   (w- ds (hypernest-dim-sys hn)
   #/hypernest-dv-map-all-degrees hn #/fn hole-degree data
     (if (dim-sys-dim=? ds degree hole-degree)
@@ -1238,8 +1281,7 @@
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
 ;
-(define/contract (hypernest-join-all-degrees-selective hn)
-  (-> hypernest? hypernest?)
+(define (hypernest-join-all-degrees-selective hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (hypernest-careful ds #/hypernest-coil-zero)
@@ -1372,8 +1414,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-map-all-degrees hn func)
-  (-> hypernest? (-> hypertee? any/c any/c) hypernest?)
+(define (hypernest-map-all-degrees hn func)
   (hypernest-dgv-map-all-degrees hn #/fn d get-hole data
     (func (get-hole) data)))
 
@@ -1383,13 +1424,7 @@
 ;   hypertee-map-pred-degree
 ;   hypertee-map-highest-degree
 
-(define/contract (hypernest-pure degree data hole)
-  (->i
-    (
-      [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
-      [data any/c]
-      [hole hypertee?])
-    [_ (hole) (hypernest/c #/hypertee-dim-sys hole)])
+(define (hypernest-pure degree data hole)
   (w- ds (hypertee-dim-sys hole)
   #/expect (dim-sys-dim<? ds (hypertee-degree hole) degree) #t
     (raise-arguments-error 'hypernest-pure
@@ -1398,8 +1433,7 @@
       "hole" hole)
   #/hypertee->hypernest #/hypertee-pure degree data hole))
 
-(define/contract (hypernest-get-hole-zero hn)
-  (-> hypernest? maybe?)
+(define (hypernest-get-hole-zero hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (nothing)
@@ -1429,9 +1463,7 @@
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
 ;
-(define/contract (hypernest-join-all-degrees hn)
-  (->i ([hn hypernest?])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-join-all-degrees hn)
   (w- ds (hypernest-dim-sys hn)
   #/hypernest-join-all-degrees-selective
   #/hypernest-dv-map-all-degrees hn #/fn root-hole-degree data
@@ -1453,41 +1485,19 @@
 ; `hypertee-dv-bind-all-degrees`. Would it actually be more efficient
 ; at all?
 ;
-(define/contract (hypernest-dv-bind-all-degrees hn dv-to-hn)
-  (->i
-    (
-      [hn hypernest?]
-      [dv-to-hn (hn)
-        (w- ds (hypernest-dim-sys hn)
-        #/-> (dim-sys-dim/c ds) any/c (hypernest/c ds))])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-dv-bind-all-degrees hn dv-to-hn)
   (hypernest-join-all-degrees
   #/hypernest-dv-map-all-degrees hn dv-to-hn))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-bind-all-degrees hn hole-to-hn)
-  (->i
-    (
-      [hn hypernest?]
-      [hole-to-hn (hn)
-        (w- ds (hypernest-dim-sys hn)
-        #/-> (hypertee/c ds) any/c (hypernest/c ds))])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-bind-all-degrees hn hole-to-hn)
   (hypernest-join-all-degrees
   #/hypernest-map-all-degrees hn hole-to-hn))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-bind-one-degree degree hn func)
-  (->i
-    (
-      [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?]
-      [hole-to-hn (hn)
-        (w- ds (hypernest-dim-sys hn)
-        #/-> (hypertee/c ds) any/c (hypernest/c ds))])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-bind-one-degree degree hn func)
   (w- ds (hypernest-dim-sys hn)
   #/hypernest-bind-all-degrees hn #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
@@ -1496,12 +1506,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-join-one-degree degree hn)
-  (->i
-    (
-      [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-join-one-degree degree hn)
   (hypernest-bind-one-degree degree hn #/fn hole data
     data))
 
@@ -1544,17 +1549,9 @@
 ; TODO IMPLEMENT: Implement an operation analogous to this, but for
 ; hypertees instead of hypernests.
 ;
-(define/contract
+(define
   (hypernest-set-degree-and-bind-highest-degrees
     new-degree hn hole-to-hn)
-  (->i
-    (
-      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?]
-      [hole-to-hn (hn)
-        (w- ds (hypernest-dim-sys hn)
-        #/-> (hypertee/c ds) any/c (hypernest/c ds))])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
   (w- ds (hypernest-dim-sys hn)
   #/hypernest-set-degree-and-bind-all-degrees new-degree hn
   #/fn hole data
@@ -1605,13 +1602,7 @@
 ; TODO IMPLEMENT: Implement an operation analogous to this, but for
 ; hypertees instead of hypernests.
 ;
-(define/contract
-  (hypernest-set-degree-and-join-all-degrees new-degree hn)
-  (->i
-    (
-      [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
-      [hn hypernest?])
-    [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])
+(define (hypernest-set-degree-and-join-all-degrees new-degree hn)
   (w- ds (hypernest-dim-sys hn)
   #/hypernest-set-degree-and-dv-bind-all-degrees new-degree hn
   #/fn hole-degree data
