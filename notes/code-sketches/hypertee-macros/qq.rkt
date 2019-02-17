@@ -152,7 +152,10 @@
   
   (define (my-quasiquote-ht-expr->stx ht-expr)
     (expect
-      (hypertee-fold 1 ht-expr #/fn first-nontrivial-d data tails
+      (hypertee-fold 1 ht-expr
+        (fn
+          (error "Expected ht-expr to be of degree greater than zero"))
+      #/fn first-nontrivial-d data tails
         (w- d (hypertee-degree tails)
         #/w- is-trivial (dim-sys-dim<? ds d first-nontrivial-d)
         #/begin
@@ -187,7 +190,10 @@
           #/error "Encountered an unrecognized degree-1 hole in quasiquoted syntax")
         #/mat d 2
           (dissect
-            (hypertee-fold 1 tails #/fn first-nontrivial-d data tails
+            (hypertee-fold 1 tails
+              (fn
+                (error "Internal error: Expected tails to be of degree 2 since we just observed that using hypertee-degree"))
+            #/fn first-nontrivial-d data tails
               (w- d (hypertee-degree tails)
               #/mat d 0 (list (list) data)
               #/dissect d 1

@@ -190,7 +190,8 @@
         [first-nontrivial-d (ht)
           (dim-sys-dim/c #/hypertee-dim-sys ht)]
         [ht hypertee?]
-        [func (ht)
+        [on-zero (-> any/c)]
+        [on-hole (ht)
           (w- ds (hypertee-dim-sys ht)
           #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
       [_ any/c])])
@@ -1063,17 +1064,15 @@
 (define (hypertee-v-map-highest-degree dss ht func)
   (hypertee-v-map-pred-degree dss (hypertee-degree ht) ht func))
 
-(define (hypertee-fold first-nontrivial-d ht func)
+(define (hypertee-fold first-nontrivial-d ht on-zero on-hole)
   (w- ds (hypertee-dim-sys ht)
   #/expect (hypertee-unfurl ht)
     (hypertee-coil-hole overall-degree data tails)
-    ; TODO: Make this part of the contract instead.
-    (error "Expected ht to be a hypertee of degree greater than 0")
-  #/func first-nontrivial-d data
+    (on-zero)
+  #/on-hole first-nontrivial-d data
   #/hypertee-dv-map-all-degrees tails #/fn hole-degree tail
     (hypertee-fold (dim-sys-dim-max ds first-nontrivial-d hole-degree)
-      tail
-      func)))
+      tail on-zero on-hole)))
 
 ; TODO: See if we can simplify the implementation of
 ; `hypertee-join-all-degrees` to something like this now that we have
@@ -1085,8 +1084,7 @@
 #;
 (define (hypertee-join-all-degrees ht)
   (w- ds (hypertee-dim-sys ht)
-  #/if (dim-sys-dim=0? ds #/hypertee-degree ht) ht
-  #/hypertee-fold (dim-sys-dim-zero ds) ht
+  #/hypertee-fold (dim-sys-dim-zero ds) ht (fn ht)
   #/fn first-nontrivial-d suffix tails
     (w- d (hypertee-degree tails)
     #/if (dim-sys-dim<? ds d first-nontrivial-d)
@@ -1116,8 +1114,7 @@
 #;
 (define (hypertee-map-all-degrees ht func)
   (w- ds (hypertee-dim-sys ht)
-  #/if (dim-sys-dim=0? ds #/hypertee-degree ht) ht
-  #/hypertee-fold (dim-sys-dim-zero ds) ht
+  #/hypertee-fold (dim-sys-dim-zero ds) ht (fn ht)
   #/fn first-nontrivial-d data tails
     (w- d (hypertee-degree tails)
     #/if (dim-sys-dim<? ds d first-nontrivial-d)
