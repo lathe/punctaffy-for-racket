@@ -272,9 +272,6 @@
     `(hypernest-bracket/c ,(contract-name dim/c))))
 
 (define/contract (hypernest-bracket-degree bracket)
-  ; TODO: Change this representation so we can more decisively
-  ; distinguish closing brackets from dimension numbers if the
-  ; dimension numbers are represented as lists.
   (-> (hypernest-bracket/c any/c) any/c)
   (mat bracket (hnb-open d data) d
   #/mat bracket (hnb-labeled d data) d
