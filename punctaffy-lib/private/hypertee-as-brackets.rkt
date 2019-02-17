@@ -125,11 +125,27 @@
       (
         [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
         [ht hypertee?])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-set-degree-maybe
+    (->i
+      (
+        [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?])
+      [_ (ht) (maybe/c #/hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-set-degree-force
+    (->i
+      (
+        [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-contour
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [hole-value any/c]
+        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])])
 (provide
-  hypertee-set-degree-maybe
-  hypertee-set-degree-force
-  hypertee-contour
   hypertee-coil-zero)
 (provide #/contract-out
   [hypertee-coil-zero? (-> any/c boolean?)])
@@ -143,12 +159,42 @@
     (-> hypertee-coil-hole? any/c)])
 (provide #/contract-out
   [hypertee-coil/c (-> dim-sys? contract?)])
+(provide #/contract-out
+  [hypertee-drop1
+    (->i ([ht hypertee?])
+      [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])]
+  [hypertee-dv-map-all-degrees
+    (->i
+      (
+        [ht hypertee?]
+        [func (ht)
+          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-v-map-one-degree
+    (->i
+      (
+        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?]
+        [func (-> any/c any/c)])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-v-map-highest-degree
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+        [func (-> any/c any/c)])
+      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
+  [hypertee-fold
+    (->i
+      (
+        [first-nontrivial-d (ht)
+          (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?]
+        [func (ht)
+          (w- ds (hypertee-dim-sys ht)
+          #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
+      [_ any/c])])
 (provide
-  hypertee-drop1
-  hypertee-dv-map-all-degrees
-  hypertee-v-map-one-degree
-  hypertee-v-map-highest-degree
-  hypertee-fold
   hypertee-join-selective-interpolation)
 (provide #/contract-out
   [hypertee-join-selective-interpolation? (-> any/c boolean?)]
@@ -160,40 +206,162 @@
   [hypertee-join-selective-non-interpolation? (-> any/c boolean?)]
   [hypertee-join-selective-non-interpolation-val
     (-> hypertee-join-selective-interpolation? any/c)])
-(provide
-  hypertee-join-all-degrees-selective
-  hypertee-map-all-degrees
-  hypertee-map-one-degree
-  hypertee-map-highest-degree
-  hypertee-pure
-  hypertee-get-hole-zero
-  hypertee-plus1
-  hypertee-join-all-degrees
-  hypertee-bind-all-degrees
-  hypertee-bind-one-degree
-  hypertee-bind-pred-degree
-  hypertee-join-one-degree
-  hypertee-set-degree-and-bind-all-degrees)
 (provide #/contract-out
+  [hypertee-join-all-degrees-selective (-> hypertee? hypertee?)]
+  [hypertee-map-all-degrees
+    (-> hypertee? (-> hypertee? any/c any/c) hypertee?)]
+  [hypertee-map-one-degree
+    (->i
+      (
+        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?]
+        [func (ht) (-> (hypertee/c #/hypertee-dim-sys ht) any/c any/c)])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-map-highest-degree
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+        [func (dss)
+          (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
+            any/c)])
+      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
+  [hypertee-pure
+    (->i
+      (
+        [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
+        [data any/c]
+        [hole hypertee?])
+      [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])]
+  [hypertee-get-hole-zero (-> hypertee? maybe?)]
+  [hypertee-plus1
+    (->i
+      (
+        [ds dim-sys?]
+        [coil (ds) (hypertee-coil/c ds)])
+      [_ (ds) (hypertee/c ds)])]
+  [hypertee-join-all-degrees (-> hypertee? hypertee?)]
+  [hypertee-bind-all-degrees
+    (->i
+      (
+        [ht hypertee?]
+        [func (ht)
+          (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+            (hypertee/c #/hypertee-dim-sys ht))])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-bind-one-degree
+    (->i
+      (
+        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?]
+        [func (ht)
+          (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+            (hypertee/c #/hypertee-dim-sys ht))])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-bind-pred-degree
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+        [ht hypertee?]
+        [func (dss)
+          (w- ds (dim-successors-sys-dim-sys dss)
+          #/-> (hypertee/c ds) any/c (hypertee/c ds))])
+      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
+  [hypertee-join-one-degree
+    (->i
+      (
+        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-set-degree-and-bind-all-degrees
+    (->i
+      (
+        [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?]
+        [hole-to-ht (ht)
+          (w- ds (hypertee-dim-sys ht)
+          #/-> (hypertee/c ds) any/c (hypertee/c ds))])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
   [hypertee-append-zero
     (->i
       (
         [ds dim-sys?]
         [degree (ds) (dim-sys-0<dim/c ds)]
         [hts (ds) (listof #/hypertee/c ds)])
-      [_ (ds) (hypertee/c ds)])])
-(provide
-  hypertee-dv-any-all-degrees
-  hypertee-dv-all-all-degrees
-  hypertee-dv-each-all-degrees
-  hypertee-v-each-one-degree
-  hypertee-each-all-degrees
-  hypertee-uncontour
-  hypertee-filter
-  hypertee-truncate
-  hypertee-dv-fold-map-any-all-degrees
-  hypertee-zip-selective
-  hypertee-zip-low-degrees)
+      [_ (ds) (hypertee/c ds)])]
+  [hypertee-dv-any-all-degrees
+    (->i
+      (
+        [ht hypertee?]
+        [func (ht)
+          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+      [_ any/c])]
+  [hypertee-dv-all-all-degrees
+    (->i
+      (
+        [ht hypertee?]
+        [func (ht)
+          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+      [_ any/c])]
+  [hypertee-dv-each-all-degrees
+    (->i
+      (
+        [ht hypertee?]
+        [func (ht)
+          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any)])
+      [_ void?])]
+  [hypertee-v-each-one-degree
+    (->i
+      (
+        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?]
+        [body (ht) (-> any/c any)])
+      [_ void?])]
+  [hypertee-each-all-degrees
+    (-> hypertee? (-> hypertee? any/c any) void?)]
+  [hypertee-uncontour
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+      [_ (dss)
+        (maybe/c #/list/c
+          any/c
+          (hypertee/c #/dim-successors-sys-dim-sys dss))])]
+  [hypertee-filter
+    (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)]
+  [hypertee-truncate
+    (->i
+      (
+        [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+        [ht hypertee?])
+      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-dv-fold-map-any-all-degrees
+    (->i
+      (
+        [state any/c]
+        [ht hypertee?]
+        [on-hole (ht)
+          (-> any/c (dim-sys-dim/c #/hypertee-dim-sys ht) any/c
+            (list/c any/c #/maybe/c any/c))])
+      [_ (ht)
+        (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])]
+  [hypertee-zip-selective
+    (->i
+      (
+        [smaller (bigger) (hypertee/c #/hypertee-dim-sys bigger)]
+        [bigger hypertee?]
+        [should-zip? (bigger)
+          (-> (hypertee/c #/hypertee-dim-sys bigger) any/c
+            boolean?)]
+        [func (bigger)
+          (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
+            any/c)])
+      [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])]
+  [hypertee-zip-low-degrees
+    (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
+      (maybe/c hypertee?))])
 
 
 ; ===== Hypertees ====================================================
@@ -693,12 +861,7 @@
 ; hypertee with the same holes if possible. If this isn't possible
 ; (because some holes in the original are of degree N or greater),
 ; this returns `(nothing)`.
-(define/contract (hypertee-set-degree-maybe new-degree ht)
-  (->i
-    (
-      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?])
-    [_ (ht) (maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-set-degree-maybe new-degree ht)
   (dissect ht (hypertee ds d closing-brackets)
   #/if (dim-sys-dim=0? ds d)
     (raise-arguments-error 'hypertee-set-degree-maybe
@@ -714,12 +877,7 @@
 
 ; Takes a nonzero-degree hypertee with no holes of degree N or greater
 ; and returns a degree-N hypertee with the same holes.
-(define/contract (hypertee-set-degree-force new-degree ht)
-  (->i
-    (
-      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-set-degree-force new-degree ht)
   (expect (hypertee-set-degree-maybe new-degree ht) (just result)
     (error "Expected ht to have no holes of degree new-degree or greater")
     result))
@@ -728,13 +886,7 @@
 ; N+1 with all the same degree-less-than-N holes as well as a single
 ; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
-(define/contract (hypertee-contour dss hole-value ht)
-  (->i
-    (
-      [dss dim-successors-sys?]
-      [hole-value any/c]
-      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
-    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+(define (hypertee-contour dss hole-value ht)
   (w- ds (dim-successors-sys-dim-sys dss)
   #/expect
     (dim-successors-sys-dim-plus-int dss (hypertee-degree ht) 1)
@@ -763,9 +915,7 @@
         (hypertee/c ds)))
     `(hypertee-coil/c ,ds)))
 
-(define/contract (hypertee-drop1 ht)
-  (->i ([ht hypertee?])
-    [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])
+(define (hypertee-drop1 ht)
   
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
@@ -879,25 +1029,13 @@
           (cons closing-bracket rev-result)))
     #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
 
-(define/contract (hypertee-dv-map-all-degrees ht func)
-  (->i
-    (
-      [ht hypertee?]
-      [func (ht)
-        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-dv-map-all-degrees ht func)
   (dissect ht (hypertee ds degree closing-brackets)
   #/hypertee ds degree #/list-map closing-brackets #/fn bracket
     (expect bracket (htb-labeled d data) bracket
     #/htb-labeled d #/func d data)))
 
-(define/contract (hypertee-v-map-one-degree degree ht func)
-  (->i
-    (
-      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?]
-      [func (-> any/c any/c)])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-v-map-one-degree degree ht func)
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-dv-map-all-degrees ht #/fn hole-degree data
     (if (dim-sys-dim=? ds degree hole-degree)
@@ -922,24 +1060,10 @@
   
   #/hypertee-v-map-one-degree pred-degree ht func))
 
-(define/contract (hypertee-v-map-highest-degree dss ht func)
-  (->i
-    (
-      [dss dim-successors-sys?]
-      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
-      [func (-> any/c any/c)])
-    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+(define (hypertee-v-map-highest-degree dss ht func)
   (hypertee-v-map-pred-degree dss (hypertee-degree ht) ht func))
 
-(define/contract (hypertee-fold first-nontrivial-d ht func)
-  (->i
-    (
-      [first-nontrivial-d (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?]
-      [func (ht)
-        (w- ds (hypertee-dim-sys ht)
-        #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
-    [_ any/c])
+(define (hypertee-fold first-nontrivial-d ht func)
   (w- ds (hypertee-dim-sys ht)
   #/expect (hypertee-drop1 ht)
     (hypertee-coil-hole overall-degree data tails)
@@ -959,8 +1083,7 @@
 ; `hypertee-zip-low-degrees` depend on `hypertee-join-all-degrees`.
 ;
 #;
-(define/contract (hypertee-join-all-degrees ht)
-  (-> hypertee? hypertee?)
+(define (hypertee-join-all-degrees ht)
   (w- ds (hypertee-dim-sys ht)
   #/if (dim-sys-dim=0? ds #/hypertee-degree ht) ht
   #/hypertee-fold (dim-sys-dim-zero ds) ht
@@ -991,8 +1114,7 @@
 ; `hypertee-map-all-degrees`.
 ;
 #;
-(define/contract (hypertee-map-all-degrees ht func)
-  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
+(define (hypertee-map-all-degrees ht func)
   (w- ds (hypertee-dim-sys ht)
   #/if (dim-sys-dim=0? ds #/hypertee-degree ht) ht
   #/hypertee-fold (dim-sys-dim-zero ds) ht
@@ -1036,8 +1158,7 @@
 ; all the non-interpolations of the interpolations and the
 ; non-interpolations of the root.
 ;
-(define/contract (hypertee-join-all-degrees-selective ht)
-  (-> hypertee? hypertee?)
+(define (hypertee-join-all-degrees-selective ht)
   
   (struct-easy (state-in-root))
   (struct-easy (state-in-interpolation i))
@@ -1229,8 +1350,7 @@
       (list (state-in-interpolation root-bracket-i) histories)
       rev-result)))
 
-(define/contract (hypertee-map-all-degrees ht func)
-  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
+(define (hypertee-map-all-degrees ht func)
   (dissect ht (hypertee ds overall-degree closing-brackets)
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for an `overall-degree` equal to `0`, but the loop ends
@@ -1312,13 +1432,7 @@
     #/htb-labeled d
       (func (hypertee ds d #/reverse rev-brackets) data))))
 
-(define/contract (hypertee-map-one-degree degree ht func)
-  (->i
-    (
-      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?]
-      [func (ht) (-> (hypertee/c #/hypertee-dim-sys ht) any/c any/c)])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-map-one-degree degree ht func)
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-map-all-degrees ht #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
@@ -1345,24 +1459,10 @@
   
   #/hypertee-map-one-degree pred-degree ht func))
 
-(define/contract (hypertee-map-highest-degree dss ht func)
-  (->i
-    (
-      [dss dim-successors-sys?]
-      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
-      [func (dss)
-        (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
-          any/c)])
-    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+(define (hypertee-map-highest-degree dss ht func)
   (hypertee-map-pred-degree dss (hypertee-degree ht) ht func))
 
-(define/contract (hypertee-pure degree data hole)
-  (->i
-    (
-      [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
-      [data any/c]
-      [hole hypertee?])
-    [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])
+(define (hypertee-pure degree data hole)
   (dissect hole (hypertee ds old-degree closing-brackets)
   #/expect (dim-sys-dim<? ds old-degree degree) #t
     (raise-arguments-error 'hypertee-pure
@@ -1376,8 +1476,7 @@
       (htb-unlabeled #/hypertee-bracket-degree closing-bracket)
       closing-bracket)))
 
-(define/contract (hypertee-get-hole-zero ht)
-  (-> hypertee? maybe?)
+(define (hypertee-get-hole-zero ht)
   (dissect ht (hypertee ds degree closing-brackets)
   #/if (dim-sys-dim=0? ds degree) (nothing)
   #/dissect (reverse closing-brackets) (cons (htb-labeled d data) _)
@@ -1391,8 +1490,7 @@
 ; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 ;
-(define/contract (hypertee-join-all-degrees ht)
-  (-> hypertee? hypertee?)
+(define (hypertee-join-all-degrees ht)
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-join-all-degrees-selective
   #/hypertee-dv-map-all-degrees ht #/fn root-hole-degree data
@@ -1407,42 +1505,18 @@
         (hypertee-join-selective-non-interpolation data)
       #/hypertee-join-selective-interpolation data))))
 
-(define/contract (hypertee-bind-all-degrees ht hole-to-ht)
-  (->i
-    (
-      [ht hypertee?]
-      [func (ht)
-        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
-          (hypertee/c #/hypertee-dim-sys ht))])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-bind-all-degrees ht hole-to-ht)
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
 
-(define/contract (hypertee-bind-one-degree degree ht func)
-  (->i
-    (
-      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?]
-      [func (ht)
-        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
-          (hypertee/c #/hypertee-dim-sys ht))])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-bind-one-degree degree ht func)
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-pure (hypertee-degree ht) data hole))))
 
-(define/contract (hypertee-bind-pred-degree dss degree ht func)
-  (->i
-    (
-      [dss dim-successors-sys?]
-      [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
-      [ht hypertee?]
-      [func (dss)
-        (w- ds (dim-successors-sys-dim-sys dss)
-        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
-    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+(define (hypertee-bind-pred-degree dss degree ht func)
   
   ; If the degree is 0 or something like a limit ordinal, we're done.
   ; No hole's degree has the given degree as its successor, so there
@@ -1464,25 +1538,12 @@
     [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   (hypertee-bind-pred-degree dss (hypertee-degree ht) ht func))
 
-(define/contract (hypertee-join-one-degree degree ht)
-  (->i
-    (
-      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-join-one-degree degree ht)
   (hypertee-bind-one-degree degree ht #/fn hole data
     data))
 
-(define/contract
+(define
   (hypertee-set-degree-and-bind-all-degrees new-degree ht hole-to-ht)
-  (->i
-    (
-      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?]
-      [hole-to-ht (ht)
-        (w- ds (hypertee-dim-sys ht)
-        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (w- ds (hypertee-dim-sys ht)
   #/w- intermediate-degree
     (dim-sys-dim-max ds new-degree (hypertee-degree ht))
@@ -1529,13 +1590,7 @@
       (dissect data (trivial)
         tail))))
 
-(define/contract (hypertee-dv-any-all-degrees ht func)
-  (->i
-    (
-      [ht hypertee?]
-      [func (ht)
-        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
-    [_ any/c])
+(define (hypertee-dv-any-all-degrees ht func)
   (dissect ht (hypertee ds degree closing-brackets)
   #/list-any closing-brackets #/fn bracket
     (expect bracket (htb-labeled d data) #f
@@ -1563,13 +1618,7 @@
     (dissect hole-and-data (list hole data)
     #/func hole data)))
 
-(define/contract (hypertee-dv-all-all-degrees ht func)
-  (->i
-    (
-      [ht hypertee?]
-      [func (ht)
-        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
-    [_ any/c])
+(define (hypertee-dv-all-all-degrees ht func)
   (dissect ht (hypertee ds degree closing-brackets)
   #/list-all closing-brackets #/fn bracket
     (expect bracket (htb-labeled d data) #t
@@ -1584,43 +1633,25 @@
     (dissect hole-and-data (list hole data)
     #/func hole data)))
 
-(define/contract (hypertee-dv-each-all-degrees ht body)
-  (->i
-    (
-      [ht hypertee?]
-      [func (ht)
-        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any)])
-    [_ void?])
+(define (hypertee-dv-each-all-degrees ht body)
   (hypertee-dv-any-all-degrees ht #/fn d data #/begin
     (body d data)
     #f)
   (void))
 
-(define/contract (hypertee-v-each-one-degree degree ht body)
-  (->i
-    (
-      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?]
-      [body (ht) (-> any/c any)])
-    [_ void?])
+(define (hypertee-v-each-one-degree degree ht body)
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-dv-each-all-degrees ht #/fn d data
     (when (dim-sys-dim=? ds degree d)
       (body data))))
 
-(define/contract (hypertee-each-all-degrees ht body)
-  (-> hypertee? (-> hypertee? any/c any) void?)
+(define (hypertee-each-all-degrees ht body)
   (hypertee-any-all-degrees ht #/fn hole data #/begin
     (body hole data)
     #f)
   (void))
 
-(define/contract (hypertee-plus1 ds coil)
-  (->i
-    (
-      [ds dim-sys?]
-      [coil (ds) (hypertee-coil/c ds)])
-    [_ (ds) (hypertee/c ds)])
+(define (hypertee-plus1 ds coil)
   (expect coil (hypertee-coil-hole degree data tails)
     (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/expect (dim-sys-dim<? ds (hypertee-degree tails) degree) #t
@@ -1663,14 +1694,7 @@
     #/hypertee-dv-all-all-degrees tails #/fn d tail
       (next (fn d2 #/dim-sys-dim=? ds d d2) tail))))
 
-(define/contract (hypertee-uncontour dss ht)
-  (->i
-    (
-      [dss dim-successors-sys?]
-      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
-    [_ (dss)
-      (maybe/c
-      #/list/c any/c #/hypertee/c #/dim-successors-sys-dim-sys dss)])
+(define (hypertee-uncontour dss ht)
   (expect (hypertee-contour? dss ht) #t (nothing)
   #/dissect (hypertee-drop1 ht)
     (hypertee-coil-hole overall-degree data tails)
@@ -1702,8 +1726,7 @@
 
 ; This takes a hypertee and removes all holes which don't satisfy the
 ; given predicate.
-(define/contract (hypertee-filter ht should-keep?)
-  (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)
+(define (hypertee-filter ht should-keep?)
   (dissect ht (hypertee ds d closing-brackets)
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (should-keep? hole data)
@@ -1716,12 +1739,7 @@
 ; greater than a given degree, and demotes the hypertee to that
 ; degree. The given degree must not be greater than the hypertee's
 ; existing degree.
-(define/contract (hypertee-truncate new-degree ht)
-  (->i
-    (
-      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-      [ht hypertee?])
-    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-truncate new-degree ht)
   (dissect ht (hypertee ds d closing-brackets)
   #/expect (dim-sys-dim<=? ds new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
@@ -1790,17 +1808,7 @@
     #/expect maybe-elem (just elem) (list state #/nothing)
     #/next state lst (cons elem rev-result))))
 
-(define/contract
-  (hypertee-dv-fold-map-any-all-degrees state ht on-hole)
-  (->i
-    (
-      [state any/c]
-      [ht hypertee?]
-      [on-hole (ht)
-        (-> any/c (dim-sys-dim/c #/hypertee-dim-sys ht) any/c
-          (list/c any/c #/maybe/c any/c))])
-    [_ (ht)
-      (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
+(define (hypertee-dv-fold-map-any-all-degrees state ht on-hole)
   (dissect ht (hypertee ds d closing-brackets)
   #/dissect
     (list-fold-map-any state closing-brackets #/fn state bracket
@@ -1817,19 +1825,7 @@
 ; if the hypertees have the same shape when certain holes of the
 ; higher-degree hypertee are removed -- namely, the holes of degree N
 ; or greater and the holes that don't match the given predicate.
-(define/contract
-  (hypertee-zip-selective smaller bigger should-zip? func)
-  (->i
-    (
-      [smaller (bigger) (hypertee/c #/hypertee-dim-sys bigger)]
-      [bigger hypertee?]
-      [should-zip? (bigger)
-        (-> (hypertee/c #/hypertee-dim-sys bigger) any/c
-          boolean?)]
-      [func (bigger)
-        (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
-          any/c)])
-    [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])
+(define (hypertee-zip-selective smaller bigger should-zip? func)
   (dissect smaller (hypertee _ d-smaller closing-brackets-smaller)
   #/dissect bigger (hypertee ds d-bigger closing-brackets-bigger)
   #/expect (dim-sys-dim<=? ds d-smaller d-bigger) #t
@@ -1870,7 +1866,5 @@
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when truncated to degree N.
-(define/contract (hypertee-zip-low-degrees smaller bigger func)
-  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
-    (maybe/c hypertee?))
+(define (hypertee-zip-low-degrees smaller bigger func)
   (hypertee-zip-selective smaller bigger (fn hole data #t) func))
