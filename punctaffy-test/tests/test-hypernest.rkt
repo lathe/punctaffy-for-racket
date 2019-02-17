@@ -64,30 +64,47 @@
 ; NOTE: These are the same as some of the hypertee tests in
 ; test-hypertee.rkt.
 (define sample-0 (make-sample 0))
-(define sample-closing-1 (make-sample 1 (hnb-labeled 0 'a)))
+(define sample-closing-1 (make-sample 1 #/hnb-labeled 0 'a))
 (define sample-closing-2
-  (make-sample 2
-    (hnb-labeled 1 'a)
-    0 (hnb-labeled 0 'a)))
-(define sample-closing-3
+  (make-sample 2 (hnb-labeled 1 'a) 0 #/hnb-labeled 0 'a))
+(define sample-closing-3a
   (make-sample 3
     (hnb-labeled 2 'a)
-    1 (hnb-labeled 1 'a) 0 0 0 (hnb-labeled 0 'a)))
+      1 (hnb-labeled 1 'a) 0 0
+    0
+  #/hnb-labeled 0 'a))
 (define sample-closing-4
   (make-sample 4
     (hnb-labeled 3 'a)
-    2 (hnb-labeled 2 'a) 1 1 1 (hnb-labeled 1 'a) 0 0 0 0 0 0
+      2 (hnb-labeled 2 'a) 1 1 1 (hnb-labeled 1 'a) 0 0 0 0 0 0
     0
-    (hnb-labeled 0 'a)))
+  #/hnb-labeled 0 'a))
 (define sample-closing-5
   (make-sample 5
     (hnb-labeled 4 'a)
-    3 (hnb-labeled 3 'a) 2 2 2 (hnb-labeled 2 'a)
-    1 1 1 1 1 1 1 (hnb-labeled 1 'a)
-    0 0 0 0 0 0 0 0
-    0 0 0 0 0 0
+      3 (hnb-labeled 3 'a) 2 2 2 (hnb-labeled 2 'a)
+        1 1 1 1 1 1 1 (hnb-labeled 1 'a)
+        0 0 0 0 0 0 0 0
+      0 0 0 0 0 0
     0
-    (hnb-labeled 0 'a)))
+  #/hnb-labeled 0 'a))
+(define sample-closing-3b
+  (make-sample 3
+    (hnb-labeled 2 'a)
+      1
+        (hnb-labeled 2 'b)
+          1
+            (hnb-labeled 1 'c1)
+            0
+            (hnb-labeled 1 'c2)
+            0
+          0
+        0
+        (hnb-labeled 1 'c3)
+        0
+      0
+    0
+  #/hnb-labeled 0 'end))
 
 
 (define sample-opening-1a
@@ -127,9 +144,10 @@
 (check-brackets-round-trip sample-0)
 (check-brackets-round-trip sample-closing-1)
 (check-brackets-round-trip sample-closing-2)
-(check-brackets-round-trip sample-closing-3)
+(check-brackets-round-trip sample-closing-3a)
 (check-brackets-round-trip sample-closing-4)
 (check-brackets-round-trip sample-closing-5)
+(check-brackets-round-trip sample-closing-3b)
 (check-brackets-round-trip sample-opening-1a)
 (check-brackets-round-trip sample-opening-1b)
 (check-brackets-round-trip sample-opening-2)
@@ -144,10 +162,10 @@
 (check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypernest-unfurl #/db->hn sample-closing-3)
+  (hypernest-unfurl #/db->hn sample-closing-3a)
   (hypernest-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
-    ; `(hypernest-unfurl #/db->hn sample-closing-3)`. Make sure it's
+    ; `(hypernest-unfurl #/db->hn sample-closing-3a)`. Make sure it's
     ; correct.
     (ht-bracs ds 2
       (htb-labeled 1 #/hn-bracs ds 3
@@ -157,9 +175,10 @@
       0
     #/htb-labeled 0 #/hn-bracs ds 3 #/hnb-labeled 0 'a)))
 
-(check-furl-round-trip sample-closing-3)
+(check-furl-round-trip sample-closing-3a)
 (check-furl-round-trip sample-closing-4)
 (check-furl-round-trip sample-closing-5)
+(check-furl-round-trip sample-closing-3b)
 (check-furl-round-trip sample-opening-1a)
 (check-furl-round-trip sample-opening-1b)
 (check-furl-round-trip sample-opening-2)

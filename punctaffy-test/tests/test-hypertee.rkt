@@ -37,30 +37,78 @@
 
 
 (define sample-0 (ht-bracs ds 0))
-(define sample-closing-1 (ht-bracs ds 1 (htb-labeled 0 'a)))
+(define sample-closing-1 (ht-bracs ds 1 #/htb-labeled 0 'a))
 (define sample-closing-2
-  (ht-bracs ds 2
-    (htb-labeled 1 'a)
-    0 (htb-labeled 0 'a)))
-(define sample-closing-3
+  (ht-bracs ds 2 (htb-labeled 1 'a) 0 #/htb-labeled 0 'a))
+(define sample-closing-3a
   (ht-bracs ds 3
     (htb-labeled 2 'a)
-    1 (htb-labeled 1 'a) 0 0 0 (htb-labeled 0 'a)))
+      1 (htb-labeled 1 'a) 0 0
+    0
+  #/htb-labeled 0 'a))
 (define sample-closing-4
   (ht-bracs ds 4
     (htb-labeled 3 'a)
-    2 (htb-labeled 2 'a) 1 1 1 (htb-labeled 1 'a) 0 0 0 0 0 0
+      2 (htb-labeled 2 'a) 1 1 1 (htb-labeled 1 'a) 0 0 0 0 0 0
     0
-    (htb-labeled 0 'a)))
+  #/htb-labeled 0 'a))
 (define sample-closing-5
   (ht-bracs ds 5
     (htb-labeled 4 'a)
-    3 (htb-labeled 3 'a) 2 2 2 (htb-labeled 2 'a)
-    1 1 1 1 1 1 1 (htb-labeled 1 'a)
-    0 0 0 0 0 0 0 0
-    0 0 0 0 0 0
+      3 (htb-labeled 3 'a) 2 2 2 (htb-labeled 2 'a)
+        1 1 1 1 1 1 1 (htb-labeled 1 'a)
+        0 0 0 0 0 0 0 0
+      0 0 0 0 0 0
     0
-    (htb-labeled 0 'a)))
+  #/htb-labeled 0 'a))
+
+; There was at one point (although not in any code that's been
+; committed) a bug in `hypertee-fold` which involved using a mix of
+; mutation and pure code, and it made the `c1` and `c2` holes
+; disappear.
+;
+; NOTE: This example has a wandering revision control history since it
+; survived a few file reorganization passes as a comment before we
+; finally made a test out of it. When it was introduced as a comment,
+; it was in file punctaffy-test/punctaffy/tests/multi-phase-qq.rkt.
+;
+(define sample-closing-3b
+  (ht-bracs ds 3
+    (htb-labeled 2 'a)
+      1
+        (htb-labeled 2 'b)
+          
+          ; NOTE: This bracket and its matching `0` below were not
+          ; present when this test case was originally written, but
+          ; they are necessary in order to make the
+          ; (htb-labeled 1 'c1) and (htb-labeled 1 'c2) make sense
+          ; here. Otherwise, in this context, a degree-1 closing
+          ; bracket should not be labeled.
+          ;
+          ; Since this test case was originally written as a
+          ; simplification of an intermediate state of one of the
+          ; quasiquotation test cases, where the `(htb-labeled 2 ...)`
+          ; holes were likely supposed to represent lists in an
+          ; s-expression and the `(htb-labeled 1 ...)` holes were
+          ; likely supposed to represent symbols, the omission of
+          ; these `1` and `0` brackets was probably a mistake while
+          ; writing the test case.
+          ;
+          1
+          
+            (htb-labeled 1 'c1)
+            0
+            (htb-labeled 1 'c2)
+            0
+          
+          0
+          
+        0
+        (htb-labeled 1 'c3)
+        0
+      0
+    0
+  #/htb-labeled 0 'end))
 
 
 (define (check-furl-round-trip sample)
@@ -71,10 +119,10 @@
 (check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypertee-unfurl sample-closing-3)
+  (hypertee-unfurl sample-closing-3a)
   (hypertee-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
-    ; `(hypernest-unfurl sample-closing-3)` in test-hypernest.rkt.
+    ; `(hypernest-unfurl sample-closing-3a)` in test-hypernest.rkt.
     ; Make sure it's correct.
     (ht-bracs ds 2
       (htb-labeled 1 #/ht-bracs ds 3
@@ -84,9 +132,10 @@
       0
     #/htb-labeled 0 #/ht-bracs ds 3 #/htb-labeled 0 'a)))
 
-(check-furl-round-trip sample-closing-3)
+(check-furl-round-trip sample-closing-3a)
 (check-furl-round-trip sample-closing-4)
 (check-furl-round-trip sample-closing-5)
+(check-furl-round-trip sample-closing-3b)
 
 
 (define (check-identity-map sample)
@@ -97,9 +146,10 @@
 (check-identity-map sample-0)
 (check-identity-map sample-closing-1)
 (check-identity-map sample-closing-2)
-(check-identity-map sample-closing-3)
+(check-identity-map sample-closing-3a)
 (check-identity-map sample-closing-4)
 (check-identity-map sample-closing-5)
+(check-identity-map sample-closing-3b)
 
 
 (define (check-contour-round-trip sample)
@@ -110,9 +160,10 @@
 (check-contour-round-trip sample-0)
 (check-contour-round-trip sample-closing-1)
 (check-contour-round-trip sample-closing-2)
-(check-contour-round-trip sample-closing-3)
+(check-contour-round-trip sample-closing-3a)
 (check-contour-round-trip sample-closing-4)
 (check-contour-round-trip sample-closing-5)
+(check-contour-round-trip sample-closing-3b)
 
 
 (check-equal?

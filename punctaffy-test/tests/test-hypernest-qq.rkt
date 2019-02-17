@@ -215,35 +215,3 @@
             i j))
         k l))
   "The new quasiquote supports nesting and splicing")
-
-
-; TODO: Turn this into a unit test. There was at one point (although
-; not in any code that's been committed) a bug in `hypertee-fold`
-; which involved using a mix of mutation and pure code, and it made
-; the `c1` and `c2` holes disappear.
-;
-; We're now using pure code throughout the hypertee implementation,
-; but it's still a bit like using mutation in some places since we
-; maintain hash tables that simulate mutable heaps. There may be a
-; similar bug still lurking in there, maybe for degree-3 holes. We
-; should write tests like this with degree-3 holes to check it out.
-;
-#|
-(require punctaffy/hypersnippet/hypertee)
-
-(writeln #/hypertee-unfurl
-  (ht-bracs (nat-dim-sys) 3
-    (list 2 'a)
-      1
-        (list 2 'b)
-          (list 1 'c1)
-          0
-          (list 1 'c2)
-          0
-        0
-        (list 1 'c3)
-        0
-      0
-    0
-  #/list 0 'end))
-|#
