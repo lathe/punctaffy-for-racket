@@ -160,7 +160,7 @@
 (provide #/contract-out
   [hypertee-coil/c (-> dim-sys? contract?)])
 (provide #/contract-out
-  [hypertee-drop1
+  [hypertee-unfurl
     (->i ([ht hypertee?])
       [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])]
   [hypertee-dv-map-all-degrees
@@ -234,7 +234,7 @@
         [hole hypertee?])
       [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])]
   [hypertee-get-hole-zero (-> hypertee? maybe?)]
-  [hypertee-plus1
+  [hypertee-furl
     (->i
       (
         [ds dim-sys?]
@@ -915,7 +915,7 @@
         (hypertee/c ds)))
     `(hypertee-coil/c ,ds)))
 
-(define (hypertee-drop1 ht)
+(define (hypertee-unfurl ht)
   
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
@@ -1027,7 +1027,7 @@
             (htb-labeled d-bracket #/trivial))
           (list tentative-new-loc tentative-new-stack)
           (cons closing-bracket rev-result)))
-    #/error "Internal error: Entered an unexpected kind of region in hypertee-drop1")))
+    #/error "Internal error: Entered an unexpected kind of region in hypertee-unfurl")))
 
 (define (hypertee-dv-map-all-degrees ht func)
   (dissect ht (hypertee ds degree closing-brackets)
@@ -1065,7 +1065,7 @@
 
 (define (hypertee-fold first-nontrivial-d ht func)
   (w- ds (hypertee-dim-sys ht)
-  #/expect (hypertee-drop1 ht)
+  #/expect (hypertee-unfurl ht)
     (hypertee-coil-hole overall-degree data tails)
     ; TODO: Make this part of the contract instead.
     (error "Expected ht to be a hypertee of degree greater than 0")
@@ -1078,7 +1078,7 @@
 ; TODO: See if we can simplify the implementation of
 ; `hypertee-join-all-degrees` to something like this now that we have
 ; `hypertee-fold`. There are a few potential circular dependecy
-; problems: The implementations of `hypertee-plus1`,
+; problems: The implementations of `hypertee-furl`,
 ; `hypertee-map-all-degrees`, `hypertee-truncate`, and
 ; `hypertee-zip-low-degrees` depend on `hypertee-join-all-degrees`.
 ;
@@ -1092,7 +1092,7 @@
     #/if (dim-sys-dim<? ds d first-nontrivial-d)
       (dissect suffix (trivial)
       ; TODO: See if this is correct.
-      #/hypertee-plus1 ds
+      #/hypertee-furl ds
       #/hypertee-coil-hole (hypertee-degree ht) (trivial) tails)
     #/expect
       (and
@@ -1122,11 +1122,11 @@
     (w- d (hypertee-degree tails)
     #/if (dim-sys-dim<? ds d first-nontrivial-d)
       (dissect data (trivial)
-      #/hypertee-plus1 ds
+      #/hypertee-furl ds
       #/hypertee-coil-hole (hypertee-degree ht) (trivial) tails)
     #/w- hole
       (hypertee-dv-map-all-degrees tails #/fn d data #/trivial)
-    #/hypertee-plus1 ds
+    #/hypertee-furl ds
     #/hypertee-coil-hole (hypertee-degree ht) (func hole data)
       tails)))
 
@@ -1651,7 +1651,7 @@
     #f)
   (void))
 
-(define (hypertee-plus1 ds coil)
+(define (hypertee-furl ds coil)
   (expect coil (hypertee-coil-hole degree data tails)
     (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/expect (dim-sys-dim<? ds (hypertee-degree tails) degree) #t
@@ -1688,7 +1688,7 @@
       (dim-successors-sys-dim=plus-int? dss
         expected-succ-hole-degree hole-degree 1))
   #/w-loop next is-expected-degree is-expected-degree ht ht
-    (dissect (hypertee-drop1 ht)
+    (dissect (hypertee-unfurl ht)
       (hypertee-coil-hole overall-degree data tails)
     #/and (is-expected-degree #/hypertee-degree tails)
     #/hypertee-dv-all-all-degrees tails #/fn d tail
@@ -1696,7 +1696,7 @@
 
 (define (hypertee-uncontour dss ht)
   (expect (hypertee-contour? dss ht) #t (nothing)
-  #/dissect (hypertee-drop1 ht)
+  #/dissect (hypertee-unfurl ht)
     (hypertee-coil-hole overall-degree data tails)
   #/just #/list data #/hypertee-dv-map-all-degrees tails #/fn d data
     (dissect (dim-successors-sys-dim-plus-int dss d 1) (just succ-d)

@@ -36,21 +36,21 @@
 (define ds (nat-dim-sys))
 
 (define (hnz)
-  (hypernest-plus1 ds #/hypernest-coil-zero))
+  (hypernest-furl ds #/hypernest-coil-zero))
 
 (define (hnh overall-degree data tails-hypertee)
-  (hypernest-plus1 ds
+  (hypernest-furl ds
   #/hypernest-coil-hole overall-degree data tails-hypertee))
 
 (define (hno overall-degree data bump-degree tails-hypertee)
-  (hypernest-plus1 ds
+  (hypernest-furl ds
   #/hypernest-coil-bump
     overall-degree data bump-degree tails-hypertee))
 
 
 
 ; ====================================================================
-; Testing `hypernest-from-brackets` (`hn-bracs`) and `hypernest-plus1`
+; Testing `hypernest-from-brackets` (`hn-bracs`) and `hypernest-furl`
 ; ====================================================================
 
 (define (make-sample degree . brackets)
@@ -134,20 +134,20 @@
 (check-brackets-round-trip sample-opening-1b)
 (check-brackets-round-trip sample-opening-2)
 
-(define (check-drop1-round-trip sample)
+(define (check-furl-round-trip sample)
   (w- sample (db->hn sample)
-  #/check-equal? (hypernest-plus1 ds #/hypernest-drop1 sample)
+  #/check-equal? (hypernest-furl ds #/hypernest-unfurl sample)
     sample))
 
-(check-drop1-round-trip sample-0)
-(check-drop1-round-trip sample-closing-1)
-(check-drop1-round-trip sample-closing-2)
+(check-furl-round-trip sample-0)
+(check-furl-round-trip sample-closing-1)
+(check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypernest-drop1 #/db->hn sample-closing-3)
+  (hypernest-unfurl #/db->hn sample-closing-3)
   (hypernest-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
-    ; `(hypernest-drop1 #/db->hn sample-closing-3)`. Make sure it's
+    ; `(hypernest-unfurl #/db->hn sample-closing-3)`. Make sure it's
     ; correct.
     (ht-bracs ds 2
       (htb-labeled 1 #/hn-bracs ds 3
@@ -157,12 +157,12 @@
       0
     #/htb-labeled 0 #/hn-bracs ds 3 #/hnb-labeled 0 'a)))
 
-(check-drop1-round-trip sample-closing-3)
-(check-drop1-round-trip sample-closing-4)
-(check-drop1-round-trip sample-closing-5)
-(check-drop1-round-trip sample-opening-1a)
-(check-drop1-round-trip sample-opening-1b)
-(check-drop1-round-trip sample-opening-2)
+(check-furl-round-trip sample-closing-3)
+(check-furl-round-trip sample-closing-4)
+(check-furl-round-trip sample-closing-5)
+(check-furl-round-trip sample-opening-1a)
+(check-furl-round-trip sample-opening-1b)
+(check-furl-round-trip sample-opening-2)
 
 
 

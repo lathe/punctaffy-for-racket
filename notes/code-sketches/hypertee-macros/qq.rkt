@@ -49,7 +49,7 @@
     omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
     htb-labeled ht-bracs hypertee-bind-one-degree hypertee-coil-hole
-    hypertee-coil-zero hypertee-degree hypertee-drop1 hypertee-fold
+    hypertee-coil-zero hypertee-degree hypertee-unfurl hypertee-fold
     hypertee-increase-degree-to hypertee-join-one-degree hypertee-pure
     hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
@@ -170,9 +170,9 @@
           ; an error.
           (error "Encountered unexpectedly high-dimensional structure in quasiquoted syntax")
         #/mat d 1
-          (dissect (hypertee-drop1 tails)
+          (dissect (hypertee-unfurl tails)
             (hypertee-coil-hole overall-degree rest tails)
-          #/dissect (hypertee-drop1 tails) (hypertee-coil-zero)
+          #/dissect (hypertee-unfurl tails) (hypertee-coil-zero)
           #/(fn result #/cons result rest)
           #/mat data (ht-tag-1-s-expr-stx stx) #`'#,stx
           #/mat data
@@ -191,10 +191,10 @@
               (w- d (hypertee-degree tails)
               #/mat d 0 (list (list) data)
               #/dissect d 1
-              #/dissect (hypertee-drop1 tails)
+              #/dissect (hypertee-unfurl tails)
                 (hypertee-coil-hole
                   overall-degree (list elems rest) tails)
-              #/dissect (hypertee-drop1 tails) (hypertee-coil-zero)
+              #/dissect (hypertee-unfurl tails) (hypertee-coil-zero)
               #/list (append data elems) rest))
             (list elems rest)
           #/(fn result #/cons result rest)

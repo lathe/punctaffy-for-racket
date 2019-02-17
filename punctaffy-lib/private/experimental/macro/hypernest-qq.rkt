@@ -37,9 +37,9 @@
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero
   hypernest-coil-bump hypernest-coil-hole hypernest-degree
-  hypernest-drop1 hypernest-get-hole-zero hypernest-join-all-degrees
-  hypernest->maybe-hypertee hypernest-plus1
-  hypernest-set-degree-and-join-all-degrees hypernest-v-map-one-degree
+  hypernest-furl hypernest-get-hole-zero hypernest-join-all-degrees
+  hypernest->maybe-hypertee hypernest-set-degree-and-join-all-degrees
+  hypernest-unfurl hypernest-v-map-one-degree
   hypernest-zip hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-dv-map-all-degrees hypertee-uncontour
@@ -127,7 +127,7 @@
     (raise-arguments-error 'hn-expr->s-expr-stx-list
       "expected an hn-expr of degree 1"
       "hn" hn)
-  #/w- dropped (hypernest-drop1 hn)
+  #/w- dropped (hypernest-unfurl hn)
   #/mat dropped (hypernest-coil-hole _ data tails)
     (expect data (trivial)
       (error "Expected an hn-expr with a trivial value in its degree-0 hole")
@@ -176,19 +176,19 @@
   #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
   #/expect (dim-sys-dim=? ds (hypernest-degree hn) (n-d 2)) #t
     (error "Expected an hn-expr of degree 2")
-  #/w- dropped (hypernest-drop1 hn)
+  #/w- dropped (hypernest-unfurl hn)
   #/w- process-tails
     (fn tails
       (hypertee-dv-map-all-degrees tails #/fn d tail
         (hn-expr-2->s-expr-generator dss tail)))
   #/mat dropped (hypernest-coil-hole _ data tails)
-    (hypernest-plus1 ds #/hypernest-coil-hole (n-d 2) data
+    (hypernest-furl ds #/hypernest-coil-hole (n-d 2) data
     #/process-tails tails)
   #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
   #/mat data (hn-tag-0-s-expr-stx stx)
     (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/hypernest-plus1 ds #/hypernest-coil-bump (n-d 2)
+    #/hypernest-furl ds #/hypernest-coil-bump (n-d 2)
       (hn-tag-0-s-expr-stx #`(list '#,stx))
       (n-d 0)
     #/hn-expr-2->s-expr-generator dss tails)
@@ -261,19 +261,19 @@
   #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
   #/expect (dim-sys-dim=? ds (hypernest-degree hn) (n-d 2)) #t
     (error "Expected an hn-expr of degree 2")
-  #/w- dropped (hypernest-drop1 hn)
+  #/w- dropped (hypernest-unfurl hn)
   #/w- process-tails
     (fn tails
       (hypertee-dv-map-all-degrees tails #/fn d tail
         (hn-expr-2->s-expr-stx-generator dss tail)))
   #/mat dropped (hypernest-coil-hole _ data tails)
-    (hypernest-plus1 ds #/hypernest-coil-hole (n-d 2) data
+    (hypernest-furl ds #/hypernest-coil-hole (n-d 2) data
     #/process-tails tails)
   #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
   #/mat data (hn-tag-0-s-expr-stx stx)
     (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/hypernest-plus1 ds #/hypernest-coil-bump (n-d 2)
+    #/hypernest-furl ds #/hypernest-coil-bump (n-d 2)
       (hn-tag-0-s-expr-stx #`(list #'#,stx))
       (n-d 0)
     #/hn-expr-2->s-expr-stx-generator dss tails)
@@ -355,7 +355,7 @@
     (error "Expected at least 4 successors to exist for the zero dimension")
   #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
   #/w- quotation (s-expr-stx->hn-expr dss #'quotation)
-  #/expect (hypernest-drop1 quotation)
+  #/expect (hypernest-unfurl quotation)
     (hypernest-coil-bump overall-degree (hn-tag-nest) bump-degree
       bracket-and-quotation-and-tails)
     (error "Expected a quasiquotation to be of the form (my-quasiquote #/^< ...)")
@@ -374,7 +374,7 @@
     (hypertee-v-each-one-degree (n-d 0) tails #/fn tail
       ; TODO: See if there's a good way to differentiate these error
       ; messages.
-      (expect (hypernest-drop1 tail)
+      (expect (hypernest-unfurl tail)
         (hypernest-coil-hole d data tail-tails)
         (error "Encountered more than one degree-0-adjacent piece of data in the root of a quasiquotation")
       #/expect (dim-sys-dim=0? ds #/hypertee-degree tail-tails) #t

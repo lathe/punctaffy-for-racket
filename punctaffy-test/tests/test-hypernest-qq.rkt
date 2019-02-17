@@ -231,7 +231,7 @@
 #|
 (require punctaffy/hypersnippet/hypertee)
 
-(writeln #/hypertee-drop1
+(writeln #/hypertee-unfurl
   (ht-bracs (nat-dim-sys) 3
     (list 2 'a)
       1

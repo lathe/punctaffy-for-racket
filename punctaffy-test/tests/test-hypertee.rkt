@@ -63,19 +63,19 @@
     (htb-labeled 0 'a)))
 
 
-(define (check-drop1-round-trip sample)
-  (check-equal? (hypertee-plus1 ds #/hypertee-drop1 sample) sample))
+(define (check-furl-round-trip sample)
+  (check-equal? (hypertee-furl ds #/hypertee-unfurl sample) sample))
 
-(check-drop1-round-trip sample-0)
-(check-drop1-round-trip sample-closing-1)
-(check-drop1-round-trip sample-closing-2)
+(check-furl-round-trip sample-0)
+(check-furl-round-trip sample-closing-1)
+(check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypertee-drop1 sample-closing-3)
+  (hypertee-unfurl sample-closing-3)
   (hypertee-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
-    ; `(hypernest-drop1 sample-closing-3)` in test-hypernest.rkt. Make
-    ; sure it's correct.
+    ; `(hypernest-unfurl sample-closing-3)` in test-hypernest.rkt.
+    ; Make sure it's correct.
     (ht-bracs ds 2
       (htb-labeled 1 #/ht-bracs ds 3
         (htb-labeled 1 'a)
@@ -84,9 +84,9 @@
       0
     #/htb-labeled 0 #/ht-bracs ds 3 #/htb-labeled 0 'a)))
 
-(check-drop1-round-trip sample-closing-3)
-(check-drop1-round-trip sample-closing-4)
-(check-drop1-round-trip sample-closing-5)
+(check-furl-round-trip sample-closing-3)
+(check-furl-round-trip sample-closing-4)
+(check-furl-round-trip sample-closing-5)
 
 
 (define (check-identity-map sample)

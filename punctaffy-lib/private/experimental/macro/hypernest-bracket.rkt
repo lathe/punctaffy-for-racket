@@ -38,10 +38,10 @@
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero
   hypernest-coil-bump hypernest-coil-hole hypernest-contour
-  hypernest-degree hypernest-drop1 hypernest-dv-map-all-degrees
+  hypernest-degree hypernest-dv-map-all-degrees hypernest-furl
   hypernest-increase-degree-to hypernest-join-all-degrees
-  hypernest-join-one-degree hypernest->maybe-hypertee hypernest-plus1
-  hypernest-truncate-to-hypertee)
+  hypernest-join-one-degree hypernest->maybe-hypertee
+  hypernest-truncate-to-hypertee hypernest-unfurl)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
@@ -88,9 +88,9 @@
     target-d opening-degree
     first-d-to-process (n-d 1)
     
-    (w- dropped (hypernest-drop1 hn-expr)
+    (w- dropped (hypernest-unfurl hn-expr)
     #/mat dropped (hypernest-coil-hole d data tails)
-      (hypernest-plus1 ds #/hypernest-coil-hole target-d data
+      (hypernest-furl ds #/hypernest-coil-hole target-d data
       #/hypertee-dv-map-all-degrees tails #/fn d tail
         (next tail target-d
           (dim-sys-dim-max ds first-d-to-process d)))
@@ -99,7 +99,7 @@
         interior-and-bracket-and-tails)
     #/w- ignore
       (fn
-        (hypernest-plus1 ds #/hypernest-coil-bump
+        (hypernest-furl ds #/hypernest-coil-bump
           target-d
           data
           bracket-degree-plus-two
@@ -155,7 +155,7 @@
     #/expect (hypertee-uncontour dss bracket-interior-and-tails)
       (just #/list bracket-interior tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour of a contour")
-    #/hypernest-plus1 ds #/hypernest-coil-hole target-d
+    #/hypernest-furl ds #/hypernest-coil-hole target-d
       (list bracket-syntax bracket-interior)
     #/hypertee-dv-map-all-degrees tails #/fn d tail
       (next tail target-d
@@ -188,7 +188,7 @@
       (s-expr-stx->hn-expr dss interpolation))
   #/w- closing-brackets
     (hypernest-truncate-to-hypertee interior-and-closing-brackets)
-  #/hypernest-plus1 ds
+  #/hypernest-furl ds
   #/hypernest-coil-bump (n-d 1) bump-value degree-plus-two
   #/hypernest-contour dss
     ; This is the syntax for the bracket itself.

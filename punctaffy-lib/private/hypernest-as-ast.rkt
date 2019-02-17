@@ -50,11 +50,11 @@
   make-hyperstack)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee/c hypertee-coil-hole
-  hypertee-coil-zero hypertee-contour hypertee-degree
-  hypertee-dim-sys hypertee-drop1 hypertee-dv-fold-map-any-all-degrees
-  hypertee-dv-map-all-degrees hypertee-each-all-degrees
-  hypertee-get-brackets hypertee-get-hole-zero hypertee-plus1
-  hypertee-pure hypertee-set-degree-and-bind-all-degrees
+  hypertee-coil-zero hypertee-contour hypertee-degree hypertee-dim-sys
+  hypertee-dv-fold-map-any-all-degrees hypertee-dv-map-all-degrees
+  hypertee-each-all-degrees hypertee-furl hypertee-get-brackets
+  hypertee-get-hole-zero hypertee-pure
+  hypertee-set-degree-and-bind-all-degrees hypertee-unfurl
   hypertee-zip-low-degrees hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
   unsafe-hypertee-from-brackets)
@@ -181,7 +181,7 @@
         [func (hn)
           (-> (hypertee/c #/hypernest-dim-sys hn) any/c any/c any/c)])
       [_ (hn) (maybe/c #/hypernest/c #/hypernest-dim-sys hn)])]
-  [hypernest-drop1
+  [hypernest-unfurl
     (->i ([hn hypernest?])
       [_ (hn) (hypernest-coil/c #/hypernest-dim-sys hn)])]
   [hypernest-dv-map-all-degrees
@@ -277,7 +277,7 @@
         [degree (ds) (dim-sys-0<dim/c ds)]
         [hns (ds) (listof #/hypernest/c ds)])
       [_ (ds) (hypernest/c ds)])]
-  [hypernest-plus1
+  [hypernest-furl
     (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
       [_ (ds) (hypernest/c ds)])])
 
@@ -371,7 +371,7 @@
 
 ; NOTE: This is a procedure we call only from within this module. It
 ; may seem like a synonym of `hypernest`, but when we're debugging
-; this module, we can change it to be a synonym of `hypernest-plus1`.
+; this module, we can change it to be a synonym of `hypernest-furl`.
 (define (hypernest-careful ds coil)
   (hypernest ds coil))
 
@@ -721,7 +721,7 @@
 
 ; TODO: See if we'll ever use this. For now, we just have it here as
 ; an analogue to `unsafe-hypertee-from-brackets`.
-(define/contract (unsafe-hypernest-plus1 ds coil)
+(define/contract (unsafe-hypernest-furl ds coil)
   (-> dim-sys? any/c any)
   (unless (punctaffy-suppress-internal-errors)
     ; NOTE: At this point we don't expect
@@ -731,10 +731,10 @@
     ; without verification. Otherwise the verification can end up
     ; doing some rather catastrophic recursion.
     (parameterize ([punctaffy-suppress-internal-errors #t])
-      (assert-valid-hypernest-coil 'unsafe-hypernest-plus1 ds coil)))
+      (assert-valid-hypernest-coil 'unsafe-hypernest-furl ds coil)))
   (hypernest ds coil))
 
-(define (hypernest-plus1 ds coil)
+(define (hypernest-furl ds coil)
   ; NOTE: At this point we don't expect `assert-valid-hypernest-coil`
   ; itself to be very buggy. Since its implementation involves the
   ; construction of other hypertees and hypernests, we can save a
@@ -742,7 +742,7 @@
   ; Otherwise the verification can end up doing some rather
   ; catastrophic recursion.
   (parameterize ([punctaffy-suppress-internal-errors #t])
-    (assert-valid-hypernest-coil 'hypernest-plus1 ds coil))
+    (assert-valid-hypernest-coil 'hypernest-furl ds coil))
   (hypernest ds coil))
 
 (define (hypernest-degree hn)
@@ -1008,7 +1008,7 @@
 (define (hypertee->hypernest ht)
   (w- ds (hypertee-dim-sys ht)
   #/hypernest-careful ds
-  #/expect (hypertee-drop1 ht)
+  #/expect (hypertee-unfurl ht)
     (hypertee-coil-hole overall-degree data tails)
     (hypernest-coil-zero)
   #/hypernest-coil-hole overall-degree data
@@ -1018,7 +1018,7 @@
 (define (hypernest->maybe-hypertee hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
-    (just #/hypertee-plus1 ds #/hypertee-coil-zero)
+    (just #/hypertee-furl ds #/hypertee-coil-zero)
   #/mat coil (hypernest-coil-hole d data tails)
     (dissect
       (hypertee-dv-fold-map-any-all-degrees (trivial) tails
@@ -1026,7 +1026,7 @@
         (list state #/hypernest->maybe-hypertee tail))
       (list (trivial) maybe-tails)
     #/maybe-map maybe-tails #/fn tails
-    #/hypertee-plus1 ds #/hypertee-coil-hole d data tails)
+    #/hypertee-furl ds #/hypertee-coil-hole d data tails)
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (nothing)))
@@ -1034,9 +1034,9 @@
 (define (hypernest-truncate-to-hypertee hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
-    (hypertee-plus1 ds #/hypertee-coil-zero)
+    (hypertee-furl ds #/hypertee-coil-zero)
   #/mat coil (hypernest-coil-hole d data tails)
-    (hypertee-plus1 ds #/hypertee-coil-hole d data
+    (hypertee-furl ds #/hypertee-coil-hole d data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
       (hypernest-truncate-to-hypertee tail))
   #/dissect coil
@@ -1190,7 +1190,7 @@
     (error "Expected the hypertee and the hypernest to have the same degree")
   #/hypernest-zip-low-degrees ht hn func))
 
-(define (hypernest-drop1 hn)
+(define (hypernest-unfurl hn)
   (dissect hn (hypernest ds coil)
     coil))
 
