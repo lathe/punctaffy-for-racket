@@ -129,19 +129,24 @@
 ;(provide successorless-dim-successors-sys)
 ;(provide #/contract-out
 ;  [successorless-dim-successors-sys? (-> any/c boolean?)])
-(provide nat-dim-sys)
+(provide
+  nat-dim-sys)
 (provide #/contract-out
   [nat-dim-sys? (-> any/c boolean?)])
-(provide nat-dim-successors-sys)
+(provide
+  nat-dim-successors-sys)
 (provide #/contract-out
   [nat-dim-successors-sys? (-> any/c boolean?)])
-(provide omega)
+(provide
+  omega)
 (provide #/contract-out
   [omega? (-> any/c boolean?)])
-(provide extended-nat-dim-sys)
+(provide
+  extended-nat-dim-sys)
 (provide #/contract-out
   [extended-nat-dim-sys? (-> any/c boolean?)])
-(provide extended-nat-dim-successors-sys)
+(provide
+  extended-nat-dim-successors-sys)
 (provide #/contract-out
   [extended-nat-dim-successors-sys? (-> any/c boolean?)])
 

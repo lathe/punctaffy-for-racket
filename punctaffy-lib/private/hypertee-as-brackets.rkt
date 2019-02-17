@@ -56,19 +56,20 @@
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
-(provide htb-labeled)
+(provide
+  htb-labeled)
 (provide #/contract-out
   [htb-labeled? (-> any/c boolean?)]
   [htb-labeled-degree (-> htb-labeled? any/c)]
   [htb-labeled-data (-> htb-labeled? any/c)])
-(provide htb-unlabeled)
+(provide
+  htb-unlabeled)
 (provide #/contract-out
   [htb-unlabeled? (-> any/c boolean?)]
   [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
 (provide #/contract-out
   [hypertee-bracket? (-> any/c boolean?)]
-  [hypertee-bracket/c (-> contract? contract?)])
-(provide #/contract-out
+  [hypertee-bracket/c (-> contract? contract?)]
   [hypertee-bracket-degree (-> (hypertee-bracket/c any/c) any/c)]
   [hypertee? (-> any/c boolean?)]
   [hypertee-dim-sys (-> hypertee? dim-sys?)]
@@ -129,33 +130,37 @@
   hypertee-set-degree-maybe
   hypertee-set-degree-force
   hypertee-contour
-  hypertee-coil-zero
-  (contract-out
-    [hypertee-coil-zero? (-> any/c boolean?)])
-  hypertee-coil-hole
-  (contract-out
-    [hypertee-coil-hole? (-> any/c boolean?)]
-    [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
-    [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
-    [hypertee-coil-hole-tails-hypertee
-      (-> hypertee-coil-hole? any/c)])
-  (contract-out
-    [hypertee-coil/c (-> dim-sys? contract?)])
+  hypertee-coil-zero)
+(provide #/contract-out
+  [hypertee-coil-zero? (-> any/c boolean?)])
+(provide
+  hypertee-coil-hole)
+(provide #/contract-out
+  [hypertee-coil-hole? (-> any/c boolean?)]
+  [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
+  [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
+  [hypertee-coil-hole-tails-hypertee
+    (-> hypertee-coil-hole? any/c)])
+(provide #/contract-out
+  [hypertee-coil/c (-> dim-sys? contract?)])
+(provide
   hypertee-drop1
   hypertee-dv-map-all-degrees
   hypertee-v-map-one-degree
   hypertee-v-map-highest-degree
   hypertee-fold
-  hypertee-join-selective-interpolation
-  (contract-out
-    [hypertee-join-selective-interpolation? (-> any/c boolean?)]
-    [hypertee-join-selective-interpolation-val
-      (-> hypertee-join-selective-interpolation? any/c)])
-  hypertee-join-selective-non-interpolation
-  (contract-out
-    [hypertee-join-selective-non-interpolation? (-> any/c boolean?)]
-    [hypertee-join-selective-non-interpolation-val
-      (-> hypertee-join-selective-interpolation? any/c)])
+  hypertee-join-selective-interpolation)
+(provide #/contract-out
+  [hypertee-join-selective-interpolation? (-> any/c boolean?)]
+  [hypertee-join-selective-interpolation-val
+    (-> hypertee-join-selective-interpolation? any/c)])
+(provide
+  hypertee-join-selective-non-interpolation)
+(provide #/contract-out
+  [hypertee-join-selective-non-interpolation? (-> any/c boolean?)]
+  [hypertee-join-selective-non-interpolation-val
+    (-> hypertee-join-selective-interpolation? any/c)])
+(provide
   hypertee-join-all-degrees-selective
   hypertee-map-all-degrees
   hypertee-map-one-degree
@@ -168,15 +173,16 @@
   hypertee-bind-one-degree
   hypertee-bind-pred-degree
   hypertee-join-one-degree
-  hypertee-set-degree-and-bind-all-degrees
-  (contract-out
-    [hypertee-append-zero
-      (->i
-        (
-          [ds dim-sys?]
-          [degree (ds) (dim-sys-0<dim/c ds)]
-          [hts (ds) (listof #/hypertee/c ds)])
-        [_ (ds) (hypertee/c ds)])])
+  hypertee-set-degree-and-bind-all-degrees)
+(provide #/contract-out
+  [hypertee-append-zero
+    (->i
+      (
+        [ds dim-sys?]
+        [degree (ds) (dim-sys-0<dim/c ds)]
+        [hts (ds) (listof #/hypertee/c ds)])
+      [_ (ds) (hypertee/c ds)])])
+(provide
   hypertee-dv-any-all-degrees
   hypertee-dv-all-all-degrees
   hypertee-dv-each-all-degrees

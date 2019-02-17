@@ -61,17 +61,20 @@
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
 
-(provide hnb-open)
+(provide
+  hnb-open)
 (provide #/contract-out
   [hnb-open? (-> any/c boolean?)]
   [hnb-open-degree (-> hnb-open? any/c)]
   [hnb-open-data (-> hnb-open? any/c)])
-(provide hnb-labeled)
+(provide
+  hnb-labeled)
 (provide #/contract-out
   [hnb-labeled? (-> any/c boolean?)]
   [hnb-labeled-degree (-> hnb-labeled? any/c)]
   [hnb-labeled-data (-> hnb-labeled? any/c)])
-(provide hnb-unlabeled)
+(provide
+  hnb-unlabeled)
 (provide #/contract-out
   [hnb-unlabeled? (-> any/c boolean?)]
   [hnb-unlabeled-degree (-> hnb-unlabeled? any/c)])
@@ -79,65 +82,67 @@
   [hypernest-bracket? (-> any/c boolean?)]
   [hypernest-bracket/c (-> contract? contract?)])
 (provide
-  hypernest-coil-zero
-  (contract-out
-    [hypernest-coil-zero? (-> any/c boolean?)])
-  hypernest-coil-hole
-  (contract-out
-    [hypernest-coil-hole? (-> any/c boolean?)]
-    [hypernest-coil-hole-overall-degree
-      (-> hypernest-coil-hole? any/c)]
-    [hypernest-coil-hole-data (-> hypernest-coil-hole? any/c)]
-    [hypernest-coil-hole-tails-hypertee
-      (-> hypernest-coil-hole? any/c)])
-  hypernest-coil-bump
-  (contract-out
-    [hypernest-coil-bump? (-> any/c boolean?)]
-    [hypernest-coil-bump-overall-degree
-      (-> hypernest-coil-bump? any/c)]
-    [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
-    [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
-    [hypernest-coil-bump-tails-hypernest
-      (-> hypernest-coil-bump? any/c)])
+  hypernest-coil-zero)
+(provide #/contract-out
+  [hypernest-coil-zero? (-> any/c boolean?)])
+(provide
+  hypernest-coil-hole)
+(provide #/contract-out
+  [hypernest-coil-hole? (-> any/c boolean?)]
+  [hypernest-coil-hole-overall-degree (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-hole-data (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-hole-tails-hypertee
+    (-> hypernest-coil-hole? any/c)])
+(provide
+  hypernest-coil-bump)
+(provide #/contract-out
+  [hypernest-coil-bump? (-> any/c boolean?)]
+  [hypernest-coil-bump-overall-degree (-> hypernest-coil-bump? any/c)]
+  [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
+  [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
+  [hypernest-coil-bump-tails-hypernest
+    (-> hypernest-coil-bump? any/c)])
+(provide
   hypernest-bracket-degree
   hypernest?
-  hypernest-degree
-  (contract-out
-    [hypernest/c (-> dim-sys? contract?)]
-    [hypernest-coil/c (-> dim-sys? contract?)]
-    [hypernest-from-brackets
-      (->i
-        (
-          [ds dim-sys?]
-          [degree (ds) (dim-sys-dim/c ds)]
-          [brackets (ds)
-            (listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
-        [_ (ds) (hypernest/c ds)])]
-    [hn-bracs
-      (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
-        #:rest
+  hypernest-degree)
+(provide #/contract-out
+  [hypernest/c (-> dim-sys? contract?)]
+  [hypernest-coil/c (-> dim-sys? contract?)]
+  [hypernest-from-brackets
+    (->i
+      (
+        [ds dim-sys?]
+        [degree (ds) (dim-sys-dim/c ds)]
         [brackets (ds)
-          (w- dim/c (dim-sys-dim/c ds)
-          #/listof #/or/c
-            (hypernest-bracket/c dim/c)
-            (and/c (not/c hypernest-bracket?) dim/c))]
-        [_ (ds) (hypernest/c ds)])]
-    [hn-bracs-dss
-      (->i
-        (
-          [dss dim-successors-sys?]
-          [degree (dss)
-            (or/c natural?
-            #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
-        #:rest
-        [brackets (dss)
-          (w- dim/c
-            (or/c natural?
-            #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)
-          #/listof #/or/c
-            (hypernest-bracket/c dim/c)
-            (and/c (not/c hypernest-bracket?) dim/c))]
-        [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])])
+          (listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
+      [_ (ds) (hypernest/c ds)])]
+  [hn-bracs
+    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+      #:rest
+      [brackets (ds)
+        (w- dim/c (dim-sys-dim/c ds)
+        #/listof #/or/c
+          (hypernest-bracket/c dim/c)
+          (and/c (not/c hypernest-bracket?) dim/c))]
+      [_ (ds) (hypernest/c ds)])]
+  [hn-bracs-dss
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [degree (dss)
+          (or/c natural?
+          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
+      #:rest
+      [brackets (dss)
+        (w- dim/c
+          (or/c natural?
+          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)
+        #/listof #/or/c
+          (hypernest-bracket/c dim/c)
+          (and/c (not/c hypernest-bracket?) dim/c))]
+      [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])])
+(provide
   hypernest-get-brackets
   hypernest-increase-degree-to
   hypernest-set-degree-force
@@ -149,16 +154,18 @@
   hypernest-drop1
   hypernest-dv-map-all-degrees
   hypernest-v-map-one-degree
-  hypernest-join-selective-interpolation
-  (contract-out
-    [hypernest-join-selective-interpolation? (-> any/c boolean?)]
-    [hypernest-join-selective-interpolation-val
-      (-> hypernest-join-selective-interpolation? any/c)])
-  hypernest-join-selective-non-interpolation
-  (contract-out
-    [hypernest-join-selective-non-interpolation? (-> any/c boolean?)]
-    [hypernest-join-selective-non-interpolation-val
-      (-> hypernest-join-selective-interpolation? any/c)])
+  hypernest-join-selective-interpolation)
+(provide #/contract-out
+  [hypernest-join-selective-interpolation? (-> any/c boolean?)]
+  [hypernest-join-selective-interpolation-val
+    (-> hypernest-join-selective-interpolation? any/c)])
+(provide
+  hypernest-join-selective-non-interpolation)
+(provide #/contract-out
+  [hypernest-join-selective-non-interpolation? (-> any/c boolean?)]
+  [hypernest-join-selective-non-interpolation-val
+    (-> hypernest-join-selective-interpolation? any/c)])
+(provide
   hypernest-join-all-degrees-selective
   hypernest-map-all-degrees
   hypernest-pure
@@ -169,15 +176,16 @@
   hypernest-bind-one-degree
   hypernest-join-one-degree
   hypernest-set-degree-and-bind-highest-degrees
-  hypernest-set-degree-and-join-all-degrees
-  (contract-out
-    [hypernest-append-zero
-      (->i
-        (
-          [ds dim-sys?]
-          [degree (ds) (dim-sys-0<dim/c ds)]
-          [hns (ds) (listof #/hypernest/c ds)])
-        [_ (ds) (hypernest/c ds)])])
+  hypernest-set-degree-and-join-all-degrees)
+(provide #/contract-out
+  [hypernest-append-zero
+    (->i
+      (
+        [ds dim-sys?]
+        [degree (ds) (dim-sys-0<dim/c ds)]
+        [hns (ds) (listof #/hypernest/c ds)])
+      [_ (ds) (hypernest/c ds)])])
+(provide
   hypernest-plus1)
 
 
