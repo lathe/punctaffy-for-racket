@@ -46,10 +46,9 @@
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee-bind-pred-degree
   hypertee-bracket-degree hypertee-contour hypertee-degree
-  hypertee-dv-each-all-degrees hypertee-from-brackets
+  hypertee-done hypertee-dv-each-all-degrees hypertee-from-brackets
   hypertee-get-brackets hypertee-increase-degree-to
-  hypertee-map-highest-degree hypertee-pure
-  hypertee-v-map-highest-degree)
+  hypertee-map-highest-degree hypertee-v-map-highest-degree)
 
 (provide
   ; TODO: See if there's anything more abstract we can export in place
@@ -242,7 +241,7 @@
               destriped-rest)
             destriped-rest))
       #/mat rest (non-lake-cane data)
-        (hypertee-pure succ-unstriped-degrees data hole)
+        (hypertee-done succ-unstriped-degrees data hole)
       #/error "Internal error"))
   #/island-cane data
   #/w- destriped-rest (hyprid-destripe-once rest)

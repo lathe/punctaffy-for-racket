@@ -5,7 +5,7 @@
 ; A generic interface for "hypermonad" type class dictionaries, which
 ; manipulate hypersnippet-shaped data.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@
   
   hypermonad-hole-hypermonad-for-degree
   
-  hypermonad-pure
+  hypermonad-done
   hypermonad-bind-with-degree-and-shape
   hypermonad-map-with-degree-and-shape
   hypermonad-join
@@ -55,7 +55,7 @@
   
   ; We redundantly cover several monad operations so that they can be
   ; implemented efficiently.
-  (hypermonad-pure hypermonad hole-degree hole-shape leaf)
+  (hypermonad-done hypermonad hole-degree hole-shape leaf)
   (hypermonad-bind-with-degree-and-shape
     hypermonad prefix degree-shape-and-leaf-to-suffix)
   (hypermonad-map-with-degree-and-shape
@@ -88,12 +88,12 @@
         (error "Expected degree to be an exact nonnegative integer")
         (error "Called hypermonad-hole-hypermonad-for-degree on a hypermonad-zero")))
     
-    (define (hypermonad-pure this hole-degree hole-shape leaf)
+    (define (hypermonad-done this hole-degree hole-shape leaf)
       (expect this (hypermonad-zero)
         (error "Expected this to be a hypermonad-zero")
       #/expect (exact-nonnegative-integer? hole-degree) #t
         (error "Expected hole-degree to be an exact nonnegative integer")
-        (error "Called hypermonad-pure on a hypermonad-zero")))
+        (error "Called hypermonad-done on a hypermonad-zero")))
     (define
       (hypermonad-bind-with-degree-and-shape
         this prefix degree-shape-and-leaf-to-suffix)
@@ -158,12 +158,12 @@
       #/hypermonad-hole-hypermonad-for-degree
         original (+ degree start-degree)))
     
-    (define (hypermonad-pure this hole-degree hole-shape leaf)
+    (define (hypermonad-done this hole-degree hole-shape leaf)
       (expect this (hypermonad-ignoring-lowest start-degree original)
         (error "Expected this to be a hypermonad-ignoring-lowest")
       #/expect (exact-nonnegative-integer? hole-degree) #t
         (error "Expected hole-degree to be an exact nonnegative integer")
-      #/hypermonad-pure
+      #/hypermonad-done
         original (+ hole-degree start-degree) hole-shape leaf))
     (define
       (hypermonad-bind-with-degree-and-shape
@@ -173,7 +173,7 @@
       #/hypermonad-bind-with-degree-and-shape original prefix
       #/lambda (degree shape leaf)
         (if (< degree start-degree)
-          (hypermonad-pure original degree shape leaf)
+          (hypermonad-done original degree shape leaf)
         #/degree-shape-and-leaf-to-suffix
           (- degree start-degree)
           shape
@@ -237,7 +237,7 @@
         (error "Expected degree to be less than one")
       #/make-hypermonad-zero))
     
-    (define (hypermonad-pure this hole-degree hole-shape leaf)
+    (define (hypermonad-done this hole-degree hole-shape leaf)
       (expect this (hypermonad-monad monad)
         (error "Expected this to be a hypermonad-monad")
       #/expect (exact-nonnegative-integer? hole-degree) #t
@@ -246,7 +246,7 @@
         (error "Expected hole-degree to be less than one")
       #/expect hole-shape (list)
         (error "Expected hole-shape to be an empty list")
-      #/monad-pure monad leaf))
+      #/monad-done monad leaf))
     (define
       (hypermonad-bind-with-degree-and-shape
         this prefix degree-shape-and-leaf-to-suffix)
@@ -529,7 +529,7 @@ fill-pred-pred-hole :: forall holeVals.
         hil
       #/hypermonad-hole-hypermonad-for-degree hii degree))
     
-    (define (hypermonad-pure this hole-degree hole-shape leaf)
+    (define (hypermonad-done this hole-degree hole-shape leaf)
       (expect this
         (hypermonad-striped-striped
           overall-degree hii hil hli hll hl
@@ -560,7 +560,7 @@ fill-pred-pred-hole :: forall holeVals.
         ;
         (striped-hypersnippet
         #/striped-hypersnippet
-        #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
+        #/hypermonad-done hii (sub1 #/sub1 hole-degree)
           (hil-to-hiil #/hl-to-hil hole-shape)
         #/striped-hypersnippet-lake
           (striped-hypersnippet-lake leaf
@@ -573,7 +573,7 @@ fill-pred-pred-hole :: forall holeVals.
             #/expect (= hole-hole-degree #/sub1 hole-degree) #t
               null
             #/w- islandlake (hll-to-hil hole-hole-shape)
-            #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
+            #/hypermonad-done hii (sub1 #/sub1 hole-degree)
               (hil-to-hiil islandlake)
             #/striped-hypersnippet-lake
               (striped-hypersnippet-non-lake null)
@@ -591,7 +591,7 @@ fill-pred-pred-hole :: forall holeVals.
                 (= islandlake-hole-degree #/sub1 islandlake-degree)
                 #t
                 null
-              #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
+              #/hypermonad-done hii (sub1 #/sub1 hole-degree)
                 ; NOTE: This assumes `hil and `hii` have the same hole
                 ; shape at the highest degree.
                 islandlake-hole-shape
@@ -612,7 +612,7 @@ fill-pred-pred-hole :: forall holeVals.
               null)
           ; NOTE: This assumes `hil` and `hii` have the same hole
           ; shape at the highest degree.
-          #/hypermonad-pure hii (sub1 #/sub1 hole-degree)
+          #/hypermonad-done hii (sub1 #/sub1 hole-degree)
             islandlake-hole-shape
           #/striped-hypersnippet-non-lake leaf))
       
@@ -632,7 +632,7 @@ fill-pred-pred-hole :: forall holeVals.
         ;
         (striped-hypersnippet
         #/striped-hypersnippet
-        #/hypermonad-pure hii (sub1 hole-degree)
+        #/hypermonad-done hii (sub1 hole-degree)
           (hil-to-hiil hole-shape)
         #/striped-hypersnippet-lake
           (striped-hypersnippet-non-lake leaf)
@@ -646,10 +646,10 @@ fill-pred-pred-hole :: forall holeVals.
             null
           ; NOTE: This assumes `hil` and `hii` have the same hole
           ; shape at the highest degree.
-          #/hypermonad-pure hii (sub1 hole-degree) hole-hole-shape
+          #/hypermonad-done hii (sub1 hole-degree) hole-hole-shape
           #/striped-hypersnippet-non-lake null))
       
-      #/hypermonad-pure hii hole-degree hole-shape leaf))
+      #/hypermonad-done hii hole-degree hole-shape leaf))
     (define
       (hypermonad-bind-with-degree-and-shape
         this prefix degree-shape-and-leaf-to-suffix)
@@ -747,7 +747,7 @@ fill-pred-pred-hole :: forall holeVals.
         this hypersnippet degree-shape-and-leaf-to-leaf)
       (hypermonad-bind-with-degree-and-shape this hypersnippet
       #/lambda (hole-degree hole-shape leaf)
-      #/hypermonad-pure this hole-degree hole-shape leaf))
+      #/hypermonad-done this hole-degree hole-shape leaf))
     (define (hypermonad-join this hypersnippets)
       (hypermonad-bind-with-degree-and-shape this hypersnippets
       #/lambda (hole-degree hole-shape hypersnippet)

@@ -7,7 +7,7 @@
 ; straightforward to define dictiaonries that are comparable by
 ; `equal?`.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -32,14 +32,14 @@
 (require #/only-in "monoid.rkt" monoid-empty monoid-append)
 
 (provide gen:monad monad? monad/c
-  monad-pure monad-bind monad-map monad-join)
+  monad-done monad-bind monad-map monad-join)
 
 (provide #/rename-out [make-monad-identity monad-identity])
 (provide #/rename-out [make-monad-from-monoid monad-from-monoid])
 
 
 (define-generics monad
-  (monad-pure monad leaf)
+  (monad-done monad leaf)
   (monad-bind monad prefix leaf-to-suffix)
   (monad-map monad tree leaf-to-leaf)
   (monad-join monad tree-of-trees))
@@ -56,7 +56,7 @@
   #:methods gen:monad
   [
     
-    (define (monad-pure this leaf)
+    (define (monad-done this leaf)
       (expect this (monad-identity)
         (error "Expected this to be a monad-identity")
         leaf))
@@ -91,7 +91,7 @@
   #:methods gen:monad
   [
     
-    (define (monad-pure this leaf)
+    (define (monad-done this leaf)
       (expect this (monad-from-monoid monoid)
         (error "Expected this to be a monad-from-monoid")
       #/cons (monoid-empty monoid) leaf))

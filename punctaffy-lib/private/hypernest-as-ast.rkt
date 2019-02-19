@@ -51,9 +51,9 @@
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee? hypertee/c hypertee-coil-hole
   hypertee-coil-zero hypertee-contour hypertee-degree hypertee-dim-sys
-  hypertee-dv-fold-map-any-all-degrees hypertee-dv-map-all-degrees
-  hypertee-each-all-degrees hypertee-furl hypertee-get-brackets
-  hypertee-get-hole-zero hypertee-pure
+  hypertee-done hypertee-dv-fold-map-any-all-degrees
+  hypertee-dv-map-all-degrees hypertee-each-all-degrees hypertee-furl
+  hypertee-get-brackets hypertee-get-hole-zero
   hypertee-set-degree-and-bind-all-degrees hypertee-unfurl
   hypertee-zip-low-degrees hypertee-zip-selective)
 (require #/only-in punctaffy/private/hypertee-unsafe
@@ -213,7 +213,7 @@
   [hypernest-join-all-degrees-selective (-> hypernest? hypernest?)]
   [hypernest-map-all-degrees
     (-> hypernest? (-> hypertee? any/c any/c) hypernest?)]
-  [hypernest-pure
+  [hypernest-done
     (->i
       (
         [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
@@ -1046,7 +1046,7 @@
     #/fn hole data
       (if (dim-sys-dim<? ds (hypertee-degree hole) bump-degree)
         (hypernest-truncate-to-hypertee data)
-        (hypertee-pure overall-degree data hole)))))
+        (hypertee-done overall-degree data hole)))))
 
 ; Takes a hypertee of any degree N and returns a hypernest of degree
 ; N+1 with all the same degree-less-than-N holes as well as a single
@@ -1424,14 +1424,14 @@
 ;   hypertee-map-pred-degree
 ;   hypertee-map-highest-degree
 
-(define (hypernest-pure degree data hole)
+(define (hypernest-done degree data hole)
   (w- ds (hypertee-dim-sys hole)
   #/expect (dim-sys-dim<? ds (hypertee-degree hole) degree) #t
-    (raise-arguments-error 'hypernest-pure
+    (raise-arguments-error 'hypernest-done
       "expected hole to be a hypertee of degree strictly less than the given degree"
       "degree" degree
       "hole" hole)
-  #/hypertee->hypernest #/hypertee-pure degree data hole))
+  #/hypertee->hypernest #/hypertee-done degree data hole))
 
 (define (hypernest-get-hole-zero hn)
   (dissect hn (hypernest ds coil)
@@ -1502,7 +1502,7 @@
   #/hypernest-bind-all-degrees hn #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
       (func hole data)
-      (hypernest-pure (hypernest-degree hn) data hole))))
+      (hypernest-done (hypernest-degree hn) data hole))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
@@ -1557,7 +1557,7 @@
   #/fn hole data
     (if (dim-sys-dim<=? ds new-degree (hypertee-degree hole))
       (hole-to-hn hole data)
-      (hypernest-pure new-degree data hole))))
+      (hypernest-done new-degree data hole))))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.

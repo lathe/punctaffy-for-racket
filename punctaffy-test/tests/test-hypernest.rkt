@@ -190,7 +190,7 @@
 ; TODO: Put a similar test in test-hypertee.rkt.
 (check-equal?
   (hypernest-join-all-degrees #/hn-bracs ds 2
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
   (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out a simple degree-0 hole")
@@ -201,7 +201,7 @@
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
   (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out a single simple degree-1 hole")
@@ -214,7 +214,7 @@
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
   (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes")
@@ -229,7 +229,7 @@
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
   (hn-bracs ds 2
     (hnb-open 1 'a)
     0
@@ -248,7 +248,7 @@
     0
     0
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
   (hn-bracs ds 2
     (hnb-open 2 'a)
     1
@@ -271,7 +271,7 @@
     0
     0
     0
-    (hnb-labeled 0 #/hypernest-pure 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
   (hn-bracs ds 2
     (hnb-open 2 'a)
     (hnb-open 1 'a)
@@ -541,7 +541,7 @@
       (hnb-labeled 0 #/hnterp #/trivial))
     0
     (hnb-labeled 0
-      (hnterp #/hypernest-pure 2 (hnnonterp 'a) #/ht-bracs ds 0)))
+      (hnterp #/hypernest-done 2 (hnnonterp 'a) #/ht-bracs ds 0)))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
@@ -566,7 +566,7 @@
     (hnb-labeled 1 #/hnnonterp 'a)
     0
     (hnb-labeled 0
-      (hnterp #/hypernest-pure 2 (hnnonterp 'a) #/ht-bracs ds 0)))
+      (hnterp #/hypernest-done 2 (hnnonterp 'a) #/ht-bracs ds 0)))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0

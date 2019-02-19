@@ -4,7 +4,7 @@
 ;
 ; A hypermonad instance for hypertees.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018-2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@
 (require #/only-in lathe-comforts/struct struct-easy)
 
 (require #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-bind-all-degrees hypertee-degree hypertee-join-all-degrees
-  hypertee-map-all-degrees hypertee-pure)
+  hypertee-bind-all-degrees hypertee-degree hypertee-done
+  hypertee-join-all-degrees hypertee-map-all-degrees)
 
 (require #/only-in punctaffy/private/experimental/hypermonad
   gen:hypermonad)
@@ -60,12 +60,12 @@
         (error "Expected the hole degree to be less than the degree of the hypermonad-hypertee")
       #/make-hypermonad-hypertee degree))
     
-    (define (hypermonad-pure this hole-degree hole-shape leaf)
+    (define (hypermonad-done this hole-degree hole-shape leaf)
       (expect this (hypermonad-hypertee degree)
         (error "Expected this to be a hypermonad-hypertee")
       #/expect (natural? hole-degree) #t
         (error "Expected hole-degree to be a natural number")
-      #/hypertee-pure degree leaf hole-shape))
+      #/hypertee-done degree leaf hole-shape))
     (define
       (hypermonad-bind-with-degree-and-shape
         this prefix degree-shape-and-leaf-to-suffix)

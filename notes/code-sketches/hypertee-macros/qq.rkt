@@ -49,8 +49,8 @@
     omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
     htb-labeled ht-bracs hypertee-bind-one-degree hypertee-coil-hole
-    hypertee-coil-zero hypertee-degree hypertee-unfurl hypertee-fold
-    hypertee-increase-degree-to hypertee-join-one-degree hypertee-pure
+    hypertee-coil-zero hypertee-degree hypertee-done hypertee-unfurl
+    hypertee-fold hypertee-increase-degree-to hypertee-join-one-degree
     hypertee-truncate hypertee-v-map-one-degree
     hypertee-zip-selective)
   
@@ -130,7 +130,7 @@
       ; degree-1 holes so that those expansions become part of this
       ; expansion directly.
       #/hypertee-join-one-degree 1
-      #/hypertee-pure (omega)
+      #/hypertee-done (omega)
         (ht-tag-2-other #/my-quasiquote-tag-2-matched-internal-quasiquotation
           (make-op-bracket stx)
           (hypertee-v-map-one-degree 1 body #/fn data
@@ -146,7 +146,7 @@
             (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
               closing-bracket interpolation)
             (hypertee-increase-degree-to (omega) hole)
-          #/hypertee-pure (omega)
+          #/hypertee-done (omega)
             (s-expr-stx->ht-expr interpolation)
             hole)))))
   
@@ -228,7 +228,7 @@
                   (ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
                     closing-bracket)
                   closing-bracket
-                #/hypertee-pure (omega) data hole))
+                #/hypertee-done (omega) data hole))
             #/w- zip-bracket-ends
               (fn smaller bigger func
                 (hypertee-zip-selective smaller bigger

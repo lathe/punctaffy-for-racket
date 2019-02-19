@@ -174,7 +174,7 @@
     (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-pure 2 'a #/ht-bracs ds 0))
+    (htb-labeled 0 #/hypertee-done 2 'a #/ht-bracs ds 0))
   (ht-bracs ds 2
     (htb-labeled 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
@@ -196,7 +196,7 @@
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-pure 2 'a #/ht-bracs ds 0))
+    (htb-labeled 0 #/hypertee-done 2 'a #/ht-bracs ds 0))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -212,7 +212,7 @@
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
   (hypertee-join-all-degrees #/ht-bracs ds 2
-    (htb-labeled 1 #/hypertee-pure 2 'a #/ht-bracs ds 1
+    (htb-labeled 1 #/hypertee-done 2 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/ht-bracs ds 2
@@ -225,7 +225,7 @@
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-pure 2 'a #/ht-bracs ds 0))
+    (htb-labeled 0 #/hypertee-done 2 'a #/ht-bracs ds 0))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -241,7 +241,7 @@
   (hypertee-join-all-degrees #/ht-bracs ds 3
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/hypertee-pure 3 'a #/ht-bracs ds 1
+    (htb-labeled 1 #/hypertee-done 3 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     
@@ -270,11 +270,11 @@
     0
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/hypertee-pure 3 'a #/ht-bracs ds 1
+    (htb-labeled 1 #/hypertee-done 3 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     
-    (htb-labeled 0 #/hypertee-pure 3 'a #/ht-bracs ds 0))
+    (htb-labeled 0 #/hypertee-done 3 'a #/ht-bracs ds 0))
   (ht-bracs ds 3
     (htb-labeled 1 'a)
     0
@@ -311,7 +311,7 @@
       (htb-labeled 0 #/htterp #/trivial))
     0
     (htb-labeled 0
-      (htterp #/hypertee-pure 2 (htnonterp 'a) #/ht-bracs ds 0)))
+      (htterp #/hypertee-done 2 (htnonterp 'a) #/ht-bracs ds 0)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -336,7 +336,7 @@
     (htb-labeled 1 #/htnonterp 'a)
     0
     (htb-labeled 0
-      (htterp #/hypertee-pure 2 (htnonterp 'a) #/ht-bracs ds 0)))
+      (htterp #/hypertee-done 2 (htnonterp 'a) #/ht-bracs ds 0)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0

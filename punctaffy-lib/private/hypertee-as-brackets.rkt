@@ -227,7 +227,7 @@
           (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
             any/c)])
       [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
-  [hypertee-pure
+  [hypertee-done
     (->i
       (
         [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
@@ -895,7 +895,7 @@
     (raise-arguments-error 'hypertee-contour
       "expected the given hypertee to be of a degree that had a a successor"
       "ht" ht)
-  #/hypertee-pure succ-d hole-value ht))
+  #/hypertee-done succ-d hole-value ht))
 
 (define-imitation-simple-struct (hypertee-coil-zero?)
   hypertee-coil-zero
@@ -1459,10 +1459,10 @@
 (define (hypertee-map-highest-degree dss ht func)
   (hypertee-map-pred-degree dss (hypertee-degree ht) ht func))
 
-(define (hypertee-pure degree data hole)
+(define (hypertee-done degree data hole)
   (dissect hole (hypertee ds old-degree closing-brackets)
   #/expect (dim-sys-dim<? ds old-degree degree) #t
-    (raise-arguments-error 'hypertee-pure
+    (raise-arguments-error 'hypertee-done
       "expected hole to be a hypertee of degree strictly less than the given degree"
       "degree" degree
       "hole" hole)
@@ -1511,7 +1511,7 @@
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
       (func hole data)
-      (hypertee-pure (hypertee-degree ht) data hole))))
+      (hypertee-done (hypertee-degree ht) data hole))))
 
 (define (hypertee-bind-pred-degree dss degree ht func)
   
@@ -1666,8 +1666,8 @@
         #/expect data (trivial)
           (error "Expected the tails of a hypertee-coil-hole to be a hypertee containing hypertees such that a hypertee in a hole of degree N contained only trivial values at degrees less than N")
         #/void)))
-  #/hypertee-join-all-degrees #/hypertee-pure degree
-    (hypertee-pure degree data
+  #/hypertee-join-all-degrees #/hypertee-done degree
+    (hypertee-done degree data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
       (trivial))
     tails))
@@ -1727,7 +1727,7 @@
   (dissect ht (hypertee ds d closing-brackets)
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (should-keep? hole data)
-      (hypertee-pure d data hole)
+      (hypertee-done d data hole)
     #/if (dim-sys-dim=0? ds #/hypertee-degree hole)
       (error "Expected should-keep? to accept the degree-zero hole")
       (hypertee-increase-degree-to d hole))))
