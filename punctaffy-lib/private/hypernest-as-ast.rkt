@@ -54,8 +54,8 @@
   hypertee-done hypertee-dv-fold-map-any-all-degrees
   hypertee-dv-map-all-degrees hypertee-each-all-degrees hypertee-furl
   hypertee-get-brackets hypertee-get-hole-zero
-  hypertee-set-degree-and-bind-all-degrees hypertee-unfurl
-  hypertee-zip-low-degrees hypertee-zip-selective)
+  hypertee-low-degree-holes-zip-map hypertee-selective-holes-zip-map
+  hypertee-set-degree-and-bind-all-degrees hypertee-unfurl)
 (require #/only-in punctaffy/private/hypertee-unsafe
   unsafe-hypertee-from-brackets)
 (require #/only-in punctaffy/private/suppress-internal-errors
@@ -173,7 +173,7 @@
         [hole-value any/c]
         [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
       [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])]
-  [hypernest-zip
+  [hypernest-holes-zip-map
     (->i
       (
         [ht (hn) (hypertee/c #/hypernest-dim-sys hn)]
@@ -658,7 +658,7 @@
           "tail" tail
           "overall-degree" overall-degree)
       #/expect
-        (hypertee-zip-low-degrees hole
+        (hypertee-low-degree-holes-zip-map hole
           (hypernest-filter-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
@@ -704,7 +704,7 @@
             "hole-degree" hole-degree
             "overall-degree" overall-degree)
         #/expect
-          (hypertee-zip-low-degrees hole
+          (hypertee-low-degree-holes-zip-map hole
             (hypernest-filter-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
@@ -1117,7 +1117,7 @@
 ; bumps instead of holes.
 ;
 (define/contract
-  (hypernest-zip-selective smaller bigger should-zip? func)
+  (hypernest-selective-holes-zip-map smaller bigger should-zip? func)
   (->i
     (
       [smaller (bigger) (hypertee/c #/hypernest-dim-sys bigger)]
@@ -1140,7 +1140,7 @@
       (list (add1 i) #/just #/list i data))
     (list _ #/just bigger)
   #/maybe-map
-    (hypertee-zip-selective
+    (hypertee-selective-holes-zip-map
       smaller
       (hypernest-filter-to-hypertee bigger)
       (fn hole entry
@@ -1169,7 +1169,8 @@
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
 ;
-(define/contract (hypernest-zip-low-degrees smaller bigger func)
+(define/contract
+  (hypernest-low-degree-holes-zip-map smaller bigger func)
   (->i
     (
       [smaller (bigger) (hypertee/c #/hypernest-dim-sys bigger)]
@@ -1178,17 +1179,18 @@
         (-> (hypertee/c #/hypernest-dim-sys bigger) any/c any/c
           any/c)])
     [_ (bigger) (maybe/c #/hypernest/c #/hypernest-dim-sys bigger)])
-  (hypernest-zip-selective smaller bigger (fn hole data #t) func))
+  (hypernest-selective-holes-zip-map
+    smaller bigger (fn hole data #t) func))
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define (hypernest-zip ht hn func)
+(define (hypernest-holes-zip-map ht hn func)
   (w- ds (hypernest-dim-sys hn)
   #/expect
     (dim-sys-dim=? ds (hypertee-degree ht) (hypernest-degree hn))
     #t
     (error "Expected the hypertee and the hypernest to have the same degree")
-  #/hypernest-zip-low-degrees ht hn func))
+  #/hypernest-low-degree-holes-zip-map ht hn func))
 
 (define (hypernest-unfurl hn)
   (dissect hn (hypernest ds coil)
@@ -1342,7 +1344,7 @@
       ; terminate. If they don't, we need to take a different
       ; approach.
       (expect
-        (hypernest-zip-selective tails interpolation
+        (hypernest-selective-holes-zip-map tails interpolation
           (fn hole data
             (mat data (hypernest-join-selective-interpolation _)
               #t

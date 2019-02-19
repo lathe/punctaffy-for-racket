@@ -348,7 +348,7 @@
             (list/c any/c #/maybe/c any/c))])
       [_ (ht)
         (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])]
-  [hypertee-zip-selective
+  [hypertee-selective-holes-zip-map
     (->i
       (
         [smaller (bigger) (hypertee/c #/hypertee-dim-sys bigger)]
@@ -360,7 +360,7 @@
           (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
             any/c)])
       [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])]
-  [hypertee-zip-low-degrees
+  [hypertee-low-degree-holes-zip-map
     (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
       (maybe/c hypertee?))])
 
@@ -1080,7 +1080,8 @@
 ; `hypertee-fold`. There are a few potential circular dependecy
 ; problems: The implementations of `hypertee-furl`,
 ; `hypertee-map-all-degrees`, `hypertee-filter-degree-to`, and
-; `hypertee-zip-low-degrees` depend on `hypertee-join-all-degrees`.
+; `hypertee-low-degree-holes-zip-map` depend on
+; `hypertee-join-all-degrees`.
 ;
 #;
 (define (hypertee-join-all-degrees ht)
@@ -1102,7 +1103,8 @@
       #t
       (error "Expected each interpolation of a hypertee join to be a hypertee of the right shape for its interpolation context")
     #/expect
-      (hypertee-zip-low-degrees tails suffix #/fn hole tail suffix
+      (hypertee-low-degree-holes-zip-map tails suffix
+      #/fn hole tail suffix
         (dissect suffix (trivial)
           tail))
       (just zipped)
@@ -1751,7 +1753,7 @@
     (hypertee ds d closing-brackets)
   #/hypertee ds new-degree closing-brackets))
 
-(define/contract (hypertee-zip a b func)
+(define/contract (hypertee-zip-map a b func)
   (->i
     (
       [a (b) (hypertee/c #/hypertee-dim-sys b)]
@@ -1823,7 +1825,8 @@
 ; if the hypertees have the same shape when certain holes of the
 ; higher-degree hypertee are removed -- namely, the holes of degree N
 ; or greater and the holes that don't match the given predicate.
-(define (hypertee-zip-selective smaller bigger should-zip? func)
+(define
+  (hypertee-selective-holes-zip-map smaller bigger should-zip? func)
   (dissect smaller (hypertee _ d-smaller closing-brackets-smaller)
   #/dissect bigger (hypertee ds d-bigger closing-brackets-bigger)
   #/expect (dim-sys-dim<=? ds d-smaller d-bigger) #t
@@ -1847,7 +1850,7 @@
       (dissect data (list data i should-zip)
         should-zip))
   #/maybe-map
-    (hypertee-zip smaller filtered-bigger #/fn hole smaller bigger
+    (hypertee-zip-map smaller filtered-bigger #/fn hole smaller bigger
       (dissect bigger (list data i #t)
         (list (func hole smaller data) i)))
   #/dissectfn (hypertee _ zipped-filtered-d zipped-filtered-brackets)
@@ -1865,5 +1868,6 @@
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when truncated to degree N.
-(define (hypertee-zip-low-degrees smaller bigger func)
-  (hypertee-zip-selective smaller bigger (fn hole data #t) func))
+(define (hypertee-low-degree-holes-zip-map smaller bigger func)
+  (hypertee-selective-holes-zip-map
+    smaller bigger (fn hole data #t) func))

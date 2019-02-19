@@ -125,8 +125,12 @@ hypertee-hv-bind
 hypernest-holes-hv-bind
 hypertee-hv-bind-at
 hypernest-holes-hv-bind-at
-hypertee-zip-with-hypertee
-hypernest-holes-zip-with-hypertee
+hypertee-selective-holes-zip-map
+hypernest-selective-holes-zip-map
+hypertee-low-degree-holes-zip-map
+hypernest-low-degree-holes-zip-map
+hypertee-zip-map
+hypernest-holes-zip-map
 
 (struct-out hypertee-coil-zero)
 (struct-out hypernest-coil-zero)

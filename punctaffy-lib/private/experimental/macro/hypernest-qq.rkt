@@ -37,10 +37,10 @@
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero
   hypernest-coil-bump hypernest-coil-hole hypernest-degree
-  hypernest-furl hypernest-get-hole-zero hypernest-join-all-degrees
-  hypernest->maybe-hypertee hypernest-set-degree-and-join-all-degrees
-  hypernest-unfurl hypernest-v-map-one-degree
-  hypernest-zip hypertee->hypernest)
+  hypernest-furl hypernest-get-hole-zero hypernest-holes-zip-map
+  hypernest-join-all-degrees hypernest->maybe-hypertee
+  hypernest-set-degree-and-join-all-degrees hypernest-unfurl
+  hypernest-v-map-one-degree hypertee->hypernest)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-degree hypertee-dv-map-all-degrees hypertee-uncontour
   hypertee-v-each-one-degree)
@@ -382,7 +382,8 @@
       #/dissect data (trivial)
       #/void))
   #/dissect
-    (hypernest-zip tails (hn-expr-2->s-expr-generator dss quotation)
+    (hypernest-holes-zip-map tails
+      (hn-expr-2->s-expr-generator dss quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
       #/dissect (dim-sys-dim=? ds (hypernest-degree tail) (n-d 1))

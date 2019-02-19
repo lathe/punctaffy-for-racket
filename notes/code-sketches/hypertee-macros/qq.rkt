@@ -52,7 +52,8 @@
     hypertee-coil-zero hypertee-degree hypertee-done
     hypertee-filter-degree-to hypertee-fold
     hypertee-increase-degree-to hypertee-join-one-degree
-    hypertee-unfurl hypertee-v-map-one-degree hypertee-zip-selective)
+    hypertee-selective-holes-zip-map hypertee-unfurl
+    hypertee-v-map-one-degree)
   
   (provide #/all-defined-out)
   
@@ -231,7 +232,7 @@
                 #/hypertee-done (omega) data hole))
             #/w- zip-bracket-ends
               (fn smaller bigger func
-                (hypertee-zip-selective smaller bigger
+                (hypertee-selective-holes-zip-map smaller bigger
                   (fn hole data
                     (w- d (hypertee-degree hole)
                     #/mat d 0
