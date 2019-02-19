@@ -107,6 +107,8 @@
   [hypernest-degree
     (->i ([hn hypernest?])
       [_ (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)])]
+  ; TODO DOCS: Consider more expressive hypernest contract combinators
+  ; than `hypernest/c`, and come up with a new name for it.
   [hypernest/c (-> dim-sys? contract?)]
   [hypernest-coil/c (-> dim-sys? contract?)]
   [hypernest-from-brackets
