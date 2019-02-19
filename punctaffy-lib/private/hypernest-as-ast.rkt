@@ -163,7 +163,7 @@
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
   [hypertee->hypernest (-> hypertee? hypernest?)]
   [hypernest->maybe-hypertee (-> hypernest? #/maybe/c hypertee?)]
-  [hypernest-truncate-to-hypertee
+  [hypernest-filter-to-hypertee
     (->i ([hn hypernest?])
       [_ (hn) (hypertee/c #/hypernest-dim-sys hn)])]
   [hypernest-contour
@@ -659,7 +659,7 @@
           "overall-degree" overall-degree)
       #/expect
         (hypertee-zip-low-degrees hole
-          (hypernest-truncate-to-hypertee tail)
+          (hypernest-filter-to-hypertee tail)
         #/fn hole-hole hole-data tail-data
           (expect tail-data (trivial)
             (raise-arguments-error err-name
@@ -705,7 +705,7 @@
             "overall-degree" overall-degree)
         #/expect
           (hypertee-zip-low-degrees hole
-            (hypernest-truncate-to-hypertee data)
+            (hypernest-filter-to-hypertee data)
           #/fn hole-hole hole-data tail-data
             (expect tail-data (trivial)
               (raise-arguments-error err-name
@@ -1031,21 +1031,21 @@
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (nothing)))
 
-(define (hypernest-truncate-to-hypertee hn)
+(define (hypernest-filter-to-hypertee hn)
   (dissect hn (hypernest ds coil)
   #/mat coil (hypernest-coil-zero)
     (hypertee-furl ds #/hypertee-coil-zero)
   #/mat coil (hypernest-coil-hole d data tails)
     (hypertee-furl ds #/hypertee-coil-hole d data
     #/hypertee-dv-map-all-degrees tails #/fn d tail
-      (hypernest-truncate-to-hypertee tail))
+      (hypernest-filter-to-hypertee tail))
   #/dissect coil
     (hypernest-coil-bump overall-degree data bump-degree tails)
     (hypertee-set-degree-and-bind-all-degrees overall-degree
-      (hypernest-truncate-to-hypertee tails)
+      (hypernest-filter-to-hypertee tails)
     #/fn hole data
       (if (dim-sys-dim<? ds (hypertee-degree hole) bump-degree)
-        (hypernest-truncate-to-hypertee data)
+        (hypernest-filter-to-hypertee data)
         (hypertee-done overall-degree data hole)))))
 
 ; Takes a hypertee of any degree N and returns a hypernest of degree
@@ -1142,7 +1142,7 @@
   #/maybe-map
     (hypertee-zip-selective
       smaller
-      (hypernest-truncate-to-hypertee bigger)
+      (hypernest-filter-to-hypertee bigger)
       (fn hole entry
         (dissect entry (list i data)
         #/should-zip? hole data))
@@ -1708,4 +1708,4 @@
 ;   hypertee-contour?
 ;   hypertee-uncontour
 ;   hypertee-filter
-;   hypertee-truncate
+;   hypertee-filter-degree-to

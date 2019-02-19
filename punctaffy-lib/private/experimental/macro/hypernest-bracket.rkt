@@ -38,10 +38,11 @@
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero
   hypernest-coil-bump hypernest-coil-hole hypernest-contour
-  hypernest-degree hypernest-dv-map-all-degrees hypernest-furl
+  hypernest-degree hypernest-dv-map-all-degrees
+  hypernest-filter-to-hypertee hypernest-furl
   hypernest-increase-degree-to hypernest-join-all-degrees
   hypernest-join-one-degree hypernest->maybe-hypertee
-  hypernest-truncate-to-hypertee hypernest-unfurl)
+  hypernest-unfurl)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
   hypertee-uncontour)
@@ -187,7 +188,7 @@
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
       (s-expr-stx->hn-expr dss interpolation))
   #/w- closing-brackets
-    (hypernest-truncate-to-hypertee interior-and-closing-brackets)
+    (hypernest-filter-to-hypertee interior-and-closing-brackets)
   #/hypernest-furl ds
   #/hypernest-coil-bump (n-d 1) bump-value degree-plus-two
   #/hypernest-contour dss

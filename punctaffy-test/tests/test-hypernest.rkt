@@ -601,10 +601,10 @@
 
 
 
-; ===== Testing `hypernest-truncate-to-hypertee` =====================
+; ===== Testing `hypernest-filter-to-hypertee` =======================
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/hn-bracs ds 1
+  (hypernest-filter-to-hypertee #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
@@ -613,7 +613,7 @@
   "Truncating a degree-1 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/hn-bracs ds 1
+  (hypernest-filter-to-hypertee #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-open 1 'a)
@@ -626,7 +626,7 @@
   "Truncating a degree-1 hypernest with multiple bumps to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/hn-bracs ds 1
+  (hypernest-filter-to-hypertee #/hn-bracs ds 1
     (hnb-open 2 'a)
     1
     (hnb-open 1 'a)
@@ -641,7 +641,7 @@
   "Truncating a degree-1 hypernest with a degree-2 bump to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/hn-bracs ds 2
+  (hypernest-filter-to-hypertee #/hn-bracs ds 2
     (hnb-open 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -656,7 +656,7 @@
   "Truncating a degree-2 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-truncate-to-hypertee #/hn-bracs ds 2
+  (hypernest-filter-to-hypertee #/hn-bracs ds 2
     (hnb-open 2 'a)
     1
     (hnb-labeled 1 'a)

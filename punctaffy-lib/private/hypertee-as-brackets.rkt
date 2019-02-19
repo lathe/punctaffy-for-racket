@@ -332,7 +332,7 @@
           (hypertee/c #/dim-successors-sys-dim-sys dss))])]
   [hypertee-filter
     (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)]
-  [hypertee-truncate
+  [hypertee-filter-degree-to
     (->i
       (
         [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
@@ -684,15 +684,16 @@
 ;             if finToNat j < finToNat i
 ;               then ()
 ;               else v j) *
-;           (hyperteeTruncate (finToNat i) fill = iEdge)) ->
+;           (hyperteeFilterDegreeTo (finToNat i) fill = iEdge)) ->
 ;       v m (hyperteeMapAllDegrees edge \i iEdge val -> ()) ->
 ;       Hypertee v
 ;
 ; This type must be defined as part of an induction-recursion with the
-; functions `hyperteeTruncate` (which would remove the highest-degree
-; holes from a hypertee and lower its degree, as we provide here under
-; the name `hypertee-truncate`) and `hyperteeMapAllDegrees`, which
-; seem to end up depending on quite a lot of other constructions.
+; functions `hyperteeFilterDegreeTo` (which would remove the
+; highest-degree holes from a hypertee and lower its degree, as we
+; provide here under the name `hypertee-filter-degree-to`) and
+; `hyperteeMapAllDegrees`, which seem to end up depending on quite a
+; lot of other constructions.
 
 
 
@@ -1078,7 +1079,7 @@
 ; `hypertee-join-all-degrees` to something like this now that we have
 ; `hypertee-fold`. There are a few potential circular dependecy
 ; problems: The implementations of `hypertee-furl`,
-; `hypertee-map-all-degrees`, `hypertee-truncate`, and
+; `hypertee-map-all-degrees`, `hypertee-filter-degree-to`, and
 ; `hypertee-zip-low-degrees` depend on `hypertee-join-all-degrees`.
 ;
 #;
@@ -1736,7 +1737,7 @@
 ; greater than a given degree, and demotes the hypertee to that
 ; degree. The given degree must not be greater than the hypertee's
 ; existing degree.
-(define (hypertee-truncate new-degree ht)
+(define (hypertee-filter-degree-to new-degree ht)
   (dissect ht (hypertee ds d closing-brackets)
   #/expect (dim-sys-dim<=? ds new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
@@ -1840,7 +1841,8 @@
           (dim-sys-dim<? ds (hypertee-degree hole) d-smaller)
           (should-zip? hole data))))
   #/w- filtered-bigger
-    (hypertee-filter (hypertee-truncate d-smaller prepared-bigger)
+    (hypertee-filter
+      (hypertee-filter-degree-to d-smaller prepared-bigger)
     #/fn hole data
       (dissect data (list data i should-zip)
         should-zip))

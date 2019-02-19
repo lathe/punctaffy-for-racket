@@ -164,8 +164,8 @@ hypertee-uncontour
 hypernest-uncountour
 
 ; never used
-hypertee-dv-filter
-hypernest-holes-dv-filter
+hypertee-filter
+hypernest-holes-filter
 hypertee-filter-degree-to
 hypernest-holes-filter-degree-to
   ; NOTE: The "filter-degree-to" utilities first filter the holes that

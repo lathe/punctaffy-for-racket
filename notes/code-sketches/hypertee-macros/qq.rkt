@@ -49,10 +49,10 @@
     omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
     htb-labeled ht-bracs hypertee-bind-one-degree hypertee-coil-hole
-    hypertee-coil-zero hypertee-degree hypertee-done hypertee-unfurl
-    hypertee-fold hypertee-increase-degree-to hypertee-join-one-degree
-    hypertee-truncate hypertee-v-map-one-degree
-    hypertee-zip-selective)
+    hypertee-coil-zero hypertee-degree hypertee-done
+    hypertee-filter-degree-to hypertee-fold
+    hypertee-increase-degree-to hypertee-join-one-degree
+    hypertee-unfurl hypertee-v-map-one-degree hypertee-zip-selective)
   
   (provide #/all-defined-out)
   
@@ -140,7 +140,7 @@
               data
             #/ht-tag-1-other #/internal-quasiquotation-tag-1-matched-unquote
               closing-bracket)))
-        (hypertee-truncate 2
+        (hypertee-filter-degree-to 2
         #/hypertee-bind-one-degree 1 body #/fn hole data
           (expect data
             (ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
