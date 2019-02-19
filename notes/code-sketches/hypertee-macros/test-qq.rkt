@@ -5,7 +5,7 @@
 ; Unit tests of a quasiquotation operator defined in terms of
 ; hypersnippet-shaped data structures.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2019 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
