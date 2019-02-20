@@ -423,3 +423,217 @@ hypernest-holes-dv-map-unspecified-order
   exits, a hyperstack is the way to do all the traversals at once, but
   if there are, then the traversals might as well be performed
   individually.
+
+---
+
+At the time of writing this section, we're due to rename these things:
+
+```
+hypertee-dv-map-all-degrees
+hypertee-v-map-one-degree
+(not exported) hypertee-v-map-pred-degree
+hypertee-v-map-highest-degree
+hypertee-join-all-degrees-selective
+hypertee-map-all-degrees
+hypertee-map-one-degree
+(not exported) hypertee-map-pred-degree
+hypertee-map-highest-degree
+hypertee-join-all-degrees
+hypertee-bind-one-degree
+hypertee-bind-pred-degree
+(not exported) hypertee-bind-highest-degree
+hypertee-join-one-degree
+hypertee-set-degree-and-bind-all-degrees
+hypertee-dv-any-all-degrees
+(not exported) hypertee-v-any-one-degree
+(not exported) hypertee-any-all-degrees
+hypertee-dv-all-all-degrees
+(not exported) hypertee-all-all-degrees
+hypertee-dv-each-all-degrees
+hypertee-v-each-one-degree
+hypertee-each-all-degrees
+hypertee-dv-fold-map-any-all-degrees
+(not exported) hypernest-dv-fold-map-any-all-degrees
+(not exported) hypernest-dgv-map-all-degrees
+hypernest-dv-map-all-degrees
+hypernest-v-map-one-degree
+hypernest-join-all-degrees-selective
+hypernest-map-all-degrees
+hypernest-join-all-degrees
+hypernest-dv-bind-all-degrees
+hypernest-bind-all-degrees
+hypernest-bind-one-degree
+hypernest-join-one-degree
+(not exported) hypernest-set-degree-and-bind-all-degrees
+hypernest-set-degree-and-bind-highest-degrees
+(not exported) hypernest-set-degree-and-dv-bind-all-degrees
+hypernest-set-degree-and-join-all-degrees
+(not exported) hypernest-dv-any-all-degrees
+(not exported) hypernest-dv-each-all-degrees
+(not exported) hypernest-each-all-degrees
+```
+
+That's 32 things with similar names, and they're not even a complete set! We don't even have operations for iterating over hypernest bumps yet!
+
+So, we have a small combinatorial explosion going on in our naming scheme. Specifically, we have a three-dimensional expression problem to think about:
+
+```
+operations:
+  map
+  join
+  join-selective
+  set-degree-and-join
+  bind
+  set-degree-and-bind
+  any
+  all
+  each
+  fold-map-any
+  zip-map
+  selective-zip-map
+
+which holes they affect:
+  all-degrees
+  one-degree
+  pred-degree
+  highest-degree
+  low-degrees (although that only applies to zip and zip-selective)
+
+which callback signature they have:
+  (hv, the default)
+  dv (or v, if only one degree of holes is involved)
+  dgv (or gv, if only one degree of holes is involved)
+```
+
+Let's approach it like this:
+
+* We'll pass the hole shape into all the callbacks (`hv`), and we'll use a data representation that makes this cheap enough to do. This eliminates the "which callback signature they have" dimension of the expression problem.
+
+* We'll have operations for "selecting" holes of certain degrees by wrapping all the holes in `Either`-like values. This narrows us down to two entries in the "which holes they affect" dimension of the expression problem: `selected` and `all-degrees`.
+
+Two is a small enough number that we can probably put up with it. Nevertheless, we might prune it down further by actually modeling all these operations as methods of a structure type property. This is what `gen:hypermonad` is supposed to be, but we have a somewhat better grasp on all the things a "hypermonad" needs now: Namely, the structure of an opetopic higher category. (Not quite an opetopic omega-category, becuase we've already generalized our dimension system further than omega.)
+
+The following would probably give us a solid starting point.
+
+Note that this design should make it possible to implement all the operations listed above except `fold-map-any`. As I did with `gen:hypermonad`, I'm holding out hope once again that there will be some interesting instances of `snippet-sys?` that don't have any future-proof concept of sequential ordering they can commit to, even though sequential ordering was recently very helpful when implementing hypernest zipping.
+
+```
+(snippet-sys? v)
+  ; In opetopic terms, a `snippet-sys?` is an opetopic higher category
+  ; with some slightly different generating cells. Namely, for each
+  ; universal cell, there's an unlimited supply of other
+  ; "labeled-universal" cells of the same shape which are
+  ; distinguishable using data labels. Identity cells (those universal
+  ; cells for which there's a single source cell which matches the
+  ; target cell) count as labeled-universal if their targets do. In
+  ; this category, the opetopic higher category laws that require the
+  ; existence of certain universal cells actually refer to
+  ; labeled-universal cells when in the context of a source or filler
+  ; cell, but they still refer to plain universal cells when in the
+  ; context of a target cell. The programmer handles the plain
+  ; universal cells by using a data structure that represents the
+  ; opetopic shapes those cells are universal fillers of. The
+  ; programmer handles the labeled-universal cells not as a dedicated
+  ; data structure but as a simple pair of an opetopic shape and a
+  ; data label.
+
+(snippet-sys-dim-sys ss)
+  ; In opetopic terms... Well, opetopic higher category research
+  ; pretty universally seems to adhere to representing dimension
+  ; numbers as natural numbers. But we've generalized this so the
+  ; dimension numbers can be objects of an arbitrary bounded
+  ; semilattice (which we call a `dim-sys?`), and this is that
+  ; semilattice.
+  ;
+  ; TODO: Well, maybe more of a well-ordering. For now, our `dim-sys?`
+  ; values are at least assumed to be totally ordered (e.g. using the
+  ; term "max" instead of "join"), and some of our recursion might
+  ; even rely on them being an inductive relation. As we get this
+  ; `snippet-sys?` approach underway, maybe we can better account for
+  ; some of these assumptions and determine which ones we need.
+
+(snippet-sys-shape-snippet-sys ss)
+  ; In opetopic terms, this is another opetopic higher category
+  ; comprised of the opetopic shapes of this one. It should be equal
+  ; to its own `snippet-sys-shape-snippet-sys`.
+
+(snippet-sys-shape->snippet ss shape)
+  ; In opetopic terms, this creates a plain universal filler cell for
+  ; a given opetopic shape.
+
+(snippet-sys-snippet->maybe-shape ss snippet)
+  ; In opetopic terms, this detects whether a given cell is plain
+  ; universal, which makes it a plain universal filler cell of some
+  ; opetopic shape.
+
+(snippet-sys-snippet-set-degree-maybe ss degree snippet)
+  ; In opetopic terms, this takes any labeled cell and either makes an
+  ; iterated identity (treating that cell as the source and target,
+  ; and then treating the new identity cell as the source and target,
+  ; and so on) or detects whether it already is an iterated identity
+  ; and returns a specific one of the cells it's an iterated identity
+  ; of.
+
+(snippet-sys-snippet-done ss degree shape data)
+  ; In opetopic terms, this returns a labeled cell that's an iterated
+  ; identity of a labeled-universal cell. The labeled-universal cell
+  ; is specified by the opetopic shape it's a filler for and the data
+  ; label that accompanies it.
+
+(snippet-sys-snippet-undone ss snippet)
+  ; In opetopic terms, this detects whether a given cell is an
+  ; iterated identity of a labeled-universal cell. If it is, this
+  ; returns the opetopic shape and the data label of that cell.
+
+(snippet-sys-snippet-splice ss snippet hv-to-splice)
+  ; where `hv-to-splice` returns a maybe of one of these
+  ;   (struct selected (spliceable))
+  ;   (struct unselected (v))
+  ; where `spliceable` is a snippet where each hole contains another
+  ; one of those, but this time where `spliceable` is a trivial value
+  ;
+  ; The overall result is a maybe of a snippet. The result is
+  ; `(nothing)` iff the result of `hv-to-splice` is ever `(nothing)`.
+  ;
+  ; In opetopic terms, this interprets the labels of the given cell as
+  ; a pasting diagram in an opetopic higher category of cells like
+  ; this category's cells, but where there's an additional
+  ; non-universal cell corresponding to each labeled-universal cell.
+  ;
+  ; These non-universal cells are considered "unselected," and the
+  ; labeled-universal cells they correspond to are considered
+  ; "selected." We represent this in this category by treating
+  ; "unselected" and "selected" as part of the data of the label
+  ; itself.
+  ;
+  ; Anyway, that category must have a composition universal cell for
+  ; this pasting diagram. If the target cell of that composition cell
+  ; has all its labels selected, this returns the corresponding cell
+  ; in this category. Otherwise, there's been a contract violation.
+  ;
+  ; (We might expect an operation to obtain the composition cell
+  ; itself, but that one's supposed to be isomorphic (up to other
+  ; universal cells) with an identity cell of the target cell, so we
+  ; can arguably obtain it now by using
+  ; `snippet-sys-snippet-set-degree-maybe` -- not that it will do much
+  ; good to obtain it without a way to take its source cell(s) apart
+  ; and put custom labels on them. The only reason we're able to do
+  ; anything with the composition's pasting diagram in *this*
+  ; operation is by taking advantage of our category's
+  ; labeled-universal cells. Of course, if a particular category
+  ; offers a more interactive representation of composition cells, it
+  ; can supply that kind of access outside the `snippet-sys?`
+  ; interface.)
+
+(snippet-sys-snippet-zip-map ss shape snippet hvv-to-maybe-v)
+  ; The overall result is a maybe of a snippet. The result is
+  ; `(nothing)` iff the result of `hv-to-maybe-v` is ever `(nothing)`.
+  ;
+  ; In opetopic terms, this checks whether a given cell fills a given
+  ; opetopic shape. If it does, this returns a modified cell where all
+  ; the labels of the opetopic shape and all the labels of the cell
+  ; have been combined according to the given function. The function
+  ; can fail to combine certain labels, in which case this operation
+  ; will consider the cell not to fill that shape after all and return
+  ; failure.
+```
