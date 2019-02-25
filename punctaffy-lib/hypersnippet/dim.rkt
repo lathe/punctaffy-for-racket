@@ -2,8 +2,8 @@
 
 ; punctaffy/hypersnippet/dim
 ;
-; Data structures to help with traversing a sequence of brackets of
-; various degrees to manipulate hypersnippet-shaped data.
+; Interfaces to represent numbers that represent the dimensionality of
+; hypersnippets.
 
 ;   Copyright 2019 The Lathe Authors
 ;
@@ -69,8 +69,7 @@
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
       [_ contract?])]
   [dim-sys-dim=0?
-    (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)])
-      [_ boolean?])]
+    (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
   [dim-sys-0<dim/c (-> dim-sys? contract?)]
   [prop:dim-sys (struct-type-property/c dim-sys-impl?)]
   [make-dim-sys-impl-from-max
