@@ -176,7 +176,7 @@
         [shape (ss)
           (snippet-sys-snippetof
             (snippet-sys-shape-snippet-sys ss)
-            (fn hole selectable?))]
+            (fn hole #/selectable/c trivial? any/c))]
         [snippet (ss)
           (snippet-sys-snippetof ss #/fn hole selectable?)]
         [hvv-to-maybe-v (ss)
@@ -278,7 +278,7 @@
           [shape (ss)
             (snippet-sys-snippetof
               (snippet-sys-shape-snippet-sys ss)
-              (fn hole selectable?))]
+              (fn hole #/selectable/c trivial? any/c))]
           [snippet (ss)
             (snippet-sys-snippetof ss #/fn hole selectable?)]
           [hvv-to-maybe-v (ss)

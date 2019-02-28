@@ -637,6 +637,8 @@ Note that this design should make it possible to implement all the operations li
   ; of these
   ;   (struct selected (value))
   ;   (struct unselected (value))
+  ; and where each `selected` hole of `shape` has `(trivial)` as its
+  ; `value` field
   ;
   ; The overall result is a maybe of a snippet. The result is
   ; `(nothing)` iff the result of `hvv-to-maybe-v` is ever
