@@ -557,6 +557,11 @@ Note that this design should make it possible to implement all the operations li
   ; comprised of the opetopic shapes of this one. It should be equal
   ; to its own `snippet-sys-shape-snippet-sys`.
 
+(snippet-sys-snippet/c ss)
+  ; This is a contract to apply when a value is expected to be a
+  ; snippet. In opetopic terms, it helps us detect errors in the way
+  ; we use the set of all labeled cells.
+
 (snippet-sys-shape->snippet ss shape)
   ; In opetopic terms, this creates a plain universal filler cell for
   ; a given opetopic shape.
@@ -587,10 +592,11 @@ Note that this design should make it possible to implement all the operations li
 
 (snippet-sys-snippet-splice ss snippet hv-to-splice)
   ; where `hv-to-splice` returns a maybe of one of these
-  ;   (struct selected (spliceable))
-  ;   (struct unselected (v))
-  ; where `spliceable` is a snippet where each hole contains another
-  ; one of those, but this time where `spliceable` is a trivial value
+  ;   (struct selected (value))
+  ;   (struct unselected (value))
+  ; where the `value` field of `selected` is a snippet where each hole
+  ; contains another one of those, but this time where the `value`
+  ; field of `selected` is a trivial value
   ;
   ; The overall result is a maybe of a snippet. The result is
   ; `(nothing)` iff the result of `hv-to-splice` is ever `(nothing)`.
@@ -625,9 +631,16 @@ Note that this design should make it possible to implement all the operations li
   ; can supply that kind of access outside the `snippet-sys?`
   ; interface.)
 
-(snippet-sys-snippet-zip-map ss shape snippet hvv-to-maybe-v)
+(snippet-sys-snippet-zip-map-selective
+  ss shape snippet hvv-to-maybe-v)
+  ; where each hole of `shape` and each hole of `snippet` contains one
+  ; of these
+  ;   (struct selected (value))
+  ;   (struct unselected (value))
+  ;
   ; The overall result is a maybe of a snippet. The result is
-  ; `(nothing)` iff the result of `hv-to-maybe-v` is ever `(nothing)`.
+  ; `(nothing)` iff the result of `hvv-to-maybe-v` is ever
+  ; `(nothing)`.
   ;
   ; In opetopic terms, this checks whether a given cell fills a given
   ; opetopic shape. If it does, this returns a modified cell where all
@@ -636,4 +649,10 @@ Note that this design should make it possible to implement all the operations li
   ; can fail to combine certain labels, in which case this operation
   ; will consider the cell not to fill that shape after all and return
   ; failure.
+  ;
+  ; (TODO: Describe what the "selective" aspect means in opetopic
+  ; terms. Basically it means some of the source cells are filtered
+  ; out (plastered over with unlabeled universal cells) before
+  ; performing the comparison. The ones that are filtered out for this
+  ; are still included in the overall modified cell result.)
 ```

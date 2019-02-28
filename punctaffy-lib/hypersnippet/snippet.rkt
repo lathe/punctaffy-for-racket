@@ -19,15 +19,23 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract struct-type-property/c)
+; NOTE: The Racket documentation says `get/build-late-neg-projection`
+; is in `racket/contract/combinator`, but it isn't. It's in
+; `racket/contract/base`. Since it's also in `racket/contract` and the
+; documentation correctly says it is, we require it from there.
+(require #/only-in racket/contract
+  get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
   -> ->i and/c any/c contract? contract-name contract-out list/c or/c
   rename-contract)
-(require #/only-in racket/contract/combinator coerce-contract)
+(require #/only-in racket/contract/combinator
+  blame-add-context coerce-contract contract-first-order-passes?
+  make-contract raise-blame-error)
 
-(require #/only-in lathe-comforts fn w-)
+(require #/only-in lathe-comforts dissect expect fn w-)
 (require #/only-in lathe-comforts/match match/c)
-(require #/only-in lathe-comforts/maybe maybe? maybe/c)
+(require #/only-in lathe-comforts/maybe
+  just just? just-value maybe? maybe/c nothing)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
@@ -72,7 +80,10 @@
     (->i
       (
         [ss snippet-sys?]
-        [hole any/c]
+        [shape (ss)
+          (snippet-sys-snippetof
+            (snippet-sys-shape-snippet-sys ss)
+            (fn hole trivial?))]
         [check-subject-hv? (ss)
           (->
             (snippet-sys-snippetof
@@ -125,6 +136,9 @@
           (dim-sys-dim/c #/snippet-sys-dim-sys ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
           any/c)])]
+  [snippet-sys-snippet-select-everything
+    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss) (snippet-sys-snippetof ss #/fn hole selected?)])]
   [snippet-sys-snippet-splice
     (->i
       (
@@ -148,17 +162,23 @@
                 (and/c
                   (snippet-sys-snippetof ss #/fn hole
                     (selectable/c any/c trivial?))
-                  (snippet-sys-snippet-zip-selective/c ss hole
+                  (snippet-sys-snippet-zip-selective/c ss
+                    (snippet-sys-snippet-select-everything
+                      (snippet-sys-shape-snippet-sys ss)
+                      hole)
                     (fn hole subject-data #/selected? subject-data)
                     (fn hole shape-data subject-data any/c))))])])
       [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])]
-  [snippet-sys-snippet-zip-map
+  [snippet-sys-snippet-zip-map-selective
     (->i
       (
         [ss snippet-sys?]
         [shape (ss)
-          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
-        [snippet (ss) (snippet-sys-snippet/c ss)]
+          (snippet-sys-snippetof
+            (snippet-sys-shape-snippet-sys ss)
+            (fn hole selectable?))]
+        [snippet (ss)
+          (snippet-sys-snippetof ss #/fn hole selectable?)]
         [hvv-to-maybe-v (ss)
           (->
             (snippet-sys-snippetof
@@ -244,18 +264,23 @@
                   (and/c
                     (snippet-sys-snippetof ss #/fn hole
                       (selectable/c any/c trivial?))
-                    (snippet-sys-snippet-zip-selective/c ss hole
+                    (snippet-sys-snippet-zip-selective/c ss
+                      (snippet-sys-snippet-select-everything
+                        (snippet-sys-shape-snippet-sys ss)
+                        hole)
                       (fn hole subject-data #/selected? subject-data)
                       (fn hole shape-data subject-data any/c))))])])
         [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])
-      ; snippet-sys-snippet-zip-map
+      ; snippet-sys-snippet-zip-map-selective
       (->i
         (
           [ss snippet-sys?]
           [shape (ss)
-            (snippet-sys-snippet/c
-              (snippet-sys-shape-snippet-sys ss))]
-          [snippet (ss) (snippet-sys-snippet/c ss)]
+            (snippet-sys-snippetof
+              (snippet-sys-shape-snippet-sys ss)
+              (fn hole selectable?))]
+          [snippet (ss)
+            (snippet-sys-snippetof ss #/fn hole selectable?)]
           [hvv-to-maybe-v (ss)
             (->
               (snippet-sys-snippetof
@@ -303,48 +328,117 @@
   (#:method snippet-sys-snippet-done (#:this) () () ())
   (#:method snippet-sys-snippet-undone (#:this) ())
   (#:method snippet-sys-snippet-splice (#:this) () ())
-  (#:method snippet-sys-snippet-zip-map (#:this) () () ())
+  (#:method snippet-sys-snippet-zip-map-selective (#:this) () () ())
   prop:snippet-sys make-snippet-sys-impl-from-various-1
   'snippet-sys 'snippet-sys-impl (list))
 
+; TODO: See if this should have the question mark in its name.
+; TODO: See if we should have a way to implement this that doesn't
+; involve constructing another snippet along the way, since we just
+; end up ignoring it.
+; TODO: Export this.
+(define (snippet-sys-snippet-all? ss snippet check-hv?)
+  (just? #/snippet-sys-snippet-splice ss snippet #/fn hole data
+    (if (check-hv? hole data)
+      (just #/unselected data)
+      (nothing))))
+
+; TODO: Export this.
+(define (snippet-sys-snippet-map ss snippet hv-to-v)
+  (just-value #/snippet-sys-snippet-splice ss snippet #/fn hole data
+    (just #/unselected #/hv-to-v hole data)))
+
+; TODO: Export this.
+(define (snippet-sys-snippet-select ss snippet check-hv?)
+  (snippet-sys-snippet-map ss snippet #/fn hole data
+    (if (check-hv? hole data)
+      (selected data)
+      (unselected data))))
+
+(define (snippet-sys-snippet-select-everything ss snippet)
+  (snippet-sys-snippet-select ss snippet #/fn hole data #t))
+
+; TODO: See if this should have the question mark in its name.
+; TODO: Export this.
+(define
+  (snippet-sys-snippet-zip-all-selective? ss shape snippet check-hvv?)
+  (expect
+    (snippet-sys-snippet-zip-map-selective ss shape snippet
+    #/fn hole shape-data snippet-data
+      (just #/list shape-data snippet-data))
+    (just zipped)
+    #f
+  #/snippet-sys-snippet-all? ss zipped #/fn hole data
+    (dissect data (list shape-data snippet-data)
+    #/check-hvv? shape-data snippet-data)))
+
 (define (snippet-sys-snippetof ss h-to-value/c)
-  #;
-  (->i
-    (
-      [ss snippet-sys?]
-      [h-to-value/c (ss)
-        (->
-          (snippet-sys-snippetof
-            (snippet-sys-shape-snippet-sys ss)
-            (fn hole trivial?))
-          contract?)])
-    [_ contract?])
-  ; TODO: Implement this properly.
-  (snippet-sys-snippet/c ss))
+  (w- name `(snippet-sys-snippetof ,ss ,h-to-value/c)
+  #/w- snippet-contract (snippet-sys-snippet/c ss)
+  #/w- first-order
+    (fn v
+      (and (contract-first-order-passes? snippet-contract v)
+      #/snippet-sys-snippet-all? ss v #/fn hole data
+        (contract-first-order-passes? (h-to-value/c hole) data)))
+  #/make-contract #:name name #:first-order first-order
+    
+    #:late-neg-projection
+    (fn blame
+      (w- snippet-contract-projection
+        (
+          (get/build-late-neg-projection snippet-contract)
+          (blame-add-context blame "initial snippet check of"))
+      #/fn v missing-party
+        (w- v (snippet-contract-projection v missing-party)
+        #/snippet-sys-snippet-map ss v #/fn hole data
+          (
+            (
+              (get/build-late-neg-projection #/h-to-value/c hole)
+              (blame-add-context blame "hole value of"))
+            data
+            missing-party))))))
 
 (define
   (snippet-sys-snippet-zip-selective/c
-    ss hole check-subject-hv? hvv-to-subject-v/c)
-  #;
-  (->i
-    (
-      [ss snippet-sys?]
-      [hole any/c]
-      [check-subject-hv? (ss)
-        (->
-          (snippet-sys-snippetof
-            (snippet-sys-shape-snippet-sys ss)
-            (fn hole trivial?))
-          any/c
-          boolean?)]
-      [hvv-to-subject-v/c (ss)
-        (->
-          (snippet-sys-snippetof
-            (snippet-sys-shape-snippet-sys ss)
-            (fn hole trivial?))
-          any/c
-          any/c
-          contract?)])
-    [_ contract?])
-  ; TODO: Implement this properly.
-  (snippet-sys-snippet/c ss))
+    ss shape check-subject-hv? hvv-to-subject-v/c)
+  (w- name
+    `(snippet-sys-snippet-zip-selective/c
+      ,ss ,shape ,check-subject-hv? ,hvv-to-subject-v/c)
+  #/w- snippet-contract (snippet-sys-snippet/c ss)
+  #/w- first-order
+    (fn v
+      (and (contract-first-order-passes? snippet-contract v)
+      #/snippet-sys-snippet-zip-all-selective? ss shape
+        (snippet-sys-snippet-select ss v #/fn hole data
+          (check-subject-hv? hole data))
+      #/fn hole shape-data subject-data
+        (contract-first-order-passes?
+          (hvv-to-subject-v/c hole shape-data subject-data)
+          subject-data)))
+  #/make-contract #:name name #:first-order first-order
+    
+    #:late-neg-projection
+    (fn blame
+      (w- snippet-contract-projection
+        (
+          (get/build-late-neg-projection snippet-contract)
+          (blame-add-context blame "initial snippet check of"))
+      #/fn v missing-party
+        (w- v (snippet-contract-projection v missing-party)
+        #/expect
+          (snippet-sys-snippet-zip-map-selective ss shape
+            (snippet-sys-snippet-select ss v #/fn hole data
+              (check-subject-hv? hole data))
+          #/fn hole shape-data subject-data
+            (just #/
+              (
+                (get/build-late-neg-projection
+                  (hvv-to-subject-v/c hole shape-data subject-data))
+                (blame-add-context blame "hole value of"))
+              subject-data
+              missing-party))
+          (just result)
+          (raise-blame-error blame #:missing-party missing-party v
+            '(expected: "~e" given: "~e")
+            name v)
+          result)))))
