@@ -62,6 +62,9 @@
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
+  [snippet-sys-snippet-degree
+    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])]
   [snippet-sys-snippetof
     (->i
       (
@@ -100,6 +103,9 @@
             any/c
             contract?)])
       [_ contract?])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same degree and shape as
+  ; the input shape.
   [snippet-sys-shape->snippet
     (->i
       (
@@ -107,12 +113,19 @@
         [shape (ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
       [_ (ss) (snippet-sys-snippet/c ss)])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting shape should always be of the same degree and shape as
+  ; the input snippet.
   [snippet-sys-snippet->maybe-shape
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss)
         (maybe/c
           (snippet-sys-snippet/c
             (snippet-sys-shape-snippet-sys ss)))])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the given degree, and the
+  ; result should always exist if the given degree is greater than or
+  ; equal to the degree returned by `snippet-sys-snippet-undone`.
   [snippet-sys-snippet-set-degree-maybe
     (->i
       (
@@ -120,6 +133,9 @@
         [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
         [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; shape in its low-degree holes.
   [snippet-sys-snippet-done
     (->i
       (
@@ -129,6 +145,9 @@
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [data any/c])
       [_ (ss) (snippet-sys-snippet/c ss)])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting shape should always be of the same shape as the given
+  ; snippet's low-degree holes.
   [snippet-sys-snippet-undone
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss)
@@ -136,9 +155,14 @@
           (dim-sys-dim/c #/snippet-sys-dim-sys ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
           any/c)])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same degree and shape as
+  ; the given one.
   [snippet-sys-snippet-select-everything
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (snippet-sys-snippetof ss #/fn hole selected?)])]
+  ; TODO: See if this contract should be more specific about the
+  ; degrees of the snippets.
   [snippet-sys-snippet-splice
     (->i
       (
@@ -199,6 +223,10 @@
       (-> snippet-sys? snippet-sys?)
       ; snippet-sys-snippet/c
       (-> snippet-sys? contract?)
+      ; snippet-sys-snippet-degree
+      (->i
+        ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+        [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
       ; snippet-sys-shape->snippet
       (->i
         (
@@ -322,6 +350,7 @@
   (#:method snippet-sys-dim-sys (#:this))
   (#:method snippet-sys-shape-snippet-sys (#:this))
   (#:method snippet-sys-snippet/c (#:this))
+  (#:method snippet-sys-snippet-degree (#:this) ())
   (#:method snippet-sys-shape->snippet (#:this) ())
   (#:method snippet-sys-snippet->maybe-shape (#:this) ())
   (#:method snippet-sys-snippet-set-degree-maybe (#:this) () ())

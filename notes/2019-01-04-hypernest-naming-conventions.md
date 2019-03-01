@@ -562,6 +562,10 @@ Note that this design should make it possible to implement all the operations li
   ; snippet. In opetopic terms, it helps us detect errors in the way
   ; we use the set of all labeled cells.
 
+(snippet-sys-snippet-degree ss shape)
+  ; In opetopic terms, this returns the dimension number N of a given
+  ; N-dimensional labeled cell.
+
 (snippet-sys-shape->snippet ss shape)
   ; In opetopic terms, this creates a plain universal filler cell for
   ; a given opetopic shape.
