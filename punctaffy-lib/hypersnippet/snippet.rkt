@@ -32,16 +32,17 @@
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract raise-blame-error)
 
-(require #/only-in lathe-comforts dissect expect fn w-)
+(require #/only-in lathe-comforts dissect dissectfn expect fn mat w-)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
-  just just? just-value maybe? maybe/c nothing)
+  just just? just-value maybe? maybe-bind maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
-(require #/only-in lathe-comforts/trivial trivial?)
+(require #/only-in lathe-comforts/trivial trivial trivial?)
 
-(require #/only-in punctaffy/hypersnippet/dim dim-sys? dim-sys-dim/c)
+(require #/only-in punctaffy/hypersnippet/dim
+  dim-sys? dim-sys-dim<? dim-sys-dim/c)
 
 ; TODO: Document all of these exports.
 (provide
@@ -373,9 +374,16 @@
       (nothing))))
 
 ; TODO: Export this.
+(define (snippet-sys-snippet-map-maybe ss snippet hv-to-maybe-v)
+  (snippet-sys-snippet-splice ss snippet #/fn hole data
+    (maybe-map (hv-to-maybe-v hole data) #/fn data
+      (unselected data))))
+
+; TODO: Export this.
 (define (snippet-sys-snippet-map ss snippet hv-to-v)
-  (just-value #/snippet-sys-snippet-splice ss snippet #/fn hole data
-    (just #/unselected #/hv-to-v hole data)))
+  (just-value
+  #/snippet-sys-snippet-map-maybe ss snippet #/fn hole data
+    (just #/hv-to-v hole data)))
 
 ; TODO: Export this.
 (define (snippet-sys-snippet-select ss snippet check-hv?)
@@ -471,3 +479,159 @@
             '(expected: "~e" given: "~e")
             name v)
           result)))))
+
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define
+  (snippet-sys-snippet-select-if-degree ss snippet check-degree?)
+  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/snippet-sys-snippet-select ss snippet #/fn hole data
+    (check-degree? #/snippet-sys-snippet-degree shape-ss hole)))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (snippet-sys-snippet-select-if-degree< ss degree snippet)
+  (w- ds (snippet-sys-dim-sys ss)
+  #/snippet-sys-snippet-select-if-degree ss snippet #/fn actual-degree
+    (dim-sys-dim<? ds actual-degree degree)))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (snippet-sys-snippet-bind ss prefix hv-to-suffix)
+  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/just-value #/snippet-sys-snippet-splice ss prefix #/fn hole data
+    (just #/selected #/snippet-sys-snippet-select-if-degree< ss
+      (snippet-sys-snippet-degree shape-ss hole)
+      (hv-to-suffix hole data))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (snippet-sys-snippet-join ss snippet)
+  (snippet-sys-snippet-bind ss snippet #/fn hole data data))
+
+; TODO: See if this should have the question mark in its name.
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (snippet-sys-snippet-any? ss snippet check-hv?)
+  (not #/snippet-sys-snippet-all? ss snippet #/fn hole data
+    (not #/check-hv? hole data)))
+
+
+; TODO: Export these.
+; TODO: Use the things that use these.
+(define-imitation-simple-struct
+  (selective-snippet? selective-snippet-value)
+  selective-snippet
+  'selective-snippet (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (selective-snippet/c ss h-to-unselected/c)
+  (rename-contract
+    (match/c selective-snippet
+      (snippet-sys-snippetof ss #/fn hole
+        (selectable/c (h-to-unselected/c hole) any/c)))
+    `(selective-snippet/c ,ss ,h-to-unselected/c)))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (selective-snippet-sys?
+    selective-snippet-sys-snippet-sys
+    selective-snippet-sys-h-to-unselected/c)
+  selective-snippet-sys
+  'selective-snippet-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
+    ; snippet-sys-dim-sys
+    (dissectfn (selective-snippet-sys ss _)
+      (snippet-sys-dim-sys ss))
+    ; snippet-sys-shape-snippet-sys
+    (dissectfn (selective-snippet-sys ss _)
+      (snippet-sys-shape-snippet-sys ss))
+    ; snippet-sys-snippet/c
+    (dissectfn (selective-snippet-sys ss h-to-unselected/c)
+      (selective-snippet/c ss h-to-unselected/c))
+    ; snippet-sys-snippet-degree
+    (fn ss snippet
+      (dissect ss (selective-snippet-sys ss _)
+      #/dissect snippet (selective-snippet snippet)
+      #/snippet-sys-snippet-degree ss snippet))
+    ; snippet-sys-shape->snippet
+    (fn ss shape
+      (dissect ss (selective-snippet-sys ss _)
+      #/selective-snippet #/snippet-sys-shape->snippet ss shape))
+    ; snippet-sys-snippet->maybe-shape
+    (fn ss snippet
+      (dissect ss (selective-snippet-sys ss _)
+      #/dissect snippet (selective-snippet snippet)
+      #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+      #/maybe-bind (snippet-sys-snippet->maybe-shape snippet)
+      #/fn shape
+      #/snippet-sys-snippet-map-maybe shape-ss shape #/fn hole data
+        (expect data (selected data) (nothing)
+        #/just data)))
+    ; snippet-sys-snippet-set-degree-maybe
+    (fn ss degree snippet
+      (dissect ss (selective-snippet-sys ss _)
+      #/dissect snippet (selective-snippet snippet)
+      #/maybe-map
+        (snippet-sys-snippet-set-degree-maybe ss degree snippet)
+      #/fn snippet
+        (selective-snippet snippet)))
+    ; snippet-sys-snippet-done
+    (fn ss degree shape data
+      (dissect ss (selective-snippet-sys ss _)
+      #/selective-snippet #/snippet-sys-snippet-select-everything
+        (snippet-sys-snippet-done ss degree shape data)))
+    ; snippet-sys-snippet-undone
+    (fn ss snippet
+      (dissect ss (selective-snippet-sys ss _)
+      #/dissect snippet (selective-snippet snippet)
+      #/maybe-bind
+        (snippet-sys-snippet-map-maybe ss snippet #/fn hole data
+          (expect data (selected data) (nothing)
+          #/just data))
+      #/fn snippet
+      #/snippet-sys-snippet-undone ss snippet))
+    ; snippet-sys-snippet-splice
+    (fn ss snippet hv-to-splice
+      (dissect ss (selective-snippet-sys ss _)
+      #/dissect snippet (selective-snippet snippet)
+      #/maybe-map
+        (snippet-sys-snippet-splice ss snippet #/fn hole data
+          (mat data (unselected data)
+            (just #/unselected #/unselected data)
+          #/dissect data (selected data)
+          #/maybe-map (hv-to-splice hole data) #/fn splice
+            (mat splice (unselected data)
+              (just #/unselected #/selected data)
+            #/dissect splice (selected #/selective-snippet suffix)
+            #/just #/selected
+              (snippet-sys-snippet-map ss suffix #/fn hole data
+                (mat data (unselected data)
+                  (unselected #/unselected data)
+                #/dissect data (selected data)
+                #/mat data (unselected data)
+                  (unselected #/selected data)
+                #/dissect data (selected #/trivial)
+                #/selected #/trivial)))))
+      #/fn snippet
+        (selective-snippet snippet)))
+    ; snippet-sys-snippet-zip-map-selective
+    (fn ss shape snippet hvv-to-maybe-v
+      (dissect ss (selective-snippet-sys ss _)
+      #/dissect snippet (selective-snippet snippet)
+      #/maybe-map
+        (snippet-sys-snippet-zip-map-selective ss shape
+          (snippet-sys-snippet-map ss snippet #/fn hole data
+            (mat data (unselected data) (unselected #/unselected data)
+            #/dissect data (selected data)
+            #/mat data (unselected data) (unselected #/selected data)
+            #/dissect data (selected data) (selected data)))
+        #/fn hole shape-data subject-data
+          (maybe-map (hvv-to-maybe-v hole shape-data subject-data)
+          #/fn result-data
+            (selected result-data)))
+      #/fn snippet
+        (selective-snippet snippet)))))
