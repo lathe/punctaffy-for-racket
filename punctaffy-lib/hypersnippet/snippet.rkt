@@ -44,7 +44,8 @@
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-accepts? dim-sys-dim<? dim-sys-dim=? dim-sys-dim=0?
-  dim-sys-dim/c dim-sys-dim-max dim-sys-dim-zero)
+  dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
+  dim-sys-dim-zero)
 
 ; TODO: Document all of these exports.
 (provide
@@ -68,6 +69,20 @@
   [snippet-sys-snippet-degree
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])]
+  [snippet-sys-snippet-with-degree/c
+    (-> snippet-sys? contract? contract?)]
+  [snippet-sys-snippet-with-degree</c
+    (->i
+      (
+        [ss snippet-sys?]
+        [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
+      [_ contract?])]
+  [snippet-sys-snippet-with-degree=/c
+    (->i
+      (
+        [ss snippet-sys?]
+        [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
+      [_ contract?])]
   [snippet-sys-snippetof
     (->i
       (
@@ -107,26 +122,30 @@
             contract?)])
       [_ contract?])]
   ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same degree and shape as
-  ; the input shape.
+  ; resulting snippet should always be of the same shape as the input
+  ; shape.
   [snippet-sys-shape->snippet
     (->i
       (
         [ss snippet-sys?]
         [shape (ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
-      [_ (ss) (snippet-sys-snippet/c ss)])]
+      [_ (ss shape)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree
+          (snippet-sys-shape-snippet-sys ss)
+          shape)])]
   ; TODO: See if the result contract should be more specific. The
-  ; resulting shape should always be of the same degree and shape as
-  ; the input snippet.
+  ; resulting shape should always be of the same shape as the input
+  ; snippet.
   [snippet-sys-snippet->maybe-shape
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss)
+      [_ (ss snippet)
         (maybe/c
-          (snippet-sys-snippet/c
-            (snippet-sys-shape-snippet-sys ss)))])]
+          (snippet-sys-snippet-with-degree=/c
+            (snippet-sys-shape-snippet-sys ss)
+          #/snippet-sys-snippet-degree ss snippet))])]
   ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the given degree, the result
   ; should always exist if the given degree is equal to the degree
   ; returned by `snippet-sys-snippet-undone`, and it should always
   ; exist if the given degree is greater than that degree and that
@@ -137,45 +156,51 @@
         [ss snippet-sys?]
         [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
         [snippet (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])]
-  ; TODO: See if the contract should be more specific. The given shape
-  ; should always be of a degree strictly less than the given degree,
-  ; and the resulting snippet should always be of the same shape as
-  ; the given shape in its low-degree holes.
+      [_ (ss degree)
+        (maybe/c #/snippet-sys-snippet-with-degree=/c ss degree)])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; shape in its low-degree holes.
   [snippet-sys-snippet-done
     (->i
       (
         [ss snippet-sys?]
         [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
-        [shape (ss)
-          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
+        [shape (ss degree)
+          (snippet-sys-snippet-with-degree</c
+            (snippet-sys-shape-snippet-sys ss)
+            degree)]
         [data any/c])
-      [_ (ss) (snippet-sys-snippet/c ss)])]
+      [_ (ss degree) (snippet-sys-snippet-with-degree=/c ss degree)])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting shape should always be of the same shape as the given
   ; snippet's low-degree holes.
   [snippet-sys-snippet-undone
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss)
+      [_ (ss snippet)
         (maybe/c #/list/c
-          (dim-sys-dim/c #/snippet-sys-dim-sys ss)
+          (dim-sys-dim=/c (snippet-sys-dim-sys ss)
+            (snippet-sys-snippet-degree ss snippet))
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
           any/c)])]
   ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same degree and shape as
-  ; the given one.
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
   [snippet-sys-snippet-select-everything
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss) (snippet-sys-snippetof ss #/fn hole selected?)])]
-  ; TODO: See if this contract should be more specific about the
-  ; degrees of the snippets.
+      [_ (ss snippet)
+        (and/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet))
+          (snippet-sys-snippetof ss #/fn hole selected?))])]
   [snippet-sys-snippet-splice
     (->i
       (
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
-        [hv-to-splice (ss)
-          (->i
+        [hv-to-splice (ss snippet)
+          (w- d (snippet-sys-snippet-degree ss snippet)
+          #/->i
             (
               [hole
                 (snippet-sys-snippetof
@@ -190,12 +215,16 @@
                 ; correspond to the holes of `hole` and contain
                 ; `trivial?` values.
                 (and/c
+                  (snippet-sys-snippet-with-degree=/c ss d)
                   (snippet-sys-snippetof ss #/fn hole
                     (selectable/c any/c trivial?))
                   (snippet-sys-snippet-zip-selective/c ss hole
                     (fn hole subject-data #/selected? subject-data)
                     (fn hole shape-data subject-data any/c))))])])
-      [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])]
+      [_ (ss snippet)
+        (maybe/c
+          (snippet-sys-snippet-with-degree=/c ss
+          #/snippet-sys-snippet-degree ss snippet))])]
   [snippet-sys-snippet-zip-map-selective
     (->i
       (
@@ -237,39 +266,48 @@
           [shape (ss)
             (snippet-sys-snippet/c
               (snippet-sys-shape-snippet-sys ss))])
-        [_ (ss) (snippet-sys-snippet/c ss)])
+        [_ (ss shape)
+          (snippet-sys-snippet-with-degree=/c ss
+          #/snippet-sys-snippet-degree
+            (snippet-sys-shape-snippet-sys ss)
+            shape)])
       ; snippet-sys-snippet->maybe-shape
       (->i
         (
           [ss snippet-sys?]
           [snippet (ss) (snippet-sys-snippet/c ss)])
-        [_ (ss)
+        [_ (ss snippet)
           (maybe/c
-            (snippet-sys-snippet/c
-              (snippet-sys-shape-snippet-sys ss)))])
+            (snippet-sys-snippet-with-degree=/c
+              (snippet-sys-shape-snippet-sys ss)
+            #/snippet-sys-snippet-degree ss snippet))])
       ; snippet-sys-snippet-set-degree-maybe
       (->i
         (
           [ss snippet-sys?]
           [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
           [snippet (ss) (snippet-sys-snippet/c ss)])
-        [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])
+        [_ (ss degree)
+          (maybe/c #/snippet-sys-snippet-with-degree=/c ss degree)])
       ; snippet-sys-snippet-done
       (->i
         (
           [ss snippet-sys?]
           [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
-          [shape (ss)
-            (snippet-sys-snippet/c
-              (snippet-sys-shape-snippet-sys ss))]
+          [shape (ss degree)
+            (snippet-sys-snippet-with-degree</c
+              (snippet-sys-shape-snippet-sys ss)
+              degree)]
           [data any/c])
-        [_ (ss) (snippet-sys-snippet/c ss)])
+        [_ (ss degree)
+          (snippet-sys-snippet-with-degree=/c ss degree)])
       ; snippet-sys-snippet-undone
       (->i
         ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
-        [_ (ss)
+        [_ (ss snippet)
           (maybe/c #/list/c
-            (dim-sys-dim/c #/snippet-sys-dim-sys ss)
+            (dim-sys-dim=/c (snippet-sys-dim-sys ss)
+              (snippet-sys-snippet-degree ss snippet))
             (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
             any/c)])
       ; snippet-sys-snippet-splice
@@ -277,8 +315,9 @@
         (
           [ss snippet-sys?]
           [snippet (ss) (snippet-sys-snippet/c ss)]
-          [hv-to-splice (ss)
-            (->i
+          [hv-to-splice (ss snippet)
+            (w- d (snippet-sys-snippet-degree ss snippet)
+            #/->i
               (
                 [hole
                   (snippet-sys-snippetof
@@ -293,12 +332,16 @@
                   ; correspond to the holes of `hole` and contain
                   ; `trivial?` values.
                   (and/c
+                    (snippet-sys-snippet-with-degree=/c ss d)
                     (snippet-sys-snippetof ss #/fn hole
                       (selectable/c any/c trivial?))
                     (snippet-sys-snippet-zip-selective/c ss hole
                       (fn hole subject-data #/selected? subject-data)
                       (fn hole shape-data subject-data any/c))))])])
-        [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])
+        [_ (ss snippet)
+          (maybe/c
+            (snippet-sys-snippet-with-degree=/c ss
+            #/snippet-sys-snippet-degree ss snippet))])
       ; snippet-sys-snippet-zip-map-selective
       (->i
         (
@@ -407,6 +450,48 @@
   #/snippet-sys-snippet-all? ss zipped #/fn hole data
     (dissect data (list shape-data snippet-data)
     #/check-hvv? shape-data snippet-data)))
+
+(define (snippet-sys-snippet-with-degree/c ss degree/c)
+  (w- degree/c (coerce-contract 'selectable/c degree/c)
+  #/w- name
+    `(snippet-sys-snippet-with-degree/c ,ss ,(contract-name degree/c))
+  #/w- snippet-contract (snippet-sys-snippet/c ss)
+  #/w- first-order
+    (fn v
+      (and
+        (contract-first-order-passes? snippet-contract v)
+        (contract-first-order-passes? degree/c
+          (snippet-sys-snippet-degree ss v))))
+  #/make-contract #:name name #:first-order first-order
+    
+    #:late-neg-projection
+    (fn blame
+      (w- snippet-contract-projection
+        (
+          (get/build-late-neg-projection snippet-contract)
+          (blame-add-context blame "initial snippet check of"))
+      #/w- degree/c-projection
+        (
+          (get/build-late-neg-projection degree/c)
+          (blame-add-context blame "degree check of"))
+      #/fn v missing-party
+        (w- v (snippet-contract-projection v missing-party)
+        #/begin
+          (degree/c-projection (snippet-sys-snippet-degree ss v)
+            missing-party)
+          v)))))
+
+(define (snippet-sys-snippet-with-degree</c ss degree)
+  (rename-contract
+    (snippet-sys-snippet-with-degree/c ss
+      (dim-sys-dim</c (snippet-sys-dim-sys ss) degree))
+    `(snippet-sy-ssnippet-with-degree</c ,ss ,degree)))
+
+(define (snippet-sys-snippet-with-degree=/c ss degree)
+  (rename-contract
+    (snippet-sys-snippet-with-degree/c ss
+      (dim-sys-dim=/c (snippet-sys-dim-sys ss) degree))
+    `(snippet-sy-ssnippet-with-degree=/c ,ss ,degree)))
 
 (define (snippet-sys-snippetof ss h-to-value/c)
   (w- name `(snippet-sys-snippetof ,ss ,h-to-value/c)

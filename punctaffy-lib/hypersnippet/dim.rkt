@@ -68,6 +68,9 @@
   [dim-sys-dim</c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
       [_ contract?])]
+  [dim-sys-dim=/c
+    (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
+      [_ contract?])]
   [dim-sys-dim=0?
     (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
   [dim-sys-0<dim/c (-> dim-sys? contract?)]
@@ -177,6 +180,10 @@
 (define (dim-sys-dim</c ds bound)
   (rename-contract (fn v #/dim-sys-dim<? ds v bound)
     `(dim-sys-dim</c ,ds ,bound)))
+
+(define (dim-sys-dim=/c ds bound)
+  (rename-contract (fn v #/dim-sys-dim=? ds v bound)
+    `(dim-sys-dim=/c ,ds ,bound)))
 
 (define (dim-sys-dim=0? ds d)
   (dim-sys-dim=? ds (dim-sys-dim-zero ds) d))
