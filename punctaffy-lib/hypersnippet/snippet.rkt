@@ -62,9 +62,9 @@
   [selectable/c (-> contract? contract? contract?)]
   [snippet-sys? (-> any/c boolean?)]
   [snippet-sys-impl? (-> any/c boolean?)]
+  [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
-  [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-snippet-degree
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])]
@@ -220,12 +220,12 @@
   ; this.
   [make-snippet-sys-impl-from-various-1
     (->
+      ; snippet-sys-snippet/c
+      (-> snippet-sys? contract?)
       ; snippet-sys-dim-sys
       (-> snippet-sys? dim-sys?)
       ; snippet-sys-shape-snippet-sys
       (-> snippet-sys? snippet-sys?)
-      ; snippet-sys-snippet/c
-      (-> snippet-sys? contract?)
       ; snippet-sys-snippet-degree
       (->i
         ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
@@ -347,9 +347,9 @@
 
 
 (define-imitation-simple-generics snippet-sys? snippet-sys-impl?
+  (#:method snippet-sys-snippet/c (#:this))
   (#:method snippet-sys-dim-sys (#:this))
   (#:method snippet-sys-shape-snippet-sys (#:this))
-  (#:method snippet-sys-snippet/c (#:this))
   (#:method snippet-sys-snippet-degree (#:this) ())
   (#:method snippet-sys-shape->snippet (#:this) ())
   (#:method snippet-sys-snippet->maybe-shape (#:this) ())
@@ -542,15 +542,15 @@
   selective-snippet-sys
   'selective-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
+    ; snippet-sys-snippet/c
+    (dissectfn (selective-snippet-sys ss h-to-unselected/c)
+      (selective-snippet/c ss h-to-unselected/c))
     ; snippet-sys-dim-sys
     (dissectfn (selective-snippet-sys ss _)
       (snippet-sys-dim-sys ss))
     ; snippet-sys-shape-snippet-sys
     (dissectfn (selective-snippet-sys ss _)
       (snippet-sys-shape-snippet-sys ss))
-    ; snippet-sys-snippet/c
-    (dissectfn (selective-snippet-sys ss h-to-unselected/c)
-      (selective-snippet/c ss h-to-unselected/c))
     ; snippet-sys-snippet-degree
     (fn ss snippet
       (dissect ss (selective-snippet-sys ss _)
@@ -845,15 +845,15 @@
   hypertee-snippet-sys
   'hypertee-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
+    ; snippet-sys-snippet/c
+    (dissectfn (hypertee-snippet-sys ds)
+      (hypertee/c ds))
     ; snippet-sys-dim-sys
     (dissectfn (hypertee-snippet-sys ds)
       ds)
     ; snippet-sys-shape-snippet-sys
     (fn ss
       ss)
-    ; snippet-sys-snippet/c
-    (dissectfn (hypertee-snippet-sys ds)
-      (hypertee/c ds))
     ; snippet-sys-snippet-degree
     (fn ss snippet
       (dissect ss (hypertee-snippet-sys ds)
@@ -1018,14 +1018,14 @@
   (make-snippet-sys-impl-from-conversions
     snippet-sys-snippet/c ss-> snippet-> ->snippet)
   (make-snippet-sys-impl-from-various-1
+    ; snippet-sys-snippet/c
+    snippet-sys-snippet/c
     ; snippet-sys-dim-sys
     (fn ss
       (snippet-sys-dim-sys #/ss-> ss))
     ; snippet-sys-shape-snippet-sys
     (fn ss
       (snippet-sys-shape-snippet-sys #/ss-> ss))
-    ; snippet-sys-snippet/c
-    snippet-sys-snippet/c
     ; snippet-sys-snippet-degree
     (fn ss snippet
       (snippet-sys-snippet-degree (ss-> ss) (snippet-> snippet)))
