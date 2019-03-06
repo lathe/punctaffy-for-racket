@@ -26,8 +26,8 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-name contract-out list/c or/c
-  rename-contract)
+  -> ->i and/c any/c contract? contract-name contract-out list/c
+  none/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract raise-blame-error)
@@ -636,25 +636,41 @@
         (selective-snippet snippet)))))
 
 
-; TODO: Export and use the rest of these.
+; TODO: Consider rearranging everything in this file, but especially
+; the things below. Currently the file is in three parts: The things
+; needed for `selective-snippet-sys?`, the things needed for
+; `hypertee-snippet-sys?`, and the things needed for
+; `hypernest-snippet-sys?`. Each time, some generic `snippet-sys?`
+; utilities are added, but as we have more code that uses
+; `snippet-sys?` values, we'll probably want to maintain all the
+; generic `snippet-sys?` utilities in one place.
 
 
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (snippet-sys-snippet-zip-map ss shape snippet hvv-to-maybe-v)
   (w- snippet (snippet-sys-snippet-select-everything ss snippet)
   #/snippet-sys-snippet-zip-map-selective
     ss shape snippet hvv-to-maybe-v))
 
 ; TODO: See if this should have the question mark in its name.
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (snippet-sys-snippet-zip-all? ss shape snippet check-hvv?)
   (w- snippet (snippet-sys-snippet-select-everything ss snippet)
   #/snippet-sys-snippet-zip-all-selective?
     ss shape snippet check-hvv?))
 
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (snippet-sys-shape=? ss a b hvv=?)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/snippet-sys-snippet-zip-all? shape-ss a b #/fn hole a-data b-data
     (hvv=? hole a-data b-data)))
 
+; TODO: Find a better name for this.
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (snippet-sys-snippet-filter-maybe ss snippet)
   (w- ds (snippet-sys-dim-sys ss)
   #/w- d (snippet-sys-snippet-degree ss snippet)
@@ -670,12 +686,16 @@
         (snippet-sys-snippet-degree ss hole)
         patch))))
 
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (snippet-sys-snippet-map-selective ss snippet hv-to-v)
   (snippet-sys-snippet-map ss snippet #/fn hole data
     (mat data (unselected data) data
     #/dissect data (selected data) (hv-to-v hole data))))
 
 
+; TODO: Export these.
+; TODO: Use the things that use these.
 (define-imitation-simple-struct
   (hypertee-coil-zero?)
   hypertee-coil-zero
@@ -689,17 +709,23 @@
   hypertee-coil-hole
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
 ; TODO: Define `hypertee-furl` in terms of `hypertee-furl-unchecked`.
+; TODO: Change the way a `hypertee?` is written using
+; `gen:custom-write`.
 (define-imitation-simple-struct
   (hypertee? hypertee-dim-sys hypertee-unfurl)
   hypertee-furl-unchecked
   'hypertee (current-inspector) (auto-write) (auto-equal))
 
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (hypertee/c ds)
   (rename-contract
     (expectfn (hypertee-furl-unchecked actual-ds _) #f
       (dim-sys-accepts? ds actual-ds))
     `(hypertee/c ,ds)))
 
+; TODO: See if we should export this.
+; TODO: Use the things that use this.
 (define (hypertee-map-cps ds state ht on-hole then)
   (w- ss (hypertee-snippet-sys ds)
   #/dissect ht (hypertee-furl-unchecked _ coil)
@@ -724,6 +750,8 @@
   #/then state #/hypertee-furl-unchecked ds
     (hypertee-coil-hole d hole data tails)))
 
+; TODO: See if we should export this.
+; TODO: Use the things that use this.
 (define (hypertee-each-cps ds state ht on-hole then)
   
   ; TODO: Pick just one of these implementations.
@@ -756,6 +784,8 @@
         then))
       then))
 
+; TODO: See if we should export this.
+; TODO: Use the things that use this.
 (define (hypertee-each-ltr ds state ht on-hole)
   (hypertee-each-cps ds state ht
     (fn state hole data then #/then #/on-hole state hole data)
@@ -808,6 +838,8 @@
   #/just #/hypertee-furl-unchecked ds
     (hypertee-coil-hole shape-d shape-hole result-data result-tails)))
 
+; TODO: Export these.
+; TODO: Use these.
 (define-imitation-simple-struct
   (hypertee-snippet-sys? hypertee-snippet-sys-dim-sys)
   hypertee-snippet-sys
@@ -977,3 +1009,109 @@
       #/fn hole data
         (dissect data (list i data)
         #/hash-ref env i)))))
+
+
+; TODO: Find a better name for this.
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define
+  (make-snippet-sys-impl-from-conversions
+    snippet-sys-snippet/c ss-> snippet-> ->snippet)
+  (make-snippet-sys-impl-from-various-1
+    ; snippet-sys-dim-sys
+    (fn ss
+      (snippet-sys-dim-sys #/ss-> ss))
+    ; snippet-sys-shape-snippet-sys
+    (fn ss
+      (snippet-sys-shape-snippet-sys #/ss-> ss))
+    ; snippet-sys-snippet/c
+    snippet-sys-snippet/c
+    ; snippet-sys-snippet-degree
+    (fn ss snippet
+      (snippet-sys-snippet-degree (ss-> ss) (snippet-> snippet)))
+    ; snippet-sys-shape->snippet
+    (fn ss shape
+      (->snippet #/snippet-sys-shape->snippet (ss-> ss) shape))
+    ; snippet-sys-snippet->maybe-shape
+    (fn ss snippet
+      (snippet-sys-snippet->maybe-shape (ss-> ss)
+        (snippet-> snippet)))
+    ; snippet-sys-snippet-set-degree-maybe
+    (fn ss degree snippet
+      (maybe-map
+        (snippet-sys-snippet-set-degree-maybe (ss-> ss) degree
+          (snippet-> snippet))
+      #/fn selective
+        (->snippet selective)))
+    ; snippet-sys-snippet-done
+    (fn ss degree shape data
+      (->snippet #/snippet-sys-snippet-done (ss-> ss)
+        degree shape data))
+    ; snippet-sys-snippet-undone
+    (fn ss snippet
+      (snippet-sys-snippet-undone (ss-> ss) (snippet-> snippet)))
+    ; snippet-sys-snippet-splice
+    (fn ss snippet hv-to-splice
+      (maybe-map
+        (snippet-sys-snippet-splice (ss-> ss) (snippet-> snippet)
+        #/fn hole data
+          (maybe-map (hv-to-splice hole data) #/fn data
+            (mat data (unselected data) (unselected data)
+            #/dissect data (selected suffix)
+            #/selected #/snippet-> suffix)))
+      #/fn snippet
+        (snippet-> snippet)))
+    ; snippet-sys-snippet-zip-map-selective
+    (fn ss shape snippet hvv-to-maybe-v
+      (maybe-map
+        (snippet-sys-snippet-zip-map-selective (ss-> ss)
+          shape (snippet-> snippet) hvv-to-maybe-v)
+      #/fn selective
+        (snippet-> selective)))))
+
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (hypernest-selective-snippet-sys shape-ss)
+  (selective-snippet-sys shape-ss #/fn hole
+    (if (just? #/snippet-sys-snippet-undone shape-ss hole)
+      any/c
+      none/c)))
+
+; TODO: Export these.
+; TODO: Use these.
+; TODO: Define `hypernest` in terms of `hypernest-unchecked`.
+; TODO: Change the way a `hypernest?` is written using
+; `gen:custom-write`.
+(define-imitation-simple-struct
+  (hypernest? hypernest-selective-snippet)
+  hypernest-unchecked
+  'hypernest (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (hypernest/c shape-ss)
+  (rename-contract
+    (match/c hypernest-unchecked #/snippet-sys-snippet/c
+      (hypernest-selective-snippet-sys shape-ss))
+    `(hypernest/c ,shape-ss)))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (hypernest-snippet-sys? hypernest-snippet-sys-shape-snippet-sys)
+  hypernest-snippet-sys
+  'hypernest-snippet-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-conversions
+    ; snippet-sys-snippet/c
+    (dissectfn (hypernest-snippet-sys shape-ss)
+      (hypernest/c shape-ss))
+    ; ss->
+    (dissectfn (hypernest-snippet-sys shape-ss)
+      (hypernest-selective-snippet-sys shape-ss))
+    ; snippet->
+    (dissectfn (hypernest-unchecked selective)
+      selective)
+    ; ->snippet
+    (fn selective
+      (hypernest-unchecked selective))))
