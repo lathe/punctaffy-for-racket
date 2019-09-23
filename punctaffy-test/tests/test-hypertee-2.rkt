@@ -27,8 +27,18 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
-(require punctaffy/hypersnippet/snippet)
-; TODO: ht-bracs htb-labeled hypertee-furl hypertee-unfurl hypertee-coil-hole hypertee-map-all-degrees
+; TODO: Stop requiring each of these things from
+; `punctaffy/hypersnippet/hypertee`, and require equivalent
+; functionality from `punctaffy/hypersnippet/snippet` instead. Until
+; we do, this file is a copy of test-hypertee.rkt.
+(require #/only-in punctaffy/hypersnippet/hypertee
+  ht-bracs htb-labeled hypertee-furl hypertee-unfurl
+  hypertee-coil-hole hypertee-map-all-degrees hypertee-uncontour
+  hypertee-contour hypertee-join-all-degrees hypertee-done
+  hypertee-join-selective-interpolation
+  hypertee-join-selective-non-interpolation
+  hypertee-join-all-degrees-selective)
+(require #/only-in punctaffy/hypersnippet/snippet)
 
 ; (We provide nothing from this module.)
 
