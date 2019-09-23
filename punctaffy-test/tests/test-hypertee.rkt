@@ -27,7 +27,13 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
-(require punctaffy/hypersnippet/hypertee)
+(require #/only-in punctaffy/hypersnippet/hypertee
+  ht-bracs htb-labeled hypertee-furl hypertee-unfurl
+  hypertee-coil-hole hypertee-map-all-degrees hypertee-uncontour
+  hypertee-contour hypertee-join-all-degrees hypertee-done
+  hypertee-join-selective-interpolation
+  hypertee-join-selective-non-interpolation
+  hypertee-join-all-degrees-selective)
 
 ; (We provide nothing from this module.)
 
