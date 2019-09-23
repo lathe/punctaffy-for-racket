@@ -34,6 +34,7 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect expectfn fn mat w- w-loop)
+(require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
   just just? just-value maybe? maybe-bind maybe/c maybe-map nothing)
@@ -43,9 +44,13 @@
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-accepts? dim-sys-dim<? dim-sys-dim=? dim-sys-dim=0?
-  dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
-  dim-sys-dim-zero)
+  dim-successors-sys-dim=plus-int? dim-successors-sys-dim-plus-int
+  dim-successors-sys-dim-sys dim-sys? dim-sys-accepts? dim-sys-dim<?
+  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
+  dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max dim-sys-dim-zero)
+(require #/only-in punctaffy/hypersnippet/hyperstack
+  hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
+  make-hyperstack)
 
 ; TODO: Document all of these exports.
 (provide
@@ -452,7 +457,8 @@
     #/check-hvv? shape-data snippet-data)))
 
 (define (snippet-sys-snippet-with-degree/c ss degree/c)
-  (w- degree/c (coerce-contract 'selectable/c degree/c)
+  (w- degree/c
+    (coerce-contract 'snippet-sys-snippet-with-degree/c degree/c)
   #/w- name
     `(snippet-sys-snippet-with-degree/c ,ss ,(contract-name degree/c))
   #/w- snippet-contract (snippet-sys-snippet/c ss)
@@ -763,13 +769,10 @@
     (mat data (selected data) (just #/unselected data)
     #/dissect data (unselected data)
     #/maybe-map
-      (snippet-sys-snippet-set-degree-maybe ss
-        (snippet-sys-snippet-degree ss snippet)
+      (snippet-sys-snippet-set-degree-maybe ss d
         (snippet-sys-shape->snippet ss hole))
     #/fn patch
-      (selected #/snippet-sys-snippet-select-if-degree< ss
-        (snippet-sys-snippet-degree ss hole)
-        patch))))
+      (selected #/snippet-sys-snippet-select-everything ss patch))))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -1157,9 +1160,19 @@
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
-(define (hypernest-selective-snippet-sys shape-ss)
+(define (hypernest-selective-snippet-sys dss shape-ss)
+  ; TODO: See if we should verify that
+  ; `(dim-successors-sys-dim-sys dss)` and
+  ; `(snippet-sys-dim-sys shape-ss)` return the same value.
   (selective-snippet-sys shape-ss #/fn hole
-    (if (just? #/snippet-sys-snippet-undone shape-ss hole)
+    (expect (snippet-sys-snippet-undone shape-ss hole)
+      (just undone-hole)
+      none/c
+    #/if
+      (dim-successors-sys-dim=plus-int? dss
+        (snippet-sys-snippet-degree shape-ss hole)
+        (snippet-sys-snippet-degree shape-ss undone-hole)
+        1)
       any/c
       none/c)))
 
@@ -1175,28 +1188,393 @@
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
-(define (hypernest/c shape-ss)
+(define (hypernest/c dss shape-ss)
+  ; TODO: See if we should verify that
+  ; `(dim-successors-sys-dim-sys dss)` and
+  ; `(snippet-sys-dim-sys shape-ss)` return the same value.
   (rename-contract
     (match/c hypernest-unchecked #/snippet-sys-snippet/c
-      (hypernest-selective-snippet-sys shape-ss))
-    `(hypernest/c ,shape-ss)))
+      (hypernest-selective-snippet-sys dss shape-ss))
+    `(hypernest/c ,dss ,shape-ss)))
 
 ; TODO: Export these.
+;
 ; TODO: Use these.
+;
+; TODO: See if we should verify that
+; `(dim-successors-sys-dim-sys dss)` and
+; `(snippet-sys-dim-sys shape-ss)` return the same value.
+;
 (define-imitation-simple-struct
-  (hypernest-snippet-sys? hypernest-snippet-sys-shape-snippet-sys)
+  (hypernest-snippet-sys?
+    hypersnippet-snippet-sys-dim-successors-sys
+    hypernest-snippet-sys-shape-snippet-sys)
   hypernest-snippet-sys
   'hypernest-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-conversions
     ; snippet-sys-snippet/c
-    (dissectfn (hypernest-snippet-sys shape-ss)
-      (hypernest/c shape-ss))
+    (dissectfn (hypernest-snippet-sys dss shape-ss)
+      (hypernest/c dss shape-ss))
     ; ss->
-    (dissectfn (hypernest-snippet-sys shape-ss)
-      (hypernest-selective-snippet-sys shape-ss))
+    (dissectfn (hypernest-snippet-sys dss shape-ss)
+      (hypernest-selective-snippet-sys dss shape-ss))
     ; snippet->
     (dissectfn (hypernest-unchecked selective)
       selective)
     ; ->snippet
     (fn selective
       (hypernest-unchecked selective))))
+
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (snippet-sys-snippet-select-nothing ss snippet)
+  (snippet-sys-snippet-select ss snippet #/fn hole data #f))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (htb-labeled? htb-labeled-degree htb-labeled-data)
+  htb-labeled
+  'htb-labeled (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (htb-unlabeled? htb-unlabeled-degree)
+  htb-unlabeled
+  'htb-unlabeled (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypertee-bracket? v)
+  (or (htb-labeled? v) (htb-unlabeled? v)))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypertee-bracket/c dim/c)
+  (w- dim/c (coerce-contract 'hypertee-bracket/c dim/c)
+  #/rename-contract
+    (or/c
+      (match/c htb-labeled dim/c any/c)
+      (match/c htb-unlabeled dim/c))
+    `(hypertee-bracket/c ,(contract-name dim/c))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypertee-bracket-degree bracket)
+  (mat bracket (htb-labeled d data) d
+  #/dissect bracket (htb-unlabeled d) d))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (hnb-open? hnb-open-degree hnb-open-data)
+  hnb-open
+  'hnb-open (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hnb-labeled? hnb-labeled-degree hnb-labeled-data)
+  hnb-labeled
+  'hnb-labeled (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hnb-unlabeled? hnb-unlabeled-degree)
+  hnb-unlabeled
+  'hnb-unlabeled (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypernest-bracket? v)
+  (or (hnb-open? v) (hnb-labeled? v) (hnb-unlabeled? v)))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypernest-bracket/c dim/c)
+  (w- dim/c (coerce-contract 'hypernest-bracket/c dim/c)
+  #/rename-contract
+    (or/c
+      (match/c hnb-open dim/c any/c)
+      (match/c hnb-labeled dim/c any/c)
+      (match/c hnb-unlabeled dim/c))
+    `(hypernest-bracket/c ,(contract-name dim/c))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypernest-bracket-degree bracket)
+  (mat bracket (hnb-open d data) d
+  #/mat bracket (hnb-labeled d data) d
+  #/dissect bracket (hnb-unlabeled d) d))
+
+; TODO HYPERNEST-2-FROM-BRACKETS: Finish implementing this.
+; TODO: Export this.
+; TODO: Use this.
+(define
+  (explicit-hypernest-from-brackets err-name dss degree brackets)
+  
+  (struct parent-same-part (should-annotate-as-nontrivial))
+  (struct parent-new-part ())
+  (struct parent-part (i should-annotate-as-trivial))
+  
+  (struct part-state
+    (
+      is-hypernest
+      first-nontrivial-degree
+      first-non-interpolation-degree
+      overall-degree
+      rev-brackets))
+  
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/w- htss (hypertee-snippet-sys ds)
+  #/w- hnss (hypernest-snippet-sys dss htss)
+  #/w- opening-degree degree
+  #/if (dim-sys-dim=0? ds opening-degree)
+    (expect brackets (list)
+      (error "Expected brackets to be empty since degree was zero")
+    #/hypernest-unchecked #/selective-snippet
+      (hypertee-furl-unchecked ds #/hypertee-coil-zero))
+  #/expect brackets (cons first-bracket brackets)
+    (error "Expected brackets to be nonempty since degree was nonzero")
+  #/w- root-i 'root
+  #/w- stack (make-hyperstack ds opening-degree #/parent-same-part #t)
+  #/dissect
+    (mat first-bracket (hnb-open bump-degree data)
+      (expect (dim-successors-sys-dim-plus-int dss bump-degree 1)
+        (just bump-degree-plus-one)
+        (error "Expected each opening bracket's bump degree to have a successor")
+      #/list
+        (fn root-part
+          (dissect root-part
+            (hypernest-unchecked #/selective-snippet
+              root-part-selective)
+          #/dissect
+            (snippet-sys-snippet-filter-maybe
+              htss root-part-selective)
+            (just root-part-shape)
+          #/w- root-part
+            ; TODO: See if we should be passing in `htss` instead.
+            (snippet-sys-snippet-select-nothing hnss root-part)
+          #/hypernest-unchecked #/selective-snippet
+            (hypertee-furl-unchecked ds #/hypertee-coil-hole
+              opening-degree
+              (snippet-sys-snippet-done
+                htss
+                bump-degree-plus-one
+                (snippet-sys-snippet-map htss root-part-shape
+                  (fn hole data
+                    (trivial)))
+                (trivial))
+              (unselected data)
+              ; TODO HYPERNEST-2-FROM-BRACKETS: Implement this. First,
+              ; we probably need to refactor the way hypernests work
+              ; so that they use a dimension system that acts like a
+              ; given dimension system but adds successors for each
+              ; dimension and a single infinity.
+              'TODO)))
+        (part-state #t (dim-sys-dim-zero ds) bump-degree
+          (dim-sys-dim-max ds opening-degree bump-degree)
+          (list))
+        (hyperstack-push bump-degree stack #/parent-new-part))
+    #/mat first-bracket (hnb-labeled hole-degree data)
+      (expect (dim-sys-dim<? ds hole-degree opening-degree) #t
+        (raise-arguments-error err-name
+          "encountered a closing bracket of degree too high for where it occurred, and it was the first bracket"
+          "overall-degree" opening-degree
+          "first-bracket" first-bracket
+          "brackets" brackets)
+      #/dissect (hyperstack-pop hole-degree stack #/parent-new-part)
+        (list (parent-same-part #t) stack)
+      #/list
+        (fn root-part
+          (hypernest-unchecked #/selective-snippet
+            (hypertee-furl-unchecked ds #/hypertee-coil-hole
+              opening-degree
+              (snippet-sys-snippet-map htss root-part #/fn hole data
+                (trivial))
+              (selected data)
+              root-part)))
+        (part-state
+          #f (dim-sys-dim-zero ds) hole-degree hole-degree (list))
+        stack)
+    #/error "Expected the first bracket of a hypernest to be annotated")
+    (list finish root-part stack)
+  #/w-loop next
+    brackets-remaining brackets
+    parts (hash-set (make-immutable-hasheq) root-i root-part)
+    stack stack
+    current-i root-i
+    new-i 0
+    (dissect (hash-ref parts current-i)
+      (part-state
+        current-is-hypernest
+        current-first-nontrivial-degree
+        current-first-non-interpolation-degree
+        current-overall-degree
+        current-rev-brackets)
+    #/w- current-d (hyperstack-dimension stack)
+    #/expect brackets-remaining (cons bracket brackets-remaining)
+      (expect (dim-sys-dim=0? ds current-d) #t
+        (error "Expected more closing brackets")
+      #/let ()
+        (define (get-part i)
+          (dissect (hash-ref parts i)
+            (part-state
+              is-hypernest
+              first-nontrivial-degree
+              first-non-interpolation-degree
+              overall-degree
+              rev-brackets)
+          #/w- get-subpart
+            (fn d data
+              (if
+                (and
+                  (dim-sys-dim<=? ds first-nontrivial-degree d)
+                  (dim-sys-dim<? ds d first-non-interpolation-degree))
+                (get-part data)
+                data))
+          #/if is-hypernest
+            (snippet-sys-snippet-map hnss
+              (hypernest-from-brackets dss overall-degree
+                (reverse rev-brackets))
+              (fn hole data
+                (get-subpart
+                  (snippet-sys-snippet-degree htss hole)
+                  data)))
+            (snippet-sys-snippet-map htss
+              (hypertee-from-brackets ds overall-degree
+                (reverse #/list-map rev-brackets #/fn closing-bracket
+                  (mat closing-bracket (hnb-labeled d data)
+                    (htb-labeled d data)
+                  #/dissect closing-bracket (hnb-unlabeled d)
+                    (htb-unlabeled d))))
+              (fn hole data
+                (get-subpart
+                  (snippet-sys-snippet-degree htss hole)
+                  data)))))
+      #/finish #/get-part root-i)
+    
+    #/mat bracket (hnb-open bump-degree bump-value)
+      (expect current-is-hypernest #t
+        (error "Encountered a bump inside a hole")
+      #/next
+        brackets-remaining
+        (hash-set parts current-i
+          (part-state
+            current-is-hypernest
+            current-first-nontrivial-degree
+            current-first-non-interpolation-degree
+            current-overall-degree
+            (cons bracket current-rev-brackets)))
+        (hyperstack-push bump-degree stack #/parent-same-part #f)
+        current-i
+        new-i)
+    #/dissect
+      (mat bracket (hnb-labeled hole-degree hole-value)
+        (list hole-degree hole-value)
+      #/dissect bracket (hnb-unlabeled hole-degree)
+        (list hole-degree (trivial)))
+      (list hole-degree hole-value)
+    #/expect (dim-sys-dim<? ds hole-degree current-d) #t
+      (raise-arguments-error err-name
+        "encountered a closing bracket of degree too high for where it occurred"
+        "current-d" current-d
+        "bracket" bracket
+        "brackets-remaining" brackets-remaining
+        "brackets" brackets)
+    #/w- parent (hyperstack-peek stack hole-degree)
+    #/begin
+      (mat bracket (hnb-labeled hole-degree hole-value)
+        (expect parent (parent-same-part #t)
+          (raise-arguments-error err-name
+            "encountered an annotated closing bracket of degree too low for where it occurred"
+            "current-d" current-d
+            "bracket" bracket
+            "brackets-remaining" brackets-remaining
+            "brackets" brackets)
+        #/void)
+        (mat parent (parent-same-part #t)
+          (raise-arguments-error err-name
+            "encountered an unannotated closing bracket of degree too high for where it occurred"
+            "current-d" current-d
+            "bracket" bracket
+            "brackets-remaining" brackets-remaining
+            "brackets" brackets)
+        #/void))
+    #/mat parent (parent-same-part should-annotate-as-nontrivial)
+      (dissect
+        (hyperstack-pop hole-degree stack #/parent-same-part #f)
+        (list _ updated-stack)
+      #/dissect
+        (eq? should-annotate-as-nontrivial
+          (mat bracket (hnb-labeled hole-degree hole-value)
+            #t
+            #f))
+        #t
+      #/w- parts
+        (hash-set parts current-i
+          (part-state
+            current-is-hypernest
+            current-first-nontrivial-degree
+            current-first-non-interpolation-degree
+            current-overall-degree
+            (cons bracket current-rev-brackets)))
+      #/next brackets-remaining parts updated-stack current-i new-i)
+    #/mat parent (parent-new-part)
+      (dissect
+        (hyperstack-pop hole-degree stack #/parent-part current-i #t)
+        (list _ updated-stack)
+      #/mat bracket (hnb-labeled hole-degree hole-value)
+        ; TODO: Is this really an internal error, or is there some way
+        ; to cause it with an incorrect sequence of input brackets?
+        (error "Internal error: Expected the beginning of an interpolation to be unannotated")
+      #/w- parent-i new-i
+      #/w- new-i (add1 new-i)
+      #/w- parts
+        (hash-set parts current-i
+          (part-state
+            current-is-hypernest
+            current-first-nontrivial-degree
+            current-first-non-interpolation-degree
+            current-overall-degree
+            (cons (hnb-labeled hole-degree parent-i)
+              current-rev-brackets)))
+      #/w- parts
+        (hash-set parts parent-i
+          (part-state #t hole-degree hole-degree
+            (dim-sys-dim-max ds opening-degree hole-degree)
+            (list)))
+      #/next brackets-remaining parts updated-stack parent-i new-i)
+    #/dissect parent (parent-part parent-i should-annotate-as-trivial)
+      (dissect hole-value (trivial)
+      #/dissect
+        (hyperstack-pop hole-degree stack #/parent-part current-i #f)
+        (list _ updated-stack)
+      #/dissect (hash-ref parts parent-i)
+        (part-state
+          parent-is-hypernest
+          parent-first-nontrivial-degree
+          parent-first-non-interpolation-degree
+          parent-overall-degree
+          parent-rev-brackets)
+      #/w- parts
+        (hash-set parts current-i
+          (part-state
+            current-is-hypernest
+            current-first-nontrivial-degree
+            current-first-non-interpolation-degree
+            current-overall-degree
+            (cons
+              (if should-annotate-as-trivial
+                (hnb-labeled hole-degree (trivial))
+                (hnb-unlabeled hole-degree))
+              current-rev-brackets)))
+      #/w- parts
+        (hash-set parts parent-i
+          (part-state
+            parent-is-hypernest
+            parent-first-nontrivial-degree
+            parent-first-non-interpolation-degree
+            parent-overall-degree
+            (cons (hnb-unlabeled hole-degree) parent-rev-brackets)))
+      #/next brackets-remaining parts updated-stack parent-i new-i))))
+
+; TODO HYPERNEST-2-FROM-BRACKETS: Implement these.
+(define (hypernest-from-brackets dss d brackets)
+  'TODO)
+(define (hypertee-from-brackets ds d brackets)
+  'TODO)

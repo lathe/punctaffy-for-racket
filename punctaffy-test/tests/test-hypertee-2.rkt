@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; punctaffy/tests/test-hypertee
+; punctaffy/tests/test-hypertee-2
 ;
 ; Unit tests of the hypertee data structure for hypersnippet-shaped
 ; data.
@@ -27,6 +27,10 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
+; TODO: Stop requiring each of these things from
+; `punctaffy/hypersnippet/hypertee`, and require equivalent
+; functionality from `punctaffy/hypersnippet/snippet` instead. Until
+; we do, this file is a copy of test-hypertee.rkt.
 (require #/only-in punctaffy/hypersnippet/hypertee
   ht-bracs htb-labeled hypertee-furl hypertee-unfurl
   hypertee-coil-hole hypertee-map-all-degrees hypertee-uncontour
@@ -34,6 +38,7 @@
   hypertee-join-selective-interpolation
   hypertee-join-selective-non-interpolation
   hypertee-join-all-degrees-selective)
+(require #/only-in punctaffy/hypersnippet/snippet)
 
 ; (We provide nothing from this module.)
 
