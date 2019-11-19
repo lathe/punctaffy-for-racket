@@ -497,7 +497,7 @@
     (dissectfn (fin-multiplied-dim-sys bound orig-ds)
       (fin-multiplied-dim/c bound #/dim-sys-dim/c orig-ds))
     (fn ds a b
-      (dissect ds (extended-with-top-dim-sys orig-ds)
+      (dissect ds (fin-multiplied-dim-sys bound orig-ds)
       #/w- orig-dim=? (fn a b #/dim-sys-dim=? orig-ds a b)
       #/fin-multiplied-dim=? orig-dim=? a b))
     (fn ds lst
