@@ -20,11 +20,18 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract struct-type-property/c)
+; NOTE: The Racket documentation says `get/build-late-neg-projection`
+; is in `racket/contract/combinator`, but it isn't. It's in
+; `racket/contract/base`. Since it's also in `racket/contract` and the
+; documentation correctly says it is, we require it from there.
+(require #/only-in racket/contract
+  get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
   -> ->i </c =/c and/c any/c contract? contract-name contract-out
   listof or/c rename-contract)
-(require #/only-in racket/contract/combinator coerce-contract)
+(require #/only-in racket/contract/combinator
+  blame-add-context coerce-contract contract-first-order-passes?
+  make-contract)
 (require #/only-in racket/math natural?)
 
 (require #/only-in lathe-comforts
@@ -94,6 +101,74 @@
       (->i ([ds dim-sys?] [lsts (ds) (listof #/dim-sys-dim/c ds)])
         [_ (ds) (dim-sys-dim/c ds)])
       dim-sys-impl?)]
+  
+  [dim-sys-morphism-sys? (-> any/c boolean?)]
+  [dim-sys-morphism-sys-impl? (-> any/c boolean?)]
+  [dim-sys-morphism-sys-source (-> dim-sys-morphism-sys? dim-sys?)]
+  [dim-sys-morphism-sys-put-source
+    (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
+  [dim-sys-morphism-sys-target (-> dim-sys-morphism-sys? dim-sys?)]
+  [dim-sys-morphism-sys-put-target
+    (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
+  [dim-sys-morphism-sys-morph-dim
+    (->i
+      (
+        [ms dim-sys-morphism-sys?]
+        [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
+      [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])]
+  [dim-sys-morphism-sys/c (-> contract? contract? contract?)]
+  [prop:dim-sys-morphism-sys
+    (struct-type-property/c dim-sys-morphism-sys-impl?)]
+  [make-dim-sys-morphism-sys-impl-from-morph
+    (->
+      (-> dim-sys-morphism-sys? contract?)
+      (-> dim-sys-morphism-sys? dim-sys?)
+      (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
+      (-> dim-sys-morphism-sys? dim-sys?)
+      (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
+      (->i
+        (
+          [ms dim-sys-morphism-sys?]
+          [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
+        [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])
+      dim-sys-morphism-sys-impl?)]
+  
+  [dim-sys-endofunctor-sys? (-> any/c boolean?)]
+  [dim-sys-endofunctor-sys-impl? (-> any/c boolean?)]
+  [dim-sys-endofunctor-sys-morph-dim-sys
+    (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)]
+  [dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
+    (->i
+      (
+        [es dim-sys-endofunctor-sys?]
+        [ms dim-sys-morphism-sys?])
+      [_ (es ms)
+        (dim-sys-morphism-sys/c
+          (dim-sys-accepts/c
+            (dim-sys-endofunctor-sys-morph-dim-sys
+              (dim-sys-morphism-sys-source ms)))
+          (dim-sys-accepts/c
+            (dim-sys-endofunctor-sys-morph-dim-sys
+              (dim-sys-morphism-sys-target ms))))])]
+  [prop:dim-sys-endofunctor-sys
+    (struct-type-property/c dim-sys-endofunctor-sys-impl?)]
+  [make-dim-sys-endofunctor-sys-impl-from-morph
+    (->
+      (-> dim-sys-endofunctor-sys? contract?)
+      (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)
+      (->i
+        (
+          [es dim-sys-endofunctor-sys?]
+          [ms dim-sys-morphism-sys?])
+        [_ (es ms)
+          (dim-sys-morphism-sys/c
+            (dim-sys-accepts/c
+              (dim-sys-endofunctor-sys-morph-dim-sys
+                (dim-sys-morphism-sys-source ms)))
+            (dim-sys-accepts/c
+              (dim-sys-endofunctor-sys-morph-dim-sys
+                (dim-sys-morphism-sys-target ms))))])
+      dim-sys-endofunctor-sys-impl?)]
   
   [dim-successors-sys? (-> any/c boolean?)]
   [dim-successors-sys-impl? (-> any/c boolean?)]
@@ -174,6 +249,17 @@
   [extended-with-top-dim-sys-original
     (-> extended-with-top-dim-sys? dim-sys?)])
 (provide
+  extended-with-top-dim-sys-morphism-sys)
+(provide #/contract-out
+  [extended-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
+  [extended-with-top-dim-sys-morphism-sys-original
+    (-> extended-with-top-dim-sys-morphism-sys?
+      dim-sys-morphism-sys?)])
+(provide
+  extended-with-top-dim-sys-endofunctor-sys)
+(provide #/contract-out
+  [extended-with-top-dim-sys-endofunctor-sys? (-> any/c boolean?)])
+(provide
   extended-with-top-dim-successors-sys)
 (provide #/contract-out
   [extended-with-top-dim-successors-sys? (-> any/c boolean?)]
@@ -242,6 +328,68 @@
   (rename-contract
     (and/c (dim-sys-dim/c ds) (fn v #/not #/dim-sys-dim=0? ds v))
     `(dim-sys-0<dim/c ,ds)))
+
+
+(define-imitation-simple-generics
+  dim-sys-morphism-sys? dim-sys-morphism-sys-impl?
+  (#:method dim-sys-morphism-sys-accepts/c (#:this))
+  (#:method dim-sys-morphism-sys-source (#:this))
+  (#:method dim-sys-morphism-sys-put-source (#:this) ())
+  (#:method dim-sys-morphism-sys-target (#:this))
+  (#:method dim-sys-morphism-sys-put-target (#:this) ())
+  (#:method dim-sys-morphism-sys-morph-dim (#:this) ())
+  prop:dim-sys-morphism-sys make-dim-sys-morphism-sys-impl-from-morph
+  'dim-sys-morphism-sys 'dim-sys-morphism-sys-impl (list))
+
+(define (dim-sys-morphism-sys/c source/c target/c)
+  (w- source/c (coerce-contract 'dim-sys-morphism-sys/c source/c)
+  #/w- target/c (coerce-contract 'dim-sys-morphism-sys/c target/c)
+  #/w- name
+    `(dim-sys-morphism-sys/c
+       ,(contract-name source/c)
+       ,(contract-name target/c))
+  #/w- first-order
+    (fn v
+      (and
+        (dim-sys-morphism-sys? v)
+        (contract-first-order-passes? source/c
+          (dim-sys-morphism-sys-source v))
+        (contract-first-order-passes? target/c
+          (dim-sys-morphism-sys-target v))))
+  #/make-contract #:name name #:first-order first-order
+    
+    #:late-neg-projection
+    (fn blame
+      (w- source/c-projection
+        (
+          (get/build-late-neg-projection source/c)
+          (blame-add-context blame "source of"))
+      #/w- target/c-projection
+        (
+          (get/build-late-neg-projection target/c)
+          (blame-add-context blame "target of"))
+      #/fn v missing-party
+        (w- v
+          (dim-sys-morphism-sys-put-source v
+            (source/c-projection (dim-sys-morphism-sys-source v)
+              missing-party))
+        #/w- v
+          (dim-sys-morphism-sys-put-target v
+            (target/c-projection (dim-sys-morphism-sys-target v)
+              missing-party))
+          v)))))
+
+
+(define-imitation-simple-generics
+  dim-sys-endofunctor-sys? dim-sys-endofunctor-sys-impl?
+  (#:method dim-sys-endofunctor-sys-accepts/c (#:this))
+  (#:method dim-sys-endofunctor-sys-morph-dim-sys (#:this) ())
+  (#:method dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
+    (#:this)
+    ())
+  prop:dim-sys-endofunctor-sys
+  make-dim-sys-endofunctor-sys-impl-from-morph
+  'dim-sys-endofunctor-sys 'dim-sys-endofunctor-sys-impl (list))
 
 
 (define-imitation-simple-generics
@@ -386,6 +534,73 @@
   unguarded-extended-with-top-dim-sys
   attenuated-extended-with-top-dim-sys
   attenuated-extended-with-top-dim-sys)
+(define-imitation-simple-struct
+  (extended-with-top-dim-sys-morphism-sys?
+    extended-with-top-dim-sys-morphism-sys-original)
+  unguarded-extended-with-top-dim-sys-morphism-sys
+  'extended-with-top-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
+        (match/c extended-with-top-dim-sys-morphism-sys
+          (dim-sys-morphism-sys-accepts/c orig)))
+      (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
+        (extended-with-top-dim-sys
+          (dim-sys-morphism-sys-source orig)))
+      (fn ms new-s
+        (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
+        #/expect new-s (extended-with-top-dim-sys new-s)
+          (w- s (dim-sys-morphism-sys-source orig)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-source
+            "tried to replace the source with a source that was rather different"
+            "ms" ms
+            "s" s
+            "new-s" new-s)
+        #/extended-with-top-dim-sys-morphism-sys
+          (dim-sys-morphism-sys-put-source orig new-s)))
+      (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
+        (extended-with-top-dim-sys
+          (dim-sys-morphism-sys-target orig)))
+      (fn ms new-t
+        (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
+        #/expect new-t (extended-with-top-dim-sys new-t)
+          (w- t (dim-sys-morphism-sys-target orig)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/extended-with-top-dim-sys-morphism-sys
+          (dim-sys-morphism-sys-put-target orig new-t)))
+      (fn ms d
+        (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
+        #/expect d (extended-with-top-dim-finite d)
+          (extended-with-top-dim-infinite)
+        #/extended-with-top-dim-finite
+          (dim-sys-morphism-sys-morph-dim orig d))))))
+(define-match-expander-attenuated
+  attenuated-extended-with-top-dim-sys-morphism-sys
+  unguarded-extended-with-top-dim-sys-morphism-sys
+  [original dim-sys-morphism-sys?]
+  #t)
+(define-match-expander-from-match-and-make
+  extended-with-top-dim-sys-morphism-sys
+  unguarded-extended-with-top-dim-sys-morphism-sys
+  attenuated-extended-with-top-dim-sys-morphism-sys
+  attenuated-extended-with-top-dim-sys-morphism-sys)
+(define-imitation-simple-struct
+  (extended-with-top-dim-sys-endofunctor-sys?)
+  extended-with-top-dim-sys-endofunctor-sys
+  'extended-with-top-dim-sys-endofunctor-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-endofunctor-sys
+    (make-dim-sys-endofunctor-sys-impl-from-morph
+      (fn dss extended-with-top-dim-sys-endofunctor-sys?)
+      (fn dss ds #/extended-with-top-dim-sys ds)
+      (fn dss ms #/extended-with-top-dim-sys-morphism-sys ms))))
 (define-imitation-simple-struct
   (extended-with-top-dim-successors-sys?
     extended-with-top-dim-successors-sys-original)
