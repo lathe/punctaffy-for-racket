@@ -22,8 +22,8 @@
 
 (require #/only-in racket/contract struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i </c and/c any/c contract? contract-name contract-out listof
-  or/c rename-contract)
+  -> ->i </c =/c and/c any/c contract? contract-name contract-out
+  listof or/c rename-contract)
 (require #/only-in racket/contract/combinator coerce-contract)
 (require #/only-in racket/math natural?)
 
@@ -43,7 +43,7 @@
   
   [dim-sys? (-> any/c boolean?)]
   [dim-sys-impl? (-> any/c boolean?)]
-  [dim-sys-accepts? (-> dim-sys? dim-sys? boolean?)]
+  [dim-sys-accepts/c (-> dim-sys? contract?)]
   [dim-sys-dim/c (-> dim-sys? contract?)]
   [dim-sys-dim-max
     (->i ([ds dim-sys?])
@@ -84,6 +84,7 @@
   [make-dim-sys-impl-from-max
     (->
       (-> dim-sys? contract?)
+      (-> dim-sys? contract?)
       (->i
         (
           [ds dim-sys?]
@@ -96,8 +97,7 @@
   
   [dim-successors-sys? (-> any/c boolean?)]
   [dim-successors-sys-impl? (-> any/c boolean?)]
-  [dim-successors-sys-accepts?
-    (-> dim-successors-sys? dim-successors-sys? boolean?)]
+  [dim-successors-sys-accepts/c (-> dim-successors-sys? contract?)]
   [dim-successors-sys-dim-sys (-> dim-successors-sys? dim-sys?)]
   [dim-successors-sys-dim-plus-int
     (->i
@@ -124,6 +124,7 @@
     (struct-type-property/c dim-successors-sys-impl?)]
   [make-dim-successors-sys-impl-from-dim-plus-int
     (->
+      (-> dim-successors-sys? contract?)
       (-> dim-successors-sys? dim-sys?)
       (->i
         (
@@ -207,14 +208,12 @@
 
 
 (define-imitation-simple-generics dim-sys? dim-sys-impl?
+  (#:method dim-sys-accepts/c (#:this))
   (#:method dim-sys-dim/c (#:this))
   (#:method dim-sys-dim=? (#:this) () ())
   (#:method dim-sys-dim-max-of-list (#:this) ())
   prop:dim-sys make-dim-sys-impl-from-max
   'dim-sys 'dim-sys-impl (list))
-
-(define (dim-sys-accepts? ds other)
-  (equal? ds other))
 
 (define (dim-sys-dim-max ds . args)
   (dim-sys-dim-max-of-list ds args))
@@ -247,14 +246,12 @@
 
 (define-imitation-simple-generics
   dim-successors-sys? dim-successors-sys-impl?
+  (#:method dim-successors-sys-accepts/c (#:this))
   (#:method dim-successors-sys-dim-sys (#:this))
   (#:method dim-successors-sys-dim-plus-int (#:this) () ())
   prop:dim-successors-sys
   make-dim-successors-sys-impl-from-dim-plus-int
   'dim-successors-sys 'dim-successors-sys-impl (list))
-
-(define (dim-successors-sys-accepts? dss other)
-  (equal? dss other))
 
 (define (dim-successors-sys-dim-from-int dss n)
   (w- ds (dim-successors-sys-dim-sys dss)
@@ -275,7 +272,10 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
-      (fn dss #/successorless-dim-successors-sys-dim-sys dss)
+      (dissectfn (successorless-dim-successors-sys ds)
+        (match/c successorless-dim-successors-sys
+          (dim-sys-accepts/c ds)))
+      (dissectfn (successorless-dim-successors-sys ds) ds)
       (fn dss d n
         (mat n 0 (just d)
         #/nothing)))))
@@ -283,6 +283,7 @@
 (define-imitation-simple-struct (nat-dim-sys?) nat-dim-sys
   'nat-dim-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
+    (fn ds nat-dim-sys?)
     (fn ds natural?)
     (fn ds a b #/equal? a b)
     (fn ds lst
@@ -295,6 +296,7 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      (fn dss nat-dim-successors-sys?)
       (fn dss #/nat-dim-sys)
       (fn dss d n
         (w- result (+ d n)
@@ -358,6 +360,8 @@
   (auto-equal)
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
     (dissectfn (extended-with-top-dim-sys orig-ds)
+      (match/c extended-with-top-dim-sys #/dim-sys-accepts/c orig-ds))
+    (dissectfn (extended-with-top-dim-sys orig-ds)
       (extended-with-top-dim/c #/dim-sys-dim/c orig-ds))
     (fn ds a b
       (dissect ds (extended-with-top-dim-sys orig-ds)
@@ -391,6 +395,9 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      (dissectfn (extended-with-top-dim-successors-sys orig-dss)
+        (match/c extended-with-top-dim-successors-sys
+          (dim-successors-sys-accepts/c orig-dss)))
       (dissectfn (extended-with-top-dim-successors-sys orig-dss)
         (extended-with-top-dim-sys
           (dim-successors-sys-dim-sys orig-dss)))
@@ -495,6 +502,10 @@
   (auto-equal)
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
     (dissectfn (fin-multiplied-dim-sys bound orig-ds)
+      (match/c fin-multiplied-dim-sys
+        (=/c bound)
+        (dim-sys-accepts/c orig-ds)))
+    (dissectfn (fin-multiplied-dim-sys bound orig-ds)
       (fin-multiplied-dim/c bound #/dim-sys-dim/c orig-ds))
     (fn ds a b
       (dissect ds (fin-multiplied-dim-sys bound orig-ds)
@@ -536,6 +547,10 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      (dissectfn (fin-multiplied-dim-successors-sys bound orig-dss)
+        (match/c fin-multiplied-dim-successors-sys
+          (=/c bound)
+          (dim-successors-sys-accepts/c orig-dss)))
       (dissectfn (fin-multiplied-dim-successors-sys bound orig-dss)
         (fin-multiplied-dim-sys bound
           (dim-successors-sys-dim-sys orig-dss)))

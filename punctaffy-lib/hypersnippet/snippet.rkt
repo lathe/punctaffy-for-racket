@@ -33,7 +33,8 @@
   make-contract raise-blame-error)
 
 (require #/only-in lathe-comforts
-  dissect dissectfn expect expectfn fn mat w- w-loop)
+  dissect dissectfn expect fn mat w- w-loop)
+(require #/only-in lathe-comforts/contract equal/c)
 (require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
@@ -44,10 +45,11 @@
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys-dim=plus-int? dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim-sys dim-sys? dim-sys-accepts? dim-sys-dim<?
-  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
-  dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max dim-sys-dim-zero)
+  dim-successors-sys-accepts/c dim-successors-sys-dim=plus-int?
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys dim-sys?
+  dim-sys-accepts/c dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
+  dim-sys-dim=0? dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c
+  dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -254,6 +256,8 @@
   ; this.
   [make-snippet-sys-impl-from-various-1
     (->
+      ; snippet-sys-accepts/c
+      (-> snippet-sys? contract?)
       ; snippet-sys-snippet/c
       (-> snippet-sys? contract?)
       ; snippet-sys-dim-sys
@@ -395,6 +399,7 @@
 
 
 (define-imitation-simple-generics snippet-sys? snippet-sys-impl?
+  (#:method snippet-sys-accepts/c (#:this))
   (#:method snippet-sys-snippet/c (#:this))
   (#:method snippet-sys-dim-sys (#:this))
   (#:method snippet-sys-shape-snippet-sys (#:this))
@@ -633,6 +638,11 @@
   selective-snippet-sys
   'selective-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
+    ; snippet-sys-accepts/c
+    (dissectfn (selective-snippet-sys ss h-to-unselected/c)
+      (match/c selective-snippet-sys
+        (snippet-sys-accepts/c ss)
+        (equal/c h-to-unselected/c)))
     ; snippet-sys-snippet/c
     (dissectfn (selective-snippet-sys ss h-to-unselected/c)
       (selective-snippet/c ss h-to-unselected/c))
@@ -808,8 +818,7 @@
 ; TODO: Use the things that use this.
 (define (hypertee/c ds)
   (rename-contract
-    (expectfn (hypertee-furl-unchecked actual-ds _) #f
-      (dim-sys-accepts? ds actual-ds))
+    (match/c hypertee-furl-unchecked (dim-sys-accepts/c ds) any/c)
     `(hypertee/c ,ds)))
 
 ; TODO: See if we should export this.
@@ -933,6 +942,9 @@
   hypertee-snippet-sys
   'hypertee-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
+    ; snippet-sys-accepts/c
+    (dissectfn (hypertee-snippet-sys ds)
+      (match/c hypertee-snippet-sys #/dim-sys-accepts/c ds))
     ; snippet-sys-snippet/c
     (dissectfn (hypertee-snippet-sys ds)
       (hypertee/c ds))
@@ -1104,8 +1116,11 @@
 ; TODO: Use the things that use this.
 (define
   (make-snippet-sys-impl-from-conversions
-    snippet-sys-snippet/c ss-> snippet-> ->snippet)
+    snippet-sys-accepts/c snippet-sys-snippet/c ss-> snippet->
+    ->snippet)
   (make-snippet-sys-impl-from-various-1
+    ; snippet-sys-accepts/c
+    snippet-sys-accepts/c
     ; snippet-sys-snippet/c
     snippet-sys-snippet/c
     ; snippet-sys-dim-sys
@@ -1212,6 +1227,11 @@
   hypernest-snippet-sys
   'hypernest-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-conversions
+    ; snippet-sys-accepts/c
+    (dissectfn (hypernest-snippet-sys dss shape-ss)
+      (match/c hypernest-snippet-sys
+        (dim-successors-sys-accepts/c dss)
+        (snippet-sys-accepts/c shape-ss)))
     ; snippet-sys-snippet/c
     (dissectfn (hypernest-snippet-sys dss shape-ss)
       (hypernest/c dss shape-ss))

@@ -42,7 +42,7 @@
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-sys? dim-successors-sys-dim-from-int
-  dim-successors-sys-dim-sys dim-sys-accepts? dim-sys-dim<?
+  dim-successors-sys-dim-sys dim-sys-accepts/c dim-sys-dim<?
   dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
   dim-sys-0<dim/c dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
@@ -321,11 +321,7 @@
           bracket)))))
 
 (define (hypernest/c ds)
-  (rename-contract
-    (fn v
-      (and
-        (hypernest? v)
-        (dim-sys-accepts? ds #/hypernest-dim-sys v)))
+  (rename-contract (match/c hypernest (dim-sys-accepts/c ds) any/c)
     `(hypernest/c ,ds)))
 
 (define (hypernest-coil/c ds)

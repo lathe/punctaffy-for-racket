@@ -25,14 +25,14 @@
 (require #/only-in racket/math natural?)
 
 (require #/only-in lathe-comforts dissect dissectfn expect fn w-)
+(require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/struct
-  auto-equal auto-write define-imitation-simple-generics
-  define-imitation-simple-struct)
+  auto-write define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-accepts? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim/c
-  dim-sys-dim</c dim-sys-dim-max dim-sys-dim-zero)
+  dim-sys? dim-sys-accepts/c dim-sys-dim<? dim-sys-dim<=?
+  dim-sys-dim/c dim-sys-dim</c dim-sys-dim-max dim-sys-dim-zero)
 
 ; TODO: If we ever need these exports, document and uncomment them,
 ; and move them to the `punctaffy/hypersnippet/dim` module. For now,
@@ -170,11 +170,9 @@
   (dimlist? dimlist-dim-sys dimlist-length dimlist-func)
   dimlist 'dimlist (current-inspector) (auto-write))
 
-(define (dim-sys-dimlist? ds v)
-  (and (dimlist? v) (dim-sys-accepts? ds #/dimlist-dim-sys v)))
-
 (define (dim-sys-dimlist/c ds)
-  (rename-contract (fn v #/dim-sys-dimlist? ds v)
+  (rename-contract
+    (match/c dimlist (dim-sys-accepts/c ds) any/c any/c)
     `(dim-sys-dimlist/c ,ds)))
 
 (define (dim-sys-dimlist-build ds length func)
@@ -247,11 +245,7 @@
   hyperstack 'hyperstack (current-inspector) (auto-write))
 
 (define (hyperstack/c ds)
-  (rename-contract
-    (fn v
-      (and
-        (hyperstack? v)
-        (dim-sys-accepts? ds #/hyperstack-dim-sys v)))
+  (rename-contract (match/c hyperstack (dim-sys-accepts/c ds) any/c)
     `(hyperstack/c ,ds)))
 
 (define (hyperstack-dimension h)

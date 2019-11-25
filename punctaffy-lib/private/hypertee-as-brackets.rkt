@@ -24,7 +24,8 @@
 (require #/only-in racket/contract/base
   -> ->i and/c any any/c contract? contract-name contract-out list/c
   listof not/c or/c rename-contract)
-(require #/only-in racket/contract/combinator coerce-contract)
+(require #/only-in racket/contract/combinator
+  coerce-contract contract-first-order-passes?)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 (require #/only-in racket/struct make-constructor-style-printer)
@@ -47,7 +48,7 @@
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-dim-from-int
   dim-successors-sys-dim-plus-int dim-successors-sys-dim=plus-int?
-  dim-successors-sys-dim-sys dim-sys? dim-sys-accepts? dim-sys-dim<?
+  dim-successors-sys-dim-sys dim-sys? dim-sys-accepts/c dim-sys-dim<?
   dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
   dim-sys-0<dim/c dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
@@ -799,8 +800,7 @@
 
 (define (hypertee/c ds)
   (rename-contract
-    (fn v
-      (and (hypertee? v) (dim-sys-accepts? ds #/hypertee-dim-sys v)))
+    (match/c hypertee (dim-sys-accepts/c ds) any/c any/c)
     `(hypertee/c ,ds)))
 
 (define (unsafe-hypertee-from-brackets ds degree closing-brackets)
@@ -1333,7 +1333,9 @@
         "ht" ht
         "closing-bracket" closing-bracket
         "data" data)
-    #/expect (dim-sys-accepts? ds data-ds) #t
+    #/expect
+      (contract-first-order-passes? (dim-sys-accepts/c ds) data-ds)
+      #t
       (raise-arguments-error 'hypertee-join-all-degrees-selective
         "expected each hypertee join interpolation to be a hypertee with a compatible dimension system"
         "ht" ht
