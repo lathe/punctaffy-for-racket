@@ -70,6 +70,7 @@
   [selectable/c (-> contract? contract? contract?)]
   [snippet-sys? (-> any/c boolean?)]
   [snippet-sys-impl? (-> any/c boolean?)]
+  [snippet-sys-accepts/c (-> snippet-sys? contract?)]
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
