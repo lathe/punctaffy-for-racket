@@ -260,6 +260,12 @@
 (provide #/contract-out
   [extended-with-top-dim-sys-endofunctor-sys? (-> any/c boolean?)])
 (provide
+  extend-with-top-dim-sys-morphism-sys)
+(provide #/contract-out
+  [extend-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
+  [extend-with-top-dim-sys-morphism-sys-source
+    (-> extend-with-top-dim-sys-morphism-sys? dim-sys?)])
+(provide
   extended-with-top-dim-successors-sys)
 (provide #/contract-out
   [extended-with-top-dim-successors-sys? (-> any/c boolean?)]
@@ -601,6 +607,46 @@
       (fn dss extended-with-top-dim-sys-endofunctor-sys?)
       (fn dss ds #/extended-with-top-dim-sys ds)
       (fn dss ms #/extended-with-top-dim-sys-morphism-sys ms))))
+(define-imitation-simple-struct
+  (extend-with-top-dim-sys-morphism-sys?
+    extend-with-top-dim-sys-morphism-sys-source)
+  unguarded-extend-with-top-dim-sys-morphism-sys
+  'extend-with-top-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      (dissectfn (extend-with-top-dim-sys-morphism-sys source)
+        (match/c extend-with-top-dim-sys-morphism-sys
+          (dim-sys-accepts/c source)))
+      (dissectfn (extend-with-top-dim-sys-morphism-sys source)
+        source)
+      (fn ms new-s
+        (dissect ms (extend-with-top-dim-sys-morphism-sys source)
+        #/extend-with-top-dim-sys-morphism-sys new-s))
+      (dissectfn (extend-with-top-dim-sys-morphism-sys source)
+        (extended-with-top-dim-sys source))
+      (fn ms new-t
+        (dissect ms (extend-with-top-dim-sys-morphism-sys source)
+        #/expect new-t (extended-with-top-dim-sys new-s)
+          (w- t (extended-with-top-dim-sys source)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/extend-with-top-dim-sys-morphism-sys new-s))
+      (fn ms d #/extended-with-top-dim-finite d))))
+(define-match-expander-attenuated
+  attenuated-extend-with-top-dim-sys-morphism-sys
+  unguarded-extend-with-top-dim-sys-morphism-sys
+  [source dim-sys?]
+  #t)
+(define-match-expander-from-match-and-make
+  extend-with-top-dim-sys-morphism-sys
+  unguarded-extend-with-top-dim-sys-morphism-sys
+  attenuated-extend-with-top-dim-sys-morphism-sys
+  attenuated-extend-with-top-dim-sys-morphism-sys)
 (define-imitation-simple-struct
   (extended-with-top-dim-successors-sys?
     extended-with-top-dim-successors-sys-original)
