@@ -34,7 +34,6 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/contract equal/c)
 (require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
@@ -643,7 +642,7 @@
     (dissectfn (selective-snippet-sys ss h-to-unselected/c)
       (match/c selective-snippet-sys
         (snippet-sys-accepts/c ss)
-        (equal/c h-to-unselected/c)))
+        any/c))
     ; snippet-sys-snippet/c
     (dissectfn (selective-snippet-sys ss h-to-unselected/c)
       (selective-snippet/c ss h-to-unselected/c))
