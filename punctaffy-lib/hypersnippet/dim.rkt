@@ -32,6 +32,7 @@
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract)
+(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 
 (require #/only-in lathe-comforts
@@ -289,6 +290,36 @@
     (-> fin-multiplied-dim-sys? exact-positive-integer?)]
   [fin-multiplied-dim-sys-original
     (-> fin-multiplied-dim-sys? dim-sys?)])
+(provide
+  fin-multiplied-dim-sys-morphism-sys)
+(provide #/contract-out
+  [fin-multiplied-dim-sys-morphism-sys? (-> any/c boolean?)]
+  [fin-multiplied-dim-sys-morphism-sys-bound
+    (-> fin-multiplied-dim-sys-morphism-sys? exact-positive-integer?)]
+  [fin-multiplied-dim-sys-morphism-sys-original
+    (-> fin-multiplied-dim-sys-morphism-sys?
+      dim-sys-morphism-sys?)])
+(provide
+  fin-multiplied-dim-sys-endofunctor-sys)
+(provide #/contract-out
+  [fin-multiplied-dim-sys-endofunctor-sys? (-> any/c boolean?)]
+  [fin-multiplied-dim-sys-endofunctor-sys-bound
+    (-> fin-multiplied-dim-sys-endofunctor-sys?
+      exact-positive-integer?)])
+(provide
+  fin-times-dim-sys-morphism-sys)
+(provide #/contract-out
+  [fin-times-dim-sys-morphism-sys? (-> any/c boolean?)]
+  [fin-times-dim-sys-morphism-sys-bound
+    (-> fin-times-dim-sys-morphism-sys? exact-positive-integer?)]
+  [fin-times-dim-sys-morphism-sys-source
+    (-> fin-times-dim-sys-morphism-sys? dim-sys?)]
+  [fin-times-dim-sys-morphism-sys-dim-to-index
+    (->i ([ms fin-times-dim-sys-morphism-sys?])
+      [_ (ms)
+        (-> (dim-sys-dim/c #/fin-times-dim-sys-morphism-sys-source ms)
+          (and/c natural?
+            (</c #/fin-times-dim-sys-morphism-sys-bound ms)))])])
 (provide
   fin-multiplied-dim-successors-sys)
 (provide #/contract-out
@@ -604,9 +635,9 @@
   (auto-equal)
   (#:prop prop:dim-sys-endofunctor-sys
     (make-dim-sys-endofunctor-sys-impl-from-morph
-      (fn dss extended-with-top-dim-sys-endofunctor-sys?)
-      (fn dss ds #/extended-with-top-dim-sys ds)
-      (fn dss ms #/extended-with-top-dim-sys-morphism-sys ms))))
+      (fn es extended-with-top-dim-sys-endofunctor-sys?)
+      (fn es ds #/extended-with-top-dim-sys ds)
+      (fn es ms #/extended-with-top-dim-sys-morphism-sys ms))))
 (define-imitation-simple-struct
   (extend-with-top-dim-sys-morphism-sys?
     extend-with-top-dim-sys-morphism-sys-source)
@@ -798,6 +829,192 @@
   unguarded-fin-multiplied-dim-sys
   attenuated-fin-multiplied-dim-sys
   attenuated-fin-multiplied-dim-sys)
+(define-imitation-simple-struct
+  (fin-multiplied-dim-sys-morphism-sys?
+    fin-multiplied-dim-sys-morphism-sys-bound
+    fin-multiplied-dim-sys-morphism-sys-original)
+  unguarded-fin-multiplied-dim-sys-morphism-sys
+  'fin-multiplied-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
+        (match/c fin-multiplied-dim-sys-morphism-sys
+          (=/c bound)
+          (dim-sys-morphism-sys-accepts/c orig)))
+      (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
+        (fin-multiplied-dim-sys bound
+          (dim-sys-morphism-sys-source orig)))
+      (fn ms new-s
+        (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
+        #/expect new-s (fin-multiplied-dim-sys new-bound new-s)
+          (w- s (dim-sys-morphism-sys-source orig)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-source
+            "tried to replace the source with a source that was rather different"
+            "ms" ms
+            "s" s
+            "new-s" new-s)
+        #/expect (= bound new-bound) #t
+          (w- s (dim-sys-morphism-sys-source orig)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-source
+            "tried to replace the source with a source that had a different bound"
+            "ms" ms
+            "s" s
+            "new-s" new-s
+            "bound" bound
+            "new-bound" new-bound)
+        #/fin-multiplied-dim-sys-morphism-sys bound
+          (dim-sys-morphism-sys-put-source orig new-s)))
+      (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
+        (fin-multiplied-dim-sys bound
+          (dim-sys-morphism-sys-target orig)))
+      (fn ms new-t
+        (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
+        #/expect new-t (fin-multiplied-dim-sys new-bound new-t)
+          (w- t (dim-sys-morphism-sys-target orig)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/expect (= bound new-bound) #t
+          (w- t (dim-sys-morphism-sys-target orig)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that had a different bound"
+            "ms" ms
+            "t" t
+            "new-t" new-t
+            "bound" bound
+            "new-bound" new-bound)
+        #/fin-multiplied-dim-sys-morphism-sys bound
+          (dim-sys-morphism-sys-put-target orig new-t)))
+      (fn ms d
+        (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
+        #/dissect d (fin-multiplied-dim i d)
+        #/fin-multiplied-dim i
+          (dim-sys-morphism-sys-morph-dim orig d))))))
+(define-match-expander-attenuated
+  attenuated-fin-multiplied-dim-sys-morphism-sys
+  unguarded-fin-multiplied-dim-sys-morphism-sys
+  [bound exact-positive-integer?]
+  [original dim-sys-morphism-sys?]
+  #t)
+(define-match-expander-from-match-and-make
+  fin-multiplied-dim-sys-morphism-sys
+  unguarded-fin-multiplied-dim-sys-morphism-sys
+  attenuated-fin-multiplied-dim-sys-morphism-sys
+  attenuated-fin-multiplied-dim-sys-morphism-sys)
+(define-imitation-simple-struct
+  (fin-multiplied-dim-sys-endofunctor-sys?
+    fin-multiplied-dim-sys-endofunctor-sys-bound)
+  unguarded-fin-multiplied-dim-sys-endofunctor-sys
+  'fin-multiplied-dim-sys-endofunctor-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-endofunctor-sys
+    (make-dim-sys-endofunctor-sys-impl-from-morph
+      (dissectfn (fin-multiplied-dim-sys-endofunctor-sys bound)
+        (match/c fin-multiplied-dim-sys-endofunctor-sys #/=/c bound))
+      (fn es ds
+        (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
+        #/fin-multiplied-dim-sys bound ds))
+      (fn es ms
+        (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
+        #/fin-multiplied-dim-sys bound ms)))))
+(define-match-expander-attenuated
+  attenuated-fin-multiplied-dim-sys-endofunctor-sys
+  unguarded-fin-multiplied-dim-sys-endofunctor-sys
+  [bound exact-positive-integer?]
+  #t)
+(define-match-expander-from-match-and-make
+  fin-multiplied-dim-sys-endofunctor-sys
+  unguarded-fin-multiplied-dim-sys-endofunctor-sys
+  attenuated-fin-multiplied-dim-sys-endofunctor-sys
+  attenuated-fin-multiplied-dim-sys-endofunctor-sys)
+(define-imitation-simple-struct
+  (fin-times-dim-sys-morphism-sys?
+    fin-times-dim-sys-morphism-sys-bound
+    fin-times-dim-sys-morphism-sys-source
+    fin-times-dim-sys-morphism-sys-dim-to-index)
+  unguarded-fin-times-dim-sys-morphism-sys
+  'fin-times-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
+        (match/c fin-times-dim-sys-morphism-sys
+          (=/c bound)
+          (dim-sys-accepts/c source)
+          any/c))
+      (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
+        source)
+      (fn ms new-s
+        (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
+        #/fin-times-dim-sys-morphism-sys bound new-s d->i))
+      (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
+        (fin-multiplied-dim-sys bound source))
+      (fn ms new-t
+        (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
+        #/expect new-t (fin-multiplied-dim-sys new-bound new-s)
+          (w- t (fin-multiplied-dim-sys bound source)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/expect (= bound new-bound) #t
+          (w- t (fin-multiplied-dim-sys bound source)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that had a different bound"
+            "ms" ms
+            "t" t
+            "new-t" new-t
+            "bound" bound
+            "new-bound" new-bound)
+        #/fin-times-dim-sys-morphism-sys bound new-s d->i))
+      (fn ms d
+        (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
+        #/fin-multiplied-dim (d->i d) d)))))
+; TODO: We have a dilemma. The `define/contract` version of
+; `attenuated-fin-times-dim-sys-morphism-sys` will give less precise
+; source location information in its errors, and it won't catch
+; applications with incorrect arity. On the other hand, the
+; `define-match-expander-attenuated` version can't express a fully
+; precise contract for `dim-to-index`, namely
+; `(-> (dim-sys-dim/c source) (and/c natural? #/</c bound))`.
+; Dependent contracts would be difficult to make matchers for, but
+; perhaps we could implement an alternative to
+; `define-match-expander-attenuated` that just defined the
+; function-like side and not actually the match expander.
+(define attenuated-fin-times-dim-sys-morphism-sys
+  (let ()
+    (define/contract
+      (fin-times-dim-sys-morphism-sys bound source dim-to-index)
+      (->i
+        (
+          [bound exact-positive-integer?]
+          [source dim-sys?]
+          [dim-to-index (bound source)
+            (-> (dim-sys-dim/c source) (and/c natural? #/</c bound))])
+        [_ fin-times-dim-sys-morphism-sys?])
+      (unguarded-fin-times-dim-sys-morphism-sys
+        bound source dim-to-index))
+    fin-times-dim-sys-morphism-sys))
+#;
+(define-match-expander-attenuated
+  attenuated-fin-times-dim-sys-morphism-sys
+  unguarded-fin-times-dim-sys-morphism-sys
+  [bound exact-positive-integer?]
+  [source dim-sys?]
+  [dim-to-index (-> any/c natural?)]
+  #t)
+(define-match-expander-from-match-and-make
+  fin-times-dim-sys-morphism-sys
+  unguarded-fin-times-dim-sys-morphism-sys
+  attenuated-fin-times-dim-sys-morphism-sys
+  attenuated-fin-times-dim-sys-morphism-sys)
 (define-imitation-simple-struct
   (fin-multiplied-dim-successors-sys?
     fin-multiplied-dim-successors-sys-bound
