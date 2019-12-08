@@ -581,6 +581,62 @@
               ds))])
       extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?)]
   
+  [extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?
+    (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl?
+    (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-accepts/c
+    (-> extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?
+      contract?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys
+    (->
+      extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?
+      extension-from-dim-sys-to-snippet-sys-sys?
+      extension-from-dim-sys-to-snippet-sys-sys?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys-morphism-sys
+    (->i
+      (
+        [es
+          extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?]
+        [ms extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?])
+      [_ (ms)
+        (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
+          (extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+            (extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys
+              (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+                ms)))
+          (extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+            (extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys
+              (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target ms))))])]
+  [prop:extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys
+    (struct-type-property/c
+      extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl?)]
+  [make-extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl-from-morph
+    (->
+      (-> extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?
+        contract?)
+      (->
+        extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?
+        extension-from-dim-sys-to-snippet-sys-sys?
+        extension-from-dim-sys-to-snippet-sys-sys?)
+      (->i
+        (
+          [es
+            extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?]
+          [ms
+            extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?])
+        [_ (ms)
+          (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
+            (extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+              (extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys
+                (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+                  ms)))
+            (extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+              (extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys
+                (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+                  ms))))])
+      extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl?)]
+  
   )
 
 
@@ -992,6 +1048,27 @@
                 v)
               missing-party))
           v)))))
+
+
+(define-imitation-simple-generics
+  extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys?
+  extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl?
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-accepts/c
+    (#:this))
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys
+    (#:this)
+    ())
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-morph-extension-from-dim-sys-to-snippet-sys-sys-morphism-sys
+    (#:this)
+    ())
+  prop:extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys
+  make-extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl-from-morph
+  'extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys
+  'extension-from-dim-sys-to-snippet-sys-sys-endofunctor-sys-impl
+  (list))
 
 
 ; TODO: Export these.
