@@ -48,7 +48,7 @@
   dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys dim-sys?
   dim-sys-accepts/c dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c
-  dim-sys-dim-max dim-sys-dim-zero)
+  dim-sys-dim-max dim-sys-dim-zero dim-sys-morphism-sys?)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -370,7 +370,58 @@
               any/c
               maybe?)])
         [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])
-      snippet-sys-impl?)])
+      snippet-sys-impl?)]
+  
+  [snippet-sys-morphism-sys? (-> any/c boolean?)]
+  [snippet-sys-morphism-sys-impl? (-> any/c boolean?)]
+  [snippet-sys-morphism-sys-source
+    (-> snippet-sys-morphism-sys? snippet-sys?)]
+  [snippet-sys-morphism-sys-put-source
+    (-> snippet-sys-morphism-sys? snippet-sys?
+      snippet-sys-morphism-sys?)]
+  [snippet-sys-morphism-sys-target
+    (-> snippet-sys-morphism-sys? snippet-sys?)]
+  [snippet-sys-morphism-sys-put-target
+    (-> snippet-sys-morphism-sys? snippet-sys?
+      snippet-sys-morphism-sys?)]
+  [snippet-sys-morphism-sys-dim-sys-morphism-sys
+    (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?)]
+  [snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+    (-> snippet-sys-morphism-sys? snippet-sys-morphism-sys?)]
+  [snippet-sys-morphism-sys-morph-snippet
+    (->i
+      (
+        [ms snippet-sys-morphism-sys?]
+        [s (ms)
+          (snippet-sys-snippet/c
+            (snippet-sys-morphism-sys-source ms))])
+      [_ (ms)
+        (snippet-sys-snippet/c
+          (snippet-sys-morphism-sys-target ms))])]
+  [snippet-sys-morphism-sys/c (-> contract? contract? contract?)]
+  [prop:snippet-sys-morphism-sys
+    (struct-type-property/c snippet-sys-morphism-sys-impl?)]
+  [make-snippet-sys-morphism-sys-impl-from-morph
+    (->
+      (-> snippet-sys-morphism-sys? contract?)
+      (-> snippet-sys-morphism-sys? snippet-sys?)
+      (-> snippet-sys-morphism-sys? snippet-sys?
+        snippet-sys-morphism-sys?)
+      (-> snippet-sys-morphism-sys? snippet-sys?)
+      (-> snippet-sys-morphism-sys? snippet-sys?
+        snippet-sys-morphism-sys?)
+      (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?)
+      (-> snippet-sys-morphism-sys? snippet-sys-morphism-sys?)
+      (->i
+        (
+          [ms snippet-sys-morphism-sys?]
+          [s (ms)
+            (snippet-sys-snippet/c
+              (snippet-sys-morphism-sys-source ms))])
+        [_ (ms)
+          (snippet-sys-snippet/c
+            (snippet-sys-morphism-sys-target ms))])
+      snippet-sys-morphism-sys-impl?)])
 
 
 (define-imitation-simple-struct
@@ -611,6 +662,60 @@
 (define (snippet-sys-snippet-any? ss snippet check-hv?)
   (not #/snippet-sys-snippet-all? ss snippet #/fn hole data
     (not #/check-hv? hole data)))
+
+
+(define-imitation-simple-generics
+  snippet-sys-morphism-sys? snippet-sys-morphism-sys-impl?
+  (#:method snippet-sys-morphism-sys-accepts/c (#:this))
+  (#:method snippet-sys-morphism-sys-source (#:this))
+  (#:method snippet-sys-morphism-sys-put-source (#:this) ())
+  (#:method snippet-sys-morphism-sys-target (#:this))
+  (#:method snippet-sys-morphism-sys-put-target (#:this) ())
+  (#:method snippet-sys-morphism-sys-dim-sys-morphism-sys (#:this))
+  (#:method snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+    (#:this))
+  (#:method snippet-sys-morphism-sys-morph-snippet (#:this) ())
+  prop:snippet-sys-morphism-sys
+  make-snippet-sys-morphism-sys-impl-from-morph
+  'snippet-sys-morphism-sys 'snippet-sys-morphism-sys-impl (list))
+
+(define (snippet-sys-morphism-sys/c source/c target/c)
+  (w- source/c (coerce-contract 'snippet-sys-morphism-sys/c source/c)
+  #/w- target/c (coerce-contract 'snippet-sys-morphism-sys/c target/c)
+  #/w- name
+    `(snippet-sys-morphism-sys/c
+       ,(contract-name source/c)
+       ,(contract-name target/c))
+  #/w- first-order
+    (fn v
+      (and
+        (snippet-sys-morphism-sys? v)
+        (contract-first-order-passes? source/c
+          (snippet-sys-morphism-sys-source v))
+        (contract-first-order-passes? target/c
+          (snippet-sys-morphism-sys-target v))))
+  #/make-contract #:name name #:first-order first-order
+    
+    #:late-neg-projection
+    (fn blame
+      (w- source/c-projection
+        (
+          (get/build-late-neg-projection source/c)
+          (blame-add-context blame "source of"))
+      #/w- target/c-projection
+        (
+          (get/build-late-neg-projection target/c)
+          (blame-add-context blame "target of"))
+      #/fn v missing-party
+        (w- v
+          (snippet-sys-morphism-sys-put-source v
+            (source/c-projection (snippet-sys-morphism-sys-source v)
+              missing-party))
+        #/w- v
+          (snippet-sys-morphism-sys-put-target v
+            (target/c-projection (snippet-sys-morphism-sys-target v)
+              missing-party))
+          v)))))
 
 
 ; TODO: Export these.
