@@ -462,7 +462,37 @@
             (snippet-sys-accepts/c
               (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
                 (dim-sys-morphism-sys-target ms))))])
-      functor-from-dim-sys-to-snippet-sys-sys-impl?)])
+      functor-from-dim-sys-to-snippet-sys-sys-impl?)]
+  
+  ; TODO:
+  ;
+  ; An `extension-from-dim-sys-to-snippet-sys-sys?` is a wrapped
+  ; functor that guarantees the resulting `dim-sys` systems and
+  ; morphisms make use of the same `dym-sys` systems and functors that
+  ; were given. That is, when we compose an extension's functor with
+  ; the functor represented by the combination of
+  ; `snippet-sys-dim-sys` and
+  ; `snippet-sys-morphism-sys-dim-sys-morphism-sys`, we get an
+  ; identity functor.
+  ;
+  ; When we document the `extension-from-dim-sys-to-snippet-sys-sys?`
+  ; type, make sure to explain this.
+  ;
+  [extension-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-impl?
+    (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-functor
+    (-> extension-from-dim-sys-to-snippet-sys-sys?
+      functor-from-dim-sys-to-snippet-sys-sys?)]
+  [prop:extension-from-dim-sys-to-snippet-sys-sys
+    (struct-type-property/c
+      extension-from-dim-sys-to-snippet-sys-sys-impl?)]
+  [make-extension-from-dim-sys-to-snippet-sys-sys-impl-from-functor
+    (->
+      (-> extension-from-dim-sys-to-snippet-sys-sys? contract?)
+      (-> extension-from-dim-sys-to-snippet-sys-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?)
+      extension-from-dim-sys-to-snippet-sys-sys-impl?)])
 
 
 (define-imitation-simple-struct
@@ -775,6 +805,20 @@
   make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
   'functor-from-dim-sys-to-snippet-sys-sys
   'functor-from-dim-sys-to-snippet-sys-sys-impl
+  (list))
+
+
+(define-imitation-simple-generics
+  extension-from-dim-sys-to-snippet-sys-sys?
+  extension-from-dim-sys-to-snippet-sys-sys-impl?
+  (#:method extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+    (#:this))
+  (#:method extension-from-dim-sys-to-snippet-sys-sys-functor
+    (#:this))
+  prop:extension-from-dim-sys-to-snippet-sys-sys
+  make-extension-from-dim-sys-to-snippet-sys-sys-impl-from-functor
+  'extension-from-dim-sys-to-snippet-sys-sys
+  'extension-from-dim-sys-to-snippet-sys-sys-impl
   (list))
 
 
