@@ -48,7 +48,8 @@
   dim-successors-sys-dim-plus-int dim-successors-sys-dim-sys dim-sys?
   dim-sys-accepts/c dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c
-  dim-sys-dim-max dim-sys-dim-zero dim-sys-morphism-sys?)
+  dim-sys-dim-max dim-sys-dim-zero dim-sys-morphism-sys?
+  dim-sys-morphism-sys-source dim-sys-morphism-sys-target)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -421,7 +422,47 @@
         [_ (ms)
           (snippet-sys-snippet/c
             (snippet-sys-morphism-sys-target ms))])
-      snippet-sys-morphism-sys-impl?)])
+      snippet-sys-morphism-sys-impl?)]
+  
+  [functor-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
+  [functor-from-dim-sys-to-snippet-sys-sys-impl? (-> any/c boolean?)]
+  [functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+    (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
+      snippet-sys?)]
+  [functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+    (->i
+      (
+        [fs functor-from-dim-sys-to-snippet-sys-sys?]
+        [ms dim-sys-morphism-sys?])
+      [_ (ms)
+        (snippet-sys-morphism-sys/c
+          (snippet-sys-accepts/c
+            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+              (dim-sys-morphism-sys-source ms)))
+          (snippet-sys-accepts/c
+            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+              (dim-sys-morphism-sys-target ms))))])]
+  [prop:functor-from-dim-sys-to-snippet-sys-sys
+    (struct-type-property/c
+      functor-from-dim-sys-to-snippet-sys-sys-impl?)]
+  [make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
+    (->
+      (-> functor-from-dim-sys-to-snippet-sys-sys? contract?)
+      (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
+        snippet-sys?)
+      (->i
+        (
+          [fs functor-from-dim-sys-to-snippet-sys-sys?]
+          [ms dim-sys-morphism-sys?])
+        [_ (ms)
+          (snippet-sys-morphism-sys/c
+            (snippet-sys-accepts/c
+              (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+                (dim-sys-morphism-sys-source ms)))
+            (snippet-sys-accepts/c
+              (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+                (dim-sys-morphism-sys-target ms))))])
+      functor-from-dim-sys-to-snippet-sys-sys-impl?)])
 
 
 (define-imitation-simple-struct
@@ -716,6 +757,25 @@
             (target/c-projection (snippet-sys-morphism-sys-target v)
               missing-party))
           v)))))
+
+
+(define-imitation-simple-generics
+  functor-from-dim-sys-to-snippet-sys-sys?
+  functor-from-dim-sys-to-snippet-sys-sys-impl?
+  (#:method functor-from-dim-sys-to-snippet-sys-sys-accepts/c
+    (#:this))
+  (#:method functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+    (#:this)
+    ())
+  (#:method
+    functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+    (#:this)
+    ())
+  prop:functor-from-dim-sys-to-snippet-sys-sys
+  make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
+  'functor-from-dim-sys-to-snippet-sys-sys
+  'functor-from-dim-sys-to-snippet-sys-sys-impl
+  (list))
 
 
 ; TODO: Export these.
