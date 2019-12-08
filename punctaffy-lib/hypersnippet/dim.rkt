@@ -105,6 +105,8 @@
   
   [dim-sys-morphism-sys? (-> any/c boolean?)]
   [dim-sys-morphism-sys-impl? (-> any/c boolean?)]
+  [dim-sys-morphism-sys-accepts/c
+    (-> dim-sys-morphism-sys? contract?)]
   [dim-sys-morphism-sys-source (-> dim-sys-morphism-sys? dim-sys?)]
   [dim-sys-morphism-sys-put-source
     (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
@@ -136,6 +138,8 @@
   
   [dim-sys-endofunctor-sys? (-> any/c boolean?)]
   [dim-sys-endofunctor-sys-impl? (-> any/c boolean?)]
+  [dim-sys-endofunctor-sys-accepts/c
+    (-> dim-sys-endofunctor-sys? contract?)]
   [dim-sys-endofunctor-sys-morph-dim-sys
     (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)]
   [dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
@@ -589,7 +593,9 @@
       (fn ms new-s
         (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
         #/expect new-s (extended-with-top-dim-sys new-s)
-          (w- s (dim-sys-morphism-sys-source orig)
+          (w- s
+            (extended-with-top-dim-sys
+              (dim-sys-morphism-sys-source orig))
           #/raise-arguments-error 'dim-sys-morphism-sys-put-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
@@ -603,7 +609,9 @@
       (fn ms new-t
         (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
         #/expect new-t (extended-with-top-dim-sys new-t)
-          (w- t (dim-sys-morphism-sys-target orig)
+          (w- t
+            (extended-with-top-dim-sys
+              (dim-sys-morphism-sys-target orig))
           #/raise-arguments-error 'dim-sys-morphism-sys-put-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
@@ -849,14 +857,18 @@
       (fn ms new-s
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
         #/expect new-s (fin-multiplied-dim-sys new-bound new-s)
-          (w- s (dim-sys-morphism-sys-source orig)
+          (w- s
+            (fin-multiplied-dim-sys bound
+              (dim-sys-morphism-sys-source orig))
           #/raise-arguments-error 'dim-sys-morphism-sys-put-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
             "s" s
             "new-s" new-s)
         #/expect (= bound new-bound) #t
-          (w- s (dim-sys-morphism-sys-source orig)
+          (w- s
+            (fin-multiplied-dim-sys bound
+              (dim-sys-morphism-sys-source orig))
           #/raise-arguments-error 'dim-sys-morphism-sys-put-source
             "tried to replace the source with a source that had a different bound"
             "ms" ms
@@ -872,14 +884,18 @@
       (fn ms new-t
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
         #/expect new-t (fin-multiplied-dim-sys new-bound new-t)
-          (w- t (dim-sys-morphism-sys-target orig)
+          (w- t
+            (fin-multiplied-dim-sys bound
+              (dim-sys-morphism-sys-target orig))
           #/raise-arguments-error 'dim-sys-morphism-sys-put-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
             "t" t
             "new-t" new-t)
         #/expect (= bound new-bound) #t
-          (w- t (dim-sys-morphism-sys-target orig)
+          (w- t
+            (fin-multiplied-dim-sys bound
+              (dim-sys-morphism-sys-target orig))
           #/raise-arguments-error 'dim-sys-morphism-sys-put-target
             "tried to replace the target with a target that had a different bound"
             "ms" ms

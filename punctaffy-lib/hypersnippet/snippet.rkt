@@ -49,6 +49,8 @@
   dim-sys-accepts/c dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=?
   dim-sys-dim=0? dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c
   dim-sys-dim-max dim-sys-dim-zero dim-sys-morphism-sys?
+  dim-sys-morphism-sys-accepts/c dim-sys-morphism-sys-morph-dim
+  dim-sys-morphism-sys-put-source dim-sys-morphism-sys-put-target
   dim-sys-morphism-sys-source dim-sys-morphism-sys-target)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
@@ -375,6 +377,8 @@
   
   [snippet-sys-morphism-sys? (-> any/c boolean?)]
   [snippet-sys-morphism-sys-impl? (-> any/c boolean?)]
+  [snippet-sys-morphism-sys-accepts/c
+    (-> snippet-sys-morphism-sys? contract?)]
   [snippet-sys-morphism-sys-source
     (-> snippet-sys-morphism-sys? snippet-sys?)]
   [snippet-sys-morphism-sys-put-source
@@ -426,6 +430,8 @@
   
   [functor-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
   [functor-from-dim-sys-to-snippet-sys-sys-impl? (-> any/c boolean?)]
+  [functor-from-dim-sys-to-snippet-sys-sys-accepts/c
+    (-> functor-from-dim-sys-to-snippet-sys-sys? contract?)]
   [functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
     (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
       snippet-sys?)]
@@ -481,6 +487,8 @@
   [extension-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
   [extension-from-dim-sys-to-snippet-sys-sys-impl?
     (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+    (-> extension-from-dim-sys-to-snippet-sys-sys? contract?)]
   [extension-from-dim-sys-to-snippet-sys-sys-functor
     (-> extension-from-dim-sys-to-snippet-sys-sys?
       functor-from-dim-sys-to-snippet-sys-sys?)]
@@ -492,7 +500,9 @@
       (-> extension-from-dim-sys-to-snippet-sys-sys? contract?)
       (-> extension-from-dim-sys-to-snippet-sys-sys?
         functor-from-dim-sys-to-snippet-sys-sys?)
-      extension-from-dim-sys-to-snippet-sys-sys-impl?)])
+      extension-from-dim-sys-to-snippet-sys-sys-impl?)]
+  
+  )
 
 
 (define-imitation-simple-struct
@@ -1144,6 +1154,22 @@
   #/just #/hypertee-furl-unchecked ds
     (hypertee-coil-hole shape-d shape-hole result-data result-tails)))
 
+; TODO: See if we should export this.
+; TODO: Use the things that use this.
+(define (hypertee-map-dim dsms ht)
+  (w- target-ds (dim-sys-morphism-sys-target dsms)
+  #/w- target-ss (hypertee-snippet-sys target-ds)
+  #/dissect ht (hypertee-furl-unchecked _ coil)
+  #/hypertee-furl-unchecked target-ds
+    (mat coil (hypertee-coil-zero) (hypertee-coil-zero)
+    #/dissect coil (hypertee-coil-hole d hole data tails)
+    #/hypertee-coil-hole
+      (dim-sys-morphism-sys-morph-dim dsms d)
+      (hypertee-map-dim dsms hole)
+      data
+      (snippet-sys-snippet-map target-ss (hypertee-map-dim dsms tails)
+        (fn hole tail #/hypertee-map-dim dsms tail)))))
+
 ; TODO: Export these.
 ; TODO: Use these.
 (define-imitation-simple-struct
@@ -1318,6 +1344,100 @@
       #/fn hole data
         (dissect data (list i data)
         #/hash-ref env i)))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (hypertee-map-dim-snippet-sys-morphism-sys?
+    hypertee-map-dim-snippet-sys-morphism-sys-dim-sys-morphism-sys)
+  hypertee-map-dim-snippet-sys-morphism-sys
+  'hypertee-map-dim-snippet-sys-morphism-sys
+  (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:snippet-sys-morphism-sys
+    (make-snippet-sys-morphism-sys-impl-from-morph
+      ; snippet-sys-morphism-sys-accepts/c
+      (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        (match/c hypertee-map-dim-snippet-sys-morphism-sys
+          (dim-sys-morphism-sys-accepts/c dsms)))
+      ; snippet-sys-morphism-sys-source
+      (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        (hypertee-snippet-sys #/dim-sys-morphism-sys-source dsms))
+      ; snippet-sys-morphism-sys-put-source
+      (fn ms new-s
+        (dissect ms (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        #/expect new-s (hypertee-snippet-sys new-s)
+          (w- s
+            (hypertee-snippet-sys #/dim-sys-morphism-sys-source dsms)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-source
+            "tried to replace the source with a source that was rather different"
+            "ms" ms
+            "s" s
+            "new-s" new-s)
+        #/hypertee-map-dim-snippet-sys-morphism-sys
+          (dim-sys-morphism-sys-put-source dsms new-s)))
+      ; snippet-sys-morphism-sys-target
+      (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        (hypertee-snippet-sys #/dim-sys-morphism-sys-target dsms))
+      ; snippet-sys-morphism-sys-put-target
+      (fn ms new-t
+        (dissect ms (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        #/expect new-t (hypertee-snippet-sys new-t)
+          (w- t
+            (hypertee-snippet-sys #/dim-sys-morphism-sys-target dsms)
+          #/raise-arguments-error 'dim-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/hypertee-map-dim-snippet-sys-morphism-sys
+          (dim-sys-morphism-sys-put-target dsms new-t)))
+      ; snippet-sys-morphism-sys-dim-sys-morphism-sys
+      (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        dsms)
+      ; snippet-sys-morphism-sys-shape-dim-sys-morphism-sys
+      (fn ms ms)
+      ; snippet-sys-morphism-sys-morph-snippet
+      (fn ms s
+        (dissect ms (hypertee-map-dim-snippet-sys-morphism-sys dsms)
+        #/hypertee-map-dim dsms s)))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (hypertee-functor-from-dim-sys-to-snippet-sys-sys?)
+  hypertee-functor-from-dim-sys-to-snippet-sys-sys
+  'hypertee-functor-from-dim-sys-to-snippet-sys-sys
+  (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
+      ; functor-from-dim-sys-to-snippet-sys-sys-accepts/c
+      (dissectfn _ hypertee-functor-from-dim-sys-to-snippet-sys-sys?)
+      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+      (fn fs ds #/hypertee-snippet-sys ds)
+      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+      (fn fs ms #/hypertee-map-dim-snippet-sys-morphism-sys ms))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (hypertee-extension-from-dim-sys-to-snippet-sys-sys?)
+  hypertee-extension-from-dim-sys-to-snippet-sys-sys
+  'hypertee-extension-from-dim-sys-to-snippet-sys-sys
+  (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:extension-from-dim-sys-to-snippet-sys-sys
+    (make-extension-from-dim-sys-to-snippet-sys-sys-impl-from-functor
+      ; extension-from-dim-sys-to-snippet-sys-sys-accepts/c
+      (dissectfn _
+        hypertee-extension-from-dim-sys-to-snippet-sys-sys?)
+      ; extension-from-dim-sys-to-snippet-sys-sys-functor
+      (dissectfn _
+        (hypertee-functor-from-dim-sys-to-snippet-sys-sys)))))
 
 
 ; TODO: Find a better name for this.
