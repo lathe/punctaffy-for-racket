@@ -502,6 +502,85 @@
         functor-from-dim-sys-to-snippet-sys-sys?)
       extension-from-dim-sys-to-snippet-sys-sys-impl?)]
   
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+    (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?
+    (-> any/c boolean?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
+    (-> extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      contract?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+    (-> extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      extension-from-dim-sys-to-snippet-sys-sys?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+    (->
+      extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      extension-from-dim-sys-to-snippet-sys-sys?
+      extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+    (-> extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      extension-from-dim-sys-to-snippet-sys-sys?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+    (->
+      extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      extension-from-dim-sys-to-snippet-sys-sys?
+      extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
+    (->i
+      (
+        [ms extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
+        [ds dim-sys?])
+      [_ (ms ds)
+        (snippet-sys-morphism-sys/c
+          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+            (extension-from-dim-sys-to-snippet-sys-sys-functor
+              (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+                ms))
+            ds)
+          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+            (extension-from-dim-sys-to-snippet-sys-sys-functor
+              (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+                ms))
+            ds))])]
+  [extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
+    (-> contract? contract? contract?)]
+  [prop:extension-from-dim-sys-to-snippet-sys-sys-morphism-sys
+    (struct-type-property/c
+      extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?)]
+  [make-extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-morph
+    (->
+      (-> extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        contract?)
+      (-> extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        extension-from-dim-sys-to-snippet-sys-sys?)
+      (->
+        extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        extension-from-dim-sys-to-snippet-sys-sys?
+        extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
+      (-> extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        extension-from-dim-sys-to-snippet-sys-sys?)
+      (->
+        extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        extension-from-dim-sys-to-snippet-sys-sys?
+        extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
+      (->i
+        (
+          [ms extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
+          [ds dim-sys?])
+        [_ (ms ds)
+          (snippet-sys-morphism-sys/c
+            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+              (extension-from-dim-sys-to-snippet-sys-sys-functor
+                (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+                  ms))
+              ds)
+            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+              (extension-from-dim-sys-to-snippet-sys-sys-functor
+                (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+                  ms))
+              ds))])
+      extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?)]
+  
   )
 
 
@@ -830,6 +909,89 @@
   'extension-from-dim-sys-to-snippet-sys-sys
   'extension-from-dim-sys-to-snippet-sys-sys-impl
   (list))
+
+
+(define-imitation-simple-generics
+  extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+  extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
+    (#:this))
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+    (#:this))
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+    (#:this)
+    ())
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+    (#:this))
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+    (#:this)
+    ())
+  (#:method
+    extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
+    (#:this)
+    ())
+  prop:extension-from-dim-sys-to-snippet-sys-sys-morphism-sys
+  make-extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-morph
+  'extension-from-dim-sys-to-snippet-sys-sys-morphism-sys
+  'extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl
+  (list))
+
+(define (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c source/c target/c)
+  (w- source/c
+    (coerce-contract
+      'extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
+      source/c)
+  #/w- target/c
+    (coerce-contract
+      'extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
+      target/c)
+  #/w- name
+    `(extension-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
+       ,(contract-name source/c)
+       ,(contract-name target/c))
+  #/w- first-order
+    (fn v
+      (and
+        (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
+        (contract-first-order-passes? source/c
+          (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+            v))
+        (contract-first-order-passes? target/c
+          (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+            v))))
+  #/make-contract #:name name #:first-order first-order
+    
+    #:late-neg-projection
+    (fn blame
+      (w- source/c-projection
+        (
+          (get/build-late-neg-projection source/c)
+          (blame-add-context blame "source of"))
+      #/w- target/c-projection
+        (
+          (get/build-late-neg-projection target/c)
+          (blame-add-context blame "target of"))
+      #/fn v missing-party
+        (w- v
+          (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+            v
+            (source/c-projection
+              (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+                v)
+              missing-party))
+        #/w- v
+          (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+            v
+            (target/c-projection
+              (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+                v)
+              missing-party))
+          v)))))
 
 
 ; TODO: Export these.
