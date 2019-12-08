@@ -143,7 +143,7 @@
       (
         [es dim-sys-endofunctor-sys?]
         [ms dim-sys-morphism-sys?])
-      [_ (es ms)
+      [_ (ms)
         (dim-sys-morphism-sys/c
           (dim-sys-accepts/c
             (dim-sys-endofunctor-sys-morph-dim-sys
@@ -161,7 +161,7 @@
         (
           [es dim-sys-endofunctor-sys?]
           [ms dim-sys-morphism-sys?])
-        [_ (es ms)
+        [_ (ms)
           (dim-sys-morphism-sys/c
             (dim-sys-accepts/c
               (dim-sys-endofunctor-sys-morph-dim-sys
