@@ -1074,61 +1074,138 @@
 ; TODO: Export these.
 ; TODO: Use the things that use these.
 (define-imitation-simple-struct
-  (selective-snippet? selective-snippet-value)
+  (selective-snippet?
+    selective-snippet-degree
+    selective-snippet-content)
   selective-snippet
   'selective-snippet (current-inspector) (auto-write) (auto-equal))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
-(define (selective-snippet/c ss h-to-unselected/c)
-  (rename-contract
-    (match/c selective-snippet
-      (snippet-sys-snippetof ss #/fn hole
-        (selectable/c (h-to-unselected/c hole) any/c)))
-    `(selective-snippet/c ,ss ,h-to-unselected/c)))
+(define (selective-snippet/c efdstsss uds h-to-unselected/c)
+  (w- eds (extended-with-top-dim-sys uds)
+  #/w- ess
+    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+      (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
+      eds)
+  #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+  #/rename-contract
+    (and/c
+      (match/c selective-snippet
+        (dim-sys-dim/c eds)
+        (snippet-sys-snippet-with-degree/c ess
+          (extended-with-top-dim-infinite)))
+      (by-own-method/c (selective-snippet d content)
+      #/match/c selective-snippet any/c
+        (snippet-sys-snippetof ess #/fn hole
+          (selectable/c
+            (if
+              (dim-sys-dim<? eds
+                (snippet-sys-snippet-degree shape-ess hole)
+                (extended-with-top-dim-finite d))
+              (h-to-unselected/c hole)
+              none/c)
+            any/c))))
+    `(selective-snippet/c ,efdstsss ,uds ,h-to-unselected/c)))
 
 ; TODO: Export these.
 ; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-sys?
-    selective-snippet-sys-snippet-sys
+    selective-snippet-sys-extension-from-dim-sys-to-snippet-sys-sys
+    selective-snippet-sys-dim-sys
     selective-snippet-sys-h-to-unselected/c)
   selective-snippet-sys
   'selective-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
     ; snippet-sys-accepts/c
-    (dissectfn (selective-snippet-sys ss h-to-unselected/c)
+    (dissectfn (selective-snippet-sys efdstsss uds h-to-unselected/c)
       (match/c selective-snippet-sys
-        (snippet-sys-accepts/c ss)
+        (extension-from-dim-sys-to-snippet-sys-sys-accepts/c efdstsss)
+        (dim-sys-accepts/c uds)
         any/c))
     ; snippet-sys-snippet/c
-    (dissectfn (selective-snippet-sys ss h-to-unselected/c)
-      (selective-snippet/c ss h-to-unselected/c))
+    (dissectfn (selective-snippet-sys efdstsss uds h-to-unselected/c)
+      (selective-snippet/c efdstsss uds h-to-unselected/c))
     ; snippet-sys-dim-sys
-    (dissectfn (selective-snippet-sys ss _)
-      (snippet-sys-dim-sys ss))
+    (dissectfn (selective-snippet-sys efdstsss uds _)
+      uds)
     ; snippet-sys-shape-snippet-sys
-    (dissectfn (selective-snippet-sys ss _)
-      (snippet-sys-shape-snippet-sys ss))
+    (dissectfn (selective-snippet-sys efdstsss uds _)
+      (w- uss
+        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
+          uds)
+      #/snippet-sys-shape-snippet-sys uss))
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (dissect ss (selective-snippet-sys ss _)
-      #/dissect snippet (selective-snippet snippet)
-      #/snippet-sys-snippet-degree ss snippet))
+      (dissect snippet (selective-snippet d content)
+        d))
     ; snippet-sys-shape->snippet
     (fn ss shape
-      (dissect ss (selective-snippet-sys ss _)
-      #/selective-snippet #/snippet-sys-shape->snippet ss shape))
+      (dissect ss (selective-snippet-sys efdstsss uds _)
+      #/w- ffdstsss
+        (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
+      #/w- uss
+        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          ffdstsss uds)
+      #/w- eds (extended-with-top-dim-sys ds)
+      #/w- ess
+        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          ffdstsss eds)
+      #/w- unextended-snippet (snippet-sys-shape->snippet uss shape)
+      #/w- extended-snippet
+        (snippet-sys-morphism-sys-morph-snippet
+          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+            ffdstsss
+            (extend-with-top-dim-sys-morphism-sys uds))
+          unextended-snippet)
+      #/expect
+        (snippet-sys-snippet-set-degree-maybe ess
+          (extended-with-top-dim-infinite)
+          extended-snippet)
+        (just content)
+        ; TODO: Improve this error. If this can occur at all, it must
+        ; occur when one of the systems involved doesn't obey its
+        ; laws.
+        (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to infinity")
+      #/selective-snippet
+        (snippet-sys-snippet-degree uss unextended-snippet)
+        content))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
-      (dissect ss (selective-snippet-sys ss _)
-      #/dissect snippet (selective-snippet snippet)
-      #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-      #/maybe-bind (snippet-sys-snippet->maybe-shape snippet)
+      (dissect ss (selective-snippet-sys efdstsss uds _)
+      #/dissect snippet (selective-snippet d content)
+      #/w- ffdstsss
+        (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
+      #/w- eds (extended-with-top-dim-sys uds)
+      #/w- ess
+        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/maybe-bind (snippet-sys-snippet->maybe-shape ess content)
       #/fn shape
-      #/snippet-sys-snippet-map-maybe shape-ss shape #/fn hole data
-        (expect data (selected data) (nothing)
-        #/just data)))
+      #/maybe-bind
+        (snippet-sys-snippet-map-maybe shape-ss shape #/fn hole data
+          (expect data (selected data) (nothing)
+          #/just data))
+      #/fn shape
+      #/expect
+        (snippet-sys-snippet-set-degree-maybe shape-ess
+          (extended-with-top-dim-finite d)
+          shape)
+        (just shape)
+        ; TODO: Improve this error. If this can occur at all, it must
+        ; occur when one of the systems involved doesn't obey its
+        ; laws.
+        (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to a finite degree if that snippet had holes of only lesser degree")
+      #/snippet-sys-morphism-sys-morph-snippet
+        (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+            ffdstsss
+            (unextend-with-top-dim-sys-morphism-sys uds)))
+        shape))
+    ; TODO NOW: From here.
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss degree snippet
       (dissect ss (selective-snippet-sys ss _)
