@@ -136,6 +136,18 @@
           [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
         [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])
       dim-sys-morphism-sys-impl?)]
+  [dim-sys-morphism-sys-chain-two
+    (->i
+      (
+        [a dim-sys-morphism-sys?]
+        [b (a)
+          (dim-sys-morphism-sys/c
+            (dim-sys-accepts/c #/dim-sys-morphism-sys-target a)
+            any/c)])
+      [_ (a b)
+        (dim-sys-morphism-sys/c
+          (dim-sys-accepts/c #/dim-sys-morphism-sys-source a)
+          (dim-sys-accepts/c #/dim-sys-morphism-sys-target b))])]
   
   [dim-sys-endofunctor-sys? (-> any/c boolean?)]
   [dim-sys-endofunctor-sys-impl? (-> any/c boolean?)]
@@ -432,6 +444,48 @@
             (target/c-projection (dim-sys-morphism-sys-target v)
               missing-party))
           v)))))
+
+(define-imitation-simple-struct
+  (chain-two-dim-sys-morphism-sys?
+    chain-two-dim-sys-morphism-sys-first
+    chain-two-dim-sys-morphism-sys-second)
+  chain-two-dim-sys-morphism-sys
+  'chain-two-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
+      (dissectfn (chain-two-dim-sys-morphism-sys a b)
+        (match/c chain-two-dim-sys-morphism-sys
+          (dim-sys-morphism-sys-accepts/c a)
+          (dim-sys-morphism-sys-accepts/c b)))
+      ; dim-sys-morphism-sys-source
+      (dissectfn (chain-two-dim-sys-morphism-sys a b)
+        (dim-sys-morphism-sys-source a))
+      ; dim-sys-morphism-sys-put-source
+      (fn ms new-s
+        (dissect ms (chain-two-dim-sys-morphism-sys a b)
+        #/chain-two-dim-sys-morphism-sys
+          (dim-sys-morphism-sys-put-source a new-s)
+          b))
+      ; dim-sys-morphism-sys-target
+      (dissectfn (chain-two-dim-sys-morphism-sys a b)
+        (dim-sys-morphism-sys-target b))
+      ; dim-sys-morphism-sys-put-target
+      (fn ms new-t
+        (dissect ms (chain-two-dim-sys-morphism-sys a b)
+        #/chain-two-dim-sys-morphism-sys
+          a
+          (dim-sys-morphism-sys-put-source b new-t)))
+      ; dim-sys-morphism-sys-morph-dim
+      (fn ms s
+        (dissect ms (chain-two-dim-sys-morphism-sys a b)
+        #/dim-sys-morphism-sys-morph-dim b
+          (dim-sys-morphism-sys-morph-dim a s))))))
+
+(define (dim-sys-morphism-sys-chain-two a b)
+  (chain-two-dim-sys-morphism-sys a b))
 
 
 (define-imitation-simple-generics
