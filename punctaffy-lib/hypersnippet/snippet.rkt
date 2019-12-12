@@ -53,10 +53,10 @@
   dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-morph-dim
   dim-sys-morphism-sys-put-source dim-sys-morphism-sys-put-target
   dim-sys-morphism-sys-source dim-sys-morphism-sys-target
-  extended-with-top-dim-sys extended-with-top-dim-finite
-  extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
-  fin-multiplied-dim fin-multiplied-dim-sys
-  unextend-with-top-dim-sys-morphism-sys)
+  extended-with-top-dim-sys extended-with-top-dim-sys-morphism-sys
+  extended-with-top-dim-finite extended-with-top-dim-infinite
+  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
+  fin-multiplied-dim-sys unextend-with-top-dim-sys-morphism-sys)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -1479,8 +1479,17 @@
       #/fn snippet
         (selective-snippet-nonzero d snippet)))))
 
+; TODO: Export this.
+; TODO: Use the things that use this.
+;
+; TODO: See if there's a more specific term than "apply to" we can use
+; here. This isn't whiskering, is it?
+;
+; TODO: See if we should place this somewhere else in the file, e.g.
+; closer to `extension-from-dim-sys-to-snippet-sys-sys-morphism-sys?`.
+;
 (define
-  (selective-map-all-snippet-sys-morphism-sys-by-chaining
+  (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-apply-to-dim-sys-morphism-sys
     efdstsssms dsms)
   (snippet-sys-morphism-sys-chain-two
     (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
@@ -1495,10 +1504,23 @@
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (selective-snippet-map-all efdstsssms dsms s)
-  (snippet-sys-morphism-sys-morph-snippet
-    (selective-map-all-snippet-sys-morphism-sys-by-chaining
-      efdstsssms dsms)
-    s))
+  (w- make-ssms
+    (fn dsms
+      (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-apply-to-dim-sys-morphism-sys
+        efdstsssms dsms))
+  #/mat s (selective-snippet-zero content)
+    (selective-snippet-zero
+      (snippet-sys-morphism-sys-morph-snippet (make-ssms dsms)
+        content))
+  #/dissect s (selective-snippet-nonzero d content)
+    (selective-snippet-nonzero
+      (dim-sys-morphism-sys-morph-dim
+        (snippet-sys-morphism-sys-dim-sys-morphism-sys
+          (make-ssms dsms))
+        d)
+      (snippet-sys-morphism-sys-morph-snippet
+        (make-ssms #/extended-with-top-dim-sys-morphism-sys dsms)
+        content))))
 
 ; TODO: Export these.
 ; TODO: Use these.
@@ -1590,7 +1612,7 @@
       (dissectfn
         (selective-map-all-snippet-sys-morphism-sys efdstsssms dsms)
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (selective-map-all-snippet-sys-morphism-sys-by-chaining
+          (extension-from-dim-sys-to-snippet-sys-sys-morphism-sys-apply-to-dim-sys-morphism-sys
             efdstsssms dsms)))
       ; snippet-sys-morphism-sys-morph-snippet
       (fn ms s
