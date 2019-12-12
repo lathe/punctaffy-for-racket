@@ -45,8 +45,9 @@
     ht-tag-2-other ht-tag-2-prefab ht-tag-2-vector
     s-expr-stx->ht-expr simple-ht-builder-syntax)
   (require #/only-in punctaffy/hypersnippet/dim
-    dim-successors-sys-dim-sys dim-sys-dim<? extended-nat-dim-sys
-    omega)
+    dim-successors-sys-dim-sys dim-sys-dim<?)
+  (require #/only-in "extended-nat-dim-sys.rkt"
+    extended-nat-dim-sys omega)
   (require #/only-in punctaffy/hypersnippet/hypertee
     htb-labeled ht-bracs hypertee-bind-one-degree hypertee-coil-hole
     hypertee-coil-zero hypertee-degree hypertee-done

@@ -31,7 +31,9 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys-dim-sys extended-nat-dim-sys omega)
+  dim-successors-sys-dim-sys)
+(require #/only-in "extended-nat-dim-sys.rkt"
+  extended-nat-dim-sys omega)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled ht-bracs htb-unlabeled hypertee? hypertee-append-zero
   hypertee-bind-one-degree hypertee-from-brackets)
