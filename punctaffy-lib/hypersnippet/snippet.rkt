@@ -27,7 +27,7 @@
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
   -> ->i and/c any/c contract? contract-name contract-out list/c
-  none/c or/c rename-contract)
+  none/c not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract raise-blame-error)
@@ -38,7 +38,8 @@
 (require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/match match/c)
 (require #/only-in lathe-comforts/maybe
-  just just? just-value maybe? maybe-bind maybe/c maybe-map nothing)
+  just just? just-value maybe? maybe-bind maybe/c maybe-if maybe-map
+  nothing)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
@@ -1078,29 +1079,57 @@
 ; TODO: Export these.
 ; TODO: Use the things that use these.
 (define-imitation-simple-struct
-  (selective-snippet?
-    selective-snippet-degree
-    selective-snippet-content)
-  selective-snippet
-  'selective-snippet (current-inspector) (auto-write) (auto-equal))
+  (selective-snippet-zero? selective-snippet-zero-content)
+  selective-snippet-zero
+  'selective-snippet-zero (current-inspector)
+  (auto-write)
+  (auto-equal))
+
+; TODO: Export these.
+; TODO: Use the things that use these.
+(define-imitation-simple-struct
+  (selective-snippet-nonzero?
+    selective-snippet-nonzero-degree
+    selective-snippet-nonzero-content)
+  selective-snippet-nonzero
+  'selective-snippet-nonzero (current-inspector)
+  (auto-write)
+  (auto-equal))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (selective-snippet? v)
+  (or
+    (selective-snippet-zero? v)
+    (selective-snippet-nonzero? v)))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (selective-snippet/c efdstsss uds h-to-unselected/c)
   (w- eds (extended-with-top-dim-sys uds)
+  #/w- ffdstsss
+    (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
+  #/w- uss
+    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+      ffdstsss uds)
   #/w- ess
     (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-      (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
-      eds)
+      ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/rename-contract
-    (and/c
-      (match/c selective-snippet
-        (dim-sys-dim/c eds)
+    (or/c
+      (match/c selective-snippet-zero
+        (snippet-sys-snippet-with-degree/c uss
+          (dim-sys-dim-zero uds)))
+    #/and/c
+      (match/c selective-snippet-nonzero
+        (and/c
+          (dim-sys-dim/c uds)
+          (not/c #/dim-sys-dim=/c eds #/dim-sys-dim-zero uds))
         (snippet-sys-snippet-with-degree/c ess
           (extended-with-top-dim-infinite)))
-      (by-own-method/c (selective-snippet d content)
-      #/match/c selective-snippet any/c
+      (by-own-method/c (selective-snippet-nonzero d maybe-content)
+      #/match/c selective-snippet-nonzero any/c
         (snippet-sys-snippetof ess #/fn hole
           (selectable/c
             (if
@@ -1143,7 +1172,9 @@
       #/snippet-sys-shape-snippet-sys uss))
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (dissect snippet (selective-snippet d content)
+      (dissect ss (selective-snippet-sys efdstsss uds _)
+      #/expect snippet (selective-snippet-nonzero d content)
+        (dim-sys-dim-zero uds)
         d))
     ; snippet-sys-shape->snippet
     (fn ss shape
@@ -1158,6 +1189,9 @@
         (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
           ffdstsss eds)
       #/w- unextended-snippet (snippet-sys-shape->snippet uss shape)
+      #/w- d (snippet-sys-snippet-degree uss unextended-snippet)
+      #/if (dim-sys-dim=0? uds d)
+        (selective-snippet-zero unextended-snippet)
       #/w- extended-snippet
         (snippet-sys-morphism-sys-morph-snippet
           (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
@@ -1173,20 +1207,23 @@
         ; occur when one of the systems involved doesn't obey its
         ; laws.
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to infinity")
-      #/selective-snippet
-        (snippet-sys-snippet-degree uss unextended-snippet)
-        content))
+      #/selective-snippet-nonzero d content))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
       (dissect ss (selective-snippet-sys efdstsss uds _)
-      #/dissect snippet (selective-snippet d content)
       #/w- ffdstsss
         (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
       #/w- eds (extended-with-top-dim-sys uds)
+      #/w- uss
+        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          ffdstsss uds)
       #/w- ess
         (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
           ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/mat snippet (selective-snippet-zero content)
+        (snippet-sys-snippet->maybe-shape uss content)
+      #/dissect snippet (selective-snippet-nonzero d content)
       #/maybe-bind (snippet-sys-snippet->maybe-shape ess content)
       #/fn shape
       #/maybe-bind
@@ -1219,7 +1256,9 @@
         (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
           ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
-      #/dissect snippet (selective-snippet d content)
+      #/expect snippet (selective-snippet-nonzero d content)
+        (maybe-if (dim-sys-dim=0? uds new-degree) #/fn snippet)
+      #/expect (dim-sys-dim=0? uds new-degree) #f (nothing)
       #/expect
         (snippet-sys-snippet-all? ess content #/fn hole data
           (expect data (selected data) #t
@@ -1228,7 +1267,7 @@
             (extended-with-top-dim-finite new-degree)))
         #t
         (nothing)
-      #/just #/selective-snippet new-degree content))
+      #/just #/selective-snippet-nonzero new-degree content))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
       (dissect ss (selective-snippet-sys efdstsss uds _)
@@ -1257,8 +1296,8 @@
         ; TODO: Improve this error. If this can occur at all, it must
         ; occur when one of the systems involved doesn't obey its
         ; laws.
-        (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to infinity")
-      #/selective-snippet degree content))
+        (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a nonzero-degree snippet to infinity")
+      #/selective-snippet-nonzero degree content))
     ; snippet-sys-snippet-undone
     (fn ss snippet
       (dissect ss (selective-snippet-sys efdstsss uds _)
@@ -1271,7 +1310,7 @@
       #/w- ess
         (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
           ffdstsss eds)
-      #/dissect snippet (selective-snippet d content)
+      #/expect snippet (selective-snippet-nonzero d content) (nothing)
       #/maybe-bind
         (snippet-sys-snippet-map-maybe ess content #/fn hole data
           (expect data (selected data) (nothing)
@@ -1292,7 +1331,8 @@
       #/w- ess
         (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
           ffdstsss eds)
-      #/dissect snippet (selective-snippet d prefix)
+      #/expect snippet (selective-snippet-nonzero d prefix)
+        (just snippet)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
           (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
@@ -1309,7 +1349,8 @@
               unextend-hole extended-hole)
           #/maybe-map (hv-to-splice unextended-hole data) #/fn splice
             (mat splice (unselected data) (unselected #/selected data)
-            #/dissect splice (selected #/selective-snippet d suffix)
+            #/dissect splice
+              (selected #/selective-snippet-nonzero d suffix)
             #/selected
               (snippet-sys-snippet-map ess suffix #/fn hole data
                 (mat data (unselected data)
@@ -1320,17 +1361,26 @@
                 #/dissect data (selected #/trivial)
                 #/selected #/trivial)))))
       #/fn snippet
-        (selective-snippet d snippet)))
+        (selective-snippet-nonzero d snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       (dissect ss (selective-snippet-sys efdstsss uds _)
       #/w- ffdstsss
         (extension-from-dim-sys-to-snippet-sys-sys-functor efdstsss)
       #/w- eds (extended-with-top-dim-sys uds)
+      #/w- uss
+        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          ffdstsss uds)
       #/w- ess
         (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
           ffdstsss eds)
-      #/dissect snippet (selective-snippet d subject)
+      #/mat snippet (selective-snippet-zero subject)
+        (maybe-map
+          (snippet-sys-snippet-zip-map-selective uss shape subject
+            hvv-to-maybe-v)
+        #/fn snippet
+          (selective-snippet-zero snippet))
+      #/dissect snippet (selective-snippet-nonzero d subject)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
           (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
@@ -1358,7 +1408,7 @@
           #/fn result-data
             (selected result-data)))
       #/fn snippet
-        (selective-snippet d snippet)))))
+        (selective-snippet-nonzero d snippet)))))
 
 
 ; TODO: Consider rearranging everything in this file, but especially
@@ -2100,27 +2150,8 @@
   #/if (dim-sys-dim=0? uds opening-degree)
     (expect brackets (list)
       (error "Expected brackets to be empty since degree was zero")
-    #/hypernest-unchecked #/selective-snippet (dim-sys-dim-zero mds)
-      
-      ; TODO HYPERNEST-2-FROM-BRACKETS:
-      ;
-      ; Hmm, `selective-snippet` values of degree zero are an
-      ; interesting case. The way we've implemented them is incorrect
-      ; because a degree-zero shape can't be converted to a
-      ; degree-zero selective snippet, but it's unclear if we should
-      ; fix this by adding another constructor of selective snippets
-      ; for snippets of degree-zero shapes, or by redesigning the
-      ; `snippet-sys` interface itself so that degree-zero snippets in
-      ; general can be `set-degree`'d into higher degrees.
-      ;
-      ; The latter would depart from the idea of hypersnippets having
-      ; opetopic composition, but the opetopic ones would still be an
-      ; easy-to-state special case.
-      ;
-      ; Until we do something about this one way or another, this
-      ; value we're providing is sort of a broken dummy value.
-      ;
-      (hypertee-furl-unchecked emds #/hypertee-coil-zero))
+    #/hypernest-unchecked #/selective-snippet-zero
+      (hypertee-furl-unchecked mds #/hypertee-coil-zero))
   #/expect brackets (cons first-bracket brackets)
     (error "Expected brackets to be nonempty since degree was nonzero")
   #/w- root-i 'root
@@ -2131,13 +2162,13 @@
       (list
         (fn root-part
           (dissect root-part
-            (hypernest-unchecked #/selective-snippet _
+            (hypernest-unchecked #/selective-snippet-nonzero _
               root-part-selective)
           #/dissect
             (snippet-sys-snippet-filter-maybe
               htss root-part-selective)
             (just root-part-shape)
-          #/hypernest-unchecked #/selective-snippet
+          #/hypernest-unchecked #/selective-snippet-nonzero
             (fin-multiplied-dim 0 opening-degree)
             (hypertee-furl-unchecked emds #/hypertee-coil-hole
               (extended-with-top-dim-infinite)
@@ -2171,7 +2202,7 @@
         (list (parent-same-part #t) stack)
       #/list
         (fn root-part
-          (hypernest-unchecked #/selective-snippet
+          (hypernest-unchecked #/selective-snippet-nonzero
             (fin-multiplied-dim 0 opening-degree)
             (hypertee-furl-unchecked emds #/hypertee-coil-hole
               (extended-with-top-dim-infinite)
