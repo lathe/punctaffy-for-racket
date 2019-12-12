@@ -37,6 +37,7 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
+(require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make match/c)
@@ -505,23 +506,6 @@
         #/just result)))))
 
 
-; TODO HYPERNEST-2-FROM-BRACKETS: Use
-;
-;   (extended-with-top-dim-successors-sys
-;     (fin-multiplied-dim-successors-sys 2 orig-dss))
-;
-; to implement hypernests in `punctaffy/hypernest/snippet`. The
-; `fin-multiplied` part ensures bumps can be represented by holes of
-; slightly higher degree, and the `extended-with-top` part ensures
-; bumps of arbitrarily large size can exist as unselected holes of a
-; selective snippet.
-;
-; Oh yeah, in order for that to work, we'll also need selective
-; snippets to use `(extended-with-top-dim-successors-sys orig-dss)`
-; themselves so they can contain (arbitrarily large) unselected holes
-; of degree larger than their own degree.
-
-
 (define-imitation-simple-struct
   (extended-with-top-dim-finite?
     extended-with-top-dim-finite-original)
@@ -715,7 +699,7 @@
       (dissect ds (extended-with-top-finite-dim-sys orig-ds)
       #/dissect a (extended-with-top-dim-finite a)
       #/dissect b (extended-with-top-dim-finite b)
-      #/dim-sys-dim? orig-ds a b))
+      #/dim-sys-dim=? orig-ds a b))
     (fn ds lst
       (dissect ds (extended-with-top-finite-dim-sys orig-ds)
       #/dim-sys-dim-max-of-list orig-ds #/list-map lst
@@ -743,7 +727,7 @@
         (match/c unextend-with-top-dim-sys-morphism-sys
           (dim-sys-accepts/c target)))
       (dissectfn (extend-with-top-dim-sys-morphism-sys target)
-        (extended-with-top-finite-dim-sys source))
+        (extended-with-top-finite-dim-sys target))
       (fn ms new-s
         (dissect ms (extend-with-top-dim-sys-morphism-sys target)
         #/expect new-s (extended-with-top-finite-dim-sys new-t)
