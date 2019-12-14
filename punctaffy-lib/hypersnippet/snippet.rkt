@@ -890,10 +890,17 @@
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
+(define (snippet-sys-snippet-splice-sure ss snippet hv-to-splice)
+  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/just-value #/snippet-sys-snippet-splice ss snippet #/fn hole data
+    (just #/hv-to-splice hole data)))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
 (define (snippet-sys-snippet-bind ss prefix hv-to-suffix)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/just-value #/snippet-sys-snippet-splice ss prefix #/fn hole data
-    (just #/selected #/snippet-sys-snippet-select-if-degree< ss
+  #/snippet-sys-snippet-splice-sure ss prefix #/fn hole data
+    (selected #/snippet-sys-snippet-select-if-degree< ss
       (snippet-sys-snippet-degree shape-ss hole)
       (hv-to-suffix hole data))))
 
@@ -2327,15 +2334,13 @@
           (snippet-sys-snippet-map ss suffix #/fn hole data
             (expect data (unselected data) data
             #/unselected #/unselected data))
-        #/maybe-bind
+        #/maybe-map
           (snippet-sys-snippet-zip-map-selective ss tails suffix
           #/fn hole tail data
-            (w- d (snippet-sys-snippet-degree ss hole)
-            #/dissect data (trivial)
-            #/selected
-              (snippet-sys-snippet-select-if-degree< ss d tail)))
+            (dissect data (trivial)
+              tail))
         #/fn suffix
-        #/snippet-sys-snippet-splice ss suffix #/fn hole data data)))
+          (snippet-sys-snippet-bind ss suffix #/fn hole data data))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -2753,7 +2758,7 @@
             (snippet-sys-snippet-filter-maybe htss
               root-part-selective)
             (just root-part-shape)
-          #/dissect
+          #/w- root-part-assembled
             
             ; We construct the overall hypertee to use as the
             ; representation of the resulting hypernest.
@@ -2764,15 +2769,15 @@
             ; It also contains other holes representing the rest of
             ; the bumps and holes of the hypernest. We add in the rest
             ; of those holes by using appropriate tails in a
-            ; `snippet-sys-snippet-splice`. The `root-part` and each
-            ; of the (hypernest) tails carried in its holes gives us
-            ; what we need for one of those (hypertee) tails.
+            ; `snippet-sys-snippet-splice-sure`. The `root-part` and
+            ; each of the (hypernest) tails carried in its holes gives
+            ; us what we need for one of those (hypertee) tails.
             ;
             ; TODO: See if it's simpler to keep the tails as
             ; hypernests and use them for a
-            ; `(snippet-sys-snippet-splice hnss ...)` instead.
+            ; `(snippet-sys-snippet-splice-sure hnss ...)` instead.
             ;
-            (snippet-sys-snippet-splice htss
+            (snippet-sys-snippet-splice-sure htss
               (snippet-sys-snippet-done
                 htss
                 (extended-with-top-dim-infinite)
@@ -2782,10 +2787,10 @@
                 ; "done" around the shape of the hole's interior
                 ; (`root-part`).
                 ;
-                ; As expected by our `snippet-sys-snippet-splice`
+                ; As expected by our `snippet-sys-snippet-splice-sure`
                 ; call, the elements in the holes this snippet are
-                ; `(maybe/c selectable?)` values, and the selected
-                ; ones are tail snippets whose own holes contain
+                ; `selectable?` values, and the selected ones are tail
+                ; snippets whose own holes contain
                 ; `(selectable/c any/c trivial?)` values.
                 ;
                 (snippet-sys-snippet-done
@@ -2798,9 +2803,8 @@
                         (snippet-sys-snippet-degree htss hole)
                       #/dissect tail
                         (hypernest-unchecked
-                          (selective-snippet-nonzero _
-                            tail))
-                      #/just #/selected
+                          (selective-snippet-nonzero _ tail))
+                      #/selected
                         (snippet-sys-snippet-map htss tail
                           (fn hole selectable-tail-tail
                             (mat selectable-tail-tail
@@ -2816,17 +2820,16 @@
                               #/just #/selected #/trivial)
                             #/just #/unselected
                               (selected tail-tail)))))))
-                  (just #/selected
+                  (selected
                     (snippet-sys-snippet-map htss root-part-selective
                       (fn hole selectable-tail
                         (mat selectable-tail (unselected data)
                           (just #/unselected #/unselected data)
                         #/dissect selectable-tail (selected tail)
                           (just #/selected #/trivial))))))
-                (just #/unselected #/unselected data))
-              (fn hole maybe-splice maybe-splice))
-            
-            (just root-part-assembled)
+                (unselected #/unselected data))
+              (fn hole splice splice))
+          
           #/hypernest-unchecked #/selective-snippet-nonzero
             (fin-multiplied-dim 0 opening-degree)
             root-part-assembled))
@@ -3057,3 +3060,124 @@
     degree
     (list-map brackets #/fn htb
       (hypertee-bracket->hypernest-bracket htb))))
+
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypernest-brackets hn)
+  (dissect hn (hypernest-unchecked hn-selective)
+  #/mat hn-selective (selective-snippet-zero ht) (list)
+  #/dissect hn-selective (selective-snippet-nonzero _ ht)
+  #/dissect ht (hypertee-furl-unchecked emds _)
+  #/dissect emds (extended-with-top-dim-sys mds)
+  #/dissect mds (fin-multiplied-dim-sys 2 uds)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
+  #/w- htss (hypertee-snippet-sys emds)
+  #/w- prepend
+    (fn hnb rest
+      (snippet-sys-snippet-splice-sure htss
+        (hypertee-from-brackets emds
+          (extended-with-top-dim-infinite)
+          (list
+            (htb-labeled
+              (extended-with-top-dim-finite
+                (fin-multiplied-dim 1 #/dim-sys-dim-zero uds))
+              (unselected hnb))
+            (htb-unlabeled #/dim-sys-dim-zero emds)
+            (htb-labeled (dim-sys-dim-zero emds)
+              (selected #/snippet-sys-snippet-select-nothing htss
+                rest))))
+        (fn hole splice splice)))
+  #/w- ht->list
+    (fn ht
+      (w-loop next ht ht rev-result (list)
+        (dissect ht
+          (hypertee-furl-unchecked _
+            (hypertee-coil-hole
+              (extended-with-top-dim-infinite)
+              hole
+              data
+              (hypertee-furl-unchecked _ tails-coil)))
+        #/mat tails-coil (hypertee-coil-zero)
+          (dissect data (trivial)
+          #/reverse rev-result)
+        #/dissect tails-coil
+          (hypertee-coil-hole
+            (extended-with-top-dim-finite #/fin-multiplied-dim 1 d)
+            tails-hole
+            tail
+            (hypertee-furl-unchecked _ #/hypertee-coil-zero))
+        #/dissect (dim-sys-dim=0? uds d) #t
+        #/next tail #/cons data rev-result)))
+  #/ht->list #/snippet-sys-snippet-splice-sure htss
+    (w-loop next ht ht
+      (dissect ht
+        (hypertee-furl-unchecked _
+          (hypertee-coil-hole (extended-with-top-dim-infinite)
+            hole data tails))
+      #/dissect (snippet-sys-snippet-degree htss tails)
+        (extended-with-top-dim-finite d)
+      #/mat d (fin-multiplied-dim 1 d)
+        (dissect (snippet-sys-snippet-undone uds tails)
+          (just #/list
+            (extended-with-top-dim-finite
+              (fin-multiplied-dim 1 d-again))
+            tails
+            interior)
+        #/dissect (dim-sys-dim=? uds d d-again) #t
+        #/dissect (snippet-sys-snippet-degree htss tails)
+          (extended-with-top-dim-finite
+            (fin-multiplied-dim 0 d-again))
+        #/dissect (dim-sys-dim=? uds d d-again) #t
+        #/dissect data (unselected data)
+        #/prepend (unselected #/hnb-open d data)
+          (snippet-sys-snippet-splice-sure htss
+            (snippet-sys-snippet-zip-map-selective htss
+              tails
+              (snippet-sys-snippet-select htss (next interior)
+                (fn hole data
+                  (selected? data)))
+            #/fn hole tail data
+              (dissect data (selected #/trivial)
+              #/dissect (snippet-sys-snippet-degree htss hole)
+                (extended-with-top-dim-finite
+                  (fin-multiplied-dim 0 d))
+              #/selected
+                (prepend (unselected #/hnb-unlabeled d) (next tail))))
+            (fn hole splice splice)))
+      #/dissect d (fin-multiplied-dim 0 d)
+        (dissect data (selected data)
+        #/hypertee-coil-hole (extended-with-top-dim-infinite)
+          hole
+          (selected data)
+          (snippet-sys-snippet-map htss tails #/fn hole tail
+            (dissect (snippet-sys-snippet-degree htss hole)
+              (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
+            #/prepend (unselected #/hnb-unlabeled d) (next tail))))))
+    (fn hole selectable-data
+      (dissect (snippet-sys-snippet-degree htss hole)
+        (extended-with-top-dim-finite d)
+      #/mat d (fin-multiplied-dim 1 d)
+        (dissect selectable-data (unselected data)
+        #/unselected data)
+      #/dissect d (fin-multiplied-dim 0 d)
+        (dissect selectable-data (selected data)
+        #/dissect
+          (snippet-sys-snippet-set-degree-maybe htss
+            (extended-with-top-dim-infinite)
+            hole)
+          (just rest)
+        #/selected #/snippet-sys-snippet-select-if-degree< htss
+          (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
+          (prepend (hnb-labeled d data) rest))))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypertee-brackets ht)
+  (dissect ht (hypertee-furl-unchecked ds coil)
+  #/list-map
+    (hypernest-brackets #/snippet-sys-shape->snippet
+      (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+      ht)
+  #/fn hnb
+    (compatible-hypernest-bracket->hypertee-bracket hnb)))
