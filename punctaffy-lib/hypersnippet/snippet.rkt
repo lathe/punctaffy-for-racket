@@ -2699,11 +2699,21 @@
   #/mat bracket (hnb-labeled d data) d
   #/dissect bracket (hnb-unlabeled d) d))
 
-; TODO HYPERNEST-2-FROM-BRACKETS: Finish implementing this.
 ; TODO: Export this.
 ; TODO: Use this.
+(define (hypertee-bracket->hypernest-bracket bracket)
+  (mat bracket (htb-labeled d data) (hnb-labeled d data)
+  #/dissect bracket (htb-unlabeled d) (hnb-unlabeled d)))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (compatible-hypernest-bracket->hypertee-bracket bracket)
+  (mat bracket (hnb-labeled d data) (htb-labeled d data)
+  #/dissect bracket (hnb-unlabeled d) (htb-unlabeled d)))
+
 (define
-  (explicit-hypernest-from-brackets err-name sfs uds degree brackets)
+  (explicit-hypernest-from-brackets
+    err-name err-normalize-bracket uds degree brackets)
   
   (struct parent-same-part (should-annotate-as-nontrivial))
   (struct parent-new-part ())
@@ -2740,28 +2750,86 @@
             (hypernest-unchecked #/selective-snippet-nonzero _
               root-part-selective)
           #/dissect
-            (snippet-sys-snippet-filter-maybe
-              htss root-part-selective)
+            (snippet-sys-snippet-filter-maybe htss
+              root-part-selective)
             (just root-part-shape)
-          #/hypernest-unchecked #/selective-snippet-nonzero
-            (fin-multiplied-dim 0 opening-degree)
-            (hypertee-furl-unchecked emds #/hypertee-coil-hole
-              (extended-with-top-dim-infinite)
+          #/dissect
+            
+            ; We construct the overall hypertee to use as the
+            ; representation of the resulting hypernest.
+            ;
+            ; This hypertee begins with at least one hole,
+            ; representing the bump we parsed from the brackets.
+            ;
+            ; It also contains other holes representing the rest of
+            ; the bumps and holes of the hypernest. We add in the rest
+            ; of those holes by using appropriate tails in a
+            ; `snippet-sys-snippet-splice`. The `root-part` and each
+            ; of the (hypernest) tails carried in its holes gives us
+            ; what we need for one of those (hypertee) tails.
+            ;
+            ; TODO: See if it's simpler to keep the tails as
+            ; hypernests and use them for a
+            ; `(snippet-sys-snippet-splice hnss ...)` instead.
+            ;
+            (snippet-sys-snippet-splice htss
               (snippet-sys-snippet-done
                 htss
-                (extended-with-top-dim-finite
-                  (fin-multiplied-dim 1 bump-degree))
-                (snippet-sys-snippet-map htss root-part-shape
-                  (fn hole data
-                    (trivial)))
-                (trivial))
-              (unselected data)
-              ; TODO HYPERNEST-2-FROM-BRACKETS: Implement this now
-              ; that we've refactored the way hypernests work so that
-              ; they use a dimension system that acts like a given
-              ; dimension system but adds successors for each
-              ; dimension and a single infinity.
-              'TODO)))
+                (extended-with-top-dim-infinite)
+                
+                ; We construct the shape of the hole that we're using
+                ; to represent the bump. This hole is shaped like a
+                ; "done" around the shape of the hole's interior
+                ; (`root-part`).
+                ;
+                ; As expected by our `snippet-sys-snippet-splice`
+                ; call, the elements in the holes this snippet are
+                ; `(maybe/c selectable?)` values, and the selected
+                ; ones are tail snippets whose own holes contain
+                ; `(selectable/c any/c trivial?)` values.
+                ;
+                (snippet-sys-snippet-done
+                  htss
+                  (extended-with-top-dim-finite
+                    (fin-multiplied-dim 1 bump-degree))
+                  (snippet-sys-snippet-map htss root-part-shape
+                    (fn hole tail
+                      (w- prefix-d
+                        (snippet-sys-snippet-degree htss hole)
+                      #/dissect tail
+                        (hypernest-unchecked
+                          (selective-snippet-nonzero _
+                            tail))
+                      #/just #/selected
+                        (snippet-sys-snippet-map htss tail
+                          (fn hole selectable-tail-tail
+                            (mat selectable-tail-tail
+                              (unselected data)
+                              (just #/unselected #/unselected data)
+                            #/dissect selectable-tail-tail
+                              (selected tail-tail)
+                            #/w- suffix-d
+                              (snippet-sys-snippet-degree htss hole)
+                            #/if
+                              (dim-sys-dim<? emds suffix-d prefix-d)
+                              (dissect tail-tail (trivial)
+                              #/just #/selected #/trivial)
+                            #/just #/unselected
+                              (selected tail-tail)))))))
+                  (just #/selected
+                    (snippet-sys-snippet-map htss root-part-selective
+                      (fn hole selectable-tail
+                        (mat selectable-tail (unselected data)
+                          (just #/unselected #/unselected data)
+                        #/dissect selectable-tail (selected tail)
+                          (just #/selected #/trivial))))))
+                (just #/unselected #/unselected data))
+              (fn hole maybe-splice maybe-splice))
+            
+            (just root-part-assembled)
+          #/hypernest-unchecked #/selective-snippet-nonzero
+            (fin-multiplied-dim 0 opening-degree)
+            root-part-assembled))
         (part-state #t (dim-sys-dim-zero uds) bump-degree
           (dim-sys-dim-max uds opening-degree bump-degree)
           (list))
@@ -2771,8 +2839,8 @@
         (raise-arguments-error err-name
           "encountered a closing bracket of degree too high for where it occurred, and it was the first bracket"
           "overall-degree" opening-degree
-          "first-bracket" first-bracket
-          "brackets" brackets)
+          "first-bracket" (err-normalize-bracket first-bracket)
+          "brackets" (map err-normalize-bracket brackets))
       #/dissect (hyperstack-pop hole-degree stack #/parent-new-part)
         (list (parent-same-part #t) stack)
       #/list
@@ -2826,7 +2894,7 @@
                 data))
           #/if is-hypernest
             (snippet-sys-snippet-map hnss
-              (hypernest-from-brackets sfs uds overall-degree
+              (hypernest-from-brackets uds overall-degree
                 (reverse rev-brackets))
               (fn hole data
                 (get-subpart
@@ -2870,9 +2938,10 @@
       (raise-arguments-error err-name
         "encountered a closing bracket of degree too high for where it occurred"
         "current-d" current-d
-        "bracket" bracket
-        "brackets-remaining" brackets-remaining
-        "brackets" brackets)
+        "bracket" (err-normalize-bracket bracket)
+        "brackets-remaining"
+        (map err-normalize-bracket brackets-remaining)
+        "brackets" (map err-normalize-bracket brackets))
     #/w- parent (hyperstack-peek stack hole-degree)
     #/begin
       (mat bracket (hnb-labeled hole-degree hole-value)
@@ -2880,17 +2949,19 @@
           (raise-arguments-error err-name
             "encountered an annotated closing bracket of degree too low for where it occurred"
             "current-d" current-d
-            "bracket" bracket
-            "brackets-remaining" brackets-remaining
-            "brackets" brackets)
+            "bracket" (err-normalize-bracket bracket)
+            "brackets-remaining"
+            (map err-normalize-bracket brackets-remaining)
+            "brackets" (map err-normalize-bracket brackets))
         #/void)
         (mat parent (parent-same-part #t)
           (raise-arguments-error err-name
             "encountered an unannotated closing bracket of degree too high for where it occurred"
             "current-d" current-d
-            "bracket" bracket
-            "brackets-remaining" brackets-remaining
-            "brackets" brackets)
+            "bracket" (err-normalize-bracket bracket)
+            "brackets-remaining"
+            (map err-normalize-bracket brackets-remaining)
+            "brackets" (map err-normalize-bracket brackets))
         #/void))
     #/mat parent (parent-same-part should-annotate-as-nontrivial)
       (dissect
@@ -2970,8 +3041,19 @@
             (cons (hnb-unlabeled hole-degree) parent-rev-brackets)))
       #/next brackets-remaining parts updated-stack parent-i new-i))))
 
-; TODO HYPERNEST-2-FROM-BRACKETS: Implement these.
-(define (hypernest-from-brackets sfs ds d brackets)
-  'TODO)
-(define (hypertee-from-brackets ds d brackets)
-  'TODO)
+; TODO: Export this.
+; TODO: Use this.
+(define (hypernest-from-brackets ds degree brackets)
+  (explicit-hypernest-from-brackets
+    'hypernest-from-brackets (fn hnb hnb) ds degree brackets))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (hypertee-from-brackets ds degree brackets)
+  (explicit-hypernest-from-brackets
+    'hypertee-from-brackets
+    (fn hnb #/compatible-hypernest-bracket->hypertee-bracket hnb)
+    ds
+    degree
+    (list-map brackets #/fn htb
+      (hypertee-bracket->hypernest-bracket htb))))
