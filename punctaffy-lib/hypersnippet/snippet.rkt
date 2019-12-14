@@ -50,13 +50,14 @@
   dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c dim-sys-dim</c
   dim-sys-dim=/c dim-sys-dim-max dim-sys-dim-zero
   dim-sys-morphism-sys? dim-sys-morphism-sys-accepts/c
-  dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-morph-dim
-  dim-sys-morphism-sys-put-source dim-sys-morphism-sys-put-target
-  dim-sys-morphism-sys-source dim-sys-morphism-sys-target
-  extended-with-top-dim-sys extended-with-top-dim-sys-morphism-sys
-  extended-with-top-dim-finite extended-with-top-dim-infinite
-  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
-  fin-multiplied-dim-sys unextend-with-top-dim-sys-morphism-sys)
+  dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-identity
+  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-put-source
+  dim-sys-morphism-sys-put-target dim-sys-morphism-sys-source
+  dim-sys-morphism-sys-target extended-with-top-dim-sys
+  extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
+  extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
+  fin-multiplied-dim fin-multiplied-dim-sys
+  unextend-with-top-dim-sys-morphism-sys)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -559,7 +560,7 @@
   [prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
     (struct-type-property/c
       functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?)]
-  [make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-morph
+  [make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
     (->
       (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
         contract?)
@@ -962,8 +963,42 @@
               missing-party))
           v)))))
 
-; TODO: Export these.
-; TODO: Use these.
+(define-imitation-simple-struct
+  (identity-snippet-sys-morphism-sys?
+    identity-snippet-sys-morphism-sys-endpoint)
+  identity-snippet-sys-morphism-sys
+  'identity-snippet-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:snippet-sys-morphism-sys
+    (make-snippet-sys-morphism-sys-impl-from-morph
+      ; snippet-sys-morphism-sys-accepts/c
+      (dissectfn (identity-snippet-sys-morphism-sys e)
+        (match/c identity-snippet-sys-morphism-sys
+          (snippet-sys-accepts/c e)))
+      ; snippet-sys-morphism-sys-source
+      (dissectfn (identity-snippet-sys-morphism-sys e) e)
+      ; snippet-sys-morphism-sys-put-source
+      (fn ms new-s #/identity-snippet-sys-morphism-sys new-s)
+      ; snippet-sys-morphism-sys-target
+      (dissectfn (identity-snippet-sys-morphism-sys e) e)
+      ; snippet-sys-morphism-sys-put-target
+      (fn ms new-t #/identity-snippet-sys-morphism-sys new-t)
+      ; snippet-sys-morphism-sys-dim-sys-morphism-sys
+      (dissectfn (identity-snippet-sys-morphism-sys e)
+        (dim-sys-morphism-sys-identity #/snippet-sys-dim-sys e))
+      ; snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+      (dissectfn (identity-snippet-sys-morphism-sys e)
+        (identity-snippet-sys-morphism-sys
+          (snippet-sys-shape-snippet-sys e)))
+      ; snippet-sys-morphism-sys-morph-snippet
+      (fn ms s s))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (snippet-sys-morphism-sys-identity endpoint)
+  (identity-snippet-sys-morphism-sys endpoint))
+
 (define-imitation-simple-struct
   (chain-two-snippet-sys-morphism-sys?
     chain-two-snippet-sys-morphism-sys-first
@@ -1014,6 +1049,8 @@
         #/snippet-sys-morphism-sys-morph-snippet b
           (snippet-sys-morphism-sys-morph-snippet a s))))))
 
+; TODO: Export this.
+; TODO: Use this.
 (define (snippet-sys-morphism-sys-chain-two a b)
   (chain-two-snippet-sys-morphism-sys a b))
 
@@ -1072,7 +1109,7 @@
     (#:this)
     ())
   prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-  make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-morph
+  make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
   'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
   'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl
   (list))
@@ -1128,6 +1165,58 @@
                 v)
               missing-party))
           v)))))
+
+(define-imitation-simple-struct
+  (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+    identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-endpoint)
+  identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+  'identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+  (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
+      (dissectfn
+        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          e)
+        (match/c
+          identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          (functor-from-dim-sys-to-snippet-sys-sys-accepts/c e)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+      (dissectfn
+        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          e)
+        e)
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+      (fn ms new-s
+        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          new-s))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+      (dissectfn
+        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          e)
+        e)
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+      (fn ms new-t
+        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          new-t))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
+      (fn ms ds
+        (dissect ms
+          (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+            e)
+        #/snippet-sys-morphism-sys-identity
+          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+            ds))))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define
+  (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-identity
+    endpoint)
+  (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+    endpoint))
 
 
 (define-imitation-simple-generics
@@ -1186,6 +1275,37 @@
               (snippet-format-sys-morphism-sys-target v)
               missing-party))
           v)))))
+
+(define-imitation-simple-struct
+  (identity-snippet-format-sys-morphism-sys?
+    identity-snippet-format-sys-morphism-sys-endpoint)
+  identity-snippet-format-sys-morphism-sys
+  'identity-snippet-format-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:snippet-format-sys-morphism-sys
+    (make-snippet-format-sys-morphism-sys-impl-from-morph
+      ; snippet-format-sys-morphism-sys-accepts/c
+      (dissectfn (identity-snippet-format-sys-morphism-sys e)
+        (match/c identity-snippet-format-sys-morphism-sys
+          (snippet-format-sys-accepts/c e)))
+      ; snippet-format-sys-morphism-sys-source
+      (dissectfn (identity-snippet-format-sys-morphism-sys e) e)
+      ; snippet-format-sys-morphism-sys-put-source
+      (fn ms new-s #/identity-snippet-format-sys-morphism-sys new-s)
+      ; snippet-format-sys-morphism-sys-target
+      (dissectfn (identity-snippet-format-sys-morphism-sys e) e)
+      ; snippet-format-sys-morphism-sys-put-target
+      (fn ms new-t #/identity-snippet-format-sys-morphism-sys new-t)
+      ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
+      (dissectfn (identity-snippet-format-sys-morphism-sys e)
+        (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-identity
+          (snippet-format-sys-functor e))))))
+
+; TODO: Export this.
+; TODO: Use this.
+(define (snippet-format-sys-morphism-sys-identity endpoint)
+  (identity-snippet-format-sys-morphism-sys endpoint))
 
 
 (define-imitation-simple-generics
@@ -1664,9 +1784,214 @@
           (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
         #/selective-snippet-map-all sfsms dsms s)))))
 
-; TODO: Using `selective-snippet-sys` and
-; `selective-map-all-snippet-sys-morphism-sys`, make a
-; `snippet-format-sys-endofunctor-sys?`.
+; TODO: Export these.
+; TODO: Use these.
+;
+; TODO: See if this can somehow involve meaningful `h-to-unselected/c`
+; information.
+;
+(define-imitation-simple-struct
+  (selective-functor-from-dim-sys-to-snippet-sys-sys?
+    selective-functor-from-dim-sys-to-snippet-sys-sys-snippet-format-sys)
+  selective-functor-from-dim-sys-to-snippet-sys-sys
+  'selective-functor-from-dim-sys-to-snippet-sys-sys
+  (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
+      ; functor-from-dim-sys-to-snippet-sys-sys-accepts/c
+      (dissectfn
+        (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
+        (match/c selective-functor-from-dim-sys-to-snippet-sys-sys
+          (snippet-format-sys-accepts/c sfs)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+      (fn fs ds
+        (dissect fs
+          (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
+        #/selective-snippet-sys sfs ds (fn h any/c)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+      (fn fs dsms
+        (dissect fs
+          (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
+        #/selective-map-all-snippet-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-identity sfs)
+          dsms)))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (selective-snippet-format-sys?
+    selective-snippet-format-sys-original)
+  selective-snippet-format-sys
+  'selective-snippet-format-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:snippet-format-sys
+    (make-snippet-format-sys-impl-from-functor
+      ; snippet-format-sys-accepts/c
+      (dissectfn (selective-snippet-format-sys orig-sfs)
+        (match/c selective-snippet-format-sys
+          (snippet-format-sys-accepts/c orig-sfs)))
+      ; snippet-format-sys-functor
+      (dissectfn (selective-snippet-format-sys orig-sfs)
+        (selective-functor-from-dim-sys-to-snippet-sys-sys
+          orig-sfs)))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+    selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-snippet-format-sys-morphism-sys)
+  selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+  'selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+  (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
+      (dissectfn
+        (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          sfsms)
+        (match/c
+          selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-accepts/c sfsms)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+      (dissectfn
+        (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          sfsms)
+        (selective-functor-from-dim-sys-to-snippet-sys-sys
+          (snippet-format-sys-morphism-sys-source sfsms)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+      (fn ms new-s
+        (dissect ms
+          (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+            sfsms)
+        #/expect new-s
+          (selective-functor-from-dim-sys-to-snippet-sys-sys new-s)
+          (w- s
+            (selective-functor-from-dim-sys-to-snippet-sys-sys
+              (snippet-format-sys-morphism-sys-source sfsms))
+          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+            "tried to replace the source with a source that was rather different"
+            "ms" ms
+            "s" s
+            "new-s" new-s)
+        #/selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-put-source sfsms new-s)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+      (dissectfn
+        (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          sfsms)
+        (selective-functor-from-dim-sys-to-snippet-sys-sys
+          (snippet-format-sys-morphism-sys-target sfsms)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+      (fn ms new-t
+        (dissect ms
+          (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+            sfsms)
+        #/expect new-t
+          (selective-functor-from-dim-sys-to-snippet-sys-sys new-t)
+          (w- t
+            (selective-functor-from-dim-sys-to-snippet-sys-sys
+              (snippet-format-sys-morphism-sys-target sfsms))
+          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-put-target sfsms new-t)))
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
+      (fn ms ds
+        (dissect ms
+          (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+            sfsms)
+        #/selective-map-all-snippet-sys-morphism-sys
+          sfsms
+          (dim-sys-morphism-sys-identity ds))))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (selective-snippet-format-sys-morphism-sys?
+    selective-snippet-format-sys-morphism-sys-original)
+  selective-snippet-format-sys-morphism-sys
+  'selective-snippet-format-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:snippet-format-sys-morphism-sys
+    (make-snippet-format-sys-morphism-sys-impl-from-morph
+      ; snippet-format-sys-morphism-sys-accepts/c
+      (dissectfn
+        (selective-snippet-format-sys-morphism-sys orig-sfsms)
+        (match/c selective-snippet-format-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-accepts/c orig-sfsms)))
+      ; snippet-format-sys-morphism-sys-source
+      (dissectfn
+        (selective-snippet-format-sys-morphism-sys orig-sfsms)
+        (selective-snippet-format-sys
+          (snippet-format-sys-morphism-sys-source orig-sfsms)))
+      ; snippet-format-sys-morphism-sys-put-source
+      (fn ms new-s
+        (dissect ms
+          (selective-snippet-format-sys-morphism-sys orig-sfsms)
+        #/expect new-s (selective-snippet-format-sys new-s)
+          (w- s
+            (selective-snippet-format-sys
+              (snippet-format-sys-morphism-sys-source orig-sfsms))
+          #/raise-arguments-error 'snippet-format-sys-morphism-sys-put-source
+            "tried to replace the source with a source that was rather different"
+            "ms" ms
+            "s" s
+            "new-s" new-s)
+        #/selective-snippet-format-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-put-source
+            orig-sfsms new-s)))
+      ; snippet-format-sys-morphism-sys-target
+      (dissectfn
+        (selective-snippet-format-sys-morphism-sys orig-sfsms)
+        (selective-snippet-format-sys
+          (snippet-format-sys-morphism-sys-target orig-sfsms)))
+      ; snippet-format-sys-morphism-sys-put-target
+      (fn ms new-t
+        (dissect ms
+          (selective-snippet-format-sys-morphism-sys orig-sfsms)
+        #/expect new-t (selective-snippet-format-sys new-t)
+          (w- t
+            (selective-snippet-format-sys
+              (snippet-format-sys-morphism-sys-target orig-sfsms))
+          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+            "tried to replace the target with a target that was rather different"
+            "ms" ms
+            "t" t
+            "new-t" new-t)
+        #/selective-snippet-format-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-put-target
+            orig-sfsms new-t)))
+      ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
+      (dissectfn
+        (selective-snippet-format-sys-morphism-sys orig-sfsms)
+        (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
+          orig-sfsms)))))
+
+; TODO: Export these.
+; TODO: Use these.
+(define-imitation-simple-struct
+  (selective-snippet-format-sys-endofunctor-sys?)
+  selective-snippet-format-sys-endofunctor-sys
+  'selective-snippet-format-sys-endofunctor-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:snippet-format-sys-endofunctor-sys
+    (make-snippet-format-sys-endofunctor-sys-impl-from-morph
+      ; snippet-format-sys-endofunctor-sys-accepts/c
+      (fn es selective-snippet-format-sys-endofunctor-sys?)
+      ; snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
+      (fn es sfs #/selective-snippet-format-sys sfs)
+      ; snippet-format-sys-endofunctor-sys-morph-snippet-format-sys-morphism-sys
+      (fn es ms #/selective-snippet-format-sys-morphism-sys ms))))
 
 
 ; TODO: Consider rearranging everything in this file, but especially

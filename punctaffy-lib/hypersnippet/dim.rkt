@@ -136,6 +136,7 @@
           [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
         [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])
       dim-sys-morphism-sys-impl?)]
+  [dim-sys-morphism-sys-identity (-> dim-sys? dim-sys-morphism-sys?)]
   [dim-sys-morphism-sys-chain-two
     (->i
       (
@@ -446,6 +447,32 @@
           v)))))
 
 (define-imitation-simple-struct
+  (identity-dim-sys-morphism-sys?
+    identity-dim-sys-morphism-sys-endpoint)
+  identity-dim-sys-morphism-sys
+  'identity-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
+      (dissectfn (identity-dim-sys-morphism-sys e)
+        (match/c identity-dim-sys-morphism-sys #/dim-sys-accepts/c e))
+      ; dim-sys-morphism-sys-source
+      (dissectfn (identity-dim-sys-morphism-sys e) e)
+      ; dim-sys-morphism-sys-put-source
+      (fn ms new-s #/identity-dim-sys-morphism-sys new-s)
+      ; dim-sys-morphism-sys-target
+      (dissectfn (identity-dim-sys-morphism-sys e) e)
+      ; dim-sys-morphism-sys-put-target
+      (fn ms new-t #/identity-dim-sys-morphism-sys new-t)
+      ; dim-sys-morphism-sys-morph-dim
+      (fn ms d d))))
+
+(define (dim-sys-morphism-sys-identity endpoint)
+  (identity-dim-sys-morphism-sys endpoint))
+
+(define-imitation-simple-struct
   (chain-two-dim-sys-morphism-sys?
     chain-two-dim-sys-morphism-sys-first
     chain-two-dim-sys-morphism-sys-second)
@@ -479,10 +506,10 @@
           a
           (dim-sys-morphism-sys-put-source b new-t)))
       ; dim-sys-morphism-sys-morph-dim
-      (fn ms s
+      (fn ms d
         (dissect ms (chain-two-dim-sys-morphism-sys a b)
         #/dim-sys-morphism-sys-morph-dim b
-          (dim-sys-morphism-sys-morph-dim a s))))))
+          (dim-sys-morphism-sys-morph-dim a d))))))
 
 (define (dim-sys-morphism-sys-chain-two a b)
   (chain-two-dim-sys-morphism-sys a b))
