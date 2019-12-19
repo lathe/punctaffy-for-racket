@@ -1038,7 +1038,7 @@
         (dissect ms (chain-two-snippet-sys-morphism-sys a b)
         #/chain-two-snippet-sys-morphism-sys
           a
-          (snippet-sys-morphism-sys-put-source b new-t)))
+          (snippet-sys-morphism-sys-put-target b new-t)))
       ; snippet-sys-morphism-sys-dim-sys-morphism-sys
       (dissectfn (chain-two-snippet-sys-morphism-sys a b)
         (dim-sys-morphism-sys-chain-two

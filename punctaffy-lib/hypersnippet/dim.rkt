@@ -504,7 +504,7 @@
         (dissect ms (chain-two-dim-sys-morphism-sys a b)
         #/chain-two-dim-sys-morphism-sys
           a
-          (dim-sys-morphism-sys-put-source b new-t)))
+          (dim-sys-morphism-sys-put-target b new-t)))
       ; dim-sys-morphism-sys-morph-dim
       (fn ms d
         (dissect ms (chain-two-dim-sys-morphism-sys a b)
@@ -1007,7 +1007,7 @@
           (dim-sys-morphism-sys-source orig)))
       (fn ms new-s
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
-        #/expect new-s (fin-multiplied-dim-sys new-bound new-s)
+        #/expect new-s (fin-multiplied-dim-sys new-bound new-s-orig)
           (w- s
             (fin-multiplied-dim-sys bound
               (dim-sys-morphism-sys-source orig))
@@ -1028,13 +1028,13 @@
             "bound" bound
             "new-bound" new-bound)
         #/fin-multiplied-dim-sys-morphism-sys bound
-          (dim-sys-morphism-sys-put-source orig new-s)))
+          (dim-sys-morphism-sys-put-source orig new-s-orig)))
       (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
         (fin-multiplied-dim-sys bound
           (dim-sys-morphism-sys-target orig)))
       (fn ms new-t
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
-        #/expect new-t (fin-multiplied-dim-sys new-bound new-t)
+        #/expect new-t (fin-multiplied-dim-sys new-bound new-t-orig)
           (w- t
             (fin-multiplied-dim-sys bound
               (dim-sys-morphism-sys-target orig))
@@ -1055,7 +1055,7 @@
             "bound" bound
             "new-bound" new-bound)
         #/fin-multiplied-dim-sys-morphism-sys bound
-          (dim-sys-morphism-sys-put-target orig new-t)))
+          (dim-sys-morphism-sys-put-target orig new-t-orig)))
       (fn ms d
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
         #/dissect d (fin-multiplied-dim i d)
