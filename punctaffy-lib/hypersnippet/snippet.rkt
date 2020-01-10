@@ -44,7 +44,9 @@
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
-(require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
+(require #/only-in lathe-morphisms/in-fp/mediary/set
+  make-atomic-set-element-sys-impl-from-contract ok/c
+  prop:atomic-set-element-sys)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
@@ -78,7 +80,6 @@
   [selectable/c (-> contract? contract? contract?)]
   [snippet-sys? (-> any/c boolean?)]
   [snippet-sys-impl? (-> any/c boolean?)]
-  [snippet-sys-accepts/c (-> snippet-sys? contract?)]
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
@@ -265,8 +266,6 @@
   ; this.
   [make-snippet-sys-impl-from-various-1
     (->
-      ; snippet-sys-accepts/c
-      (-> snippet-sys? contract?)
       ; snippet-sys-snippet/c
       (-> snippet-sys? contract?)
       ; snippet-sys-dim-sys
@@ -383,8 +382,6 @@
   
   [snippet-sys-morphism-sys? (-> any/c boolean?)]
   [snippet-sys-morphism-sys-impl? (-> any/c boolean?)]
-  [snippet-sys-morphism-sys-accepts/c
-    (-> snippet-sys-morphism-sys? contract?)]
   [snippet-sys-morphism-sys-source
     (-> snippet-sys-morphism-sys? snippet-sys?)]
   [snippet-sys-morphism-sys-replace-source
@@ -414,7 +411,6 @@
     (struct-type-property/c snippet-sys-morphism-sys-impl?)]
   [make-snippet-sys-morphism-sys-impl-from-morph
     (->
-      (-> snippet-sys-morphism-sys? contract?)
       (-> snippet-sys-morphism-sys? snippet-sys?)
       (-> snippet-sys-morphism-sys? snippet-sys?
         snippet-sys-morphism-sys?)
@@ -439,14 +435,12 @@
         [a snippet-sys-morphism-sys?]
         [b (a)
           (snippet-sys-morphism-sys/c
-            (snippet-sys-accepts/c
-              (snippet-sys-morphism-sys-target a))
+            (ok/c #/snippet-sys-morphism-sys-target a)
             any/c)])
       [_ (a b)
         (snippet-sys-morphism-sys/c
-          (snippet-sys-accepts/c #/snippet-sys-morphism-sys-source a)
-          (snippet-sys-accepts/c
-            (snippet-sys-morphism-sys-target b)))])]
+          (ok/c #/snippet-sys-morphism-sys-source a)
+          (ok/c #/snippet-sys-morphism-sys-target b))])]
   
   [functor-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
   [functor-from-dim-sys-to-snippet-sys-sys-impl? (-> any/c boolean?)]
@@ -462,10 +456,10 @@
         [ms dim-sys-morphism-sys?])
       [_ (ms)
         (snippet-sys-morphism-sys/c
-          (snippet-sys-accepts/c
+          (ok/c
             (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
               (dim-sys-morphism-sys-source ms)))
-          (snippet-sys-accepts/c
+          (ok/c
             (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
               (dim-sys-morphism-sys-target ms))))])]
   [prop:functor-from-dim-sys-to-snippet-sys-sys
@@ -482,10 +476,10 @@
           [ms dim-sys-morphism-sys?])
         [_ (ms)
           (snippet-sys-morphism-sys/c
-            (snippet-sys-accepts/c
+            (ok/c
               (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
                 (dim-sys-morphism-sys-source ms)))
-            (snippet-sys-accepts/c
+            (ok/c
               (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
                 (dim-sys-morphism-sys-target ms))))])
       functor-from-dim-sys-to-snippet-sys-sys-impl?)]
@@ -506,14 +500,12 @@
   ;
   [snippet-format-sys? (-> any/c boolean?)]
   [snippet-format-sys-impl? (-> any/c boolean?)]
-  [snippet-format-sys-accepts/c (-> snippet-format-sys? contract?)]
   [snippet-format-sys-functor
     (-> snippet-format-sys? functor-from-dim-sys-to-snippet-sys-sys?)]
   [prop:snippet-format-sys
     (struct-type-property/c snippet-format-sys-impl?)]
   [make-snippet-format-sys-impl-from-functor
     (->
-      (-> snippet-format-sys? contract?)
       (-> snippet-format-sys?
         functor-from-dim-sys-to-snippet-sys-sys?)
       snippet-format-sys-impl?)]
@@ -594,8 +586,6 @@
   
   [snippet-format-sys-morphism-sys? (-> any/c boolean?)]
   [snippet-format-sys-morphism-sys-impl? (-> any/c boolean?)]
-  [snippet-format-sys-morphism-sys-accepts/c
-    (-> snippet-format-sys-morphism-sys? contract?)]
   [snippet-format-sys-morphism-sys-source
     (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
   [snippet-format-sys-morphism-sys-replace-source
@@ -615,7 +605,6 @@
     (struct-type-property/c snippet-format-sys-morphism-sys-impl?)]
   [make-snippet-format-sys-morphism-sys-impl-from-morph
     (->
-      (-> snippet-format-sys-morphism-sys? contract?)
       (-> snippet-format-sys-morphism-sys? snippet-format-sys?)
       (-> snippet-format-sys-morphism-sys? snippet-format-sys?
         snippet-format-sys-morphism-sys?)
@@ -640,10 +629,10 @@
         [ms snippet-format-sys-morphism-sys?])
       [_ (ms)
         (snippet-format-sys-morphism-sys/c
-          (snippet-format-sys-accepts/c
+          (ok/c
             (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
               (snippet-format-sys-morphism-sys-source ms)))
-          (snippet-format-sys-accepts/c
+          (ok/c
             (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
               (snippet-format-sys-morphism-sys-target ms))))])]
   [prop:snippet-format-sys-endofunctor-sys
@@ -659,10 +648,10 @@
           [ms snippet-format-sys-morphism-sys?])
         [_ (ms)
           (snippet-format-sys-morphism-sys/c
-            (snippet-format-sys-accepts/c
+            (ok/c
               (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
                 (snippet-format-sys-morphism-sys-source ms)))
-            (snippet-format-sys-accepts/c
+            (ok/c
               (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
                 (snippet-format-sys-morphism-sys-target ms))))])
       snippet-format-sys-endofunctor-sys-impl?)]
@@ -696,7 +685,6 @@
 
 
 (define-imitation-simple-generics snippet-sys? snippet-sys-impl?
-  (#:method snippet-sys-accepts/c (#:this))
   (#:method snippet-sys-snippet/c (#:this))
   (#:method snippet-sys-dim-sys (#:this))
   (#:method snippet-sys-shape-snippet-sys (#:this))
@@ -919,7 +907,6 @@
 
 (define-imitation-simple-generics
   snippet-sys-morphism-sys? snippet-sys-morphism-sys-impl?
-  (#:method snippet-sys-morphism-sys-accepts/c (#:this))
   (#:method snippet-sys-morphism-sys-source (#:this))
   (#:method snippet-sys-morphism-sys-replace-source (#:this) ())
   (#:method snippet-sys-morphism-sys-target (#:this))
@@ -995,12 +982,13 @@
   'identity-snippet-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (identity-snippet-sys-morphism-sys e)
+        (match/c identity-snippet-sys-morphism-sys #/ok/c e))))
   (#:prop prop:snippet-sys-morphism-sys
     (make-snippet-sys-morphism-sys-impl-from-morph
-      ; snippet-sys-morphism-sys-accepts/c
-      (dissectfn (identity-snippet-sys-morphism-sys e)
-        (match/c identity-snippet-sys-morphism-sys
-          (snippet-sys-accepts/c e)))
       ; snippet-sys-morphism-sys-source
       (dissectfn (identity-snippet-sys-morphism-sys e) e)
       ; snippet-sys-morphism-sys-replace-source
@@ -1032,13 +1020,15 @@
   'chain-two-snippet-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:snippet-sys-morphism-sys
-    (make-snippet-sys-morphism-sys-impl-from-morph
-      ; snippet-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (chain-two-snippet-sys-morphism-sys a b)
         (match/c chain-two-snippet-sys-morphism-sys
-          (snippet-sys-morphism-sys-accepts/c a)
-          (snippet-sys-morphism-sys-accepts/c b)))
+          (ok/c a)
+          (ok/c b)))))
+  (#:prop prop:snippet-sys-morphism-sys
+    (make-snippet-sys-morphism-sys-impl-from-morph
       ; snippet-sys-morphism-sys-source
       (dissectfn (chain-two-snippet-sys-morphism-sys a b)
         (snippet-sys-morphism-sys-source a))
@@ -1102,7 +1092,6 @@
 (define-imitation-simple-generics
   snippet-format-sys?
   snippet-format-sys-impl?
-  (#:method snippet-format-sys-accepts/c (#:this))
   (#:method snippet-format-sys-functor (#:this))
   prop:snippet-format-sys
   make-snippet-format-sys-impl-from-functor
@@ -1259,7 +1248,6 @@
 (define-imitation-simple-generics
   snippet-format-sys-morphism-sys?
   snippet-format-sys-morphism-sys-impl?
-  (#:method snippet-format-sys-morphism-sys-accepts/c (#:this))
   (#:method snippet-format-sys-morphism-sys-source (#:this))
   (#:method snippet-format-sys-morphism-sys-replace-source
     (#:this)
@@ -1340,12 +1328,13 @@
   'identity-snippet-format-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (identity-snippet-format-sys-morphism-sys e)
+        (match/c identity-snippet-format-sys-morphism-sys #/ok/c e))))
   (#:prop prop:snippet-format-sys-morphism-sys
     (make-snippet-format-sys-morphism-sys-impl-from-morph
-      ; snippet-format-sys-morphism-sys-accepts/c
-      (dissectfn (identity-snippet-format-sys-morphism-sys e)
-        (match/c identity-snippet-format-sys-morphism-sys
-          (snippet-format-sys-accepts/c e)))
       ; snippet-format-sys-morphism-sys-source
       (dissectfn (identity-snippet-format-sys-morphism-sys e) e)
       ; snippet-format-sys-morphism-sys-replace-source
@@ -1457,13 +1446,12 @@
     selective-snippet-sys-h-to-unselected/c)
   selective-snippet-sys
   'selective-snippet-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (selective-snippet-sys sfs uds h-to-unselected/c)
+        (match/c selective-snippet-sys (ok/c sfs) (ok/c uds) any/c))))
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
-    ; snippet-sys-accepts/c
-    (dissectfn (selective-snippet-sys sfs uds h-to-unselected/c)
-      (match/c selective-snippet-sys
-        (snippet-format-sys-accepts/c sfs)
-        (ok/c uds)
-        any/c))
     ; snippet-sys-snippet/c
     (dissectfn (selective-snippet-sys sfs uds h-to-unselected/c)
       (selective-snippet/c sfs uds h-to-unselected/c))
@@ -1767,14 +1755,16 @@
   (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:snippet-sys-morphism-sys
-    (make-snippet-sys-morphism-sys-impl-from-morph
-      ; snippet-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn
         (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
         (match/c selective-map-all-snippet-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-accepts/c sfsms)
-          (ok/c dsms)))
+          (ok/c sfsms)
+          (ok/c dsms)))))
+  (#:prop prop:snippet-sys-morphism-sys
+    (make-snippet-sys-morphism-sys-impl-from-morph
       ; snippet-sys-morphism-sys-source
       (dissectfn
         (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
@@ -1865,7 +1855,7 @@
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
         (match/c selective-functor-from-dim-sys-to-snippet-sys-sys
-          (snippet-format-sys-accepts/c sfs)))
+          (ok/c sfs)))
       ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
       (fn fs ds
         (dissect fs
@@ -1888,12 +1878,13 @@
   'selective-snippet-format-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (selective-snippet-format-sys orig-sfs)
+        (match/c selective-snippet-format-sys #/ok/c orig-sfs))))
   (#:prop prop:snippet-format-sys
     (make-snippet-format-sys-impl-from-functor
-      ; snippet-format-sys-accepts/c
-      (dissectfn (selective-snippet-format-sys orig-sfs)
-        (match/c selective-snippet-format-sys
-          (snippet-format-sys-accepts/c orig-sfs)))
       ; snippet-format-sys-functor
       (dissectfn (selective-snippet-format-sys orig-sfs)
         (selective-functor-from-dim-sys-to-snippet-sys-sys
@@ -1917,7 +1908,7 @@
           sfsms)
         (match/c
           selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-accepts/c sfsms)))
+          (ok/c sfsms)))
       ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1985,13 +1976,15 @@
   'selective-snippet-format-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:snippet-format-sys-morphism-sys
-    (make-snippet-format-sys-morphism-sys-impl-from-morph
-      ; snippet-format-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn
         (selective-snippet-format-sys-morphism-sys orig-sfsms)
         (match/c selective-snippet-format-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-accepts/c orig-sfsms)))
+          (ok/c orig-sfsms)))))
+  (#:prop prop:snippet-format-sys-morphism-sys
+    (make-snippet-format-sys-morphism-sys-impl-from-morph
       ; snippet-format-sys-morphism-sys-source
       (dissectfn
         (selective-snippet-format-sys-morphism-sys orig-sfsms)
@@ -2279,10 +2272,12 @@
   (hypertee-snippet-sys? hypertee-snippet-sys-dim-sys)
   hypertee-snippet-sys
   'hypertee-snippet-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (hypertee-snippet-sys ds)
+        (match/c hypertee-snippet-sys #/ok/c ds))))
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
-    ; snippet-sys-accepts/c
-    (dissectfn (hypertee-snippet-sys ds)
-      (match/c hypertee-snippet-sys #/ok/c ds))
     ; snippet-sys-snippet/c
     (dissectfn (hypertee-snippet-sys ds)
       (hypertee/c ds))
@@ -2456,12 +2451,14 @@
   (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:snippet-sys-morphism-sys
-    (make-snippet-sys-morphism-sys-impl-from-morph
-      ; snippet-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         (match/c hypertee-map-dim-snippet-sys-morphism-sys
-          (ok/c dsms)))
+          (ok/c dsms)))))
+  (#:prop prop:snippet-sys-morphism-sys
+    (make-snippet-sys-morphism-sys-impl-from-morph
       ; snippet-sys-morphism-sys-source
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         (hypertee-snippet-sys #/dim-sys-morphism-sys-source dsms))
@@ -2532,10 +2529,12 @@
   'hypertee-snippet-format-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn _ hypertee-snippet-format-sys?)))
   (#:prop prop:snippet-format-sys
     (make-snippet-format-sys-impl-from-functor
-      ; snippet-format-sys-accepts/c
-      (dissectfn _ hypertee-snippet-format-sys?)
       ; snippet-format-sys-functor
       (dissectfn _
         (hypertee-functor-from-dim-sys-to-snippet-sys-sys)))))
@@ -2546,11 +2545,8 @@
 ; TODO: Use the things that use this.
 (define
   (make-snippet-sys-impl-from-conversions
-    snippet-sys-accepts/c snippet-sys-snippet/c ss-> snippet->
-    ->snippet)
+    snippet-sys-snippet/c ss-> snippet-> ->snippet)
   (make-snippet-sys-impl-from-various-1
-    ; snippet-sys-accepts/c
-    snippet-sys-accepts/c
     ; snippet-sys-snippet/c
     snippet-sys-snippet/c
     ; snippet-sys-dim-sys
@@ -2669,12 +2665,12 @@
     hypernest-snippet-sys-dim-sys)
   hypernest-snippet-sys
   'hypernest-snippet-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (hypernest-snippet-sys sfs uds)
+        (match/c hypernest-snippet-sys (ok/c sfs) (ok/c uds)))))
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-conversions
-    ; snippet-sys-accepts/c
-    (dissectfn (hypernest-snippet-sys sfs uds)
-      (match/c hypernest-snippet-sys
-        (snippet-format-sys-accepts/c sfs)
-        (ok/c uds)))
     ; snippet-sys-snippet/c
     (dissectfn (hypernest-snippet-sys sfs uds)
       (hypernest/c sfs uds))
