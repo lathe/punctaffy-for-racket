@@ -26,11 +26,11 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-name contract-out list/c
-  none/c not/c or/c rename-contract)
+  -> ->i and/c any/c contract? contract-name contract-out
+  flat-contract? list/c none/c not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
-  make-contract raise-blame-error)
+  make-contract make-flat-contract raise-blame-error)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
@@ -51,8 +51,8 @@
   dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
   dim-sys-dim-zero dim-sys-morphism-sys?
   dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-identity
-  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-put-source
-  dim-sys-morphism-sys-put-target dim-sys-morphism-sys-source
+  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-replace-source
+  dim-sys-morphism-sys-replace-target dim-sys-morphism-sys-source
   dim-sys-morphism-sys-target extended-with-top-dim-sys
   extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
   extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
@@ -387,12 +387,12 @@
     (-> snippet-sys-morphism-sys? contract?)]
   [snippet-sys-morphism-sys-source
     (-> snippet-sys-morphism-sys? snippet-sys?)]
-  [snippet-sys-morphism-sys-put-source
+  [snippet-sys-morphism-sys-replace-source
     (-> snippet-sys-morphism-sys? snippet-sys?
       snippet-sys-morphism-sys?)]
   [snippet-sys-morphism-sys-target
     (-> snippet-sys-morphism-sys? snippet-sys?)]
-  [snippet-sys-morphism-sys-put-target
+  [snippet-sys-morphism-sys-replace-target
     (-> snippet-sys-morphism-sys? snippet-sys?
       snippet-sys-morphism-sys?)]
   [snippet-sys-morphism-sys-dim-sys-morphism-sys
@@ -528,14 +528,14 @@
   [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
     (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
       functor-from-dim-sys-to-snippet-sys-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
     (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
       functor-from-dim-sys-to-snippet-sys-sys?
       functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
   [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
     (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
       functor-from-dim-sys-to-snippet-sys-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
     (->
       functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
       functor-from-dim-sys-to-snippet-sys-sys?
@@ -598,12 +598,12 @@
     (-> snippet-format-sys-morphism-sys? contract?)]
   [snippet-format-sys-morphism-sys-source
     (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
-  [snippet-format-sys-morphism-sys-put-source
+  [snippet-format-sys-morphism-sys-replace-source
     (-> snippet-format-sys-morphism-sys? snippet-format-sys?
       snippet-format-sys-morphism-sys?)]
   [snippet-format-sys-morphism-sys-target
     (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
-  [snippet-format-sys-morphism-sys-put-target
+  [snippet-format-sys-morphism-sys-replace-target
     (-> snippet-format-sys-morphism-sys? snippet-format-sys?
       snippet-format-sys-morphism-sys?)]
   [snippet-format-sys-morphism-sys-functor-morphism
@@ -921,9 +921,9 @@
   snippet-sys-morphism-sys? snippet-sys-morphism-sys-impl?
   (#:method snippet-sys-morphism-sys-accepts/c (#:this))
   (#:method snippet-sys-morphism-sys-source (#:this))
-  (#:method snippet-sys-morphism-sys-put-source (#:this) ())
+  (#:method snippet-sys-morphism-sys-replace-source (#:this) ())
   (#:method snippet-sys-morphism-sys-target (#:this))
-  (#:method snippet-sys-morphism-sys-put-target (#:this) ())
+  (#:method snippet-sys-morphism-sys-replace-target (#:this) ())
   (#:method snippet-sys-morphism-sys-dim-sys-morphism-sys (#:this))
   (#:method snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
     (#:this))
@@ -939,7 +939,14 @@
     `(snippet-sys-morphism-sys/c
        ,(contract-name source/c)
        ,(contract-name target/c))
-  #/w- first-order
+  #/
+    (if (and (flat-contract? source/c) (flat-contract? target/c))
+      make-flat-contract
+      make-contract)
+    
+    #:name name
+    
+    #:first-order
     (fn v
       (and
         (snippet-sys-morphism-sys? v)
@@ -947,7 +954,6 @@
           (snippet-sys-morphism-sys-source v))
         (contract-first-order-passes? target/c
           (snippet-sys-morphism-sys-target v))))
-  #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
     (fn blame
@@ -960,14 +966,26 @@
           (get/build-late-neg-projection target/c)
           (blame-add-context blame "target of"))
       #/fn v missing-party
-        (w- v
-          (snippet-sys-morphism-sys-put-source v
-            (source/c-projection (snippet-sys-morphism-sys-source v)
-              missing-party))
+        (w- replace-if-not-flat
+          (fn c c-projection replace get v
+            (w- c-projection (c-projection (get v) missing-party)
+            #/if (flat-contract? c)
+              v
+              (replace v c-projection)))
         #/w- v
-          (snippet-sys-morphism-sys-put-target v
-            (target/c-projection (snippet-sys-morphism-sys-target v)
-              missing-party))
+          (replace-if-not-flat
+            source/c
+            source/c-projection
+            snippet-sys-morphism-sys-replace-source
+            snippet-sys-morphism-sys-source
+            v)
+        #/w- v
+          (replace-if-not-flat
+            target/c
+            target/c-projection
+            snippet-sys-morphism-sys-replace-target
+            snippet-sys-morphism-sys-target
+            v)
           v)))))
 
 (define-imitation-simple-struct
@@ -985,11 +1003,11 @@
           (snippet-sys-accepts/c e)))
       ; snippet-sys-morphism-sys-source
       (dissectfn (identity-snippet-sys-morphism-sys e) e)
-      ; snippet-sys-morphism-sys-put-source
+      ; snippet-sys-morphism-sys-replace-source
       (fn ms new-s #/identity-snippet-sys-morphism-sys new-s)
       ; snippet-sys-morphism-sys-target
       (dissectfn (identity-snippet-sys-morphism-sys e) e)
-      ; snippet-sys-morphism-sys-put-target
+      ; snippet-sys-morphism-sys-replace-target
       (fn ms new-t #/identity-snippet-sys-morphism-sys new-t)
       ; snippet-sys-morphism-sys-dim-sys-morphism-sys
       (dissectfn (identity-snippet-sys-morphism-sys e)
@@ -1024,21 +1042,21 @@
       ; snippet-sys-morphism-sys-source
       (dissectfn (chain-two-snippet-sys-morphism-sys a b)
         (snippet-sys-morphism-sys-source a))
-      ; snippet-sys-morphism-sys-put-source
+      ; snippet-sys-morphism-sys-replace-source
       (fn ms new-s
         (dissect ms (chain-two-snippet-sys-morphism-sys a b)
         #/chain-two-snippet-sys-morphism-sys
-          (snippet-sys-morphism-sys-put-source a new-s)
+          (snippet-sys-morphism-sys-replace-source a new-s)
           b))
       ; snippet-sys-morphism-sys-target
       (dissectfn (chain-two-snippet-sys-morphism-sys a b)
         (snippet-sys-morphism-sys-target b))
-      ; snippet-sys-morphism-sys-put-target
+      ; snippet-sys-morphism-sys-replace-target
       (fn ms new-t
         (dissect ms (chain-two-snippet-sys-morphism-sys a b)
         #/chain-two-snippet-sys-morphism-sys
           a
-          (snippet-sys-morphism-sys-put-target b new-t)))
+          (snippet-sys-morphism-sys-replace-target b new-t)))
       ; snippet-sys-morphism-sys-dim-sys-morphism-sys
       (dissectfn (chain-two-snippet-sys-morphism-sys a b)
         (dim-sys-morphism-sys-chain-two
@@ -1101,14 +1119,14 @@
     functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
     (#:this))
   (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
     (#:this)
     ())
   (#:method
     functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
     (#:this))
   (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
     (#:this)
     ())
   (#:method
@@ -1134,7 +1152,14 @@
     `(functor-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
        ,(contract-name source/c)
        ,(contract-name target/c))
-  #/w- first-order
+  #/
+    (if (and (flat-contract? source/c) (flat-contract? target/c))
+      make-flat-contract
+      make-contract)
+    
+    #:name name
+    
+    #:first-order
     (fn v
       (and
         (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
@@ -1144,7 +1169,6 @@
         (contract-first-order-passes? target/c
           (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
             v))))
-  #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
     (fn blame
@@ -1157,20 +1181,26 @@
           (get/build-late-neg-projection target/c)
           (blame-add-context blame "target of"))
       #/fn v missing-party
-        (w- v
-          (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
-            v
-            (source/c-projection
-              (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-                v)
-              missing-party))
+        (w- replace-if-not-flat
+          (fn c c-projection replace get v
+            (w- c-projection (c-projection (get v) missing-party)
+            #/if (flat-contract? c)
+              v
+              (replace v c-projection)))
         #/w- v
-          (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
-            v
-            (target/c-projection
-              (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-                v)
-              missing-party))
+          (replace-if-not-flat
+            source/c
+            source/c-projection
+            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
+            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+            v)
+        #/w- v
+          (replace-if-not-flat
+            target/c
+            target/c-projection
+            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
+            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+            v)
           v)))))
 
 (define-imitation-simple-struct
@@ -1195,7 +1225,7 @@
         (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           e)
         e)
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
       (fn ms new-s
         (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           new-s))
@@ -1204,7 +1234,7 @@
         (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           e)
         e)
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
       (fn ms new-t
         (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           new-t))
@@ -1231,9 +1261,13 @@
   snippet-format-sys-morphism-sys-impl?
   (#:method snippet-format-sys-morphism-sys-accepts/c (#:this))
   (#:method snippet-format-sys-morphism-sys-source (#:this))
-  (#:method snippet-format-sys-morphism-sys-put-source (#:this) ())
+  (#:method snippet-format-sys-morphism-sys-replace-source
+    (#:this)
+    ())
   (#:method snippet-format-sys-morphism-sys-target (#:this))
-  (#:method snippet-format-sys-morphism-sys-put-target (#:this) ())
+  (#:method snippet-format-sys-morphism-sys-replace-target
+    (#:this)
+    ())
   (#:method snippet-format-sys-morphism-sys-functor-morphism (#:this))
   prop:snippet-format-sys-morphism-sys
   make-snippet-format-sys-morphism-sys-impl-from-morph
@@ -1250,7 +1284,14 @@
     `(snippet-format-sys-morphism-sys/c
        ,(contract-name source/c)
        ,(contract-name target/c))
-  #/w- first-order
+  #/
+    (if (and (flat-contract? source/c) (flat-contract? target/c))
+      make-flat-contract
+      make-contract)
+    
+    #:name name
+    
+    #:first-order
     (fn v
       (and
         (snippet-format-sys-morphism-sys? v)
@@ -1258,7 +1299,6 @@
           (snippet-format-sys-morphism-sys-source v))
         (contract-first-order-passes? target/c
           (snippet-format-sys-morphism-sys-target v))))
-  #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
     (fn blame
@@ -1271,16 +1311,26 @@
           (get/build-late-neg-projection target/c)
           (blame-add-context blame "target of"))
       #/fn v missing-party
-        (w- v
-          (snippet-format-sys-morphism-sys-put-source v
-            (source/c-projection
-              (snippet-format-sys-morphism-sys-source v)
-              missing-party))
+        (w- replace-if-not-flat
+          (fn c c-projection replace get v
+            (w- c-projection (c-projection (get v) missing-party)
+            #/if (flat-contract? c)
+              v
+              (replace v c-projection)))
         #/w- v
-          (snippet-format-sys-morphism-sys-put-target v
-            (target/c-projection
-              (snippet-format-sys-morphism-sys-target v)
-              missing-party))
+          (replace-if-not-flat
+            source/c
+            source/c-projection
+            snippet-format-sys-morphism-sys-replace-source
+            snippet-format-sys-morphism-sys-source
+            v)
+        #/w- v
+          (replace-if-not-flat
+            target/c
+            target/c-projection
+            snippet-format-sys-morphism-sys-replace-target
+            snippet-format-sys-morphism-sys-target
+            v)
           v)))))
 
 (define-imitation-simple-struct
@@ -1298,11 +1348,11 @@
           (snippet-format-sys-accepts/c e)))
       ; snippet-format-sys-morphism-sys-source
       (dissectfn (identity-snippet-format-sys-morphism-sys e) e)
-      ; snippet-format-sys-morphism-sys-put-source
+      ; snippet-format-sys-morphism-sys-replace-source
       (fn ms new-s #/identity-snippet-format-sys-morphism-sys new-s)
       ; snippet-format-sys-morphism-sys-target
       (dissectfn (identity-snippet-format-sys-morphism-sys e) e)
-      ; snippet-format-sys-morphism-sys-put-target
+      ; snippet-format-sys-morphism-sys-replace-target
       (fn ms new-t #/identity-snippet-format-sys-morphism-sys new-t)
       ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
       (dissectfn (identity-snippet-format-sys-morphism-sys e)
@@ -1732,7 +1782,7 @@
           (snippet-format-sys-morphism-sys-source sfsms)
           (dim-sys-morphism-sys-source dsms)
           (fn hole any/c)))
-      ; snippet-sys-morphism-sys-put-source
+      ; snippet-sys-morphism-sys-replace-source
       (fn ms new-s
         (dissect ms
           (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
@@ -1742,14 +1792,16 @@
               (snippet-format-sys-morphism-sys-source sfsms)
               (dim-sys-morphism-sys-source dsms)
               (fn hole any/c))
-          #/raise-arguments-error 'snippet-sys-morphism-sys-put-source
+          #/raise-arguments-error
+            'snippet-sys-morphism-sys-replace-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
             "s" s
             "new-s" new-s)
         #/selective-map-all-snippet-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-put-source sfsms new-s-sfs)
-          (dim-sys-morphism-sys-put-source dsms new-s-ds)))
+          (snippet-format-sys-morphism-sys-replace-source
+            sfsms new-s-sfs)
+          (dim-sys-morphism-sys-replace-source dsms new-s-ds)))
       ; snippet-sys-morphism-sys-target
       (dissectfn
         (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
@@ -1757,7 +1809,7 @@
           (snippet-format-sys-morphism-sys-target sfsms)
           (dim-sys-morphism-sys-target dsms)
           (fn hole any/c)))
-      ; snippet-sys-morphism-sys-put-target
+      ; snippet-sys-morphism-sys-replace-target
       (fn ms new-t
         (dissect ms
           (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
@@ -1767,14 +1819,16 @@
               (snippet-format-sys-morphism-sys-target sfsms)
               (dim-sys-morphism-sys-target dsms)
               (fn hole any/c))
-          #/raise-arguments-error 'snippet-sys-morphism-sys-put-target
+          #/raise-arguments-error
+            'snippet-sys-morphism-sys-replace-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
             "t" t
             "new-t" new-t)
         #/selective-map-all-snippet-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-put-target sfsms new-t-sfs)
-          (dim-sys-morphism-sys-put-target dsms new-t-ds)))
+          (snippet-format-sys-morphism-sys-replace-target
+            sfsms new-t-sfs)
+          (dim-sys-morphism-sys-replace-target dsms new-t-ds)))
       ; snippet-sys-morphism-sys-dim-sys-morphism-sys
       (dissectfn
         (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
@@ -1870,7 +1924,7 @@
           sfsms)
         (selective-functor-from-dim-sys-to-snippet-sys-sys
           (snippet-format-sys-morphism-sys-source sfsms)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
       (fn ms new-s
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1880,20 +1934,22 @@
           (w- s
             (selective-functor-from-dim-sys-to-snippet-sys-sys
               (snippet-format-sys-morphism-sys-source sfsms))
-          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-source
+          #/raise-arguments-error
+            'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
             "s" s
             "new-s" new-s)
         #/selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-put-source sfsms new-s)))
+          (snippet-format-sys-morphism-sys-replace-source
+            sfsms new-s)))
       ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           sfsms)
         (selective-functor-from-dim-sys-to-snippet-sys-sys
           (snippet-format-sys-morphism-sys-target sfsms)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
       (fn ms new-t
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1903,13 +1959,14 @@
           (w- t
             (selective-functor-from-dim-sys-to-snippet-sys-sys
               (snippet-format-sys-morphism-sys-target sfsms))
-          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
             "t" t
             "new-t" new-t)
         #/selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-put-target sfsms new-t)))
+          (snippet-format-sys-morphism-sys-replace-target
+            sfsms new-t)))
       ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
       (fn ms ds
         (dissect ms
@@ -1940,7 +1997,7 @@
         (selective-snippet-format-sys-morphism-sys orig-sfsms)
         (selective-snippet-format-sys
           (snippet-format-sys-morphism-sys-source orig-sfsms)))
-      ; snippet-format-sys-morphism-sys-put-source
+      ; snippet-format-sys-morphism-sys-replace-source
       (fn ms new-s
         (dissect ms
           (selective-snippet-format-sys-morphism-sys orig-sfsms)
@@ -1948,20 +2005,21 @@
           (w- s
             (selective-snippet-format-sys
               (snippet-format-sys-morphism-sys-source orig-sfsms))
-          #/raise-arguments-error 'snippet-format-sys-morphism-sys-put-source
+          #/raise-arguments-error
+            'snippet-format-sys-morphism-sys-replace-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
             "s" s
             "new-s" new-s)
         #/selective-snippet-format-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-put-source
+          (snippet-format-sys-morphism-sys-replace-source
             orig-sfsms new-s)))
       ; snippet-format-sys-morphism-sys-target
       (dissectfn
         (selective-snippet-format-sys-morphism-sys orig-sfsms)
         (selective-snippet-format-sys
           (snippet-format-sys-morphism-sys-target orig-sfsms)))
-      ; snippet-format-sys-morphism-sys-put-target
+      ; snippet-format-sys-morphism-sys-replace-target
       (fn ms new-t
         (dissect ms
           (selective-snippet-format-sys-morphism-sys orig-sfsms)
@@ -1969,13 +2027,14 @@
           (w- t
             (selective-snippet-format-sys
               (snippet-format-sys-morphism-sys-target orig-sfsms))
-          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-put-target
+          #/raise-arguments-error
+            'snippet-format-sys-morphism-sys-replace-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
             "t" t
             "new-t" new-t)
         #/selective-snippet-format-sys-morphism-sys
-          (snippet-format-sys-morphism-sys-put-target
+          (snippet-format-sys-morphism-sys-replace-target
             orig-sfsms new-t)))
       ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
       (dissectfn
@@ -2406,35 +2465,37 @@
       ; snippet-sys-morphism-sys-source
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         (hypertee-snippet-sys #/dim-sys-morphism-sys-source dsms))
-      ; snippet-sys-morphism-sys-put-source
+      ; snippet-sys-morphism-sys-replace-source
       (fn ms new-s
         (dissect ms (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         #/expect new-s (hypertee-snippet-sys new-s)
           (w- s
             (hypertee-snippet-sys #/dim-sys-morphism-sys-source dsms)
-          #/raise-arguments-error 'snippet-sys-morphism-sys-put-source
+          #/raise-arguments-error
+            'snippet-sys-morphism-sys-replace-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
             "s" s
             "new-s" new-s)
         #/hypertee-map-dim-snippet-sys-morphism-sys
-          (dim-sys-morphism-sys-put-source dsms new-s)))
+          (dim-sys-morphism-sys-replace-source dsms new-s)))
       ; snippet-sys-morphism-sys-target
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         (hypertee-snippet-sys #/dim-sys-morphism-sys-target dsms))
-      ; snippet-sys-morphism-sys-put-target
+      ; snippet-sys-morphism-sys-replace-target
       (fn ms new-t
         (dissect ms (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         #/expect new-t (hypertee-snippet-sys new-t)
           (w- t
             (hypertee-snippet-sys #/dim-sys-morphism-sys-target dsms)
-          #/raise-arguments-error 'snippet-sys-morphism-sys-put-target
+          #/raise-arguments-error
+            'snippet-sys-morphism-sys-replace-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
             "t" t
             "new-t" new-t)
         #/hypertee-map-dim-snippet-sys-morphism-sys
-          (dim-sys-morphism-sys-put-target dsms new-t)))
+          (dim-sys-morphism-sys-replace-target dsms new-t)))
       ; snippet-sys-morphism-sys-dim-sys-morphism-sys
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         dsms)
