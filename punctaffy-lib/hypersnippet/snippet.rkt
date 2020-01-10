@@ -51,7 +51,13 @@
   functor-sys-apply-to-morphism functor-sys-apply-to-object
   functor-sys/c functor-sys-impl?
   make-category-sys-impl-from-chain-two
-  make-functor-sys-impl-from-apply prop:category-sys prop:functor-sys)
+  make-functor-sys-impl-from-apply
+  make-natural-transformation-sys-impl-from-apply
+  natural-transformation-sys-apply-to-morphism
+  natural-transformation-sys/c natural-transformation-sys-identity
+  natural-transformation-sys-impl? natural-transformation-sys-source
+  natural-transformation-sys-target prop:category-sys prop:functor-sys
+  prop:natural-transformation-sys)
 (require #/only-in lathe-morphisms/in-fp/mediary/set
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
@@ -504,50 +510,8 @@
   
   [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
     (-> any/c boolean?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?
-    (-> any/c boolean?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
-    (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-      contract?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-    (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-      functor-from-dim-sys-to-snippet-sys-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
-    (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-      functor-from-dim-sys-to-snippet-sys-sys?
-      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-    (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-      functor-from-dim-sys-to-snippet-sys-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
+  [make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
     (->
-      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-      functor-from-dim-sys-to-snippet-sys-sys?
-      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
-    (->i
-      (
-        [ms functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
-        [ds dim-sys?])
-      [_ (ms ds)
-        (snippet-sys-morphism-sys/c
-          (functor-sys-apply-to-object
-            (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-              ms)
-            ds)
-          (functor-sys-apply-to-object
-            (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-              ms)
-            ds))])]
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
-    (-> contract? contract? contract?)]
-  [prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-    (struct-type-property/c
-      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?)]
-  [make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
-    (->
-      (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-        contract?)
       (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
         functor-from-dim-sys-to-snippet-sys-sys?)
       (->
@@ -563,18 +527,16 @@
       (->i
         (
           [ms functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
-          [ds dim-sys?])
-        [_ (ms ds)
+          [dsms dim-sys-morphism-sys?])
+        [_ (ms dsms)
           (snippet-sys-morphism-sys/c
             (functor-sys-apply-to-object
-              (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-                ms)
-              ds)
+              (natural-transformation-sys-source ms)
+              (dim-sys-morphism-sys-source dsms))
             (functor-sys-apply-to-object
-              (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-                ms)
-              ds))])
-      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?)]
+              (natural-transformation-sys-target ms)
+              (dim-sys-morphism-sys-target dsms)))])
+      natural-transformation-sys-impl?)]
   
   [snippet-format-sys-morphism-sys? (-> any/c boolean?)]
   [snippet-format-sys-morphism-sys-impl? (-> any/c boolean?)]
@@ -1144,150 +1106,55 @@
   'snippet-format-sys 'snippet-format-sys-impl (list))
 
 
-(define-imitation-simple-generics
-  functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-  functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl?
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
-    (#:this))
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-    (#:this))
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
-    (#:this)
-    ())
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-    (#:this))
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
-    (#:this)
-    ())
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
-    (#:this)
-    ())
-  prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-  make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
-  'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-  'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl
-  (list))
+(define (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
+  (
+    (flat-contract-predicate
+      (natural-transformation-sys/c
+        dim-sys? snippet-sys? any/c any/c))
+    v))
 
-(define (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys/c source/c target/c)
-  (w- source/c
-    (coerce-contract
-      'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
-      source/c)
-  #/w- target/c
-    (coerce-contract
-      'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
-      target/c)
-  #/w- name
-    `(functor-from-dim-sys-to-snippet-sys-sys-morphism-sys/c
-       ,(contract-name source/c)
-       ,(contract-name target/c))
-  #/
-    (if (and (flat-contract? source/c) (flat-contract? target/c))
-      make-flat-contract
-      make-contract)
-    
-    #:name name
-    
-    #:first-order
-    (fn v
-      (and
-        (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
-        (contract-first-order-passes? source/c
-          (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-            v))
-        (contract-first-order-passes? target/c
-          (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-            v))))
-    
-    #:late-neg-projection
-    (fn blame
-      (w- source/c-projection
-        (
-          (get/build-late-neg-projection source/c)
-          (blame-add-context blame "source of"))
-      #/w- target/c-projection
-        (
-          (get/build-late-neg-projection target/c)
-          (blame-add-context blame "target of"))
-      #/fn v missing-party
-        (w- replace-if-not-flat
-          (fn c c-projection replace get v
-            (w- c-projection (c-projection (get v) missing-party)
-            #/if (flat-contract? c)
-              v
-              (replace v c-projection)))
-        #/w- v
-          (replace-if-not-flat
-            source/c
-            source/c-projection
-            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
-            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-            v)
-        #/w- v
-          (replace-if-not-flat
-            target/c
-            target/c-projection
-            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
-            functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-            v)
-          v)))))
-
-(define-imitation-simple-struct
-  (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-    identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-endpoint)
-  identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-  'identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-  (current-inspector)
-  (auto-write)
-  (auto-equal)
-  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-    (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
-      (dissectfn
-        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          e)
-        (match/c
-          identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          (ok/c e)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
-      (dissectfn
-        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          e)
-        e)
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
-      (fn ms new-s
-        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          new-s))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
-      (dissectfn
-        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          e)
-        e)
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
-      (fn ms new-t
-        (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          new-t))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
-      (fn ms ds
-        (dissect ms
-          (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-            e)
-        #/snippet-sys-morphism-sys-identity
-          (functor-sys-apply-to-object ds))))))
-
-; TODO: Export this.
-; TODO: Use this.
 (define
-  (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-identity
-    endpoint)
-  (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-    endpoint))
+  (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
+    source
+    replace-source
+    target
+    replace-target
+    apply-to-dim-sys-morphism-sys)
+  (make-natural-transformation-sys-impl-from-apply
+    ; functor-sys-endpoint-source
+    (fn nts #/dim-sys-category-sys)
+    ; functor-sys-replace-endpoint-source
+    (fn nts new-es
+      (expect (dim-sys-category-sys? new-es) #t
+        (raise-arguments-error
+          'natural-transformation-sys-replace-endpoint-source
+          "tried to replace the endpoint source with an endpoint source that was rather different"
+          "nts" nts
+          "es" (dim-sys-category-sys)
+          "new-es" new-es)
+        nts))
+    ; functor-sys-endpoint-target
+    (fn nts #/snippet-sys-category-sys)
+    ; functor-sys-replace-endpoint-target
+    (fn nts new-et
+      (expect (snippet-sys-category-sys? new-et) #t
+        (raise-arguments-error
+          'natural-transformation-sys-replace-endpoint-target
+          "tried to replace the endpoint target with an endpoint target that was rather different"
+          "nts" nts
+          "et" (snippet-sys-category-sys)
+          "new-et" new-et)
+        nts))
+    ; functor-sys-source
+    (fn nts #/source nts)
+    ; functor-sys-replace-source
+    (fn nts new-s #/replace-source nts new-s)
+    ; functor-sys-target
+    (fn nts #/target nts)
+    ; functor-sys-replace-target
+    (fn nts new-t #/replace-target nts new-t)
+    ; functor-sys-apply-to-morphism
+    (fn nts a b ms #/apply-to-dim-sys-morphism-sys nts ms)))
 
 
 (define-imitation-simple-generics
@@ -1390,7 +1257,7 @@
       (fn ms new-t #/identity-snippet-format-sys-morphism-sys new-t)
       ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
       (dissectfn (identity-snippet-format-sys-morphism-sys e)
-        (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-identity
+        (natural-transformation-sys-identity
           (snippet-format-sys-functor e))))))
 
 ; TODO: Export this.
@@ -1721,14 +1588,9 @@
 (define
   (snippet-format-sys-morphism-sys-apply-to-dim-sys-morphism-sys
     sfsms dsms)
-  (snippet-sys-morphism-sys-chain-two
-    (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
-      (snippet-format-sys-morphism-sys-functor-morphism sfsms)
-      (dim-sys-morphism-sys-source dsms))
-    (functor-sys-apply-to-morphism
-      (snippet-format-sys-functor
-        (snippet-format-sys-morphism-sys-target sfsms))
-      dsms)))
+  (natural-transformation-sys-apply-to-morphism
+    (snippet-format-sys-morphism-sys-functor-morphism sfsms)
+    dsms))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -1911,22 +1773,24 @@
   (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-    (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-transfer
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           sfsms)
         (match/c
           selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          (ok/c sfsms)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
+          (ok/c sfsms)))))
+  (#:prop prop:natural-transformation-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
+      ; natural-transformation-sys-source
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           sfsms)
         (selective-functor-from-dim-sys-to-snippet-sys-sys
           (snippet-format-sys-morphism-sys-source sfsms)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
+      ; natural-transformation-sys-replace-source
       (fn ms new-s
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1937,7 +1801,7 @@
             (selective-functor-from-dim-sys-to-snippet-sys-sys
               (snippet-format-sys-morphism-sys-source sfsms))
           #/raise-arguments-error
-            'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-source
+            'natural-transformation-sys-replace-source
             "tried to replace the source with a source that was rather different"
             "ms" ms
             "s" s
@@ -1945,13 +1809,13 @@
         #/selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           (snippet-format-sys-morphism-sys-replace-source
             sfsms new-s)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
+      ; natural-transformation-sys-target
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           sfsms)
         (selective-functor-from-dim-sys-to-snippet-sys-sys
           (snippet-format-sys-morphism-sys-target sfsms)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
+      ; natural-transformation-sys-replace-target
       (fn ms new-t
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1961,7 +1825,8 @@
           (w- t
             (selective-functor-from-dim-sys-to-snippet-sys-sys
               (snippet-format-sys-morphism-sys-target sfsms))
-          #/raise-arguments-error 'functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-replace-target
+          #/raise-arguments-error
+            'natural-transformation-sys-replace-target
             "tried to replace the target with a target that was rather different"
             "ms" ms
             "t" t
@@ -1969,14 +1834,12 @@
         #/selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           (snippet-format-sys-morphism-sys-replace-target
             sfsms new-t)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
-      (fn ms ds
+      ; natural-transformation-sys-apply-to-morphism
+      (fn ms dsms
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
             sfsms)
-        #/selective-map-all-snippet-sys-morphism-sys
-          sfsms
-          (dim-sys-morphism-sys-identity ds))))))
+        #/selective-map-all-snippet-sys-morphism-sys sfsms dsms)))))
 
 ; TODO: Export these.
 ; TODO: Use these.
