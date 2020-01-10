@@ -192,7 +192,6 @@
   
   [dim-successors-sys? (-> any/c boolean?)]
   [dim-successors-sys-impl? (-> any/c boolean?)]
-  [dim-successors-sys-accepts/c (-> dim-successors-sys? contract?)]
   [dim-successors-sys-dim-sys (-> dim-successors-sys? dim-sys?)]
   [dim-successors-sys-dim-plus-int
     (->i
@@ -219,7 +218,6 @@
     (struct-type-property/c dim-successors-sys-impl?)]
   [make-dim-successors-sys-impl-from-dim-plus-int
     (->
-      (-> dim-successors-sys? contract?)
       (-> dim-successors-sys? dim-sys?)
       (->i
         (
@@ -529,7 +527,6 @@
 
 (define-imitation-simple-generics
   dim-successors-sys? dim-successors-sys-impl?
-  (#:method dim-successors-sys-accepts/c (#:this))
   (#:method dim-successors-sys-dim-sys (#:this))
   (#:method dim-successors-sys-dim-plus-int (#:this) () ())
   prop:dim-successors-sys
@@ -553,11 +550,13 @@
   'successorless-dim-successors-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (successorless-dim-successors-sys ds)
+        (match/c successorless-dim-successors-sys #/ok/c ds))))
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
-      ; dim-successors-sys-accepts/c
-      (dissectfn (successorless-dim-successors-sys ds)
-        (match/c successorless-dim-successors-sys #/ok/c ds))
       ; dim-successors-sys-dim-sys
       (dissectfn (successorless-dim-successors-sys ds) ds)
       ; dim-successors-sys-dim-plus-int
@@ -585,10 +584,12 @@
   nat-dim-successors-sys 'nat-dim-successors-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (fn es nat-dim-successors-sys?)))
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
-      ; dim-successors-sys-accepts/c
-      (fn dss nat-dim-successors-sys?)
       ; dim-successors-sys-dim-sys
       (fn dss #/nat-dim-sys)
       ; dim-successors-sys-dim-plus-int
@@ -886,12 +887,14 @@
   'extended-with-top-dim-successors-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-successors-sys
-    (make-dim-successors-sys-impl-from-dim-plus-int
-      ; dim-successors-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (extended-with-top-dim-successors-sys orig-dss)
         (match/c extended-with-top-dim-successors-sys
-          (dim-successors-sys-accepts/c orig-dss)))
+          (ok/c orig-dss)))))
+  (#:prop prop:dim-successors-sys
+    (make-dim-successors-sys-impl-from-dim-plus-int
       ; dim-successors-sys-dim-sys
       (dissectfn (extended-with-top-dim-successors-sys orig-dss)
         (extended-with-top-dim-sys
@@ -1254,13 +1257,15 @@
   'fin-multiplied-dim-successors-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-successors-sys
-    (make-dim-successors-sys-impl-from-dim-plus-int
-      ; dim-successors-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (fin-multiplied-dim-successors-sys bound orig-dss)
         (match/c fin-multiplied-dim-successors-sys
           (=/c bound)
-          (dim-successors-sys-accepts/c orig-dss)))
+          (ok/c orig-dss)))))
+  (#:prop prop:dim-successors-sys
+    (make-dim-successors-sys-impl-from-dim-plus-int
       ; dim-successors-sys-dim-sys
       (dissectfn (fin-multiplied-dim-successors-sys bound orig-dss)
         (fin-multiplied-dim-sys bound

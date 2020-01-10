@@ -34,12 +34,12 @@
 (require #/only-in lathe-comforts/maybe just nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys? dim-successors-sys-accepts/c
-  dim-successors-sys-dim-sys dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim=plus-int? dim-sys-dim<? dim-sys-dim=?
-  dim-sys-dim=0? dim-sys-dim/c)
+  dim-successors-sys? dim-successors-sys-dim-sys
+  dim-successors-sys-dim-plus-int dim-successors-sys-dim=plus-int?
+  dim-sys-dim<? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   make-hyperstack-trivial make-hyperstack)
@@ -140,10 +140,7 @@
       (when (dim-successors-sys-dim=plus-int? dss d hole-degree 1)
         (mat data (lake-cane lake-dss data rest)
           (begin
-            (unless
-              (contract-first-order-passes?
-                (dim-successors-sys-accepts/c dss)
-                lake-dss)
+            (unless (contract-first-order-passes? (ok/c dss) lake-dss)
               (error "Expected lake-dss to be accepted by dss"))
             (unless (dim-sys-dim=? ds d #/hypertee-degree rest)
               (error "Expected data to be of the same degree as the island-cane if it was a lake-cane")))
@@ -334,11 +331,7 @@
     #/hyprid-map-lakes-highest-degree striped-rest
     #/fn hole-hypertee rest
       (mat rest (lake-cane lake-dss data rest)
-        (dissect
-          (contract-first-order-passes?
-            (dim-successors-sys-accepts/c dss)
-            lake-dss)
-          #t
+        (dissect (contract-first-order-passes? (ok/c dss) lake-dss) #t
         #/lake-cane dss data
         #/hypertee-v-map-highest-degree dss rest #/fn rest
           (dissect
