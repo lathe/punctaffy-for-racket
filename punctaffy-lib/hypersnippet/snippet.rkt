@@ -27,7 +27,8 @@
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
   -> ->i and/c any/c contract? contract-name contract-out
-  flat-contract? list/c none/c not/c or/c rename-contract)
+  flat-contract? flat-contract-predicate list/c none/c not/c or/c
+  rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract raise-blame-error)
@@ -44,16 +45,24 @@
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
+(require #/only-in lathe-morphisms/in-fp/set
+  makeshift-set-sys-from-contract)
+(require #/only-in lathe-morphisms/in-fp/category
+  functor-sys-apply-to-morphism functor-sys-apply-to-object
+  functor-sys/c functor-sys-impl?
+  make-category-sys-impl-from-chain-two
+  make-functor-sys-impl-from-apply prop:category-sys prop:functor-sys)
 (require #/only-in lathe-morphisms/in-fp/mediary/set
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
-  dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
-  dim-sys-dim-zero dim-sys-morphism-sys?
-  dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-identity
-  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-replace-source
+  dim-sys? dim-sys-category-sys dim-sys-category-sys? dim-sys-dim<?
+  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
+  dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max dim-sys-dim-zero
+  dim-sys-morphism-sys? dim-sys-morphism-sys-chain-two
+  dim-sys-morphism-sys-identity dim-sys-morphism-sys-morph-dim
+  dim-sys-morphism-sys-replace-source
   dim-sys-morphism-sys-replace-target dim-sys-morphism-sys-source
   dim-sys-morphism-sys-target extended-with-top-dim-sys
   extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
@@ -440,49 +449,32 @@
       [_ (a b)
         (snippet-sys-morphism-sys/c
           (ok/c #/snippet-sys-morphism-sys-source a)
-          (ok/c #/snippet-sys-morphism-sys-target b))])]
-  
+          (ok/c #/snippet-sys-morphism-sys-target b))])])
+
+(provide
+  snippet-sys-category-sys)
+(provide #/contract-out
+  [snippet-sys-category-sys? (-> any/c boolean?)])
+
+(provide #/contract-out
   [functor-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-impl? (-> any/c boolean?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-accepts/c
-    (-> functor-from-dim-sys-to-snippet-sys-sys? contract?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-    (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
-      snippet-sys?)]
-  [functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-    (->i
-      (
-        [fs functor-from-dim-sys-to-snippet-sys-sys?]
-        [ms dim-sys-morphism-sys?])
-      [_ (ms)
-        (snippet-sys-morphism-sys/c
-          (ok/c
-            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-              (dim-sys-morphism-sys-source ms)))
-          (ok/c
-            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-              (dim-sys-morphism-sys-target ms))))])]
-  [prop:functor-from-dim-sys-to-snippet-sys-sys
-    (struct-type-property/c
-      functor-from-dim-sys-to-snippet-sys-sys-impl?)]
-  [make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
+  [make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
     (->
-      (-> functor-from-dim-sys-to-snippet-sys-sys? contract?)
       (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
         snippet-sys?)
       (->i
         (
           [fs functor-from-dim-sys-to-snippet-sys-sys?]
           [ms dim-sys-morphism-sys?])
-        [_ (ms)
+        [_ (fs ms)
           (snippet-sys-morphism-sys/c
             (ok/c
-              (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+              (functor-sys-apply-to-object fs
                 (dim-sys-morphism-sys-source ms)))
             (ok/c
-              (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+              (functor-sys-apply-to-object fs
                 (dim-sys-morphism-sys-target ms))))])
-      functor-from-dim-sys-to-snippet-sys-sys-impl?)]
+      functor-sys-impl?)]
   
   ; TODO:
   ;
@@ -539,11 +531,11 @@
         [ds dim-sys?])
       [_ (ms ds)
         (snippet-sys-morphism-sys/c
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          (functor-sys-apply-to-object
             (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
               ms)
             ds)
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          (functor-sys-apply-to-object
             (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
               ms)
             ds))])]
@@ -574,11 +566,11 @@
           [ds dim-sys?])
         [_ (ms ds)
           (snippet-sys-morphism-sys/c
-            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+            (functor-sys-apply-to-object
               (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
                 ms)
               ds)
-            (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+            (functor-sys-apply-to-object
               (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-target
                 ms)
               ds))])
@@ -1070,23 +1062,77 @@
   (chain-two-snippet-sys-morphism-sys a b))
 
 
-(define-imitation-simple-generics
-  functor-from-dim-sys-to-snippet-sys-sys?
-  functor-from-dim-sys-to-snippet-sys-sys-impl?
-  (#:method functor-from-dim-sys-to-snippet-sys-sys-accepts/c
-    (#:this))
-  (#:method functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-    (#:this)
-    ())
-  (#:method
-    functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-    (#:this)
-    ())
-  prop:functor-from-dim-sys-to-snippet-sys-sys
-  make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
-  'functor-from-dim-sys-to-snippet-sys-sys
-  'functor-from-dim-sys-to-snippet-sys-sys-impl
-  (list))
+(define-imitation-simple-struct
+  (snippet-sys-category-sys?)
+  snippet-sys-category-sys
+  'snippet-sys-category-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn _ snippet-sys-category-sys?)))
+  (#:prop prop:category-sys
+    (make-category-sys-impl-from-chain-two
+      ; category-sys-object-set-sys
+      (fn cs
+        (makeshift-set-sys-from-contract
+          ; makeshift-set-sys-element/c
+          (fn snippet-sys?)
+          ; makeshift-set-sys-element-accepts/c
+          (fn element #/ok/c element)))
+      ; category-sys-morphism-set-sys
+      (fn cs s t
+        (makeshift-set-sys-from-contract
+          ; makeshift-set-sys-element/c
+          (fn #/snippet-sys-morphism-sys/c (ok/c s) (ok/c t))
+          ; makeshift-set-sys-element-accepts/c
+          (fn element #/ok/c element)))
+      ; category-sys-object-identity-morphism
+      (fn cs endpoint
+        (snippet-sys-morphism-sys-identity endpoint))
+      ; category-sys-morphism-chain-two
+      (fn cs a b c ab bc
+        (snippet-sys-morphism-sys-chain-two ab bc)))))
+
+
+(define (functor-from-dim-sys-to-snippet-sys-sys? v)
+  (
+    (flat-contract-predicate
+      (functor-sys/c dim-sys-category-sys? snippet-sys-category-sys?))
+    v))
+
+(define
+  (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
+    apply-to-dim-sys
+    apply-to-dim-sys-morphism-sys)
+  (make-functor-sys-impl-from-apply
+    ; functor-sys-source
+    (fn fs #/dim-sys-category-sys)
+    ; functor-sys-replace-source
+    (fn fs new-s
+      (expect (dim-sys-category-sys? new-s) #t
+        (raise-arguments-error 'functor-sys-replace-source
+          "tried to replace the source with a source that was rather different"
+          "fs" fs
+          "s" (dim-sys-category-sys)
+          "new-s" new-s)
+        fs))
+    ; functor-sys-target
+    (fn fs #/snippet-sys-category-sys)
+    ; functor-sys-replace-target
+    (fn fs new-t
+      (expect (snippet-sys-category-sys? new-t) #t
+        (raise-arguments-error 'functor-sys-replace-target
+          "tried to replace the target with a target that was rather different"
+          "fs" fs
+          "t" (snippet-sys-category-sys)
+          "new-t" new-t)
+        fs))
+    ; functor-sys-apply-to-object
+    (fn fs ds #/apply-to-dim-sys fs ds)
+    ; functor-sys-apply-to-morphism
+    (fn fs a b ms #/apply-to-dim-sys-morphism-sys fs ms)))
 
 
 (define-imitation-simple-generics
@@ -1208,7 +1254,7 @@
           e)
         (match/c
           identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
-          (functor-from-dim-sys-to-snippet-sys-sys-accepts/c e)))
+          (ok/c e)))
       ; functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-source
       (dissectfn
         (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1233,8 +1279,7 @@
           (identity-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
             e)
         #/snippet-sys-morphism-sys-identity
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-            ds))))))
+          (functor-sys-apply-to-object ds))))))
 
 ; TODO: Export this.
 ; TODO: Use this.
@@ -1405,12 +1450,8 @@
 (define (selective-snippet/c sfs uds h-to-unselected/c)
   (w- eds (extended-with-top-dim-sys uds)
   #/w- ffdstsss (snippet-format-sys-functor sfs)
-  #/w- uss
-    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-      ffdstsss uds)
-  #/w- ess
-    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-      ffdstsss eds)
+  #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/rename-contract
     (or/c
@@ -1461,8 +1502,7 @@
     ; snippet-sys-shape-snippet-sys
     (dissectfn (selective-snippet-sys sfs uds _)
       (w- uss
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          (snippet-format-sys-functor sfs)
+        (functor-sys-apply-to-object (snippet-format-sys-functor sfs)
           uds)
       #/snippet-sys-shape-snippet-sys uss))
     ; snippet-sys-snippet-degree
@@ -1475,21 +1515,16 @@
     (fn ss shape
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
-      #/w- uss
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss uds)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- unextended-snippet (snippet-sys-shape->snippet uss shape)
       #/w- d (snippet-sys-snippet-degree uss unextended-snippet)
       #/if (dim-sys-dim=0? uds d)
         (selective-snippet-zero unextended-snippet)
       #/w- extended-snippet
         (snippet-sys-morphism-sys-morph-snippet
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-            ffdstsss
+          (functor-sys-apply-to-morphism ffdstsss
             (extend-with-top-dim-sys-morphism-sys uds))
           unextended-snippet)
       #/expect
@@ -1507,12 +1542,8 @@
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- uss
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
       #/mat snippet (selective-snippet-zero content)
         (snippet-sys-snippet->maybe-shape uss content)
@@ -1535,8 +1566,7 @@
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to a finite degree if that snippet had holes of only lesser degree")
       #/snippet-sys-morphism-sys-morph-snippet
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-            ffdstsss
+          (functor-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
         shape))
     ; snippet-sys-snippet-set-degree-maybe
@@ -1544,9 +1574,7 @@
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
       #/expect snippet (selective-snippet-nonzero d content)
         (maybe-if (dim-sys-dim=0? uds new-degree) #/fn snippet)
@@ -1565,12 +1593,9 @@
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- extend
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-          ffdstsss
+        (functor-sys-apply-to-morphism ffdstsss
           (extend-with-top-dim-sys-morphism-sys uds))
       #/expect
         (snippet-sys-snippet-set-degree-maybe ess
@@ -1593,13 +1618,9 @@
     (fn ss snippet
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
-      #/w- uss
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss uds)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/expect snippet (selective-snippet-nonzero d content) (nothing)
       #/maybe-bind
         (snippet-sys-snippet-map-maybe ess content #/fn hole data
@@ -1608,8 +1629,7 @@
       #/fn content
       #/snippet-sys-snippet-undone uss
         (snippet-sys-morphism-sys-morph-snippet
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-            ffdstsss
+          (functor-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds))
           content)))
     ; snippet-sys-snippet-splice
@@ -1617,15 +1637,12 @@
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/expect snippet (selective-snippet-nonzero d prefix)
         (just snippet)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-            ffdstsss
+          (functor-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
       #/maybe-map
         (snippet-sys-snippet-splice ess prefix
@@ -1656,12 +1673,8 @@
       (dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
-      #/w- uss
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss uds)
-      #/w- ess
-        (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-          ffdstsss eds)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/mat snippet (selective-snippet-zero subject)
         (maybe-map
           (snippet-sys-snippet-zip-map-selective uss shape subject
@@ -1671,15 +1684,13 @@
       #/dissect snippet (selective-snippet-nonzero d subject)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-            ffdstsss
+          (functor-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
       #/maybe-map
         (snippet-sys-snippet-zip-map-selective ess
           (snippet-sys-morphism-sys-morph-snippet
             (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-              (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
-                ffdstsss
+              (functor-sys-apply-to-morphism ffdstsss
                 (extend-with-top-dim-sys-morphism-sys uds)))
             shape)
           (snippet-sys-snippet-map ess subject #/fn hole data
@@ -1714,7 +1725,7 @@
     (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-transfer-to-snippet-sys-morphism-sys
       (snippet-format-sys-morphism-sys-functor-morphism sfsms)
       (dim-sys-morphism-sys-source dsms))
-    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
+    (functor-sys-apply-to-morphism
       (snippet-format-sys-functor
         (snippet-format-sys-morphism-sys-target sfsms))
       dsms)))
@@ -1849,19 +1860,19 @@
   (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys
-    (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
-      ; functor-from-dim-sys-to-snippet-sys-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn
         (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
         (match/c selective-functor-from-dim-sys-to-snippet-sys-sys
-          (ok/c sfs)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+          (ok/c sfs)))))
+  (#:prop prop:functor-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
       (fn fs ds
         (dissect fs
           (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
         #/selective-snippet-sys sfs ds (fn h any/c)))
-      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
       (fn fs dsms
         (dissect fs
           (selective-functor-from-dim-sys-to-snippet-sys-sys sfs)
@@ -2512,13 +2523,14 @@
   (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:functor-from-dim-sys-to-snippet-sys-sys
-    (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-morph
-      ; functor-from-dim-sys-to-snippet-sys-sys-accepts/c
-      (dissectfn _ hypertee-functor-from-dim-sys-to-snippet-sys-sys?)
-      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn _
+        hypertee-functor-from-dim-sys-to-snippet-sys-sys?)))
+  (#:prop prop:functor-sys
+    (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
       (fn fs ds #/hypertee-snippet-sys ds)
-      ; functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys-morphism-sys
       (fn fs ms #/hypertee-map-dim-snippet-sys-morphism-sys ms))))
 
 ; TODO: Export these.
@@ -2604,9 +2616,7 @@
 (define (hypernest-selective-snippet-sys sfs uds)
   (w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- eds (fin-multiplied-dim-sys 2 uds)
-  #/w- ess
-    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-      ffdstsss eds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/selective-snippet-sys sfs eds #/fn hole
     (expect (snippet-sys-snippet-undone shape-ess hole)
@@ -2637,9 +2647,7 @@
 (define (hypernest/c sfs uds)
   (w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- eds (fin-multiplied-dim-sys 2 uds)
-  #/w- ess
-    (functor-from-dim-sys-to-snippet-sys-sys-morph-dim-sys
-      ffdstsss eds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/rename-contract
     (match/c hypernest-unchecked

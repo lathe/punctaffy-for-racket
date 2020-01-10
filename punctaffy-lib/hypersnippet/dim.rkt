@@ -166,13 +166,13 @@
         (
           [es dim-sys-endofunctor-sys?]
           [ms dim-sys-morphism-sys?])
-        [_ (ms)
+        [_ (es ms)
           (dim-sys-morphism-sys/c
             (ok/c
-              (functor-sys-apply-to-object
+              (functor-sys-apply-to-object es
                 (dim-sys-morphism-sys-source ms)))
             (ok/c
-              (functor-sys-apply-to-object
+              (functor-sys-apply-to-object es
                 (dim-sys-morphism-sys-target ms))))])
       functor-sys-impl?)])
 
@@ -522,13 +522,11 @@
 (define-imitation-simple-struct
   (dim-sys-category-sys?)
   dim-sys-category-sys
-  'chain-two-dim-sys-morphism-sys (current-inspector)
-  (auto-write)
-  (auto-equal)
+  'dim-sys-category-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:atomic-set-element-sys
     (make-atomic-set-element-sys-impl-from-contract
       ; atomic-set-element-sys-accepts/c
-      (fn es dim-sys-category-sys?)))
+      (dissectfn _ dim-sys-category-sys?)))
   (#:prop prop:category-sys
     (make-category-sys-impl-from-chain-two
       ; category-sys-object-set-sys
