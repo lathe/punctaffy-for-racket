@@ -54,10 +54,10 @@
   make-functor-sys-impl-from-apply
   make-natural-transformation-sys-impl-from-apply
   natural-transformation-sys-apply-to-morphism
-  natural-transformation-sys/c natural-transformation-sys-identity
-  natural-transformation-sys-impl? natural-transformation-sys-source
-  natural-transformation-sys-target prop:category-sys prop:functor-sys
-  prop:natural-transformation-sys)
+  natural-transformation-sys/c natural-transformation-sys-chain-two
+  natural-transformation-sys-identity natural-transformation-sys-impl?
+  natural-transformation-sys-source natural-transformation-sys-target
+  prop:category-sys prop:functor-sys prop:natural-transformation-sys)
 (require #/only-in lathe-morphisms/in-fp/mediary/set
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
@@ -444,6 +444,12 @@
           (snippet-sys-snippet/c
             (snippet-sys-morphism-sys-target ms))])
       snippet-sys-morphism-sys-impl?)]
+  [snippet-sys-morphism-sys-identity
+    (->i ([endpoint snippet-sys?])
+      [_ (endpoint)
+        (snippet-sys-morphism-sys/c
+          (ok/c endpoint)
+          (ok/c endpoint))])]
   [snippet-sys-morphism-sys-chain-two
     (->i
       (
@@ -568,49 +574,49 @@
       (-> snippet-format-sys-morphism-sys?
         functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
       snippet-format-sys-morphism-sys-impl?)]
-  
-  [snippet-format-sys-endofunctor-sys? (-> any/c boolean?)]
-  [snippet-format-sys-endofunctor-sys-impl? (-> any/c boolean?)]
-  [snippet-format-sys-endofunctor-sys-accepts/c
-    (-> snippet-format-sys-endofunctor-sys? contract?)]
-  [snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
-    (-> snippet-format-sys-endofunctor-sys? snippet-format-sys?
-      snippet-format-sys?)]
-  [snippet-format-sys-endofunctor-sys-morph-snippet-format-sys-morphism-sys
+  [snippet-format-sys-morphism-sys-identity
+    (->i ([endpoint snippet-format-sys?])
+      [_ (endpoint)
+        (snippet-format-sys-morphism-sys/c
+          (ok/c endpoint)
+          (ok/c endpoint))])]
+  [snippet-format-sys-morphism-sys-chain-two
     (->i
       (
-        [es snippet-format-sys-endofunctor-sys?]
-        [ms snippet-format-sys-morphism-sys?])
-      [_ (ms)
+        [a snippet-format-sys-morphism-sys?]
+        [b (a)
+          (snippet-format-sys-morphism-sys/c
+            (ok/c #/snippet-format-sys-morphism-sys-target a)
+            any/c)])
+      [_ (a b)
         (snippet-format-sys-morphism-sys/c
-          (ok/c
-            (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
-              (snippet-format-sys-morphism-sys-source ms)))
-          (ok/c
-            (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
-              (snippet-format-sys-morphism-sys-target ms))))])]
-  [prop:snippet-format-sys-endofunctor-sys
-    (struct-type-property/c snippet-format-sys-endofunctor-sys-impl?)]
-  [make-snippet-format-sys-endofunctor-sys-impl-from-morph
+          (ok/c #/snippet-format-sys-morphism-sys-source a)
+          (ok/c #/snippet-format-sys-morphism-sys-target b))])])
+
+(provide
+  snippet-format-sys-category-sys)
+(provide #/contract-out
+  [snippet-format-sys-category-sys? (-> any/c boolean?)])
+
+(provide #/contract-out
+  [snippet-format-sys-endofunctor-sys? (-> any/c boolean?)]
+  [make-snippet-format-sys-endofunctor-sys-impl-from-apply
     (->
-      (-> snippet-format-sys-endofunctor-sys? contract?)
       (-> snippet-format-sys-endofunctor-sys? snippet-format-sys?
         snippet-format-sys?)
       (->i
         (
           [es snippet-format-sys-endofunctor-sys?]
           [ms snippet-format-sys-morphism-sys?])
-        [_ (ms)
+        [_ (es ms)
           (snippet-format-sys-morphism-sys/c
             (ok/c
-              (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
+              (functor-sys-apply-to-object es
                 (snippet-format-sys-morphism-sys-source ms)))
             (ok/c
-              (snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
+              (functor-sys-apply-to-object es
                 (snippet-format-sys-morphism-sys-target ms))))])
-      snippet-format-sys-endofunctor-sys-impl?)]
-  
-  )
+      functor-sys-impl?)])
 
 
 (define-imitation-simple-struct
@@ -961,7 +967,6 @@
       ; snippet-sys-morphism-sys-morph-snippet
       (fn ms s s))))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (snippet-sys-morphism-sys-identity endpoint)
   (identity-snippet-sys-morphism-sys endpoint))
@@ -1018,7 +1023,6 @@
         #/snippet-sys-morphism-sys-morph-snippet b
           (snippet-sys-morphism-sys-morph-snippet a s))))))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (snippet-sys-morphism-sys-chain-two a b)
   (chain-two-snippet-sys-morphism-sys a b))
@@ -1255,34 +1259,134 @@
       (dissectfn (identity-snippet-format-sys-morphism-sys e) e)
       ; snippet-format-sys-morphism-sys-replace-target
       (fn ms new-t #/identity-snippet-format-sys-morphism-sys new-t)
-      ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
+      ; snippet-format-sys-morphism-sys-functor-morphism
       (dissectfn (identity-snippet-format-sys-morphism-sys e)
         (natural-transformation-sys-identity
           (snippet-format-sys-functor e))))))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (snippet-format-sys-morphism-sys-identity endpoint)
   (identity-snippet-format-sys-morphism-sys endpoint))
 
+(define-imitation-simple-struct
+  (chain-two-snippet-format-sys-morphism-sys?
+    chain-two-snippet-format-sys-morphism-sys-first
+    chain-two-snippet-format-sys-morphism-sys-second)
+  chain-two-snippet-format-sys-morphism-sys
+  'chain-two-snippet-format-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (chain-two-snippet-format-sys-morphism-sys a b)
+        (match/c chain-two-snippet-format-sys-morphism-sys
+          (ok/c a)
+          (ok/c b)))))
+  (#:prop prop:snippet-format-sys-morphism-sys
+    (make-snippet-format-sys-morphism-sys-impl-from-morph
+      ; snippet-format-sys-morphism-sys-source
+      (dissectfn (chain-two-snippet-format-sys-morphism-sys a b)
+        (snippet-format-sys-morphism-sys-source a))
+      ; snippet-format-sys-morphism-sys-replace-source
+      (fn ms new-s
+        (dissect ms (chain-two-snippet-format-sys-morphism-sys a b)
+        #/chain-two-snippet-format-sys-morphism-sys
+          (snippet-format-sys-morphism-sys-replace-source a new-s)
+          b))
+      ; snippet-format-sys-morphism-sys-target
+      (dissectfn (chain-two-snippet-format-sys-morphism-sys a b)
+        (snippet-format-sys-morphism-sys-target b))
+      ; snippet-format-sys-morphism-sys-replace-target
+      (fn ms new-t
+        (dissect ms (chain-two-snippet-format-sys-morphism-sys a b)
+        #/chain-two-snippet-format-sys-morphism-sys
+          a
+          (snippet-format-sys-morphism-sys-replace-target b new-t)))
+      ; snippet-format-sys-morphism-sys-functor-morphism
+      (dissectfn (chain-two-snippet-format-sys-morphism-sys a b)
+        (natural-transformation-sys-chain-two
+          (snippet-format-sys-morphism-sys-functor-morphism a)
+          (snippet-format-sys-morphism-sys-functor-morphism b))))))
 
-(define-imitation-simple-generics
-  snippet-format-sys-endofunctor-sys?
-  snippet-format-sys-endofunctor-sys-impl?
-  (#:method snippet-format-sys-endofunctor-sys-accepts/c (#:this))
-  (#:method
-    snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
-    (#:this)
-    ())
-  (#:method
-    snippet-format-sys-endofunctor-sys-morph-snippet-format-sys-morphism-sys
-    (#:this)
-    ())
-  prop:snippet-format-sys-endofunctor-sys
-  make-snippet-format-sys-endofunctor-sys-impl-from-morph
-  'snippet-format-sys-endofunctor-sys
-  'snippet-format-sys-endofunctor-sys-impl
-  (list))
+; TODO: Use this.
+(define (snippet-format-sys-morphism-sys-chain-two a b)
+  (chain-two-snippet-format-sys-morphism-sys a b))
+
+
+(define-imitation-simple-struct
+  (snippet-format-sys-category-sys?)
+  snippet-format-sys-category-sys
+  'snippet-format-sys-category-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn _ snippet-format-sys-category-sys?)))
+  (#:prop prop:category-sys
+    (make-category-sys-impl-from-chain-two
+      ; category-sys-object-set-sys
+      (fn cs
+        (makeshift-set-sys-from-contract
+          ; makeshift-set-sys-element/c
+          (fn snippet-format-sys?)
+          ; makeshift-set-sys-element-accepts/c
+          (fn element #/ok/c element)))
+      ; category-sys-morphism-set-sys
+      (fn cs s t
+        (makeshift-set-sys-from-contract
+          ; makeshift-set-sys-element/c
+          (fn #/snippet-format-sys-morphism-sys/c (ok/c s) (ok/c t))
+          ; makeshift-set-sys-element-accepts/c
+          (fn element #/ok/c element)))
+      ; category-sys-object-identity-morphism
+      (fn cs endpoint
+        (snippet-format-sys-morphism-sys-identity endpoint))
+      ; category-sys-morphism-chain-two
+      (fn cs a b c ab bc
+        (snippet-format-sys-morphism-sys-chain-two ab bc)))))
+
+
+(define (snippet-format-sys-endofunctor-sys? v)
+  (
+    (flat-contract-predicate
+      (functor-sys/c
+        snippet-format-sys-category-sys?
+        snippet-format-sys-category-sys?))
+    v))
+
+(define
+  (make-snippet-format-sys-endofunctor-sys-impl-from-apply
+    apply-to-snippet-format-sys
+    apply-to-snippet-format-sys-morphism-sys)
+  (make-functor-sys-impl-from-apply
+    ; functor-sys-source
+    (fn fs #/snippet-format-sys-category-sys)
+    ; functor-sys-replace-source
+    (fn fs new-s
+      (expect (snippet-format-sys-category-sys? new-s) #t
+        (raise-arguments-error 'functor-sys-replace-source
+          "tried to replace the source with a source that was rather different"
+          "fs" fs
+          "s" (snippet-format-sys-category-sys)
+          "new-s" new-s)
+        fs))
+    ; functor-sys-target
+    (fn fs #/snippet-format-sys-category-sys)
+    ; functor-sys-replace-target
+    (fn fs new-t
+      (expect (snippet-format-sys-category-sys? new-t) #t
+        (raise-arguments-error 'functor-sys-replace-target
+          "tried to replace the target with a target that was rather different"
+          "fs" fs
+          "t" (snippet-format-sys-category-sys)
+          "new-t" new-t)
+        fs))
+    ; functor-sys-apply-to-object
+    (fn fs ds #/apply-to-snippet-format-sys fs ds)
+    ; functor-sys-apply-to-morphism
+    (fn fs a b ms #/apply-to-snippet-format-sys-morphism-sys fs ms)))
 
 
 ; TODO: Export these.
@@ -1903,7 +2007,7 @@
         #/selective-snippet-format-sys-morphism-sys
           (snippet-format-sys-morphism-sys-replace-target
             orig-sfsms new-t)))
-      ; snippet-format-sys-morphism-sys-morph-snippet-functor-morphism
+      ; snippet-format-sys-morphism-sys-functor-morphism
       (dissectfn
         (selective-snippet-format-sys-morphism-sys orig-sfsms)
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
@@ -1917,13 +2021,13 @@
   'selective-snippet-format-sys-endofunctor-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:snippet-format-sys-endofunctor-sys
-    (make-snippet-format-sys-endofunctor-sys-impl-from-morph
-      ; snippet-format-sys-endofunctor-sys-accepts/c
-      (fn es selective-snippet-format-sys-endofunctor-sys?)
-      ; snippet-format-sys-endofunctor-sys-morph-snippet-format-sys
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn _ selective-snippet-format-sys-endofunctor-sys?)))
+  (#:prop prop:functor-sys
+    (make-snippet-format-sys-endofunctor-sys-impl-from-apply
       (fn es sfs #/selective-snippet-format-sys sfs)
-      ; snippet-format-sys-endofunctor-sys-morph-snippet-format-sys-morphism-sys
       (fn es ms #/selective-snippet-format-sys-morphism-sys ms))))
 
 
