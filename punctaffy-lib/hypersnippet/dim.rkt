@@ -46,13 +46,15 @@
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
+(require #/only-in lathe-morphisms/in-fp/mediary/set
+  make-atomic-set-element-sys-impl-from-contract ok/c
+  prop:atomic-set-element-sys)
 
 ; TODO: Document all of these exports.
 (provide #/contract-out
   
   [dim-sys? (-> any/c boolean?)]
   [dim-sys-impl? (-> any/c boolean?)]
-  [dim-sys-accepts/c (-> dim-sys? contract?)]
   [dim-sys-dim/c (-> dim-sys? contract?)]
   [dim-sys-dim-max
     (->i ([ds dim-sys?])
@@ -92,7 +94,6 @@
   [prop:dim-sys (struct-type-property/c dim-sys-impl?)]
   [make-dim-sys-impl-from-max
     (->
-      (-> dim-sys? contract?)
       (-> dim-sys? contract?)
       (->i
         (
@@ -143,12 +144,12 @@
         [a dim-sys-morphism-sys?]
         [b (a)
           (dim-sys-morphism-sys/c
-            (dim-sys-accepts/c #/dim-sys-morphism-sys-target a)
+            (ok/c #/dim-sys-morphism-sys-target a)
             any/c)])
       [_ (a b)
         (dim-sys-morphism-sys/c
-          (dim-sys-accepts/c #/dim-sys-morphism-sys-source a)
-          (dim-sys-accepts/c #/dim-sys-morphism-sys-target b))])]
+          (ok/c #/dim-sys-morphism-sys-source a)
+          (ok/c #/dim-sys-morphism-sys-target b))])]
   
   [dim-sys-endofunctor-sys? (-> any/c boolean?)]
   [dim-sys-endofunctor-sys-impl? (-> any/c boolean?)]
@@ -163,10 +164,10 @@
         [ms dim-sys-morphism-sys?])
       [_ (ms)
         (dim-sys-morphism-sys/c
-          (dim-sys-accepts/c
+          (ok/c
             (dim-sys-endofunctor-sys-morph-dim-sys
               (dim-sys-morphism-sys-source ms)))
-          (dim-sys-accepts/c
+          (ok/c
             (dim-sys-endofunctor-sys-morph-dim-sys
               (dim-sys-morphism-sys-target ms))))])]
   [prop:dim-sys-endofunctor-sys
@@ -181,10 +182,10 @@
           [ms dim-sys-morphism-sys?])
         [_ (ms)
           (dim-sys-morphism-sys/c
-            (dim-sys-accepts/c
+            (ok/c
               (dim-sys-endofunctor-sys-morph-dim-sys
                 (dim-sys-morphism-sys-source ms)))
-            (dim-sys-accepts/c
+            (ok/c
               (dim-sys-endofunctor-sys-morph-dim-sys
                 (dim-sys-morphism-sys-target ms))))])
       dim-sys-endofunctor-sys-impl?)]
@@ -361,7 +362,6 @@
 
 
 (define-imitation-simple-generics dim-sys? dim-sys-impl?
-  (#:method dim-sys-accepts/c (#:this))
   (#:method dim-sys-dim/c (#:this))
   (#:method dim-sys-dim=? (#:this) () ())
   (#:method dim-sys-dim-max-of-list (#:this) ())
@@ -457,7 +457,7 @@
     (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-accepts/c
       (dissectfn (identity-dim-sys-morphism-sys e)
-        (match/c identity-dim-sys-morphism-sys #/dim-sys-accepts/c e))
+        (match/c identity-dim-sys-morphism-sys #/ok/c e))
       ; dim-sys-morphism-sys-source
       (dissectfn (identity-dim-sys-morphism-sys e) e)
       ; dim-sys-morphism-sys-put-source
@@ -555,20 +555,28 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      ; dim-successors-sys-accepts/c
       (dissectfn (successorless-dim-successors-sys ds)
-        (match/c successorless-dim-successors-sys
-          (dim-sys-accepts/c ds)))
+        (match/c successorless-dim-successors-sys #/ok/c ds))
+      ; dim-successors-sys-dim-sys
       (dissectfn (successorless-dim-successors-sys ds) ds)
+      ; dim-successors-sys-dim-plus-int
       (fn dss d n
         (mat n 0 (just d)
         #/nothing)))))
 
 (define-imitation-simple-struct (nat-dim-sys?) nat-dim-sys
   'nat-dim-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (fn es nat-dim-sys?)))
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
-    (fn ds nat-dim-sys?)
+    ; dim-sys-dim/c
     (fn ds natural?)
+    ; dim-sys-dim=?
     (fn ds a b #/equal? a b)
+    ; dim-sys-dim-max-of-list
     (fn ds lst
       (w-loop next state 0 rest lst
         (expect rest (cons first rest) state
@@ -579,8 +587,11 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      ; dim-successors-sys-accepts/c
       (fn dss nat-dim-successors-sys?)
+      ; dim-successors-sys-dim-sys
       (fn dss #/nat-dim-sys)
+      ; dim-successors-sys-dim-plus-int
       (fn dss d n
         (w- result (+ d n)
         #/if (< result 0) (nothing)
@@ -624,15 +635,21 @@
   'extended-with-top-dim-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (extended-with-top-dim-sys orig-ds)
+        (match/c extended-with-top-dim-sys #/ok/c orig-ds))))
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
-    (dissectfn (extended-with-top-dim-sys orig-ds)
-      (match/c extended-with-top-dim-sys #/dim-sys-accepts/c orig-ds))
+    ; dim-sys-dim/c
     (dissectfn (extended-with-top-dim-sys orig-ds)
       (extended-with-top-dim/c #/dim-sys-dim/c orig-ds))
+    ; dim-sys-dim=?
     (fn ds a b
       (dissect ds (extended-with-top-dim-sys orig-ds)
       #/w- orig-dim=? (fn a b #/dim-sys-dim=? orig-ds a b)
       #/extended-with-top-dim=? orig-dim=? a b))
+    ; dim-sys-dim-max-of-list
     (fn ds lst
       (dissect ds (extended-with-top-dim-sys orig-ds)
       #/w-loop next state (dim-sys-dim-zero orig-ds) rest lst
@@ -661,12 +678,15 @@
   (auto-equal)
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
       (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
         (match/c extended-with-top-dim-sys-morphism-sys
           (dim-sys-morphism-sys-accepts/c orig)))
+      ; dim-sys-morphism-sys-source
       (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
         (extended-with-top-dim-sys
           (dim-sys-morphism-sys-source orig)))
+      ; dim-sys-morphism-sys-put-source
       (fn ms new-s
         (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
         #/expect new-s (extended-with-top-dim-sys new-s)
@@ -680,9 +700,11 @@
             "new-s" new-s)
         #/extended-with-top-dim-sys-morphism-sys
           (dim-sys-morphism-sys-put-source orig new-s)))
+      ; dim-sys-morphism-sys-target
       (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
         (extended-with-top-dim-sys
           (dim-sys-morphism-sys-target orig)))
+      ; dim-sys-morphism-sys-put-target
       (fn ms new-t
         (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
         #/expect new-t (extended-with-top-dim-sys new-t)
@@ -696,6 +718,7 @@
             "new-t" new-t)
         #/extended-with-top-dim-sys-morphism-sys
           (dim-sys-morphism-sys-put-target orig new-t)))
+      ; dim-sys-morphism-sys-morph-dim
       (fn ms d
         (dissect ms (extended-with-top-dim-sys-morphism-sys orig)
         #/expect d (extended-with-top-dim-finite d)
@@ -720,8 +743,11 @@
   (auto-equal)
   (#:prop prop:dim-sys-endofunctor-sys
     (make-dim-sys-endofunctor-sys-impl-from-morph
+      ; dim-sys-endofunctor-sys-accepts/c
       (fn es extended-with-top-dim-sys-endofunctor-sys?)
+      ; dim-sys-endofunctor-sys-morph-dim-sys
       (fn es ds #/extended-with-top-dim-sys ds)
+      ; dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
       (fn es ms #/extended-with-top-dim-sys-morphism-sys ms))))
 (define-imitation-simple-struct
   (extend-with-top-dim-sys-morphism-sys?
@@ -732,16 +758,20 @@
   (auto-equal)
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
       (dissectfn (extend-with-top-dim-sys-morphism-sys source)
-        (match/c extend-with-top-dim-sys-morphism-sys
-          (dim-sys-accepts/c source)))
+        (match/c extend-with-top-dim-sys-morphism-sys #/ok/c source))
+      ; dim-sys-morphism-sys-source
       (dissectfn (extend-with-top-dim-sys-morphism-sys source)
         source)
+      ; dim-sys-morphism-sys-put-source
       (fn ms new-s
         (dissect ms (extend-with-top-dim-sys-morphism-sys source)
         #/extend-with-top-dim-sys-morphism-sys new-s))
+      ; dim-sys-morphism-sys-target
       (dissectfn (extend-with-top-dim-sys-morphism-sys source)
         (extended-with-top-dim-sys source))
+      ; dim-sys-morphism-sys-put-target
       (fn ms new-t
         (dissect ms (extend-with-top-dim-sys-morphism-sys source)
         #/expect new-t (extended-with-top-dim-sys new-s)
@@ -752,6 +782,7 @@
             "t" t
             "new-t" new-t)
         #/extend-with-top-dim-sys-morphism-sys new-s))
+      ; dim-sys-morphism-sys-morph-dim
       (fn ms d #/extended-with-top-dim-finite d))))
 (define-match-expander-attenuated
   attenuated-extend-with-top-dim-sys-morphism-sys
@@ -770,17 +801,22 @@
   'extended-with-top-finite-dim-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (extended-with-top-finite-dim-sys orig-ds)
+        (match/c extended-with-top-finite-dim-sys #/ok/c orig-ds))))
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
-    (dissectfn (extended-with-top-finite-dim-sys orig-ds)
-      (match/c extended-with-top-finite-dim-sys
-        (dim-sys-accepts/c orig-ds)))
+    ; dim-sys-dim/c
     (dissectfn (extended-with-top-finite-dim-sys orig-ds)
       (match/c extended-with-top-dim-finite #/dim-sys-dim/c orig-ds))
+    ; dim-sys-dim=?
     (fn ds a b
       (dissect ds (extended-with-top-finite-dim-sys orig-ds)
       #/dissect a (extended-with-top-dim-finite a)
       #/dissect b (extended-with-top-dim-finite b)
       #/dim-sys-dim=? orig-ds a b))
+    ; dim-sys-dim-max-of-list
     (fn ds lst
       (dissect ds (extended-with-top-finite-dim-sys orig-ds)
       #/dim-sys-dim-max-of-list orig-ds #/list-map lst
@@ -804,11 +840,14 @@
   (auto-equal)
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
       (dissectfn (unextend-with-top-dim-sys-morphism-sys target)
         (match/c unextend-with-top-dim-sys-morphism-sys
-          (dim-sys-accepts/c target)))
+          (ok/c target)))
+      ; dim-sys-morphism-sys-source
       (dissectfn (extend-with-top-dim-sys-morphism-sys target)
         (extended-with-top-finite-dim-sys target))
+      ; dim-sys-morphism-sys-put-source
       (fn ms new-s
         (dissect ms (extend-with-top-dim-sys-morphism-sys target)
         #/expect new-s (extended-with-top-finite-dim-sys new-t)
@@ -819,11 +858,14 @@
             "s" s
             "new-s" new-s)
         #/extend-with-top-dim-sys-morphism-sys new-t))
+      ; dim-sys-morphism-sys-target
       (dissectfn (extend-with-top-dim-sys-morphism-sys target)
         target)
+      ; dim-sys-morphism-sys-put-target
       (fn ms new-t
         (dissect ms (unextend-with-top-dim-sys-morphism-sys target)
         #/unextend-with-top-dim-sys-morphism-sys new-t))
+      ; dim-sys-morphism-sys-morph-dim
       (fn ms d
         (dissect d (extended-with-top-dim-finite d)
           d)))))
@@ -846,12 +888,15 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      ; dim-successors-sys-accepts/c
       (dissectfn (extended-with-top-dim-successors-sys orig-dss)
         (match/c extended-with-top-dim-successors-sys
           (dim-successors-sys-accepts/c orig-dss)))
+      ; dim-successors-sys-dim-sys
       (dissectfn (extended-with-top-dim-successors-sys orig-dss)
         (extended-with-top-dim-sys
           (dim-successors-sys-dim-sys orig-dss)))
+      ; dim-successors-sys-dim-plus-int
       (fn dss d n
         (dissect dss (extended-with-top-dim-successors-sys orig-dss)
         
@@ -951,17 +996,21 @@
   'fin-multiplied-dim-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (fin-multiplied-dim-sys bound orig-ds)
+        (match/c fin-multiplied-dim-sys (=/c bound) (ok/c orig-ds)))))
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
-    (dissectfn (fin-multiplied-dim-sys bound orig-ds)
-      (match/c fin-multiplied-dim-sys
-        (=/c bound)
-        (dim-sys-accepts/c orig-ds)))
+    ; dim-sys-dim/c
     (dissectfn (fin-multiplied-dim-sys bound orig-ds)
       (fin-multiplied-dim/c bound #/dim-sys-dim/c orig-ds))
+    ; dim-sys-dim=?
     (fn ds a b
       (dissect ds (fin-multiplied-dim-sys bound orig-ds)
       #/w- orig-dim=? (fn a b #/dim-sys-dim=? orig-ds a b)
       #/fin-multiplied-dim=? orig-dim=? a b))
+    ; dim-sys-dim-max-of-list
     (fn ds lst
       (dissect ds (fin-multiplied-dim-sys bound orig-ds)
       #/w-loop next
@@ -998,13 +1047,16 @@
   (auto-equal)
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
       (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
         (match/c fin-multiplied-dim-sys-morphism-sys
           (=/c bound)
           (dim-sys-morphism-sys-accepts/c orig)))
+      ; dim-sys-morphism-sys-source
       (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
         (fin-multiplied-dim-sys bound
           (dim-sys-morphism-sys-source orig)))
+      ; dim-sys-morphism-sys-put-source
       (fn ms new-s
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
         #/expect new-s (fin-multiplied-dim-sys new-bound new-s-orig)
@@ -1029,9 +1081,11 @@
             "new-bound" new-bound)
         #/fin-multiplied-dim-sys-morphism-sys bound
           (dim-sys-morphism-sys-put-source orig new-s-orig)))
+      ; dim-sys-morphism-sys-target
       (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
         (fin-multiplied-dim-sys bound
           (dim-sys-morphism-sys-target orig)))
+      ; dim-sys-morphism-sys-put-target
       (fn ms new-t
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
         #/expect new-t (fin-multiplied-dim-sys new-bound new-t-orig)
@@ -1056,6 +1110,7 @@
             "new-bound" new-bound)
         #/fin-multiplied-dim-sys-morphism-sys bound
           (dim-sys-morphism-sys-put-target orig new-t-orig)))
+      ; dim-sys-morphism-sys-morph-dim
       (fn ms d
         (dissect ms (fin-multiplied-dim-sys-morphism-sys bound orig)
         #/dissect d (fin-multiplied-dim i d)
@@ -1081,11 +1136,14 @@
   (auto-equal)
   (#:prop prop:dim-sys-endofunctor-sys
     (make-dim-sys-endofunctor-sys-impl-from-morph
+      ; dim-sys-endofunctor-sys-accepts/c
       (dissectfn (fin-multiplied-dim-sys-endofunctor-sys bound)
         (match/c fin-multiplied-dim-sys-endofunctor-sys #/=/c bound))
+      ; dim-sys-endofunctor-sys-morph-dim-sys
       (fn es ds
         (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
         #/fin-multiplied-dim-sys bound ds))
+      ; dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
       (fn es ms
         (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
         #/fin-multiplied-dim-sys bound ms)))))
@@ -1110,18 +1168,23 @@
   (auto-equal)
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-accepts/c
       (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
         (match/c fin-times-dim-sys-morphism-sys
           (=/c bound)
-          (dim-sys-accepts/c source)
+          (ok/c source)
           any/c))
+      ; dim-sys-morphism-sys-source
       (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
         source)
+      ; dim-sys-morphism-sys-put-source
       (fn ms new-s
         (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
         #/fin-times-dim-sys-morphism-sys bound new-s d->i))
+      ; dim-sys-morphism-sys-target
       (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
         (fin-multiplied-dim-sys bound source))
+      ; dim-sys-morphism-sys-put-target
       (fn ms new-t
         (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
         #/expect new-t (fin-multiplied-dim-sys new-bound new-s)
@@ -1141,6 +1204,7 @@
             "bound" bound
             "new-bound" new-bound)
         #/fin-times-dim-sys-morphism-sys bound new-s d->i))
+      ; dim-sys-morphism-sys-morph-dim
       (fn ms d
         (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
         #/fin-multiplied-dim (d->i d) d)))))
@@ -1192,13 +1256,16 @@
   (auto-equal)
   (#:prop prop:dim-successors-sys
     (make-dim-successors-sys-impl-from-dim-plus-int
+      ; dim-successors-sys-accepts/c
       (dissectfn (fin-multiplied-dim-successors-sys bound orig-dss)
         (match/c fin-multiplied-dim-successors-sys
           (=/c bound)
           (dim-successors-sys-accepts/c orig-dss)))
+      ; dim-successors-sys-dim-sys
       (dissectfn (fin-multiplied-dim-successors-sys bound orig-dss)
         (fin-multiplied-dim-sys bound
           (dim-successors-sys-dim-sys orig-dss)))
+      ; dim-successors-sys-dim-plus-int
       (fn dss d n
         (dissect dss
           (fin-multiplied-dim-successors-sys bound orig-dss)

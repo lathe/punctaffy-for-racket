@@ -26,6 +26,9 @@
 (require #/only-in lathe-comforts expect fn mat w-loop)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-struct)
+(require #/only-in lathe-morphisms/in-fp/mediary/set
+  make-atomic-set-element-sys-impl-from-contract
+  prop:atomic-set-element-sys)
 
 (require #/only-in punctaffy/hypersnippet/dim
   make-dim-sys-impl-from-max prop:dim-sys)
@@ -46,10 +49,16 @@
 (define-imitation-simple-struct (extended-nat-dim-sys?)
   extended-nat-dim-sys
   'extended-nat-dim-sys (current-inspector) (auto-write) (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (fn es extended-nat-dim-sys?)))
   (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
-    (fn ds extended-nat-dim-sys?)
+    ; dim-sys-dim/c
     (fn ds #/or/c natural? omega?)
+    ; dim-sys-dim=?
     (fn ds a b #/equal? a b)
+    ; dim-sys-dim-max-of-list
     (fn ds lst
       (w-loop next state 0 rest lst
         (expect rest (cons first rest) state

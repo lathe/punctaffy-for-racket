@@ -44,20 +44,20 @@
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
+(require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-accepts/c dim-sys-dim<? dim-sys-dim<=?
-  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c dim-sys-dim</c
-  dim-sys-dim=/c dim-sys-dim-max dim-sys-dim-zero
-  dim-sys-morphism-sys? dim-sys-morphism-sys-accepts/c
-  dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-identity
-  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-put-source
-  dim-sys-morphism-sys-put-target dim-sys-morphism-sys-source
-  dim-sys-morphism-sys-target extended-with-top-dim-sys
-  extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
-  extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
-  fin-multiplied-dim fin-multiplied-dim-sys
-  unextend-with-top-dim-sys-morphism-sys)
+  dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
+  dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
+  dim-sys-dim-zero dim-sys-morphism-sys?
+  dim-sys-morphism-sys-accepts/c dim-sys-morphism-sys-chain-two
+  dim-sys-morphism-sys-identity dim-sys-morphism-sys-morph-dim
+  dim-sys-morphism-sys-put-source dim-sys-morphism-sys-put-target
+  dim-sys-morphism-sys-source dim-sys-morphism-sys-target
+  extended-with-top-dim-sys extended-with-top-dim-sys-morphism-sys
+  extended-with-top-dim-finite extended-with-top-dim-infinite
+  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
+  fin-multiplied-dim-sys unextend-with-top-dim-sys-morphism-sys)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -1412,7 +1412,7 @@
     (dissectfn (selective-snippet-sys sfs uds h-to-unselected/c)
       (match/c selective-snippet-sys
         (snippet-format-sys-accepts/c sfs)
-        (dim-sys-accepts/c uds)
+        (ok/c uds)
         any/c))
     ; snippet-sys-snippet/c
     (dissectfn (selective-snippet-sys sfs uds h-to-unselected/c)
@@ -2081,8 +2081,7 @@
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (hypertee/c ds)
-  (rename-contract
-    (match/c hypertee-furl-unchecked (dim-sys-accepts/c ds) any/c)
+  (rename-contract (match/c hypertee-furl-unchecked (ok/c ds) any/c)
     `(hypertee/c ,ds)))
 
 ; TODO: See if we should export this.
@@ -2224,7 +2223,7 @@
   (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
     ; snippet-sys-accepts/c
     (dissectfn (hypertee-snippet-sys ds)
-      (match/c hypertee-snippet-sys #/dim-sys-accepts/c ds))
+      (match/c hypertee-snippet-sys #/ok/c ds))
     ; snippet-sys-snippet/c
     (dissectfn (hypertee-snippet-sys ds)
       (hypertee/c ds))
@@ -2614,7 +2613,7 @@
     (dissectfn (hypernest-snippet-sys sfs uds)
       (match/c hypernest-snippet-sys
         (snippet-format-sys-accepts/c sfs)
-        (dim-sys-accepts/c uds)))
+        (ok/c uds)))
     ; snippet-sys-snippet/c
     (dissectfn (hypernest-snippet-sys sfs uds)
       (hypernest/c sfs uds))

@@ -39,12 +39,13 @@
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-sys? dim-successors-sys-dim-from-int
-  dim-successors-sys-dim-sys dim-sys-accepts/c dim-sys-dim<?
-  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
-  dim-sys-0<dim/c dim-sys-dim-max dim-sys-dim-zero)
+  dim-successors-sys-dim-sys dim-sys-dim<? dim-sys-dim<=?
+  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c
+  dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -321,7 +322,7 @@
           bracket)))))
 
 (define (hypernest/c ds)
-  (rename-contract (match/c hypernest (dim-sys-accepts/c ds) any/c)
+  (rename-contract (match/c hypernest (ok/c ds) any/c)
     `(hypernest/c ,ds)))
 
 (define (hypernest-coil/c ds)

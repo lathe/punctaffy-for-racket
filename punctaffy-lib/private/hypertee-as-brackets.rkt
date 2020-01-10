@@ -44,13 +44,14 @@
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-dim-from-int
   dim-successors-sys-dim-plus-int dim-successors-sys-dim=plus-int?
-  dim-successors-sys-dim-sys dim-sys? dim-sys-accepts/c dim-sys-dim<?
-  dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
-  dim-sys-0<dim/c dim-sys-dim-max dim-sys-dim-zero)
+  dim-successors-sys-dim-sys dim-sys? dim-sys-dim<? dim-sys-dim<=?
+  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c dim-sys-0<dim/c
+  dim-sys-dim-max dim-sys-dim-zero)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   hyperstack-push make-hyperstack-trivial make-hyperstack)
@@ -799,8 +800,7 @@
   hypertee unguarded-hypertee attenuated-hypertee attenuated-hypertee)
 
 (define (hypertee/c ds)
-  (rename-contract
-    (match/c hypertee (dim-sys-accepts/c ds) any/c any/c)
+  (rename-contract (match/c hypertee (ok/c ds) any/c any/c)
     `(hypertee/c ,ds)))
 
 (define (unsafe-hypertee-from-brackets ds degree closing-brackets)
@@ -1333,9 +1333,7 @@
         "ht" ht
         "closing-bracket" closing-bracket
         "data" data)
-    #/expect
-      (contract-first-order-passes? (dim-sys-accepts/c ds) data-ds)
-      #t
+    #/expect (contract-first-order-passes? (ok/c ds) data-ds) #t
       (raise-arguments-error 'hypertee-join-all-degrees-selective
         "expected each hypertee join interpolation to be a hypertee with a compatible dimension system"
         "ht" ht
