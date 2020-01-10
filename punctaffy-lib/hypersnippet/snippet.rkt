@@ -50,14 +50,14 @@
   dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
   dim-sys-dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
   dim-sys-dim-zero dim-sys-morphism-sys?
-  dim-sys-morphism-sys-accepts/c dim-sys-morphism-sys-chain-two
-  dim-sys-morphism-sys-identity dim-sys-morphism-sys-morph-dim
-  dim-sys-morphism-sys-put-source dim-sys-morphism-sys-put-target
-  dim-sys-morphism-sys-source dim-sys-morphism-sys-target
-  extended-with-top-dim-sys extended-with-top-dim-sys-morphism-sys
-  extended-with-top-dim-finite extended-with-top-dim-infinite
-  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
-  fin-multiplied-dim-sys unextend-with-top-dim-sys-morphism-sys)
+  dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-identity
+  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-put-source
+  dim-sys-morphism-sys-put-target dim-sys-morphism-sys-source
+  dim-sys-morphism-sys-target extended-with-top-dim-sys
+  extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
+  extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
+  fin-multiplied-dim fin-multiplied-dim-sys
+  unextend-with-top-dim-sys-morphism-sys)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
@@ -1724,7 +1724,7 @@
         (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
         (match/c selective-map-all-snippet-sys-morphism-sys
           (snippet-format-sys-morphism-sys-accepts/c sfsms)
-          (dim-sys-morphism-sys-accepts/c dsms)))
+          (ok/c dsms)))
       ; snippet-sys-morphism-sys-source
       (dissectfn
         (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
@@ -2402,7 +2402,7 @@
       ; snippet-sys-morphism-sys-accepts/c
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         (match/c hypertee-map-dim-snippet-sys-morphism-sys
-          (dim-sys-morphism-sys-accepts/c dsms)))
+          (ok/c dsms)))
       ; snippet-sys-morphism-sys-source
       (dissectfn (hypertee-map-dim-snippet-sys-morphism-sys dsms)
         (hypertee-snippet-sys #/dim-sys-morphism-sys-source dsms))

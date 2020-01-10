@@ -107,8 +107,6 @@
   
   [dim-sys-morphism-sys? (-> any/c boolean?)]
   [dim-sys-morphism-sys-impl? (-> any/c boolean?)]
-  [dim-sys-morphism-sys-accepts/c
-    (-> dim-sys-morphism-sys? contract?)]
   [dim-sys-morphism-sys-source (-> dim-sys-morphism-sys? dim-sys?)]
   [dim-sys-morphism-sys-put-source
     (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
@@ -126,7 +124,6 @@
     (struct-type-property/c dim-sys-morphism-sys-impl?)]
   [make-dim-sys-morphism-sys-impl-from-morph
     (->
-      (-> dim-sys-morphism-sys? contract?)
       (-> dim-sys-morphism-sys? dim-sys?)
       (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
       (-> dim-sys-morphism-sys? dim-sys?)
@@ -397,7 +394,6 @@
 
 (define-imitation-simple-generics
   dim-sys-morphism-sys? dim-sys-morphism-sys-impl?
-  (#:method dim-sys-morphism-sys-accepts/c (#:this))
   (#:method dim-sys-morphism-sys-source (#:this))
   (#:method dim-sys-morphism-sys-put-source (#:this) ())
   (#:method dim-sys-morphism-sys-target (#:this))
@@ -451,11 +447,13 @@
   'identity-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (identity-dim-sys-morphism-sys e)
+        (match/c identity-dim-sys-morphism-sys #/ok/c e))))
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
-      (dissectfn (identity-dim-sys-morphism-sys e)
-        (match/c identity-dim-sys-morphism-sys #/ok/c e))
       ; dim-sys-morphism-sys-source
       (dissectfn (identity-dim-sys-morphism-sys e) e)
       ; dim-sys-morphism-sys-put-source
@@ -478,13 +476,13 @@
   'chain-two-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (chain-two-dim-sys-morphism-sys a b)
+        (match/c chain-two-dim-sys-morphism-sys (ok/c a) (ok/c b)))))
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
-      (dissectfn (chain-two-dim-sys-morphism-sys a b)
-        (match/c chain-two-dim-sys-morphism-sys
-          (dim-sys-morphism-sys-accepts/c a)
-          (dim-sys-morphism-sys-accepts/c b)))
       ; dim-sys-morphism-sys-source
       (dissectfn (chain-two-dim-sys-morphism-sys a b)
         (dim-sys-morphism-sys-source a))
@@ -677,12 +675,14 @@
   'extended-with-top-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-sys-morphism-sys
-    (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
         (match/c extended-with-top-dim-sys-morphism-sys
-          (dim-sys-morphism-sys-accepts/c orig)))
+          (ok/c orig)))))
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
       (dissectfn (extended-with-top-dim-sys-morphism-sys orig)
         (extended-with-top-dim-sys
@@ -757,11 +757,14 @@
   'extend-with-top-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (extend-with-top-dim-sys-morphism-sys source)
+        (match/c extend-with-top-dim-sys-morphism-sys
+          (ok/c source)))))
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
-      (dissectfn (extend-with-top-dim-sys-morphism-sys source)
-        (match/c extend-with-top-dim-sys-morphism-sys #/ok/c source))
       ; dim-sys-morphism-sys-source
       (dissectfn (extend-with-top-dim-sys-morphism-sys source)
         source)
@@ -839,12 +842,14 @@
   'unextend-with-top-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-sys-morphism-sys
-    (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (unextend-with-top-dim-sys-morphism-sys target)
         (match/c unextend-with-top-dim-sys-morphism-sys
-          (ok/c target)))
+          (ok/c target)))))
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
       (dissectfn (extend-with-top-dim-sys-morphism-sys target)
         (extended-with-top-finite-dim-sys target))
@@ -1048,13 +1053,15 @@
   'fin-multiplied-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-sys-morphism-sys
-    (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
         (match/c fin-multiplied-dim-sys-morphism-sys
           (=/c bound)
-          (dim-sys-morphism-sys-accepts/c orig)))
+          (ok/c orig)))))
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
       (dissectfn (fin-multiplied-dim-sys-morphism-sys bound orig)
         (fin-multiplied-dim-sys bound
@@ -1169,14 +1176,16 @@
   'fin-times-dim-sys-morphism-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-sys-morphism-sys
-    (make-dim-sys-morphism-sys-impl-from-morph
-      ; dim-sys-morphism-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
         (match/c fin-times-dim-sys-morphism-sys
           (=/c bound)
           (ok/c source)
-          any/c))
+          any/c))))
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
       (dissectfn (fin-times-dim-sys-morphism-sys bound source d->i)
         source)
