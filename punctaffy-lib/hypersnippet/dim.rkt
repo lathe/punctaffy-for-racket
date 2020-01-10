@@ -46,6 +46,12 @@
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
+(require #/only-in lathe-morphisms/in-fp/set
+  makeshift-set-sys-from-contract)
+(require #/only-in lathe-morphisms/in-fp/category
+  functor-sys-apply-to-object functor-sys/c functor-sys-impl?
+  make-category-sys-impl-from-chain-two
+  make-functor-sys-impl-from-apply prop:category-sys prop:functor-sys)
 (require #/only-in lathe-morphisms/in-fp/mediary/set
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
@@ -146,32 +152,15 @@
       [_ (a b)
         (dim-sys-morphism-sys/c
           (ok/c #/dim-sys-morphism-sys-source a)
-          (ok/c #/dim-sys-morphism-sys-target b))])]
-  
+          (ok/c #/dim-sys-morphism-sys-target b))])])
+
+(provide
+  dim-sys-category-sys)
+(provide #/contract-out
+  [dim-sys-category-sys? (-> any/c boolean?)]
   [dim-sys-endofunctor-sys? (-> any/c boolean?)]
-  [dim-sys-endofunctor-sys-impl? (-> any/c boolean?)]
-  [dim-sys-endofunctor-sys-accepts/c
-    (-> dim-sys-endofunctor-sys? contract?)]
-  [dim-sys-endofunctor-sys-morph-dim-sys
-    (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)]
-  [dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
-    (->i
-      (
-        [es dim-sys-endofunctor-sys?]
-        [ms dim-sys-morphism-sys?])
-      [_ (ms)
-        (dim-sys-morphism-sys/c
-          (ok/c
-            (dim-sys-endofunctor-sys-morph-dim-sys
-              (dim-sys-morphism-sys-source ms)))
-          (ok/c
-            (dim-sys-endofunctor-sys-morph-dim-sys
-              (dim-sys-morphism-sys-target ms))))])]
-  [prop:dim-sys-endofunctor-sys
-    (struct-type-property/c dim-sys-endofunctor-sys-impl?)]
-  [make-dim-sys-endofunctor-sys-impl-from-morph
+  [make-dim-sys-endofunctor-sys-impl-from-apply
     (->
-      (-> dim-sys-endofunctor-sys? contract?)
       (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)
       (->i
         (
@@ -180,13 +169,14 @@
         [_ (ms)
           (dim-sys-morphism-sys/c
             (ok/c
-              (dim-sys-endofunctor-sys-morph-dim-sys
+              (functor-sys-apply-to-object
                 (dim-sys-morphism-sys-source ms)))
             (ok/c
-              (dim-sys-endofunctor-sys-morph-dim-sys
+              (functor-sys-apply-to-object
                 (dim-sys-morphism-sys-target ms))))])
-      dim-sys-endofunctor-sys-impl?)]
-  
+      functor-sys-impl?)])
+
+(provide #/contract-out
   [dim-successors-sys? (-> any/c boolean?)]
   [dim-successors-sys-impl? (-> any/c boolean?)]
   [dim-successors-sys-dim-sys (-> dim-successors-sys? dim-sys?)]
@@ -511,16 +501,76 @@
   (chain-two-dim-sys-morphism-sys a b))
 
 
-(define-imitation-simple-generics
-  dim-sys-endofunctor-sys? dim-sys-endofunctor-sys-impl?
-  (#:method dim-sys-endofunctor-sys-accepts/c (#:this))
-  (#:method dim-sys-endofunctor-sys-morph-dim-sys (#:this) ())
-  (#:method dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
-    (#:this)
-    ())
-  prop:dim-sys-endofunctor-sys
-  make-dim-sys-endofunctor-sys-impl-from-morph
-  'dim-sys-endofunctor-sys 'dim-sys-endofunctor-sys-impl (list))
+(define-imitation-simple-struct
+  (dim-sys-category-sys?)
+  dim-sys-category-sys
+  'chain-two-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (fn es dim-sys-category-sys?)))
+  (#:prop prop:category-sys
+    (make-category-sys-impl-from-chain-two
+      ; category-sys-object-set-sys
+      (fn cs
+        (makeshift-set-sys-from-contract
+          ; makeshift-set-sys-element/c
+          (fn dim-sys?)
+          ; makeshift-set-sys-element-accepts/c
+          (fn element #/ok/c element)))
+      ; category-sys-morphism-set-sys
+      (fn cs s t
+        (makeshift-set-sys-from-contract
+          ; makeshift-set-sys-element/c
+          (fn #/dim-sys-morphism-sys/c (ok/c s) (ok/c t))
+          ; makeshift-set-sys-element-accepts/c
+          (fn element #/ok/c element)))
+      ; category-sys-object-identity-morphism
+      (fn cs endpoint
+        (dim-sys-morphism-sys-identity endpoint))
+      ; category-sys-morphism-chain-two
+      (fn cs a b c ab bc
+        (dim-sys-morphism-sys-chain-two ab bc)))))
+
+(define (dim-sys-endofunctor-sys? v)
+  (
+    (flat-contract-predicate
+      (functor-sys/c dim-sys-category-sys? dim-sys-category-sys?))
+    v))
+
+(define
+  (make-dim-sys-endofunctor-sys-impl-from-apply
+    apply-to-dim-sys
+    apply-to-dim-sys-morphism-sys)
+  (make-functor-sys-impl-from-apply
+    ; functor-sys-source
+    (fn fs #/dim-sys-category-sys)
+    ; functor-sys-replace-source
+    (fn fs new-s
+      (expect (dim-sys-category-sys? new-s) #t
+        (raise-arguments-error 'functor-sys-replace-source
+          "tried to replace the source with a source that was rather different"
+          "fs" fs
+          "s" (dim-sys-category-sys)
+          "new-s" new-s)
+        fs))
+    ; functor-sys-target
+    (fn fs #/dim-sys-category-sys)
+    ; functor-sys-replace-target
+    (fn fs new-t
+      (expect (dim-sys-category-sys? new-t) #t
+        (raise-arguments-error 'functor-sys-replace-target
+          "tried to replace the target with a target that was rather different"
+          "fs" fs
+          "t" (dim-sys-category-sys)
+          "new-t" new-t)
+        fs))
+    ; functor-sys-apply-to-object
+    (fn fs ds #/apply-to-dim-sys fs ds)
+    ; functor-sys-apply-to-morphism
+    (fn fs a b ms #/apply-to-dim-sys-morphism-sys fs ms)))
 
 
 (define-imitation-simple-generics
@@ -742,13 +792,13 @@
   'extended-with-top-dim-sys-endofunctor-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-sys-endofunctor-sys
-    (make-dim-sys-endofunctor-sys-impl-from-morph
-      ; dim-sys-endofunctor-sys-accepts/c
-      (fn es extended-with-top-dim-sys-endofunctor-sys?)
-      ; dim-sys-endofunctor-sys-morph-dim-sys
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (fn es extended-with-top-dim-sys-endofunctor-sys?)))
+  (#:prop prop:functor-sys
+    (make-dim-sys-endofunctor-sys-impl-from-apply
       (fn es ds #/extended-with-top-dim-sys ds)
-      ; dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
       (fn es ms #/extended-with-top-dim-sys-morphism-sys ms))))
 (define-imitation-simple-struct
   (extend-with-top-dim-sys-morphism-sys?
@@ -1144,16 +1194,17 @@
   'fin-multiplied-dim-sys-endofunctor-sys (current-inspector)
   (auto-write)
   (auto-equal)
-  (#:prop prop:dim-sys-endofunctor-sys
-    (make-dim-sys-endofunctor-sys-impl-from-morph
-      ; dim-sys-endofunctor-sys-accepts/c
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
       (dissectfn (fin-multiplied-dim-sys-endofunctor-sys bound)
-        (match/c fin-multiplied-dim-sys-endofunctor-sys #/=/c bound))
-      ; dim-sys-endofunctor-sys-morph-dim-sys
+        (match/c fin-multiplied-dim-sys-endofunctor-sys
+          (=/c bound)))))
+  (#:prop prop:functor-sys
+    (make-dim-sys-endofunctor-sys-impl-from-apply
       (fn es ds
         (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
         #/fin-multiplied-dim-sys bound ds))
-      ; dim-sys-endofunctor-sys-morph-dim-sys-morphism-sys
       (fn es ms
         (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
         #/fin-multiplied-dim-sys bound ms)))))
