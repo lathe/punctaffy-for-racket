@@ -5,7 +5,7 @@
 ; Unit tests of the hypertee data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2017-2019 The Lathe Authors
+;   Copyright 2017-2020 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -26,25 +26,20 @@
 (require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/trivial trivial)
 
-(require punctaffy/hypersnippet/dim)
-; TODO: Stop requiring each of these things from
-; `punctaffy/hypersnippet/hypertee`, and require equivalent
-; functionality from `punctaffy/hypersnippet/snippet` instead. Until
-; we do, this file is a copy of test-hypertee.rkt.
-(require #/only-in punctaffy/hypersnippet/hypertee
-  ht-bracs htb-labeled hypertee-furl hypertee-unfurl
-  hypertee-coil-hole hypertee-map-all-degrees hypertee-uncontour
-  hypertee-contour hypertee-join-all-degrees hypertee-done
-  hypertee-join-selective-interpolation
-  hypertee-join-selective-non-interpolation
-  hypertee-join-all-degrees-selective)
-(require #/only-in punctaffy/hypersnippet/snippet)
+(require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
+(require #/only-in punctaffy/hypersnippet/hypertee-2
+  ht-bracs htb-labeled hypertee-coil hypertee-coil-hole hypertee-furl
+  hypertee-snippet-sys)
+(require #/only-in punctaffy/hypersnippet/snippet
+  selected snippet-sys-snippet-done snippet-sys-snippet-join
+  snippet-sys-snippet-join-selective snippet-sys-snippet-map
+  snippet-sys-snippet-undone unselected)
 
 ; (We provide nothing from this module.)
 
 
 (define ds (nat-dim-sys))
-(define dss (nat-dim-successors-sys))
+(define ss (hypertee-snippet-sys ds))
 
 
 (define sample-0 (ht-bracs ds 0))
@@ -123,15 +118,21 @@
 
 
 (define (check-furl-round-trip sample)
-  (check-equal? (hypertee-furl ds #/hypertee-unfurl sample) sample))
+  (check-equal? (hypertee-furl ds #/hypertee-coil sample) sample))
 
 (check-furl-round-trip sample-0)
 (check-furl-round-trip sample-closing-1)
 (check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypertee-unfurl sample-closing-3a)
-  (hypertee-coil-hole 3 'a
+  (hypertee-coil sample-closing-3a)
+  (hypertee-coil-hole
+    3
+    (ht-bracs ds 2
+      (htb-labeled 1 #/trivial)
+      0
+    #/htb-labeled 0 #/trivial)
+    'a
     ; TODO: We basically just transcribed this from the result of
     ; `(hypernest-unfurl sample-closing-3a)` in test-hypernest.rkt.
     ; Make sure it's correct.
@@ -151,7 +152,7 @@
 
 (define (check-identity-map sample)
   (check-equal?
-    (hypertee-map-all-degrees sample #/fn hole data data)
+    (snippet-sys-snippet-map ss sample #/fn hole data data)
     sample))
 
 (check-identity-map sample-0)
@@ -163,36 +164,38 @@
 (check-identity-map sample-closing-3b)
 
 
-(define (check-contour-round-trip sample)
+(define (check-done-round-trip d sample)
   (check-equal?
-    (hypertee-uncontour dss #/hypertee-contour dss 'b sample)
-    (just #/list 'b sample)))
+    (snippet-sys-snippet-undone ss
+      (snippet-sys-snippet-done ss d 'b sample))
+    (just #/list d 'b sample)))
 
-(check-contour-round-trip sample-0)
-(check-contour-round-trip sample-closing-1)
-(check-contour-round-trip sample-closing-2)
-(check-contour-round-trip sample-closing-3a)
-(check-contour-round-trip sample-closing-4)
-(check-contour-round-trip sample-closing-5)
-(check-contour-round-trip sample-closing-3b)
+(check-done-round-trip 10 sample-0)
+(check-done-round-trip 10 sample-closing-1)
+(check-done-round-trip 10 sample-closing-2)
+(check-done-round-trip 10 sample-closing-3a)
+(check-done-round-trip 10 sample-closing-4)
+(check-done-round-trip 10 sample-closing-5)
+(check-done-round-trip 10 sample-closing-3b)
 
 
 (check-equal?
-  (hypertee-join-all-degrees #/ht-bracs ds 2
+  (snippet-sys-snippet-join ss #/ht-bracs ds 2
     (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-done 2 'a #/ht-bracs ds 0))
+    (htb-labeled 0
+      (snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 0)))
   (ht-bracs ds 2
     (htb-labeled 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
 
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
-  (hypertee-join-all-degrees #/ht-bracs ds 2
+  (snippet-sys-snippet-join ss #/ht-bracs ds 2
     (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 1 'a)
       0
@@ -207,7 +210,8 @@
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-done 2 'a #/ht-bracs ds 0))
+    (htb-labeled 0
+      (snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 0)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -222,8 +226,8 @@
 
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
-  (hypertee-join-all-degrees #/ht-bracs ds 2
-    (htb-labeled 1 #/hypertee-done 2 'a #/ht-bracs ds 1
+  (snippet-sys-snippet-join ss #/ht-bracs ds 2
+    (htb-labeled 1 #/snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/ht-bracs ds 2
@@ -236,7 +240,8 @@
       0
       (htb-labeled 0 #/trivial))
     0
-    (htb-labeled 0 #/hypertee-done 2 'a #/ht-bracs ds 0))
+    (htb-labeled 0
+      (snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 0)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -249,10 +254,10 @@
 
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
-  (hypertee-join-all-degrees #/ht-bracs ds 3
+  (snippet-sys-snippet-join ss #/ht-bracs ds 3
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/hypertee-done 3 'a #/ht-bracs ds 1
+    (htb-labeled 1 #/snippet-sys-snippet-done ss 3 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     
@@ -281,11 +286,12 @@
     0
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/hypertee-done 3 'a #/ht-bracs ds 1
+    (htb-labeled 1 #/snippet-sys-snippet-done ss 3 'a #/ht-bracs ds 1
       (htb-labeled 0 #/trivial))
     0
     
-    (htb-labeled 0 #/hypertee-done 3 'a #/ht-bracs ds 0))
+    (htb-labeled 0
+      (snippet-sys-snippet-done ss 3 'a #/ht-bracs ds 0)))
   (ht-bracs ds 3
     (htb-labeled 1 'a)
     0
@@ -299,30 +305,26 @@
   "Joining hypertees where one of the interpolations is degree 2 with its own degree-1 hole")
 
 
-(define (htterp val)
-  (hypertee-join-selective-interpolation val))
-
-(define (htnonterp val)
-  (hypertee-join-selective-non-interpolation val))
-
 (check-equal?
-  (hypertee-join-all-degrees-selective #/ht-bracs ds 2
-    (htb-labeled 1 #/htterp #/ht-bracs ds 2
-      (htb-labeled 1 #/htnonterp 'a)
+  (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
+    (htb-labeled 1 #/selected #/ht-bracs ds 2
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 #/htnonterp 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/htterp #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
-    (htb-labeled 1 #/htterp #/ht-bracs ds 2
-      (htb-labeled 1 #/htnonterp 'a)
+    (htb-labeled 1 #/selected #/ht-bracs ds 2
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 #/htnonterp 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/htterp #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
     (htb-labeled 0
-      (htterp #/hypertee-done 2 (htnonterp 'a) #/ht-bracs ds 0)))
+      (selected
+        (snippet-sys-snippet-done ss 2 (unselected 'a)
+          (ht-bracs ds 0)))))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -336,18 +338,20 @@
   "Joining hypertees selectively when there isn't any selectiveness being exercised")
 
 (check-equal?
-  (hypertee-join-all-degrees-selective #/ht-bracs ds 2
-    (htb-labeled 1 #/htterp #/ht-bracs ds 2
-      (htb-labeled 1 #/htnonterp 'a)
+  (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
+    (htb-labeled 1 #/selected #/ht-bracs ds 2
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 #/htnonterp 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/htterp #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
-    (htb-labeled 1 #/htnonterp 'a)
+    (htb-labeled 1 #/unselected 'a)
     0
     (htb-labeled 0
-      (htterp #/hypertee-done 2 (htnonterp 'a) #/ht-bracs ds 0)))
+      (selected
+        (snippet-sys-snippet-done ss 2 (unselected 'a)
+          (ht-bracs ds 0)))))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -359,17 +363,17 @@
   "Joining hypertees selectively when there's a degree-1 non-interpolation in the root")
 
 (check-equal?
-  (hypertee-join-all-degrees-selective #/ht-bracs ds 2
-    (htb-labeled 1 #/htterp #/ht-bracs ds 2
-      (htb-labeled 1 #/htnonterp 'a)
+  (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
+    (htb-labeled 1 #/selected #/ht-bracs ds 2
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 #/htnonterp 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/htterp #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
-    (htb-labeled 1 #/htnonterp 'a)
+    (htb-labeled 1 #/unselected 'a)
     0
-    (htb-labeled 0 #/htnonterp 'a))
+    (htb-labeled 0 #/unselected 'a))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
