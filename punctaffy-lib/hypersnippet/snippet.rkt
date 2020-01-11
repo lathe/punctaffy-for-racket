@@ -445,8 +445,7 @@
                       (w- suffix-hole-d
                         (snippet-sys-snippet-degree
                           shape-ss suffix-hole)
-                      #/dim-sys-dim</c
-                        ds suffix-hole-d prefix-hole-d))
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
                     (fn hole shape-data subject-data trivial?))))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
@@ -482,8 +481,7 @@
                     (w- suffix-hole-d
                       (snippet-sys-snippet-degree
                         shape-ss suffix-hole)
-                    #/dim-sys-dim</c
-                      ds suffix-hole-d prefix-hole-d))
+                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
                   (fn hole shape-data subject-data trivial?)))))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
@@ -521,7 +519,7 @@
                     (w- suffix-hole-d
                       (snippet-sys-snippet-degree
                         shape-ss suffix-hole)
-                    #/dim-sys-dim</c ds suffix-hole-d prefix-hole-d))
+                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
                   (fn hole shape-data subject-data trivial?)))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
@@ -556,8 +554,7 @@
                   (w- suffix-hole-d
                     (snippet-sys-snippet-degree
                       shape-ss suffix-hole)
-                  #/dim-sys-dim</c
-                    ds suffix-hole-d prefix-hole-d))
+                  #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
                 (fn hole shape-data subject-data trivial?))))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
@@ -1156,13 +1153,13 @@
   (rename-contract
     (snippet-sys-snippet-with-degree/c ss
       (dim-sys-dim</c (snippet-sys-dim-sys ss) degree))
-    `(snippet-sy-ssnippet-with-degree</c ,ss ,degree)))
+    `(snippet-sys-snippet-with-degree</c ,ss ,degree)))
 
 (define (snippet-sys-snippet-with-degree=/c ss degree)
   (rename-contract
     (snippet-sys-snippet-with-degree/c ss
       (dim-sys-dim=/c (snippet-sys-dim-sys ss) degree))
-    `(snippet-sy-ssnippet-with-degree=/c ,ss ,degree)))
+    `(snippet-sys-snippet-with-degree=/c ,ss ,degree)))
 
 (define (snippet-sys-snippetof ss h-to-value/c)
   (w- name `(snippet-sys-snippetof ,ss ,h-to-value/c)
@@ -1941,8 +1938,8 @@
       #/fn shape
       #/maybe-bind
         (snippet-sys-snippet-map-maybe shape-ess shape #/fn hole data
-          (expect data (selected data) (nothing)
-          #/just data))
+          (mat data (unselected data) (nothing)
+          #/dissect data (selected data) (just data)))
       #/fn shape
       #/expect
         (snippet-sys-snippet-set-degree-maybe shape-ess
@@ -2560,7 +2557,7 @@
                       (w- tail-hole-d
                         (snippet-sys-snippet-degree
                           shape-ss tail-hole)
-                      #/dim-sys-dim</c ds tail-hole-d hole-d))
+                      #/dim-sys-dim<? ds tail-hole-d hole-d))
                     (fn hole shape-data subject-data
                       trivial?)))))))))
     `(hypertee-coil/c ,(value-name-for-contract ds))))
@@ -2868,15 +2865,16 @@
         #/dissect splice (selected suffix)
         #/w- suffix
           (snippet-sys-snippet-map ss suffix #/fn hole data
-            (expect data (unselected data) data
-            #/unselected #/unselected data))
+            (mat data (selected data) (selected data)
+            #/dissect data (unselected data)
+              (unselected #/unselected data)))
         #/maybe-map
           (snippet-sys-snippet-zip-map-selective ss tails suffix
           #/fn hole tail data
             (dissect data (trivial)
               tail))
         #/fn suffix
-          (snippet-sys-snippet-bind ss suffix #/fn hole data data))))
+          (snippet-sys-snippet-join ss suffix))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -2893,6 +2891,10 @@
       ; into a replacement for `tails`.
       
       (dissect ss (hypertee-snippet-sys ds)
+      #/mat shape (unguarded-hypertee-furl _ #/hypertee-coil-zero)
+        (snippet-sys-snippet-map-maybe ss snippet #/fn hole data
+          (mat data (selected data) (nothing)
+          #/dissect data (unselected data) (just data)))
       #/w- numbered-snippet
         (hypertee-map-cps ds 0 snippet
           (fn state hole data then
@@ -3093,9 +3095,8 @@
         (snippet-sys-snippet-splice (ss-> ss) (snippet-> ss snippet)
         #/fn hole data
           (maybe-map (hv-to-splice (->shape ss hole) data) #/fn data
-            (mat data (unselected data) (unselected data)
-            #/dissect data (selected suffix)
-            #/selected #/snippet-> ss suffix)))
+            (selectable-map data #/fn suffix
+              (snippet-> ss suffix))))
       #/fn snippet
         (->snippet ss snippet)))
     ; snippet-sys-snippet-zip-map-selective
@@ -3109,8 +3110,8 @@
               (->shape ss hole)
               shape-data
               snippet-data)))
-      #/fn selective
-        (->snippet ss selective)))))
+      #/fn snippet
+        (->snippet ss snippet)))))
 
 
 ; TODO: Export this.
@@ -3456,10 +3457,15 @@
             (fin-multiplied-dim 0 opening-degree)
             (unguarded-hypertee-furl emds #/hypertee-coil-hole
               (extended-with-top-dim-infinite)
-              (snippet-sys-snippet-map emhtss root-part #/fn hole data
+              (snippet-sys-snippet-map emhtss root-part #/fn hole tail
                 (trivial))
               (selected data)
-              root-part)))
+              (snippet-sys-snippet-map emhtss root-part #/fn hole tail
+                (dissect tail
+                  (hypernest-unchecked #/selective-snippet-nonzero
+                    (fin-multiplied-dim 0 _)
+                    tail-selective)
+                  tail-selective)))))
         (part-state
           #f (dim-sys-dim-zero uds) hole-degree hole-degree (list))
         stack)
