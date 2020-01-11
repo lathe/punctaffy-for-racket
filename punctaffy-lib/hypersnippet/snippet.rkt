@@ -1106,7 +1106,7 @@
     #f
   #/snippet-sys-snippet-all? ss zipped #/fn hole data
     (dissect data (list shape-data snippet-data)
-    #/check-hvv? shape-data snippet-data)))
+    #/check-hvv? hole shape-data snippet-data)))
 
 (define (snippet-sys-snippet-with-degree/c ss degree/c)
   (w- degree/c
@@ -3499,10 +3499,7 @@
               rev-brackets)
           #/w- get-subpart
             (fn d data
-              (dissect d
-                (extended-with-top-dim-finite
-                  (fin-multiplied-dim 0 d))
-              #/if
+              (if
                 (and
                   (dim-sys-dim<=? uds first-nontrivial-degree d)
                   (dim-sys-dim<? uds d first-non-interpolation-degree))
@@ -3514,7 +3511,7 @@
                 (reverse rev-brackets))
               (fn hole data
                 (get-subpart
-                  (snippet-sys-snippet-degree emhtss hole)
+                  (snippet-sys-snippet-degree htss hole)
                   data)))
             (snippet-sys-snippet-map htss
               (hypertee-from-brackets uds overall-degree
@@ -3525,7 +3522,7 @@
                     (htb-unlabeled d))))
               (fn hole data
                 (get-subpart
-                  (snippet-sys-snippet-degree emhtss hole)
+                  (snippet-sys-snippet-degree htss hole)
                   data)))))
       #/finish #/get-part root-i)
     
