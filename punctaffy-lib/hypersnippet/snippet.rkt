@@ -2774,20 +2774,20 @@
         (expect (dim-sys-dim=0? ds degree) #t (nothing)
         #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
       #/dissect coil (hypertee-coil-hole d hole data tails)
-        (expect
-          (and
-            (not #/dim-sys-dim=0? ds degree)
-            (dim-sys-dim<? ds
-              (snippet-sys-snippet-degree ss hole)
-              degree))
-          #t
-          (nothing)
-        #/maybe-map
-          (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-            (snippet-sys-snippet-set-degree-maybe ss degree tail))
-        #/fn tails
-          (unguarded-hypertee-furl ds
-            (hypertee-coil-hole d hole data tails)))))
+      #/expect
+        (and
+          (not #/dim-sys-dim=0? ds degree)
+          (dim-sys-dim<? ds
+            (snippet-sys-snippet-degree ss hole)
+            degree))
+        #t
+        (nothing)
+      #/maybe-map
+        (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+          (snippet-sys-snippet-set-degree-maybe ss degree tail))
+      #/fn tails
+        (unguarded-hypertee-furl ds
+          (hypertee-coil-hole degree hole data tails))))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
       (dissect ss (hypertee-snippet-sys ds)
@@ -3106,10 +3106,13 @@
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/selective-snippet-sys sfs eds #/fn hole
     (expect (snippet-sys-snippet-undone shape-ess hole)
-      (just #/list (fin-multiplied-dim 0 undone-hole-d) _ _)
+      (just #/list _ undone-hole _)
       none/c
     #/expect (snippet-sys-snippet-degree shape-ess hole)
       (fin-multiplied-dim 1 hole-d)
+      none/c
+    #/expect (snippet-sys-snippet-degree shape-ess undone-hole)
+      (fin-multiplied-dim 0 undone-hole-d)
       none/c
     #/expect (dim-sys-dim=? uds hole-d undone-hole-d) #t
       none/c
