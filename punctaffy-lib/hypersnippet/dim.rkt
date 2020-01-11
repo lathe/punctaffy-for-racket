@@ -779,7 +779,7 @@
         #/mat first (extended-with-top-dim-infinite)
           (extended-with-top-dim-infinite)
         #/dissect first (extended-with-top-dim-finite orig-first)
-        #/next (dim-sys-dim-max state orig-first) rest)))))
+        #/next (dim-sys-dim-max orig-ds state orig-first) rest)))))
 (define-match-expander-attenuated
   attenuated-extended-with-top-dim-sys
   unguarded-extended-with-top-dim-sys
@@ -973,11 +973,11 @@
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
-      (dissectfn (extend-with-top-dim-sys-morphism-sys target)
+      (dissectfn (unextend-with-top-dim-sys-morphism-sys target)
         (extended-with-top-finite-dim-sys target))
       ; dim-sys-morphism-sys-replace-source
       (fn ms new-s
-        (dissect ms (extend-with-top-dim-sys-morphism-sys target)
+        (dissect ms (unextend-with-top-dim-sys-morphism-sys target)
         #/expect new-s (extended-with-top-finite-dim-sys new-t)
           (w- s (extended-with-top-finite-dim-sys target)
           #/raise-arguments-error 'dim-sys-morphism-sys-replace-source
@@ -985,9 +985,9 @@
             "ms" ms
             "s" s
             "new-s" new-s)
-        #/extend-with-top-dim-sys-morphism-sys new-t))
+        #/unextend-with-top-dim-sys-morphism-sys new-t))
       ; dim-sys-morphism-sys-target
-      (dissectfn (extend-with-top-dim-sys-morphism-sys target)
+      (dissectfn (unextend-with-top-dim-sys-morphism-sys target)
         target)
       ; dim-sys-morphism-sys-replace-target
       (fn ms new-t
@@ -1150,10 +1150,13 @@
         (expect rest (cons first rest) state
         #/dissect state (fin-multiplied-dim state-i state-orig)
         #/dissect first (fin-multiplied-dim first-i first-orig)
-        #/w- max-orig (dim-sys-dim-max state-orig first-orig)
+        #/w- max-orig
+          (dim-sys-dim-max orig-ds state-orig first-orig)
         #/w- state
-          (expect (dim-sys-dim=? max-orig state-orig) #t first
-          #/expect (dim-sys-dim=? max-orig first-orig) #t state
+          (expect (dim-sys-dim=? orig-ds max-orig state-orig) #t
+            first
+          #/expect (dim-sys-dim=? orig-ds max-orig first-orig) #t
+            state
           #/fin-multiplied-dim (max state-i first-i) max-orig)
         #/next state rest)))))
 (define-match-expander-attenuated
