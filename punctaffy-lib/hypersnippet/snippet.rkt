@@ -52,12 +52,10 @@
 (require #/only-in lathe-morphisms/in-fp/set
   makeshift-set-sys-from-contract)
 (require #/only-in lathe-morphisms/in-fp/category
-  functor-sys-apply-to-morphism functor-sys-apply-to-object
-  functor-sys/c functor-sys-impl?
+  functor-sys-apply-to-object functor-sys/c functor-sys-impl?
   make-category-sys-impl-from-chain-two
   make-functor-sys-impl-from-apply
   make-natural-transformation-sys-impl-from-apply
-  natural-transformation-sys-apply-to-morphism
   natural-transformation-sys/c natural-transformation-sys-chain-two
   natural-transformation-sys-identity natural-transformation-sys-impl?
   natural-transformation-sys-source natural-transformation-sys-target
@@ -78,6 +76,9 @@
   extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
   extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
   fin-multiplied-dim fin-multiplied-dim-sys
+  fin-times-dim-sys-morphism-sys fin-untimes-dim-sys-morphism-sys
+  functor-from-dim-sys-sys-apply-to-morphism
+  natural-transformation-from-from-dim-sys-sys-apply-to-morphism
   unextend-with-top-dim-sys-morphism-sys)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
@@ -1907,7 +1908,7 @@
         (selective-snippet-zero unextended-snippet)
       #/w- extended-snippet
         (snippet-sys-morphism-sys-morph-snippet
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (extend-with-top-dim-sys-morphism-sys uds))
           unextended-snippet)
       #/expect
@@ -1949,7 +1950,7 @@
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to a finite degree if that snippet had holes of only lesser degree")
       #/snippet-sys-morphism-sys-morph-snippet
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
         shape))
     ; snippet-sys-snippet-set-degree-maybe
@@ -1978,7 +1979,7 @@
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- extend
-        (functor-sys-apply-to-morphism ffdstsss
+        (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
           (extend-with-top-dim-sys-morphism-sys uds))
       #/expect
         (snippet-sys-snippet-set-degree-maybe ess
@@ -2012,7 +2013,7 @@
       #/fn content
       #/snippet-sys-snippet-undone uss
         (snippet-sys-morphism-sys-morph-snippet
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds))
           content)))
     ; snippet-sys-snippet-splice
@@ -2025,7 +2026,7 @@
         (just snippet)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
       #/maybe-map
         (snippet-sys-snippet-splice ess prefix
@@ -2067,13 +2068,13 @@
       #/dissect snippet (selective-snippet-nonzero d subject)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
       #/maybe-map
         (snippet-sys-snippet-zip-map-selective ess
           (snippet-sys-morphism-sys-morph-snippet
             (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-              (functor-sys-apply-to-morphism ffdstsss
+              (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                 (extend-with-top-dim-sys-morphism-sys uds)))
             shape)
           (snippet-sys-snippet-map ess subject #/fn hole data
@@ -2104,7 +2105,7 @@
 (define
   (snippet-format-sys-morphism-sys-apply-to-dim-sys-morphism-sys
     sfsms dsms)
-  (natural-transformation-sys-apply-to-morphism
+  (natural-transformation-from-from-dim-sys-sys-apply-to-morphism
     (snippet-format-sys-morphism-sys-functor-morphism sfsms)
     dsms))
 
@@ -2351,7 +2352,7 @@
           (snippet-format-sys-morphism-sys-replace-target
             sfsms new-t)))
       ; natural-transformation-sys-apply-to-morphism
-      (fn ms dsms
+      (fn ms a b dsms
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
             sfsms)
@@ -2835,12 +2836,12 @@
               (snippet-sys-snippet-degree ss hole)
               first-nontrivial-d)
             (dissect data (trivial)
-              (unselected #/trivial))
+              (just #/unselected #/trivial))
             (hv-to-splice hole data))
         #/fn splice
         #/mat splice (unselected data)
           (maybe-bind
-            (snippet-sys-snippet-map ss tails #/fn hole tail
+            (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
               (next tail
                 (dim-sys-dim-max ds
                   first-nontrivial-d
@@ -3022,7 +3023,8 @@
 ; TODO: Use the things that use this.
 (define
   (make-snippet-sys-impl-from-conversions
-    snippet-sys-snippet/c ss-> snippet-> ->snippet)
+    snippet-sys-snippet/c ss-> degree-> ->degree shape-> ->shape
+    snippet-> ->snippet)
   (make-snippet-sys-impl-from-various-1
     ; snippet-sys-snippet/c
     snippet-sys-snippet/c
@@ -3034,46 +3036,65 @@
       (snippet-sys-shape-snippet-sys #/ss-> ss))
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (snippet-sys-snippet-degree (ss-> ss) (snippet-> snippet)))
+      (->degree ss
+        (snippet-sys-snippet-degree (ss-> ss)
+          (snippet-> ss snippet))))
     ; snippet-sys-shape->snippet
     (fn ss shape
-      (->snippet #/snippet-sys-shape->snippet (ss-> ss) shape))
+      (->snippet ss
+        (snippet-sys-shape->snippet (ss-> ss) (shape-> ss shape))))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
-      (snippet-sys-snippet->maybe-shape (ss-> ss)
-        (snippet-> snippet)))
+      (maybe-map
+        (snippet-sys-snippet->maybe-shape (ss-> ss)
+          (snippet-> ss snippet))
+      #/fn shape
+        (->shape ss shape)))
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss degree snippet
       (maybe-map
-        (snippet-sys-snippet-set-degree-maybe (ss-> ss) degree
-          (snippet-> snippet))
+        (snippet-sys-snippet-set-degree-maybe (ss-> ss)
+          (degree-> ss degree)
+          (snippet-> ss snippet))
       #/fn selective
-        (->snippet selective)))
+        (->snippet ss selective)))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
-      (->snippet #/snippet-sys-snippet-done (ss-> ss)
-        degree shape data))
+      (->snippet ss
+        (snippet-sys-snippet-done (ss-> ss)
+          (degree-> ss degree)
+          (shape-> ss shape)
+          data)))
     ; snippet-sys-snippet-undone
     (fn ss snippet
-      (snippet-sys-snippet-undone (ss-> ss) (snippet-> snippet)))
+      (maybe-map
+        (snippet-sys-snippet-undone (ss-> ss) (snippet-> ss snippet))
+      #/dissectfn (list d hole data)
+        (list (->degree ss d) (->shape ss hole) data)))
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
       (maybe-map
-        (snippet-sys-snippet-splice (ss-> ss) (snippet-> snippet)
+        (snippet-sys-snippet-splice (ss-> ss) (snippet-> ss snippet)
         #/fn hole data
-          (maybe-map (hv-to-splice hole data) #/fn data
+          (maybe-map (hv-to-splice (->shape ss hole) data) #/fn data
             (mat data (unselected data) (unselected data)
             #/dissect data (selected suffix)
-            #/selected #/snippet-> suffix)))
+            #/selected #/snippet-> ss suffix)))
       #/fn snippet
-        (snippet-> snippet)))
+        (snippet-> ss snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       (maybe-map
         (snippet-sys-snippet-zip-map-selective (ss-> ss)
-          shape (snippet-> snippet) hvv-to-maybe-v)
+          (shape-> ss shape)
+          (snippet-> ss snippet)
+          (fn hole shape-data snippet-data
+            (hvv-to-maybe-v
+              (->shape ss hole)
+              shape-data
+              snippet-data)))
       #/fn selective
-        (snippet-> selective)))))
+        (snippet-> ss selective)))))
 
 
 ; TODO: Export this.
@@ -3085,13 +3106,10 @@
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/selective-snippet-sys sfs eds #/fn hole
     (expect (snippet-sys-snippet-undone shape-ess hole)
-      (just undone-hole)
+      (just #/list (fin-multiplied-dim 0 undone-hole-d) _ _)
       none/c
     #/expect (snippet-sys-snippet-degree shape-ess hole)
       (fin-multiplied-dim 1 hole-d)
-      none/c
-    #/expect (snippet-sys-snippet-degree shape-ess undone-hole)
-      (fin-multiplied-dim 0 undone-hole-d)
       none/c
     #/expect (dim-sys-dim=? uds hole-d undone-hole-d) #t
       none/c
@@ -3128,10 +3146,6 @@
               any/c)))))
     `(hypernest/c ,sfs ,uds)))
 
-; TODO: Export these.
-;
-; TODO: Use these.
-;
 (define-imitation-simple-struct
   (hypernest-snippet-sys?
     hypernest-snippet-sys-snippet-format-sys
@@ -3150,11 +3164,42 @@
     ; ss->
     (dissectfn (hypernest-snippet-sys sfs uds)
       (hypernest-selective-snippet-sys sfs uds))
+    ; degree->
+    (fn ss degree
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- dsms (fin-times-dim-sys-morphism-sys 2 uds #/fn d 0)
+      #/dim-sys-morphism-sys-morph-dim dsms degree))
+    ; ->degree
+    (fn ss degree
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- dsms (fin-untimes-dim-sys-morphism-sys 2 uds)
+      #/dim-sys-morphism-sys-morph-dim dsms degree))
+    ; shape->
+    (fn ss shape
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- dsms (fin-times-dim-sys-morphism-sys 2 uds #/fn d 0)
+      #/w- ssms
+        (functor-from-dim-sys-sys-apply-to-morphism ffdstsss dsms)
+      #/w- shape-ssms
+        (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys ssms)
+      #/snippet-sys-morphism-sys-morph-snippet shape-ssms shape))
+    ; ->shape
+    (fn ss shape
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- dsms (fin-untimes-dim-sys-morphism-sys 2 uds)
+      #/w- ssms
+        (functor-from-dim-sys-sys-apply-to-morphism ffdstsss dsms)
+      #/w- shape-ssms
+        (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys ssms)
+      #/snippet-sys-morphism-sys-morph-snippet shape-ssms shape))
     ; snippet->
-    (dissectfn (hypernest-unchecked selective)
-      selective)
+    (fn ss snippet
+      (dissect snippet (hypernest-unchecked selective)
+        selective))
     ; ->snippet
-    (fn selective
+    (fn ss selective
       (hypernest-unchecked selective))))
 (define-match-expander-attenuated
   attenuated-hypernest-snippet-sys
