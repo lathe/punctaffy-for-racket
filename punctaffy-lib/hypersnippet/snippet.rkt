@@ -3587,27 +3587,30 @@
         closing-bracket
         (hnb-unlabeled closing-bracket)))))
 
+(define (explicit-hypertee-from-brackets err-name ds degree brackets)
+  (just-value
+    (snippet-sys-snippet->maybe-shape
+      (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+      (explicit-hypernest-from-brackets
+        err-name
+        (fn hnb #/compatible-hypernest-bracket->hypertee-bracket hnb)
+        ds
+        degree
+        (list-map brackets #/fn htb
+          (hypertee-bracket->hypernest-bracket htb))))))
+
 ; TODO: Use this.
 (define (hypertee-from-brackets ds degree brackets)
-  (explicit-hypernest-from-brackets
-    'hypertee-from-brackets
-    (fn hnb #/compatible-hypernest-bracket->hypertee-bracket hnb)
-    ds
-    degree
-    (list-map brackets #/fn htb
-      (hypertee-bracket->hypernest-bracket htb))))
+  (explicit-hypertee-from-brackets
+    'hypertee-from-brackets ds degree brackets))
 
 ; TODO: Use this.
 (define (ht-bracs ds degree . brackets)
-  (explicit-hypernest-from-brackets
-    'ht-bracs
-    (fn hnb #/compatible-hypernest-bracket->hypertee-bracket hnb)
-    ds
-    degree
+  (explicit-hypertee-from-brackets 'ht-bracs ds degree
     (list-map brackets #/fn closing-bracket
       (if (hypertee-bracket? closing-bracket)
-        (hypertee-bracket->hypernest-bracket closing-bracket)
-        (hnb-unlabeled closing-bracket)))))
+        closing-bracket
+        (htb-unlabeled closing-bracket)))))
 
 
 ; TODO: Export this.
