@@ -1,5 +1,8 @@
 #lang parendown racket/base
 
+(require lathe-debugging)
+(require #/for-syntax racket/base)
+
 ; punctaffy/hypersnippet/snippet
 ;
 ; An interface for data structures that are hypersnippet-shaped.
@@ -1086,7 +1089,8 @@
     (just #/hv-to-v hole data)))
 
 (define (snippet-sys-snippet-select ss snippet check-hv?)
-  (snippet-sys-snippet-map ss snippet #/fn hole data
+  (dlog 'j2 snippet
+  #/snippet-sys-snippet-map ss snippet #/fn hole data
     (if (check-hv? hole data)
       (selected data)
       (unselected data))))
@@ -1220,7 +1224,8 @@
       #/fn v missing-party
         (w- v (snippet-contract-projection v missing-party)
         #/expect
-          (snippet-sys-snippet-zip-map-selective ss shape
+          (dlogr 'c1 ss shape v
+          #/snippet-sys-snippet-zip-map-selective ss shape
             (snippet-sys-snippet-select ss v #/fn hole data
               (check-subject-hv? hole data))
           #/fn hole shape-data subject-data
@@ -1248,6 +1253,7 @@
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-select-if-degree< ss degree snippet)
   (w- ds (snippet-sys-dim-sys ss)
+  #/dlog 'j1
   #/snippet-sys-snippet-select-if-degree ss snippet #/fn actual-degree
     (dim-sys-dim<? ds actual-degree degree)))
 
@@ -1255,13 +1261,15 @@
 (define (snippet-sys-snippet-splice-sure ss snippet hv-to-splice)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/just-value #/snippet-sys-snippet-splice ss snippet #/fn hole data
-    (just #/hv-to-splice hole data)))
+    (dlog 'i1 hv-to-splice
+    #/just #/hv-to-splice hole data)))
 
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/snippet-sys-snippet-splice-sure ss prefix #/fn hole data
-    (selectable-map (hv-to-suffix hole data) #/fn suffix
+    (dlog 'i2 hv-to-suffix
+    #/selectable-map (hv-to-suffix hole data) #/fn suffix
       (snippet-sys-snippet-select-if-degree< ss
         (snippet-sys-snippet-degree shape-ss hole)
         suffix))))
@@ -1273,7 +1281,8 @@
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-bind ss prefix hv-to-suffix)
   (snippet-sys-snippet-bind-selective ss prefix #/fn hole data
-    (selected #/hv-to-suffix hole data)))
+    (dlog 'i3 hv-to-suffix
+    #/selected #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
 (define (snippet-sys-snippet-join ss snippet)
@@ -2485,14 +2494,17 @@
 (define (snippet-sys-snippet-filter-maybe ss snippet)
   (w- ds (snippet-sys-dim-sys ss)
   #/w- d (snippet-sys-snippet-degree ss snippet)
+  #/dlog 'g1
   #/snippet-sys-snippet-splice ss snippet #/fn hole data
     (mat data (selected data) (just #/unselected data)
     #/dissect data (unselected data)
+    #/dlog 'g2
     #/maybe-map
       (snippet-sys-snippet-set-degree-maybe ss d
         (snippet-sys-shape->snippet ss hole))
     #/fn patch
-      (selected #/snippet-sys-snippet-select-everything ss patch))))
+      (dlog 'g3
+      #/selected #/snippet-sys-snippet-select-everything ss patch))))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -2543,7 +2555,7 @@
                 
                 ; What this means is that this should be a snippet
                 ; whose low-degree holes correspond to the holes of
-                ; `hole` and and contain `trivial?` values.
+                ; `hole` and contain `trivial?` values.
                 ;
                 ; TODO: See if we can factor out a
                 ; `snippet-sys-snippet-zip-low-degree-holes/c` or
@@ -2606,11 +2618,15 @@
   unguarded-hypertee-furl-orig
   attenuated-hypertee-furl
   attenuated-hypertee-furl)
+(define-syntax (hypertee-furl-dlog stx)
+  (syntax-case stx () #/ (_ args ...)
+    #`(dlog 'a1 ('#,(lambda () stx))
+        (hypertee-furl args ...))))
 (define-match-expander-from-match-and-make
   unguarded-hypertee-furl
   hypertee-furl
   hypertee-furl
-  hypertee-furl)
+  hypertee-furl-dlog)
 
 ; TODO: Use the things that use this.
 (define (hypertee/c ds)
@@ -2698,7 +2714,6 @@
     (hypertee-coil-hole
       snippet-d snippet-hole snippet-data snippet-tails)
     (nothing)
-  #/expect (dim-sys-dim=? ds shape-d snippet-d) #t (nothing)
   #/expect
     (snippet-sys-shape=? ss shape-hole snippet-hole
     #/fn hole shape-data snippet-data
@@ -2707,8 +2722,10 @@
         #t))
     #t
     (nothing)
+  #/dlog 'e1 hvv-to-maybe-v
   #/maybe-bind (hvv-to-maybe-v shape-hole shape-data snippet-data)
   #/fn result-data
+  #/dlog 'e2
   #/maybe-bind
     (snippet-sys-snippet-zip-map ss shape-tails snippet-tails
     #/fn hole shape-tail snippet-tail
@@ -2835,13 +2852,16 @@
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
       (dissect ss (hypertee-snippet-sys ds)
+      #/dlog 'h0
       #/w-loop next
         snippet snippet
         first-nontrivial-d (dim-sys-dim-zero ds)
         
-        (dissect snippet (unguarded-hypertee-furl _ coil)
+        (dlog 'h0.1
+        #/dissect snippet (unguarded-hypertee-furl _ coil)
         #/mat coil (hypertee-coil-zero)
           (just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+        #/dlog 'h0.2 hv-to-splice
         #/dissect coil (hypertee-coil-hole d hole data tails)
         #/maybe-bind
           (if
@@ -2852,16 +2872,20 @@
               (just #/unselected #/trivial))
             (hv-to-splice hole data))
         #/fn splice
+        #/dlog 'h0.3
         #/mat splice (unselected data)
           (maybe-bind
-            (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-              (next tail
+            (dlog 'h1
+            #/snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+              (dlog 'h2 tail
+              #/next tail
                 (dim-sys-dim-max ds
                   first-nontrivial-d
                   (snippet-sys-snippet-degree ss hole))))
           #/fn tails
           #/just #/unguarded-hypertee-furl ds
             (hypertee-coil-hole d hole data tails))
+        #/dlog 'h3
         #/dissect splice (selected suffix)
         #/w- suffix
           (snippet-sys-snippet-map ss suffix #/fn hole data
@@ -2872,9 +2896,10 @@
           (snippet-sys-snippet-zip-map-selective ss tails suffix
           #/fn hole tail data
             (dissect data (trivial)
-              tail))
+            #/just tail))
         #/fn suffix
-          (snippet-sys-snippet-join ss suffix))))
+          (dlog 'h4
+          #/snippet-sys-snippet-join ss suffix))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -2891,10 +2916,12 @@
       ; into a replacement for `tails`.
       
       (dissect ss (hypertee-snippet-sys ds)
+      #/dlog 'd1
       #/mat shape (unguarded-hypertee-furl _ #/hypertee-coil-zero)
         (snippet-sys-snippet-map-maybe ss snippet #/fn hole data
           (mat data (selected data) (nothing)
           #/dissect data (unselected data) (just data)))
+      #/dlog 'd2
       #/w- numbered-snippet
         (hypertee-map-cps ds 0 snippet
           (fn state hole data then
@@ -2904,17 +2931,21 @@
               (then (add1 state) #/selected #/list state data)))
         #/fn state numbered-snippet
           numbered-snippet)
+      #/dlog 'd2.1 numbered-snippet
       #/maybe-bind
         (snippet-sys-snippet-filter-maybe ss numbered-snippet)
       #/fn filtered-numbered-snippet
+      #/dlog 'd3 hvv-to-maybe-v shape filtered-numbered-snippet
       #/maybe-bind
         (hypertee-zip-map ds shape filtered-numbered-snippet
         #/fn hole shape-data snippet-data
           (dissect snippet-data (list i snippet-data)
+          #/dlog 'e3 hvv-to-maybe-v
           #/maybe-map (hvv-to-maybe-v hole shape-data snippet-data)
           #/fn result-data
             (list i result-data)))
       #/fn filtered-numbered-result
+      #/dlog 'd4
       #/w- env
         (hypertee-each-ltr ds (make-immutable-hasheq)
           filtered-numbered-result
@@ -3773,8 +3804,11 @@
               #/dissect (snippet-sys-snippet-degree emhtss hole)
                 (extended-with-top-dim-finite
                   (fin-multiplied-dim 0 d))
-              #/selected
-                (prepend (unselected #/hnb-unlabeled d) (next tail))))
+              #/just
+                (selected
+                  (prepend
+                    (unselected #/hnb-unlabeled d)
+                    (next tail)))))
             (fn hole splice splice)))
       #/dissect d (fin-multiplied-dim 0 d)
         (dissect data (selected data)
