@@ -421,7 +421,7 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- ds (snippet-sys-dim-sys)
+          (w- ds (snippet-sys-dim-sys ss)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
@@ -459,7 +459,7 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (w- ds (snippet-sys-dim-sys)
+          (w- ds (snippet-sys-dim-sys ss)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
@@ -496,7 +496,7 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- ds (snippet-sys-dim-sys)
+          (w- ds (snippet-sys-dim-sys ss)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
@@ -533,7 +533,7 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (w- ds (snippet-sys-dim-sys)
+          (w- ds (snippet-sys-dim-sys ss)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
@@ -1090,7 +1090,7 @@
     (just #/hv-to-v hole data)))
 
 (define (snippet-sys-snippet-select ss snippet check-hv?)
-  (dlog 'j2 snippet
+  (dlog 'j2 ss snippet check-hv?
   #/snippet-sys-snippet-map ss snippet #/fn hole data
     (if (check-hv? hole data)
       (selected data)
@@ -1225,7 +1225,7 @@
       #/fn v missing-party
         (w- v (snippet-contract-projection v missing-party)
         #/expect
-          (dlogr 'c1 ss shape v
+          (dlogr 'c1 ss shape check-subject-hv? hvv-to-subject-v/c v
           #/snippet-sys-snippet-zip-map-selective ss shape
             (snippet-sys-snippet-select ss v #/fn hole data
               (check-subject-hv? hole data))
@@ -1267,7 +1267,8 @@
 
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
-  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  (dlog 'm1
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/snippet-sys-snippet-splice-sure ss prefix #/fn hole data
     (dlog 'i2 hv-to-suffix
     #/selectable-map (hv-to-suffix hole data) #/fn suffix
@@ -1278,17 +1279,20 @@
 
 ; TODO: Use this.
 (define (snippet-sys-snippet-join-selective ss snippet)
-  (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
+  (dlog 'm2 ss snippet
+  #/snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-bind ss prefix hv-to-suffix)
-  (snippet-sys-snippet-bind-selective ss prefix #/fn hole data
+  (dlog 'm3
+  #/snippet-sys-snippet-bind-selective ss prefix #/fn hole data
     (dlog 'i3 hv-to-suffix
     #/selected #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
 (define (snippet-sys-snippet-join ss snippet)
-  (snippet-sys-snippet-bind ss snippet #/fn hole data data))
+  (dlog 'm4
+  #/snippet-sys-snippet-bind ss snippet #/fn hole data data))
 
 
 (define-imitation-simple-generics
@@ -2502,7 +2506,7 @@
   #/snippet-sys-snippet-splice ss snippet #/fn hole data
     (mat data (selected data) (just #/unselected data)
     #/dissect data (unselected data)
-    #/dlog 'g2
+    #/dlog 'g2 hole
     #/maybe-map
       (snippet-sys-snippet-set-degree-maybe ss d
         (snippet-sys-shape->snippet ss hole))
@@ -2925,7 +2929,7 @@
       ; into a replacement for `tails`.
       
       (dissect ss (hypertee-snippet-sys ds)
-      #/dlog 'd1
+      #/dlog 'd1 ss shape snippet hvv-to-maybe-v
       #/mat shape (unguarded-hypertee-furl _ #/hypertee-coil-zero)
         (snippet-sys-snippet-map-maybe ss snippet #/fn hole data
           (mat data (selected data) (nothing)

@@ -1,5 +1,7 @@
 #lang parendown racket/base
 
+(require lathe-debugging)
+
 ; punctaffy/tests/test-hypertee-2
 ;
 ; Unit tests of the hypertee data structure for hypersnippet-shaped
@@ -20,10 +22,11 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/only-in racket/contract/base contract)
 (require rackunit)
 
-(require #/only-in lathe-comforts fn)
-(require #/only-in lathe-comforts/maybe just)
+(require #/only-in lathe-comforts dissect fn w-)
+(require #/only-in lathe-comforts/maybe just maybe-map)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
@@ -31,9 +34,13 @@
   ht-bracs htb-labeled hypertee-coil hypertee-coil-hole
   hypertee-coil-zero hypertee-furl hypertee-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  selected snippet-sys-snippet-done snippet-sys-snippet-filter-maybe
-  snippet-sys-snippet-join snippet-sys-snippet-join-selective
-  snippet-sys-snippet-map snippet-sys-snippet-undone unselected)
+  selected snippet-sys-shape->snippet snippet-sys-snippet-done
+  snippet-sys-snippet-filter-maybe snippet-sys-snippet-join
+  snippet-sys-snippet-join-selective snippet-sys-snippet-map
+  snippet-sys-snippet-select snippet-sys-snippet-select-everything
+  snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
+  snippet-sys-snippet-zip-selective/c
+  snippet-sys-snippet-zip-map-selective unselected)
 
 ; (We provide nothing from this module.)
 
@@ -42,9 +49,117 @@
 (define ss (hypertee-snippet-sys ds))
 
 
+; NOTE: This checks the `(dlog 'g2 ...)` part.
+#;
+(check-equal?
+  (w- hole
+    (hypertee-furl ds #/hypertee-coil-hole 1
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (trivial)
+      (hypertee-furl ds #/hypertee-coil-zero))
+  #/maybe-map
+    (snippet-sys-snippet-set-degree-maybe ss 10
+      (snippet-sys-shape->snippet ss hole))
+  #/fn patch
+    (selected #/snippet-sys-snippet-select-everything ss patch))
+  (just #/selected #/hypertee-furl ds #/hypertee-coil-hole 10
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (selected #/trivial)
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
+; NOTE: This checks one of the bigger `(dlog 'd1 ...)` parts.
+#;
+(check-equal?
+  (snippet-sys-snippet-zip-map-selective ss
+    (hypertee-furl ds #/hypertee-coil-hole 1
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (hypertee-furl ds #/hypertee-coil-hole 10
+        (hypertee-furl ds #/hypertee-coil-zero)
+        (selected 'b)
+        (hypertee-furl ds #/hypertee-coil-zero))
+      (hypertee-furl ds #/hypertee-coil-zero))
+    (hypertee-furl ds #/hypertee-coil-hole 10
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (selected #/trivial)
+      (hypertee-furl ds #/hypertee-coil-zero))
+  #/fn hole tail data
+    (dissect data (trivial)
+    #/just #/selected tail))
+  (just #/hypertee-furl ds #/hypertee-coil-hole 10
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (selected #/hypertee-furl ds #/hypertee-coil-hole 10
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (selected 'b)
+      (hypertee-furl ds #/hypertee-coil-zero))
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
+; NOTE: This checks one of the bigger `(dlog 'd1 ...)` parts.
+#;
+(check-equal?
+  (snippet-sys-snippet-zip-map-selective ss
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (hypertee-furl ds #/hypertee-coil-hole 10
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (unselected #/unselected #/selected 'b)
+      (hypertee-furl ds #/hypertee-coil-zero))
+  #/fn hole tail data
+    (dissect data (trivial)
+    #/just #/selected tail))
+  (just #/hypertee-furl ds #/hypertee-coil-hole 10
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (unselected #/selected 'b)
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
+; NOTE: This checks the `(dlog 'm2 ...)` part. There's another such
+; part, but it occurs recursively within that one.
+#;
+(check-equal?
+  (snippet-sys-snippet-join-selective ss
+    (hypertee-furl ds #/hypertee-coil-hole 10
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (selected #/hypertee-furl ds #/hypertee-coil-hole 10
+        (hypertee-furl ds #/hypertee-coil-zero)
+        (selected 'b)
+        (hypertee-furl ds #/hypertee-coil-zero))
+      (hypertee-furl ds #/hypertee-coil-zero)))
+  (hypertee-furl ds #/hypertee-coil-hole 10
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (selected 'b)
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
+; NOTE: This checks the `(dlog 'j2 ...)` part.
+#;
+(check-equal?
+  (snippet-sys-snippet-select ss
+    (hypertee-furl ds #/hypertee-coil-zero)
+  #/fn hole data
+    (error "Internal error"))
+  (hypertee-furl ds #/hypertee-coil-zero))
+
+; NOTE: This checks the `(dlog 'c1 ...)` part.
+#;
+(check-equal?
+  (contract
+    (snippet-sys-snippet-zip-selective/c ss
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (fn hole subject-data
+        (error "Internal error"))
+      (fn hole shape-data subject-data
+        (error "Internal error")))
+    (hypertee-furl ds #/hypertee-coil-zero)
+    'pos
+    'neg)
+  (hypertee-furl ds #/hypertee-coil-zero))
+
+; TODO NOW: This pretty much just leaves the `(dlog 'h0 ...)`
+; parts....
+
 ; TODO NOW: Make this unit test pass.
 (check-equal?
-  (snippet-sys-snippet-filter-maybe ss
+  (
+    (fn ss snippet
+      (dlog 'k1 #/snippet-sys-snippet-filter-maybe ss snippet))
+    ss
     (hypertee-furl ds #/hypertee-coil-hole 10
       (hypertee-furl ds #/hypertee-coil-hole 1
         (hypertee-furl ds #/hypertee-coil-zero)
@@ -58,7 +173,7 @@
           (selected 'b)
           (hypertee-furl ds #/hypertee-coil-zero))
         (hypertee-furl ds #/hypertee-coil-zero))))
-  (hypertee-furl ds #/hypertee-coil-hole 10
+  (just #/hypertee-furl ds #/hypertee-coil-hole 10
     (hypertee-furl ds #/hypertee-coil-zero)
     'b
     (hypertee-furl ds #/hypertee-coil-zero)))
