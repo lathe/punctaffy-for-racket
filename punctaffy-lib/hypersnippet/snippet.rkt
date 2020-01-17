@@ -2,6 +2,7 @@
 
 (require lathe-debugging)
 (require #/for-syntax racket/base)
+(require #/for-syntax #/only-in racket/format ~a)
 
 ; punctaffy/hypersnippet/snippet
 ;
@@ -1270,7 +1271,8 @@
   #/snippet-sys-snippet-splice-sure ss prefix #/fn hole data
     (dlog 'i2 hv-to-suffix
     #/selectable-map (hv-to-suffix hole data) #/fn suffix
-      (snippet-sys-snippet-select-if-degree< ss
+      (dlog 'i2.1 suffix
+      #/snippet-sys-snippet-select-if-degree< ss
         (snippet-sys-snippet-degree shape-ss hole)
         suffix))))
 
@@ -2490,6 +2492,8 @@
 
 ; TODO: Find a better name for this.
 ; TODO: Export this.
+; TODO NOW: Stop exporting this without a contract.
+(provide snippet-sys-snippet-filter-maybe)
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-filter-maybe ss snippet)
   (w- ds (snippet-sys-dim-sys ss)
@@ -2620,7 +2624,7 @@
   attenuated-hypertee-furl)
 (define-syntax (hypertee-furl-dlog stx)
   (syntax-case stx () #/ (_ args ...)
-    #`(dlog 'a1 ('#,(lambda () stx))
+    #`(dlog 'a1 #,(~a stx)
         (hypertee-furl args ...))))
 (define-match-expander-from-match-and-make
   unguarded-hypertee-furl
@@ -2852,7 +2856,7 @@
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
       (dissect ss (hypertee-snippet-sys ds)
-      #/dlog 'h0
+      #/dlog 'h0 snippet
       #/w-loop next
         snippet snippet
         first-nontrivial-d (dim-sys-dim-zero ds)
@@ -2861,8 +2865,9 @@
         #/dissect snippet (unguarded-hypertee-furl _ coil)
         #/mat coil (hypertee-coil-zero)
           (just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
-        #/dlog 'h0.2 hv-to-splice
         #/dissect coil (hypertee-coil-hole d hole data tails)
+        #/dlog 'h0.2 hv-to-splice data
+        #/dlog 'h0.2.1 tails
         #/maybe-bind
           (if
             (dim-sys-dim<? ds
@@ -2872,7 +2877,7 @@
               (just #/unselected #/trivial))
             (hv-to-splice hole data))
         #/fn splice
-        #/dlog 'h0.3
+        #/dlog 'h0.3 splice
         #/mat splice (unselected data)
           (maybe-bind
             (dlog 'h1
@@ -2885,9 +2890,13 @@
           #/fn tails
           #/just #/unguarded-hypertee-furl ds
             (hypertee-coil-hole d hole data tails))
-        #/dlog 'h3
         #/dissect splice (selected suffix)
+        #/dlog 'h3 suffix
         #/w- suffix
+          ; TODO NOW: Decide whether to uncomment the following part
+          ; or to delete this `w-`.
+;          suffix
+;          #;
           (snippet-sys-snippet-map ss suffix #/fn hole data
             (mat data (selected data) (selected data)
             #/dissect data (unselected data)
@@ -2896,10 +2905,10 @@
           (snippet-sys-snippet-zip-map-selective ss tails suffix
           #/fn hole tail data
             (dissect data (trivial)
-            #/just tail))
+            #/just #/selected tail))
         #/fn suffix
-          (dlog 'h4
-          #/snippet-sys-snippet-join ss suffix))))
+          (dlog 'h4 suffix
+          #/snippet-sys-snippet-join-selective ss suffix))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       

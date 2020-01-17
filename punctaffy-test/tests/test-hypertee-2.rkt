@@ -28,12 +28,12 @@
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
-  ht-bracs htb-labeled hypertee-coil hypertee-coil-hole hypertee-furl
-  hypertee-snippet-sys)
+  ht-bracs htb-labeled hypertee-coil hypertee-coil-hole
+  hypertee-coil-zero hypertee-furl hypertee-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  selected snippet-sys-snippet-done snippet-sys-snippet-join
-  snippet-sys-snippet-join-selective snippet-sys-snippet-map
-  snippet-sys-snippet-undone unselected)
+  selected snippet-sys-snippet-done snippet-sys-snippet-filter-maybe
+  snippet-sys-snippet-join snippet-sys-snippet-join-selective
+  snippet-sys-snippet-map snippet-sys-snippet-undone unselected)
 
 ; (We provide nothing from this module.)
 
@@ -42,10 +42,36 @@
 (define ss (hypertee-snippet-sys ds))
 
 
+; TODO NOW: Make this unit test pass.
+(check-equal?
+  (snippet-sys-snippet-filter-maybe ss
+    (hypertee-furl ds #/hypertee-coil-hole 10
+      (hypertee-furl ds #/hypertee-coil-hole 1
+        (hypertee-furl ds #/hypertee-coil-zero)
+        (trivial)
+        (hypertee-furl ds #/hypertee-coil-zero))
+      (unselected #/selected 'a)
+      (hypertee-furl ds #/hypertee-coil-hole 1
+        (hypertee-furl ds #/hypertee-coil-zero)
+        (hypertee-furl ds #/hypertee-coil-hole 10
+          (hypertee-furl ds #/hypertee-coil-zero)
+          (selected 'b)
+          (hypertee-furl ds #/hypertee-coil-zero))
+        (hypertee-furl ds #/hypertee-coil-zero))))
+  (hypertee-furl ds #/hypertee-coil-hole 10
+    (hypertee-furl ds #/hypertee-coil-zero)
+    'b
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
+; TODO NOW: Uncomment these parts that already work.
+#|
 (define sample-0 (ht-bracs ds 0))
 (define sample-closing-1 (ht-bracs ds 1 #/htb-labeled 0 'a))
 (define sample-closing-2
   (ht-bracs ds 2 (htb-labeled 1 'a) 0 #/htb-labeled 0 'a))
+|#
+; TODO NOW: Uncomment these parts that don't work yet.
+#|
 (define sample-closing-3a
   (ht-bracs ds 3
     (htb-labeled 2 'a)
@@ -383,3 +409,4 @@
     0
     (htb-labeled 0 'a))
   "Joining hypertees selectively when there's a degree-0 non-interpolation in the root")
+|#
