@@ -50,7 +50,6 @@
 
 
 ; NOTE: This checks the `(dlog 'g2 ...)` part.
-#;
 (check-equal?
   (w- hole
     (hypertee-furl ds #/hypertee-coil-hole 1
@@ -68,7 +67,6 @@
     (hypertee-furl ds #/hypertee-coil-zero)))
 
 ; NOTE: This checks one of the bigger `(dlog 'd1 ...)` parts.
-#;
 (check-equal?
   (snippet-sys-snippet-zip-map-selective ss
     (hypertee-furl ds #/hypertee-coil-hole 1
@@ -94,7 +92,6 @@
     (hypertee-furl ds #/hypertee-coil-zero)))
 
 ; NOTE: This checks one of the bigger `(dlog 'd1 ...)` parts.
-#;
 (check-equal?
   (snippet-sys-snippet-zip-map-selective ss
     (hypertee-furl ds #/hypertee-coil-zero)
@@ -112,7 +109,6 @@
 
 ; NOTE: This checks the `(dlog 'm2 ...)` part. There's another such
 ; part, but it occurs recursively within that one.
-#;
 (check-equal?
   (snippet-sys-snippet-join-selective ss
     (hypertee-furl ds #/hypertee-coil-hole 10
@@ -128,7 +124,6 @@
     (hypertee-furl ds #/hypertee-coil-zero)))
 
 ; NOTE: This checks the `(dlog 'j2 ...)` part.
-#;
 (check-equal?
   (snippet-sys-snippet-select ss
     (hypertee-furl ds #/hypertee-coil-zero)
@@ -137,7 +132,6 @@
   (hypertee-furl ds #/hypertee-coil-zero))
 
 ; NOTE: This checks the `(dlog 'c1 ...)` part.
-#;
 (check-equal?
   (contract
     (snippet-sys-snippet-zip-selective/c ss
@@ -152,7 +146,6 @@
   (hypertee-furl ds #/hypertee-coil-zero))
 
 ; NOTE: This checks the two smallest `(dlog 'h0 ...)` parts.
-#;
 (check-equal?
   (snippet-sys-snippet-splice ss
     (hypertee-furl ds #/hypertee-coil-zero)
@@ -161,7 +154,6 @@
   (just #/hypertee-furl ds #/hypertee-coil-zero))
 
 ; NOTE: This checks the `(dlog 'n2 ...)` part.
-#;
 (check-equal?
   (snippet-sys-snippet-map ss
     (hypertee-furl ds #/hypertee-coil-hole 10
@@ -177,11 +169,7 @@
     (selected #/trivial)
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; TODO NOW: This pretty much just leaves the biggest `(dlog 'h0 ...)`
-; part (`snippet-sys-snippet-splice`) and the thing that calls it
-; (`snippet-sys-snippet-filter-maybe`).
-
-; TODO NOW: Make this unit test pass.
+; NOTE: This is the test the tests above were building up to.
 (check-equal?
   (
     (fn ss snippet
@@ -205,21 +193,21 @@
     'b
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; TODO NOW: Uncomment these parts that already work.
-#|
+
 (define sample-0 (ht-bracs ds 0))
 (define sample-closing-1 (ht-bracs ds 1 #/htb-labeled 0 'a))
 (define sample-closing-2
   (ht-bracs ds 2 (htb-labeled 1 'a) 0 #/htb-labeled 0 'a))
-|#
-; TODO NOW: Uncomment these parts that don't work yet.
-#|
+
+; TODO NOW: Make this work.
 (define sample-closing-3a
   (ht-bracs ds 3
     (htb-labeled 2 'a)
       1 (htb-labeled 1 'a) 0 0
     0
   #/htb-labeled 0 'a))
+; TODO NOW: Uncomment these parts that don't work yet.
+#|
 (define sample-closing-4
   (ht-bracs ds 4
     (htb-labeled 3 'a)

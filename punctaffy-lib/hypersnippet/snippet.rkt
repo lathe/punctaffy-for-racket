@@ -2884,18 +2884,18 @@
               (just #/unselected #/trivial))
             (hv-to-splice hole data))
         #/fn splice
+        #/maybe-bind
+          (dlog 'h1
+          #/snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+            (dlog 'h2 tail
+            #/next tail
+              (dim-sys-dim-max ds
+                first-nontrivial-d
+                (snippet-sys-snippet-degree ss hole))))
+        #/fn tails
         #/dlog 'h0.3 splice
         #/mat splice (unselected data)
-          (maybe-bind
-            (dlog 'h1
-            #/snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-              (dlog 'h2 tail
-              #/next tail
-                (dim-sys-dim-max ds
-                  first-nontrivial-d
-                  (snippet-sys-snippet-degree ss hole))))
-          #/fn tails
-          #/just #/unguarded-hypertee-furl ds
+          (just #/unguarded-hypertee-furl ds
             (hypertee-coil-hole d hole data tails))
         #/dissect splice (selected suffix)
         #/dlog 'h3 suffix
