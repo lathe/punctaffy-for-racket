@@ -1213,9 +1213,10 @@
         (snippet-sys-snippet-select ss v #/fn hole data
           (check-subject-hv? hole data))
       #/fn hole shape-data subject-data
-        (contract-first-order-passes?
-          (hvv-to-subject-v/c hole shape-data subject-data)
-          subject-data)))
+        (w- value/c
+          (coerce-contract 'snippet-sys-snippet-zip-selective/c
+            (hvv-to-subject-v/c hole shape-data subject-data))
+        #/contract-first-order-passes? value/c subject-data)))
   #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
@@ -1232,10 +1233,12 @@
             (snippet-sys-snippet-select ss v #/fn hole data
               (check-subject-hv? hole data))
           #/fn hole shape-data subject-data
-            (just #/
+            (w- value/c
+              (coerce-contract 'snippet-sys-snippet-zip-selective/c
+                (hvv-to-subject-v/c hole shape-data subject-data))
+            #/just #/
               (
-                (get/build-late-neg-projection
-                  (hvv-to-subject-v/c hole shape-data subject-data))
+                (get/build-late-neg-projection value/c)
                 (blame-add-context blame "hole value of"))
               subject-data
               missing-party))
@@ -1985,7 +1988,8 @@
       #/expect (dim-sys-dim=0? uds new-degree) #f (nothing)
       #/expect
         (snippet-sys-snippet-all? ess content #/fn hole data
-          (expect data (selected data) #t
+          (mat data (unselected data) #t
+          #/dissect data (selected data)
           #/dim-sys-dim<? eds
             (snippet-sys-snippet-degree shape-ess hole)
             (extended-with-top-dim-finite new-degree)))
@@ -2028,8 +2032,8 @@
       #/expect snippet (selective-snippet-nonzero d content) (nothing)
       #/maybe-bind
         (snippet-sys-snippet-map-maybe ess content #/fn hole data
-          (expect data (selected data) (nothing)
-          #/just data))
+          (mat data (unselected data) (nothing)
+          #/dissect data (selected data) (just data)))
       #/fn content
       #/snippet-sys-snippet-undone uss
         (snippet-sys-morphism-sys-morph-snippet
