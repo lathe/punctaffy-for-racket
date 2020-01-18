@@ -3506,7 +3506,8 @@
               root-part)
           #/hypernest-unchecked #/selective-snippet-nonzero
             (fin-multiplied-dim 0 opening-degree)
-            (unguarded-hypertee-furl emds #/hypertee-coil-hole
+            (dlog 'o1 data root-part
+            #/unguarded-hypertee-furl emds #/hypertee-coil-hole
               (extended-with-top-dim-infinite)
               (snippet-sys-snippet-map emhtss root-part #/fn hole tail
                 (trivial))
@@ -3516,7 +3517,13 @@
                   (hypernest-unchecked #/selective-snippet-nonzero
                     (fin-multiplied-dim 0 _)
                     tail-selective)
-                  tail-selective)))))
+                #/snippet-sys-snippet-map-selective emhtss
+                  (snippet-sys-snippet-select-if-degree< emhtss
+                    (snippet-sys-snippet-degree emhtss hole)
+                    tail-selective)
+                #/fn hole data
+                  (dissect data (selected #/trivial)
+                  #/trivial))))))
         (part-state
           #f (dim-sys-dim-zero uds) hole-degree hole-degree (list))
         stack)
