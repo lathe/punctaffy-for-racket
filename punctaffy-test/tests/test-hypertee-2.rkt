@@ -25,7 +25,7 @@
 (require #/only-in racket/contract/base contract)
 (require rackunit)
 
-(require #/only-in lathe-comforts dissect fn w-)
+(require #/only-in lathe-comforts dissect fn mat w-)
 (require #/only-in lathe-comforts/maybe just maybe-map)
 (require #/only-in lathe-comforts/trivial trivial)
 
@@ -38,8 +38,8 @@
   snippet-sys-snippet-filter-maybe snippet-sys-snippet-join
   snippet-sys-snippet-join-selective snippet-sys-snippet-map
   snippet-sys-snippet-select snippet-sys-snippet-select-everything
-  snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
-  snippet-sys-snippet-zip-selective/c
+  snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-splice
+  snippet-sys-snippet-undone snippet-sys-snippet-zip-selective/c
   snippet-sys-snippet-zip-map-selective unselected)
 
 ; (We provide nothing from this module.)
@@ -151,8 +151,35 @@
     'neg)
   (hypertee-furl ds #/hypertee-coil-zero))
 
-; TODO NOW: This pretty much just leaves the `(dlog 'h0 ...)`
-; parts....
+; NOTE: This checks the two smallest `(dlog 'h0 ...)` parts.
+#;
+(check-equal?
+  (snippet-sys-snippet-splice ss
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (fn hole data
+      (error "Internal error")))
+  (just #/hypertee-furl ds #/hypertee-coil-zero))
+
+; NOTE: This checks the `(dlog 'n2 ...)` part.
+#;
+(check-equal?
+  (snippet-sys-snippet-map ss
+    (hypertee-furl ds #/hypertee-coil-hole 10
+      (hypertee-furl ds #/hypertee-coil-zero)
+      (selected #/trivial)
+      (hypertee-furl ds #/hypertee-coil-zero))
+  #/fn hole data
+    (mat data (selected data) (selected data)
+    #/dissect data (unselected data)
+      (unselected #/unselected data)))
+  (hypertee-furl ds #/hypertee-coil-hole 10
+    (hypertee-furl ds #/hypertee-coil-zero)
+    (selected #/trivial)
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
+; TODO NOW: This pretty much just leaves the biggest `(dlog 'h0 ...)`
+; part (`snippet-sys-snippet-splice`) and the thing that calls it
+; (`snippet-sys-snippet-filter-maybe`).
 
 ; TODO NOW: Make this unit test pass.
 (check-equal?

@@ -1080,12 +1080,14 @@
     (not #/check-hv? hole data)))
 
 (define (snippet-sys-snippet-map-maybe ss snippet hv-to-maybe-v)
-  (snippet-sys-snippet-splice ss snippet #/fn hole data
+  (dlog 'n1 ss snippet hv-to-maybe-v
+  #/snippet-sys-snippet-splice ss snippet #/fn hole data
     (maybe-map (hv-to-maybe-v hole data) #/fn data
       (unselected data))))
 
 (define (snippet-sys-snippet-map ss snippet hv-to-v)
-  (just-value
+  (dlog 'n2 ss snippet hv-to-v
+  #/just-value
   #/snippet-sys-snippet-map-maybe ss snippet #/fn hole data
     (just #/hv-to-v hole data)))
 
@@ -2504,7 +2506,8 @@
   #/w- d (snippet-sys-snippet-degree ss snippet)
   #/dlog 'g1
   #/snippet-sys-snippet-splice ss snippet #/fn hole data
-    (mat data (selected data) (just #/unselected data)
+    (dlog 'g1.1 hole data
+    #/mat data (selected data) (just #/unselected data)
     #/dissect data (unselected data)
     #/dlog 'g2 hole
     #/maybe-map
@@ -2860,7 +2863,7 @@
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
       (dissect ss (hypertee-snippet-sys ds)
-      #/dlog 'h0 snippet
+      #/dlog 'h0 ss snippet hv-to-splice
       #/w-loop next
         snippet snippet
         first-nontrivial-d (dim-sys-dim-zero ds)
