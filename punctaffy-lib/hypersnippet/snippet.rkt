@@ -1233,7 +1233,8 @@
             (snippet-sys-snippet-select ss v #/fn hole data
               (check-subject-hv? hole data))
           #/fn hole shape-data subject-data
-            (w- value/c
+            (dlog 'p1 hvv-to-subject-v/c
+            #/w- value/c
               (coerce-contract 'snippet-sys-snippet-zip-selective/c
                 (hvv-to-subject-v/c hole shape-data subject-data))
             #/just #/
@@ -2745,14 +2746,7 @@
     (snippet-sys-snippet-zip-map ss shape-tails snippet-tails
     #/fn hole shape-tail snippet-tail
       (w- d (snippet-sys-snippet-degree ss hole)
-      #/snippet-sys-snippet-zip-map-selective ss
-        shape-tail
-        (snippet-sys-snippet-map ss snippet-tail #/fn hole data
-          (if
-            (dim-sys-dim<? ds (snippet-sys-snippet-degree ss hole) d)
-            (dissect data (trivial)
-              (selected #/trivial))
-            data))
+      #/snippet-sys-snippet-zip-map ss shape-tail snippet-tail
       #/fn hole shape-data snippet-data
         (if (dim-sys-dim<? ds (snippet-sys-snippet-degree ss hole) d)
           (dissect shape-data (trivial)
@@ -3517,6 +3511,7 @@
                   (hypernest-unchecked #/selective-snippet-nonzero
                     (fin-multiplied-dim 0 _)
                     tail-selective)
+                #/dlog 'o2 hole tail-selective
                 #/snippet-sys-snippet-map-selective emhtss
                   (snippet-sys-snippet-select-if-degree< emhtss
                     (snippet-sys-snippet-degree emhtss hole)

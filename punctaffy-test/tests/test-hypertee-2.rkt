@@ -198,22 +198,21 @@
 (define sample-closing-1 (ht-bracs ds 1 #/htb-labeled 0 'a))
 (define sample-closing-2
   (ht-bracs ds 2 (htb-labeled 1 'a) 0 #/htb-labeled 0 'a))
-
-; TODO NOW: Make this work.
 (define sample-closing-3a
   (ht-bracs ds 3
     (htb-labeled 2 'a)
       1 (htb-labeled 1 'a) 0 0
     0
   #/htb-labeled 0 'a))
-; TODO NOW: Uncomment these parts that don't work yet.
-#|
+; TODO NOW: Make this work.
 (define sample-closing-4
   (ht-bracs ds 4
     (htb-labeled 3 'a)
       2 (htb-labeled 2 'a) 1 1 1 (htb-labeled 1 'a) 0 0 0 0 0 0
     0
   #/htb-labeled 0 'a))
+; TODO NOW: Uncomment these parts that don't work yet.
+#|
 (define sample-closing-5
   (ht-bracs ds 5
     (htb-labeled 4 'a)
