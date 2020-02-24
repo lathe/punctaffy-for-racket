@@ -1,7 +1,5 @@
 #lang parendown racket/base
 
-(require lathe-debugging)
-
 ; punctaffy/tests/test-hypertee-2
 ;
 ; Unit tests of the hypertee data structure for hypersnippet-shaped
@@ -35,12 +33,15 @@
   hypertee-coil-zero hypertee-furl hypertee-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
   selected snippet-sys-shape->snippet snippet-sys-snippet-done
-  snippet-sys-snippet-filter-maybe snippet-sys-snippet-join
-  snippet-sys-snippet-join-selective snippet-sys-snippet-map
-  snippet-sys-snippet-select snippet-sys-snippet-select-everything
+  snippet-sys-snippet-join snippet-sys-snippet-join-selective
+  snippet-sys-snippet-map snippet-sys-snippet-select
+  snippet-sys-snippet-select-everything
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-splice
   snippet-sys-snippet-undone snippet-sys-snippet-zip-selective/c
   snippet-sys-snippet-zip-map-selective unselected)
+(require #/only-in
+  (submod punctaffy/hypersnippet/snippet private/test)
+  snippet-sys-snippet-filter-maybe)
 
 ; (We provide nothing from this module.)
 
@@ -171,10 +172,7 @@
 
 ; NOTE: This is the test the tests above were building up to.
 (check-equal?
-  (
-    (fn ss snippet
-      (dlog 'k1 #/snippet-sys-snippet-filter-maybe ss snippet))
-    ss
+  (snippet-sys-snippet-filter-maybe ss
     (hypertee-furl ds #/hypertee-coil-hole 10
       (hypertee-furl ds #/hypertee-coil-hole 1
         (hypertee-furl ds #/hypertee-coil-zero)
@@ -210,15 +208,6 @@
       2 (htb-labeled 2 'a) 1 1 1 (htb-labeled 1 'a) 0 0 0 0 0 0
     0
   #/htb-labeled 0 'a))
-; TODO NOW: Figure out why this one takes so long to complete, and
-; uncomment it. At the time of writing this comment, when we replace
-; `(require lathe-debugging)` with
-; `(require lathe-debugging/placebo)`, it takes 6m55s, which is
-; probably shorter than whatever time it would have taken before. When
-; we go further and restore `unguarded-hypertee-furl` so that it
-; doesn't perform a contract check, it takes 10.3s, a much more
-; reasonable amount of time.
-#;
 (define sample-closing-5
   (ht-bracs ds 5
     (htb-labeled 4 'a)
@@ -307,9 +296,6 @@
 
 (check-furl-round-trip sample-closing-3a)
 (check-furl-round-trip sample-closing-4)
-; TODO NOW: Uncomment this once we uncomment the definition of
-; `sample-closing-5`.
-#;
 (check-furl-round-trip sample-closing-5)
 (check-furl-round-trip sample-closing-3b)
 
@@ -324,9 +310,6 @@
 (check-identity-map sample-closing-2)
 (check-identity-map sample-closing-3a)
 (check-identity-map sample-closing-4)
-; TODO NOW: Uncomment this once we uncomment the definition of
-; `sample-closing-5`.
-#;
 (check-identity-map sample-closing-5)
 (check-identity-map sample-closing-3b)
 
@@ -342,56 +325,10 @@
 (check-done-round-trip 10 sample-closing-2)
 (check-done-round-trip 10 sample-closing-3a)
 (check-done-round-trip 10 sample-closing-4)
-; TODO NOW: Uncomment this once we uncomment the definition of
-; `sample-closing-5`.
-#;
 (check-done-round-trip 10 sample-closing-5)
 (check-done-round-trip 10 sample-closing-3b)
 
 
-; TODO NOW: Uncomment these parts that don't all work yet. We get the
-; following error. Unfortunately, if we uncomment them right now, this
-; file takes 15m02s to run. With them commented out, it takes 10m59s.
-#|
-snippet-sys-snippet-join-selective: contract violation
-  expected: trivial?
-  given: (selected (trivial))
-  in: a hole value of
-      the 2nd conjunct of
-      position 0 of
-      a part of the or/c of
-      the body of
-      a hole value of
-      the body of
-      the 2nd conjunct of
-      the snippet argument of
-      (->i
-       ((ss snippet-sys?)
-        (snippet
-         (ss)
-         (w-
-          ds
-          (snippet-sys-dim-sys ss)
-          (w-
-           shape-ss
-           (snippet-sys-shape-snippet-sys ss)
-           (and/c
-            (snippet-sys-snippet/c ss)
-            (by-own-method/c snippet ...))))))
-       (_
-        (ss snippet)
-        (...
-         ss
-         (snippet-sys-snippet-degree
-          ss
-          snippet))))
-  contract from:
-      <pkgs>/punctaffy-lib/hypersnippet/snippet.rkt
-  blaming: <pkgs>/punctaffy-test/tests/test-hypertee-2.rkt
-   (assuming the contract is correct)
-  at: <pkgs>/punctaffy-lib/hypersnippet/snippet.rkt:457.3
-|#
-#|
 (check-equal?
   (snippet-sys-snippet-join ss #/ht-bracs ds 2
     (htb-labeled 1 #/ht-bracs ds 2
@@ -524,23 +461,21 @@ snippet-sys-snippet-join-selective: contract violation
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 0
-      (selected
-        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
-          (unselected 'a)))))
+      (selected #/snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -556,18 +491,16 @@ snippet-sys-snippet-join-selective: contract violation
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/unselected 'a)
     0
     (htb-labeled 0
-      (selected
-        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
-          (unselected 'a)))))
+      (selected #/snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -581,11 +514,11 @@ snippet-sys-snippet-join-selective: contract violation
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/unselected 'a)
     0
@@ -599,4 +532,3 @@ snippet-sys-snippet-join-selective: contract violation
     0
     (htb-labeled 0 'a))
   "Joining hypertees selectively when there's a degree-0 non-interpolation in the root")
-|#

@@ -1,6 +1,7 @@
 #lang parendown racket/base
 
-(require lathe-debugging)
+; TODO NOW: Remove these imports and all the places they're used.
+(require lathe-debugging/placebo)
 (require #/for-syntax racket/base)
 (require #/for-syntax #/only-in racket/format ~a)
 
@@ -1017,6 +1018,9 @@
         (w- dim/c (dim-sys-dim/c ds)
         #/listof #/or/c (hypernest-bracket/c dim/c) dim/c)]
       [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])])
+
+(module+ private/test #/provide
+  snippet-sys-snippet-filter-maybe)
 
 
 
@@ -2502,10 +2506,12 @@
     (hvv=? hole a-data b-data)))
 
 ; TODO: Find a better name for this.
-; TODO: Export this.
-; TODO NOW: Stop exporting this without a contract.
-(provide snippet-sys-snippet-filter-maybe)
+;
+; TODO: Export this, and stop exporting it from the `private/test`
+; submodule once we do. Make sure to export it with a contract.
+;
 ; TODO: Use the things that use this.
+;
 (define (snippet-sys-snippet-filter-maybe ss snippet)
   (w- ds (snippet-sys-dim-sys ss)
   #/w- d (snippet-sys-snippet-degree ss snippet)
@@ -2596,11 +2602,12 @@
 ; `gen:custom-write`.
 (define-imitation-simple-struct
   (hypertee? hypertee-dim-sys hypertee-coil)
-  ; TODO NOW: Due to bugs internal to this module, we're currently
-  ; renaming this from `unguarded-hypertee-furl` to
-  ; `unguarded-hypertee-furl-orig` and defining
-  ; `unguarded-hypertee-furl` to be the guarded version. Change it
-  ; back when the tests pass.
+  ; TODO NOW: While we debug this module, we've set up a system where
+  ; we currently rename this from `unguarded-hypertee-furl` to
+  ; `unguarded-hypertee-furl-orig` and define
+  ; `unguarded-hypertee-furl` to be either the guarded version or the
+  ; unguarded version (according to whichever definition is not
+  ; commented out below). Change it back when the tests pass.
   unguarded-hypertee-furl-orig
   'hypertee (current-inspector) (auto-write) (auto-equal))
 ; TODO: We have a dilemma. The `define/contract` version of
@@ -2639,12 +2646,12 @@
   (syntax-case stx () #/ (_ args ...)
     #`(dlog 'a1 #,(~a stx)
         (hypertee-furl args ...))))
+#;
 (define-match-expander-from-match-and-make
   unguarded-hypertee-furl
   hypertee-furl
   hypertee-furl
   hypertee-furl-dlog)
-#;
 (define-match-expander-from-match-and-make
   unguarded-hypertee-furl
   unguarded-hypertee-furl-orig
@@ -2906,10 +2913,6 @@
         #/dissect splice (selected suffix)
         #/dlog 'h3 suffix
         #/w- suffix
-          ; TODO NOW: Decide whether to uncomment the following part
-          ; or to delete this `w-`.
-;          suffix
-;          #;
           (snippet-sys-snippet-map ss suffix #/fn hole data
             (mat data (selected data) (selected data)
             #/dissect data (unselected data)
