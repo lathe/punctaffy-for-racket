@@ -8,7 +8,7 @@
 ;
 ; An interface for data structures that are hypersnippet-shaped.
 
-;   Copyright 2019 The Lathe Authors
+;   Copyright 2019, 2020 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -1140,11 +1140,11 @@
       (w- snippet-contract-projection
         (
           (get/build-late-neg-projection snippet-contract)
-          (blame-add-context blame "initial snippet check of"))
+          (blame-add-context blame "the initial snippet check of"))
       #/w- degree/c-projection
         (
           (get/build-late-neg-projection degree/c)
-          (blame-add-context blame "degree check of"))
+          (blame-add-context blame "the degree check of"))
       #/fn v missing-party
         (w- v
           (w- next-v (snippet-contract-projection v missing-party)
@@ -1185,7 +1185,7 @@
       (w- snippet-contract-projection
         (
           (get/build-late-neg-projection snippet-contract)
-          (blame-add-context blame "initial snippet check of"))
+          (blame-add-context blame "the initial snippet check of"))
       #/fn v missing-party
         (w- v (snippet-contract-projection v missing-party)
         #/snippet-sys-snippet-map ss v #/fn hole data
@@ -1195,7 +1195,7 @@
           #/
             (
               (get/build-late-neg-projection value/c)
-              (blame-add-context blame "hole value of"))
+              (blame-add-context blame "a hole value of"))
             data
             missing-party))))))
 
@@ -1224,7 +1224,7 @@
       (w- snippet-contract-projection
         (
           (get/build-late-neg-projection snippet-contract)
-          (blame-add-context blame "initial snippet check of"))
+          (blame-add-context blame "the initial snippet check of"))
       #/fn v missing-party
         (w- v (snippet-contract-projection v missing-party)
         #/expect
@@ -1240,7 +1240,7 @@
             #/just #/
               (
                 (get/build-late-neg-projection value/c)
-                (blame-add-context blame "hole value of"))
+                (blame-add-context blame "a hole value of"))
               subject-data
               missing-party))
           (just result)
@@ -1343,11 +1343,11 @@
       (w- source/c-projection
         (
           (get/build-late-neg-projection source/c)
-          (blame-add-context blame "source of"))
+          (blame-add-context blame "the source of"))
       #/w- target/c-projection
         (
           (get/build-late-neg-projection target/c)
-          (blame-add-context blame "target of"))
+          (blame-add-context blame "the target of"))
       #/fn v missing-party
         (w- replace-if-not-flat
           (fn c c-projection replace get v
@@ -1645,11 +1645,11 @@
       (w- source/c-projection
         (
           (get/build-late-neg-projection source/c)
-          (blame-add-context blame "source of"))
+          (blame-add-context blame "the source of"))
       #/w- target/c-projection
         (
           (get/build-late-neg-projection target/c)
-          (blame-add-context blame "target of"))
+          (blame-add-context blame "the target of"))
       #/fn v missing-party
         (w- replace-if-not-flat
           (fn c c-projection replace get v
@@ -2577,6 +2577,7 @@
                 ; `snippet-sys-snippet-zip-low-degree-holes/c` or
                 ; something out of this.
                 ;
+                #/dlog 'p2 overall-degree
                 #/and/c
                   (snippet-sys-snippet-with-degree=/c
                     ss overall-degree)
@@ -2643,6 +2644,12 @@
   hypertee-furl
   hypertee-furl
   hypertee-furl-dlog)
+#;
+(define-match-expander-from-match-and-make
+  unguarded-hypertee-furl
+  unguarded-hypertee-furl-orig
+  unguarded-hypertee-furl-orig
+  unguarded-hypertee-furl-orig)
 
 ; TODO: Use the things that use this.
 (define (hypertee/c ds)
@@ -2672,7 +2679,7 @@
             (on-hole state hole data then)))
         then))
   #/fn state tails
-  #/then state #/unguarded-hypertee-furl ds
+  #/then state #/dlog 'q1 #/unguarded-hypertee-furl ds
     (hypertee-coil-hole d hole data tails)))
 
 ; TODO: See if we should export this.
@@ -2754,8 +2761,9 @@
             (just #/trivial))
           (hvv-to-maybe-v hole shape-data snippet-data))))
   #/fn result-tails
-  #/just #/unguarded-hypertee-furl ds
-    (hypertee-coil-hole shape-d shape-hole result-data result-tails)))
+  #/just #/dlog 'q2 #/unguarded-hypertee-furl ds
+    (hypertee-coil-hole snippet-d shape-hole result-data
+      result-tails)))
 
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
@@ -2763,7 +2771,7 @@
   (w- target-ds (dim-sys-morphism-sys-target dsms)
   #/w- target-ss (hypertee-snippet-sys target-ds)
   #/dissect ht (unguarded-hypertee-furl _ coil)
-  #/unguarded-hypertee-furl target-ds
+  #/dlog 'q3 #/unguarded-hypertee-furl target-ds
     (mat coil (hypertee-coil-zero) (hypertee-coil-zero)
     #/dissect coil (hypertee-coil-hole d hole data tails)
     #/hypertee-coil-hole
@@ -2825,12 +2833,12 @@
         (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
           (snippet-sys-snippet-set-degree-maybe ss degree tail))
       #/fn tails
-        (unguarded-hypertee-furl ds
+        (dlog 'q4 #/unguarded-hypertee-furl ds
           (hypertee-coil-hole degree hole data tails))))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
       (dissect ss (hypertee-snippet-sys ds)
-      #/unguarded-hypertee-furl ds #/hypertee-coil-hole
+      #/dlog 'q5 #/unguarded-hypertee-furl ds #/hypertee-coil-hole
         degree
         (snippet-sys-snippet-map ss shape #/fn hole data #/trivial)
         data
@@ -2893,7 +2901,7 @@
         #/fn tails
         #/dlog 'h0.3 splice
         #/mat splice (unselected data)
-          (just #/unguarded-hypertee-furl ds
+          (just #/dlog 'q6 #/unguarded-hypertee-furl ds
             (hypertee-coil-hole d hole data tails))
         #/dissect splice (selected suffix)
         #/dlog 'h3 suffix
@@ -3501,7 +3509,7 @@
           #/hypernest-unchecked #/selective-snippet-nonzero
             (fin-multiplied-dim 0 opening-degree)
             (dlog 'o1 data root-part
-            #/unguarded-hypertee-furl emds #/hypertee-coil-hole
+            #/dlog 'q7 #/unguarded-hypertee-furl emds #/hypertee-coil-hole
               (extended-with-top-dim-infinite)
               (snippet-sys-snippet-map emhtss root-part #/fn hole tail
                 (trivial))
@@ -3834,7 +3842,8 @@
             (fn hole splice splice)))
       #/dissect d (fin-multiplied-dim 0 d)
         (dissect data (selected data)
-        #/hypertee-coil-hole (extended-with-top-dim-infinite)
+        #/dlog 'q8 #/unguarded-hypertee-furl emds #/hypertee-coil-hole
+          (extended-with-top-dim-infinite)
           hole
           (selected data)
           (snippet-sys-snippet-map emhtss tails #/fn hole tail

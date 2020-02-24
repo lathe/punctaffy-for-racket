@@ -204,15 +204,21 @@
       1 (htb-labeled 1 'a) 0 0
     0
   #/htb-labeled 0 'a))
-; TODO NOW: Make this work.
 (define sample-closing-4
   (ht-bracs ds 4
     (htb-labeled 3 'a)
       2 (htb-labeled 2 'a) 1 1 1 (htb-labeled 1 'a) 0 0 0 0 0 0
     0
   #/htb-labeled 0 'a))
-; TODO NOW: Uncomment these parts that don't work yet.
-#|
+; TODO NOW: Figure out why this one takes so long to complete, and
+; uncomment it. At the time of writing this comment, when we replace
+; `(require lathe-debugging)` with
+; `(require lathe-debugging/placebo)`, it takes 6m55s, which is
+; probably shorter than whatever time it would have taken before. When
+; we go further and restore `unguarded-hypertee-furl` so that it
+; doesn't perform a contract check, it takes 10.3s, a much more
+; reasonable amount of time.
+#;
 (define sample-closing-5
   (ht-bracs ds 5
     (htb-labeled 4 'a)
@@ -222,6 +228,8 @@
       0 0 0 0 0 0
     0
   #/htb-labeled 0 'a))
+; TODO NOW: Uncomment these parts that don't work yet.
+#|
 
 ; There was at one point (although not in any code that's been
 ; committed) a bug in `hypertee-fold` which involved using a mix of
