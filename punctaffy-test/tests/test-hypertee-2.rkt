@@ -228,8 +228,6 @@
       0 0 0 0 0 0
     0
   #/htb-labeled 0 'a))
-; TODO NOW: Uncomment these parts that don't work yet.
-#|
 
 ; There was at one point (although not in any code that's been
 ; committed) a bug in `hypertee-fold` which involved using a mix of
@@ -309,6 +307,9 @@
 
 (check-furl-round-trip sample-closing-3a)
 (check-furl-round-trip sample-closing-4)
+; TODO NOW: Uncomment this once we uncomment the definition of
+; `sample-closing-5`.
+#;
 (check-furl-round-trip sample-closing-5)
 (check-furl-round-trip sample-closing-3b)
 
@@ -323,6 +324,9 @@
 (check-identity-map sample-closing-2)
 (check-identity-map sample-closing-3a)
 (check-identity-map sample-closing-4)
+; TODO NOW: Uncomment this once we uncomment the definition of
+; `sample-closing-5`.
+#;
 (check-identity-map sample-closing-5)
 (check-identity-map sample-closing-3b)
 
@@ -330,18 +334,64 @@
 (define (check-done-round-trip d sample)
   (check-equal?
     (snippet-sys-snippet-undone ss
-      (snippet-sys-snippet-done ss d 'b sample))
-    (just #/list d 'b sample)))
+      (snippet-sys-snippet-done ss d sample 'b))
+    (just #/list d sample 'b)))
 
 (check-done-round-trip 10 sample-0)
 (check-done-round-trip 10 sample-closing-1)
 (check-done-round-trip 10 sample-closing-2)
 (check-done-round-trip 10 sample-closing-3a)
 (check-done-round-trip 10 sample-closing-4)
+; TODO NOW: Uncomment this once we uncomment the definition of
+; `sample-closing-5`.
+#;
 (check-done-round-trip 10 sample-closing-5)
 (check-done-round-trip 10 sample-closing-3b)
 
 
+; TODO NOW: Uncomment these parts that don't all work yet. We get the
+; following error. Unfortunately, if we uncomment them right now, this
+; file takes 15m02s to run. With them commented out, it takes 10m59s.
+#|
+snippet-sys-snippet-join-selective: contract violation
+  expected: trivial?
+  given: (selected (trivial))
+  in: a hole value of
+      the 2nd conjunct of
+      position 0 of
+      a part of the or/c of
+      the body of
+      a hole value of
+      the body of
+      the 2nd conjunct of
+      the snippet argument of
+      (->i
+       ((ss snippet-sys?)
+        (snippet
+         (ss)
+         (w-
+          ds
+          (snippet-sys-dim-sys ss)
+          (w-
+           shape-ss
+           (snippet-sys-shape-snippet-sys ss)
+           (and/c
+            (snippet-sys-snippet/c ss)
+            (by-own-method/c snippet ...))))))
+       (_
+        (ss snippet)
+        (...
+         ss
+         (snippet-sys-snippet-degree
+          ss
+          snippet))))
+  contract from:
+      <pkgs>/punctaffy-lib/hypersnippet/snippet.rkt
+  blaming: <pkgs>/punctaffy-test/tests/test-hypertee-2.rkt
+   (assuming the contract is correct)
+  at: <pkgs>/punctaffy-lib/hypersnippet/snippet.rkt:457.3
+|#
+#|
 (check-equal?
   (snippet-sys-snippet-join ss #/ht-bracs ds 2
     (htb-labeled 1 #/ht-bracs ds 2
@@ -351,7 +401,7 @@
       (htb-labeled 0 #/trivial))
     0
     (htb-labeled 0
-      (snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 0)))
+      (snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 0 'a))
   "Joining hypertees to cancel out simple degree-1 holes")
@@ -374,7 +424,7 @@
       (htb-labeled 0 #/trivial))
     0
     (htb-labeled 0
-      (snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 0)))
+      (snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -390,8 +440,9 @@
 ; TODO: Put a similar test in test-hypernest.rkt.
 (check-equal?
   (snippet-sys-snippet-join ss #/ht-bracs ds 2
-    (htb-labeled 1 #/snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 1
-      (htb-labeled 0 #/trivial))
+    (htb-labeled 1 #/snippet-sys-snippet-done ss 2
+      (ht-bracs ds 1 #/htb-labeled 0 #/trivial)
+      'a)
     0
     (htb-labeled 1 #/ht-bracs ds 2
       (htb-labeled 1 'a)
@@ -404,7 +455,7 @@
       (htb-labeled 0 #/trivial))
     0
     (htb-labeled 0
-      (snippet-sys-snippet-done ss 2 'a #/ht-bracs ds 0)))
+      (snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -420,8 +471,9 @@
   (snippet-sys-snippet-join ss #/ht-bracs ds 3
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/snippet-sys-snippet-done ss 3 'a #/ht-bracs ds 1
-      (htb-labeled 0 #/trivial))
+    (htb-labeled 1 #/snippet-sys-snippet-done ss 3
+      (ht-bracs ds 1 #/htb-labeled 0 #/trivial)
+      'a)
     0
     
     (htb-labeled 2 #/ht-bracs ds 3
@@ -449,12 +501,13 @@
     0
     
     ; This is propagated to the result.
-    (htb-labeled 1 #/snippet-sys-snippet-done ss 3 'a #/ht-bracs ds 1
-      (htb-labeled 0 #/trivial))
+    (htb-labeled 1 #/snippet-sys-snippet-done ss 3
+      (ht-bracs ds 1 #/htb-labeled 0 #/trivial)
+      'a)
     0
     
     (htb-labeled 0
-      (snippet-sys-snippet-done ss 3 'a #/ht-bracs ds 0)))
+      (snippet-sys-snippet-done ss 3 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 3
     (htb-labeled 1 'a)
     0
@@ -486,8 +539,8 @@
     0
     (htb-labeled 0
       (selected
-        (snippet-sys-snippet-done ss 2 (unselected 'a)
-          (ht-bracs ds 0)))))
+        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
+          (unselected 'a)))))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -513,8 +566,8 @@
     0
     (htb-labeled 0
       (selected
-        (snippet-sys-snippet-done ss 2 (unselected 'a)
-          (ht-bracs ds 0)))))
+        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
+          (unselected 'a)))))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
