@@ -3327,22 +3327,18 @@
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (hypernest/c sfs uds)
-  (w- ffdstsss (snippet-format-sys-functor sfs)
-  #/w- eds (fin-multiplied-dim-sys 2 uds)
-  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
-  #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+  (w- selective-ess (hypernest-selective-snippet-sys sfs uds)
+  #/w- shape-ess (snippet-sys-shape-snippet-sys selective-ess)
   #/rename-contract
     (match/c hypernest-unchecked
       (and/c
-        (snippet-sys-snippet-with-degree/c ess #/fn d
+        (snippet-sys-snippet-with-degree/c selective-ess #/fn d
           (mat d (fin-multiplied-dim 0 d) #t #f))
-        (snippet-sys-snippetof
-          (hypernest-selective-snippet-sys sfs uds)
-          (fn hole
-            (expect (snippet-sys-snippet-degree shape-ess hole)
-              (fin-multiplied-dim 0 d)
-              none/c
-              any/c)))))
+        (snippet-sys-snippetof selective-ess #/fn hole
+          (expect (snippet-sys-snippet-degree shape-ess hole)
+            (fin-multiplied-dim 0 d)
+            none/c
+            any/c))))
     `(hypernest/c ,sfs ,uds)))
 
 (define (hypernest-get-dim-sys hn)
