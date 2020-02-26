@@ -5,7 +5,7 @@
 ; Unit tests of the hypernest data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2020 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -42,10 +42,10 @@
   (hypernest-furl ds
   #/hypernest-coil-hole overall-degree data tails-hypertee))
 
-(define (hno overall-degree data bump-degree tails-hypertee)
+(define (hno overall-degree data bump-degree tails-hypernest)
   (hypernest-furl ds
   #/hypernest-coil-bump
-    overall-degree data bump-degree tails-hypertee))
+    overall-degree data bump-degree tails-hypernest))
 
 
 
