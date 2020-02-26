@@ -957,16 +957,20 @@
   hypertee-furl)
 (module+ private/hypertee #/provide #/contract-out
   [hypertee? (-> any/c boolean?)]
-  [hypertee-dim-sys (-> hypertee? dim-sys?)]
-  [hypertee-coil
+  [hypertee-get-dim-sys (-> hypertee? dim-sys?)]
+  [hypertee-get-coil
     (->i ([ht hypertee?])
-      [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])]
+      [_ (ht) (hypertee-coil/c #/hypertee-get-dim-sys ht)])]
   [hypertee/c (-> dim-sys? contract?)])
 (module+ private/hypertee #/provide
   hypertee-snippet-sys)
 (module+ private/hypertee #/provide #/contract-out
   [hypertee-snippet-sys? (-> any/c boolean?)]
   [hypertee-snippet-sys-dim-sys (-> hypertee-snippet-sys? dim-sys?)])
+(module+ private/hypertee #/provide
+  hypertee-snippet-format-sys)
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-snippet-format-sys? (-> any/c boolean?)])
 
 (module+ private/hypertee #/provide
   htb-labeled)
@@ -997,11 +1001,17 @@
       [brackets (ds)
         (w- dim/c (dim-sys-dim/c ds)
         #/listof #/or/c (hypertee-bracket/c dim/c) dim/c)]
-      [_ (ds) (hypertee/c ds)])])
+      [_ (ds) (hypertee/c ds)])]
+  [hypertee-get-brackets
+    (->i ([ht hypertee?])
+      [_ (ht)
+        (w- ds (hypertee-get-dim-sys ht)
+        #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])])
 
 (module+ private/hypernest #/provide #/contract-out
   [hypernest? (-> any/c boolean?)]
-  [hypernest/c (-> dim-sys? contract?)])
+  [hypernest/c (-> snippet-format-sys? dim-sys? contract?)]
+  [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
 (module+ private/hypernest #/provide
   hypernest-snippet-sys)
 (module+ private/hypernest #/provide #/contract-out
@@ -1009,7 +1019,14 @@
   [hypernest-snippet-sys-snippet-format-sys
     (-> hypernest-snippet-sys? snippet-format-sys?)]
   [hypernest-snippet-sys-dim-sys
-    (-> hypernest-snippet-sys? dim-sys?)])
+    (-> hypernest-snippet-sys? dim-sys?)]
+  [hypernest-shape
+    (->i
+      (
+        [ss hypernest-snippet-sys?]
+        [hn (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss)
+        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])])
 
 (module+ private/hypernest #/provide
   hypernest-coil-zero)
@@ -1037,6 +1054,10 @@
   [hypernest-coil/c (-> dim-sys? contract?)])
 (module+ private/hypernest #/provide
   hypernest-furl)
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-get-coil
+    (->i ([hn hypernest?])
+      [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])])
 
 (module+ private/hypernest #/provide
   hnb-open)
@@ -1077,7 +1098,12 @@
       [brackets (ds)
         (w- dim/c (dim-sys-dim/c ds)
         #/listof #/or/c (hypernest-bracket/c dim/c) dim/c)]
-      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])])
+      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
+  [hypernest-get-brackets
+    (->i ([hn hypernest?])
+      [_ (hn)
+        (w- ds (hypernest-get-dim-sys hn)
+        #/listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])])
 
 (module+ private/test #/provide
   snippet-sys-snippet-filter-maybe)
@@ -1954,6 +1980,15 @@
             any/c))))
     `(selective-snippet/c ,sfs ,uds ,h-to-unselected/c)))
 
+; TODO: See if we should export this.
+(define (selective-snippet-get-dim-sys s content-get-dim-sys)
+  (mat s (selective-snippet-zero content)
+    (content-get-dim-sys content)
+  #/dissect s (selective-snippet-nonzero d content)
+    (dissect (content-get-dim-sys content)
+      (extended-with-top-dim-sys ds)
+      ds)))
+
 ; TODO: Export these.
 ; TODO: Use these.
 (define-imitation-simple-struct
@@ -2537,6 +2572,30 @@
       (fn es sfs #/selective-snippet-format-sys sfs)
       (fn es ms #/selective-snippet-format-sys-morphism-sys ms))))
 
+; TODO: See if we should export this. The interface seems a little
+; sloppy since `content-shape` is set up to take any snippet system,
+; but we only supply it with some specific snippet systems.
+(define (selective-snippet-shape ss s content-shape)
+  (dissect ss (selective-snippet-sys sfs uds _)
+  #/w- eds (extended-with-top-dim-sys uds)
+  #/w- ffdstsss (snippet-format-sys-functor sfs)
+  #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+  #/w- e-shape-ss (snippet-sys-shape-snippet-sys ess)
+  #/mat s (selective-snippet-zero content) (content-shape uss content)
+  #/dissect s (selective-snippet-nonzero d content)
+    (dissect (snippet-sys-snippet-filter-maybe ess content)
+      (just filtered-content)
+    #/dissect
+      (snippet-sys-snippet-set-degree-maybe e-shape-ss d
+        (content-shape ess filtered-content))
+      (just shape)
+    #/snippet-sys-morphism-sys-morph-snippet
+      (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+        (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+          (unextend-with-top-dim-sys-morphism-sys uds)))
+      shape)))
+
 
 ; TODO: Consider rearranging everything in this file, but especially
 ; the things below. Currently the file is in three parts: The things
@@ -2665,7 +2724,7 @@
 ; TODO: Change the way a `hypertee?` is written using
 ; `gen:custom-write`.
 (define-imitation-simple-struct
-  (hypertee? hypertee-dim-sys hypertee-coil)
+  (hypertee? hypertee-get-dim-sys hypertee-get-coil)
   ; TODO NOW: While we debug this module, we've set up a system where
   ; we currently rename this from `unguarded-hypertee-furl` to
   ; `unguarded-hypertee-furl-orig` and define
@@ -3286,6 +3345,14 @@
               any/c)))))
     `(hypernest/c ,sfs ,uds)))
 
+(define (hypernest-get-dim-sys hn)
+  (dissect hn (hypernest-unchecked hn-selective)
+  #/dissect
+    (selective-snippet-get-dim-sys hn-selective #/fn ht
+      (hypertee-get-dim-sys ht))
+    (fin-multiplied-dim-sys 2 ds)
+    ds))
+
 (define-imitation-simple-struct
   (hypernest-snippet-sys?
     hypernest-snippet-sys-snippet-format-sys
@@ -3352,6 +3419,18 @@
   unguarded-hypernest-snippet-sys
   attenuated-hypernest-snippet-sys
   attenuated-hypernest-snippet-sys)
+
+(define (hypernest-shape ss hn)
+  (dissect ss (hypernest-snippet-sys sfs uds)
+  #/dissect hn (hypernest-unchecked hn-selective)
+  #/w- ffdstsss (snippet-format-sys-functor sfs)
+  #/w- selective-ss (hypernest-selective-snippet-sys sfs uds)
+  #/snippet-sys-morphism-sys-morph-snippet
+    (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+      (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+        (fin-untimes-dim-sys-morphism-sys 2 uds)))
+    (selective-snippet-shape selective-ss hn-selective #/fn ss ht
+      ht)))
 
 
 ; TODO: Use the things that use these.
@@ -3577,7 +3656,7 @@
       (fin-multiplied-dim 0 overall-degree)
       tails-assembled)))
 
-(define (hypernest-unfurl hn)
+(define (hypernest-get-coil hn)
   (dissect hn (hypernest-unchecked hn-selective)
   #/mat hn-selective (selective-snippet-zero _)
     (hypernest-coil-zero)
@@ -3642,8 +3721,12 @@
   ; TODO: We should really use a syntax class for match patterns
   ; rather than `expr` here, but it doesn't look like one exists yet.
   (syntax-protect
-  #/syntax-parse stx #/ (_ arg:expr)
-    #'(app hypernest-unfurl arg)))
+  #/syntax-parse stx #/ (_ ds:expr coil:expr)
+    #'(app
+        (fn v
+          (maybe-if (hypernest? v) #/fn
+          #/list (hypernest-get-dim-sys v) (hypernest-get-coil v)))
+        (just #/list ds coil))))
 
 (define-match-expander-from-match-and-make
   unguarded-hypernest-furl
@@ -4045,7 +4128,7 @@
 
 ; TODO: Export this.
 ; TODO: Use this.
-(define (hypernest-brackets hn)
+(define (hypernest-get-brackets hn)
   (dissect hn (hypernest-unchecked hn-selective)
   #/mat hn-selective (selective-snippet-zero ht) (list)
   #/dissect hn-selective (selective-snippet-nonzero _ ht)
@@ -4092,8 +4175,8 @@
         #/next tail #/cons data rev-result)))
   #/ht->list #/snippet-sys-snippet-bind-selective emhtss
     (w-loop next ht ht
-      ; TODO: See if this can use `hypernest-unfurl` somehow, since it
-      ; duplicates some of its behavior (particularly the
+      ; TODO: See if this can use `hypernest-get-coil` somehow, since
+      ; it duplicates some of its behavior (particularly the
       ; `snippet-sys-snippet-undone` call and some of the surrounding
       ; code).
       (dissect ht
@@ -4162,10 +4245,10 @@
 
 ; TODO: Export this.
 ; TODO: Use this.
-(define (hypertee-brackets ht)
+(define (hypertee-get-brackets ht)
   (dissect ht (unguarded-hypertee-furl ds coil)
   #/list-map
-    (hypernest-brackets #/snippet-sys-shape->snippet
+    (hypernest-get-brackets #/snippet-sys-shape->snippet
       (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
       ht)
   #/fn hnb

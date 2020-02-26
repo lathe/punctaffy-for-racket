@@ -43,14 +43,18 @@
   hypertee-furl)
 (provide #/recontract-out
   hypertee?
-  hypertee-dim-sys
-  hypertee-coil
+  hypertee-get-dim-sys
+  hypertee-get-coil
   hypertee/c)
 (provide
   hypertee-snippet-sys)
 (provide #/recontract-out
   hypertee-snippet-sys?
   hypertee-snippet-sys-dim-sys)
+(provide
+  hypertee-snippet-format-sys)
+(provide #/recontract-out
+  hypertee-snippet-format-sys?)
 
 (provide
   htb-labeled)
@@ -68,4 +72,5 @@
   hypertee-bracket/c
   hypertee-bracket-degree
   hypertee-from-brackets
-  ht-bracs)
+  ht-bracs
+  hypertee-get-brackets)

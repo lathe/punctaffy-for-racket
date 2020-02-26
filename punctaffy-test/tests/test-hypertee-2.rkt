@@ -29,8 +29,8 @@
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
-  ht-bracs htb-labeled hypertee-coil hypertee-coil-hole
-  hypertee-coil-zero hypertee-furl hypertee-snippet-sys)
+  ht-bracs htb-labeled hypertee-coil-hole hypertee-coil-zero
+  hypertee-furl hypertee-get-coil hypertee-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
   selected snippet-sys-shape->snippet snippet-sys-snippet-done
   snippet-sys-snippet-join snippet-sys-snippet-join-selective
@@ -268,14 +268,14 @@
 
 
 (define (check-furl-round-trip sample)
-  (check-equal? (hypertee-furl ds #/hypertee-coil sample) sample))
+  (check-equal? (hypertee-furl ds #/hypertee-get-coil sample) sample))
 
 (check-furl-round-trip sample-0)
 (check-furl-round-trip sample-closing-1)
 (check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypertee-coil sample-closing-3a)
+  (hypertee-get-coil sample-closing-3a)
   (hypertee-coil-hole
     3
     (ht-bracs ds 2
