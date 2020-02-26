@@ -50,7 +50,9 @@
 (define ss (hypertee-snippet-sys ds))
 
 
-; NOTE: This checks the `(dlog 'g2 ...)` part.
+; NOTE: The following is a sequence of tests that helped to diagnose a
+; bug uncovered deep within one of the other calls in this file.
+
 (check-equal?
   (w- hole
     (hypertee-furl ds #/hypertee-coil-hole 1
@@ -67,7 +69,6 @@
     (selected #/trivial)
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; NOTE: This checks one of the bigger `(dlog 'd1 ...)` parts.
 (check-equal?
   (snippet-sys-snippet-zip-map-selective ss
     (hypertee-furl ds #/hypertee-coil-hole 1
@@ -92,7 +93,6 @@
       (hypertee-furl ds #/hypertee-coil-zero))
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; NOTE: This checks one of the bigger `(dlog 'd1 ...)` parts.
 (check-equal?
   (snippet-sys-snippet-zip-map-selective ss
     (hypertee-furl ds #/hypertee-coil-zero)
@@ -108,8 +108,6 @@
     (unselected #/selected 'b)
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; NOTE: This checks the `(dlog 'm2 ...)` part. There's another such
-; part, but it occurs recursively within that one.
 (check-equal?
   (snippet-sys-snippet-join-selective-prefix ss
     (hypertee-furl ds #/hypertee-coil-hole 10
@@ -124,7 +122,6 @@
     (selected 'b)
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; NOTE: This checks the `(dlog 'j2 ...)` part.
 (check-equal?
   (snippet-sys-snippet-select ss
     (hypertee-furl ds #/hypertee-coil-zero)
@@ -132,7 +129,6 @@
     (error "Internal error"))
   (hypertee-furl ds #/hypertee-coil-zero))
 
-; NOTE: This checks the `(dlog 'c1 ...)` part.
 (check-equal?
   (contract
     (snippet-sys-snippet-zip-selective/c ss
@@ -146,7 +142,6 @@
     'neg)
   (hypertee-furl ds #/hypertee-coil-zero))
 
-; NOTE: This checks the two smallest `(dlog 'h0 ...)` parts.
 (check-equal?
   (snippet-sys-snippet-splice ss
     (hypertee-furl ds #/hypertee-coil-zero)
@@ -154,7 +149,6 @@
       (error "Internal error")))
   (just #/hypertee-furl ds #/hypertee-coil-zero))
 
-; NOTE: This checks the `(dlog 'n2 ...)` part.
 (check-equal?
   (snippet-sys-snippet-map ss
     (hypertee-furl ds #/hypertee-coil-hole 10
