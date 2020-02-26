@@ -2784,10 +2784,10 @@
   #/fn result-data
   #/dlog 'e2
   #/maybe-bind
-    (snippet-sys-snippet-zip-map ss shape-tails snippet-tails
+    (hypertee-zip-map ds shape-tails snippet-tails
     #/fn hole shape-tail snippet-tail
       (w- d (snippet-sys-snippet-degree ss hole)
-      #/snippet-sys-snippet-zip-map ss shape-tail snippet-tail
+      #/hypertee-zip-map ds shape-tail snippet-tail
       #/fn hole shape-data snippet-data
         (if (dim-sys-dim<? ds (snippet-sys-snippet-degree ss hole) d)
           (dissect shape-data (trivial)
