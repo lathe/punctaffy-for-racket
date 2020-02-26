@@ -388,7 +388,7 @@
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
-  [snippet-sys-snippet-splice-sure
+  [snippet-sys-snippet-bind-selective
     (->i
       (
         [ss snippet-sys?]
@@ -419,7 +419,7 @@
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss snippet)])]
-  [snippet-sys-snippet-bind-selective
+  [snippet-sys-snippet-bind-selective-prefix
     (->i
       (
         [ss snippet-sys?]
@@ -459,6 +459,36 @@
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])]
   [snippet-sys-snippet-join-selective
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c (snippet-sys-snippet/c ss)
+          #/by-own-method/c snippet
+          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/snippet-sys-snippetof ss #/fn prefix-hole
+            (w- prefix-hole-d
+              (snippet-sys-snippet-degree shape-ss prefix-hole)
+            #/by-own-method/c data
+            #/selectable/c any/c
+              ; What this means is that this should be a snippet which
+              ; contains a `selected` or `unselected` entry in each
+              ; hole, and its `selected` holes should correspond to
+              ; the holes of `hole` and contain `trivial?` values.
+              (and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippetof ss #/fn hole
+                  (selectable/c any/c trivial?))
+                (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                  (fn suffix-hole subject-data
+                    (selected? subject-data))
+                  (fn hole shape-data subject-data any/c)))))])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss snippet)])]
+  [snippet-sys-snippet-join-selective-prefix
     (->i
       (
         [ss snippet-sys?]
@@ -1299,17 +1329,18 @@
     (dim-sys-dim<? ds actual-degree degree)))
 
 ; TODO: Use the things that use this.
-(define (snippet-sys-snippet-splice-sure ss snippet hv-to-splice)
+(define (snippet-sys-snippet-bind-selective ss snippet hv-to-splice)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/just-value #/snippet-sys-snippet-splice ss snippet #/fn hole data
     (dlog 'i1 hv-to-splice
     #/just #/hv-to-splice hole data)))
 
 ; TODO: Use the things that use this.
-(define (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
+(define
+  (snippet-sys-snippet-bind-selective-prefix ss prefix hv-to-suffix)
   (dlog 'm1
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/snippet-sys-snippet-splice-sure ss prefix #/fn hole data
+  #/snippet-sys-snippet-bind-selective ss prefix #/fn hole data
     (dlog 'i2 hv-to-suffix
     #/selectable-map (hv-to-suffix hole data) #/fn suffix
       (dlog 'i2.1 suffix
@@ -1322,10 +1353,16 @@
   (dlog 'm2 ss snippet
   #/snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
+; TODO: Use this.
+(define (snippet-sys-snippet-join-selective-prefix ss snippet)
+  (dlog 'm2.1 ss snippet
+  #/snippet-sys-snippet-bind-selective-prefix ss snippet #/fn hole data
+    data))
+
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-bind ss prefix hv-to-suffix)
   (dlog 'm3
-  #/snippet-sys-snippet-bind-selective ss prefix #/fn hole data
+  #/snippet-sys-snippet-bind-selective-prefix ss prefix #/fn hole data
     (dlog 'i3 hv-to-suffix
     #/selected #/hv-to-suffix hole data)))
 
@@ -2951,7 +2988,7 @@
             #/just #/selected tail))
         #/fn suffix
           (dlog 'h4 suffix
-          #/snippet-sys-snippet-join-selective ss suffix))))
+          #/snippet-sys-snippet-join-selective-prefix ss suffix))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -3479,15 +3516,15 @@
       ; It also contains other holes representing the rest of the
       ; bumps and holes of the hypernest. We add in the rest of those
       ; holes by using appropriate tails in a
-      ; `snippet-sys-snippet-splice-sure`. The `tails-hypernest` and
-      ; each of the (hypernest) tails carried in its holes gives us
-      ; what we need for one of those (hypertee) tails.
+      ; `snippet-sys-snippet-bind-selective`. The `tails-hypernest`
+      ; and each of the (hypernest) tails carried in its holes gives
+      ; us what we need for one of those (hypertee) tails.
       ;
       ; TODO: See if it's simpler to keep the tails as hypernests and
-      ; use them for a `(snippet-sys-snippet-splice-sure hnss ...)`
+      ; use them for a `(snippet-sys-snippet-bind-selective hnss ...)`
       ; instead.
       ;
-      (snippet-sys-snippet-splice-sure emhtss
+      (snippet-sys-snippet-bind-selective emhtss
         (snippet-sys-snippet-done
           emhtss
           (extended-with-top-dim-infinite)
@@ -3496,10 +3533,11 @@
           ; represent the bump. This hole is shaped like a "done"
           ; around the shape (`tails-shape`) of the bump's interior.
           ;
-          ; As expected by our `snippet-sys-snippet-splice-sure` call,
-          ; the elements in the holes this snippet are `selectable?`
-          ; values, and the selected ones are tail snippets whose own
-          ; holes contain `(selectable/c any/c trivial?)` values.
+          ; As expected by our `snippet-sys-snippet-bind-selective`
+          ; call, the elements in the holes this snippet are
+          ; `selectable?` values, and the selected ones are tail
+          ; snippets whose own holes contain
+          ; `(selectable/c any/c trivial?)` values.
           ;
           (snippet-sys-snippet-done
             emhtss
@@ -4018,7 +4056,7 @@
   #/w- emhtss (hypertee-snippet-sys emds)
   #/w- prepend
     (fn hnb rest
-      (snippet-sys-snippet-splice-sure emhtss
+      (snippet-sys-snippet-bind-selective emhtss
         (hypertee-from-brackets emds
           (extended-with-top-dim-infinite)
           (list
@@ -4052,7 +4090,7 @@
             (unguarded-hypertee-furl _ #/hypertee-coil-zero))
         #/dissect (dim-sys-dim=0? uds d) #t
         #/next tail #/cons data rev-result)))
-  #/ht->list #/snippet-sys-snippet-splice-sure emhtss
+  #/ht->list #/snippet-sys-snippet-bind-selective emhtss
     (w-loop next ht ht
       ; TODO: See if this can use `hypernest-unfurl` somehow, since it
       ; duplicates some of its behavior (particularly the
@@ -4078,7 +4116,7 @@
         #/dissect (dim-sys-dim=? uds d d-again) #t
         #/dissect data (unselected data)
         #/prepend (unselected #/hnb-open d data)
-          (snippet-sys-snippet-splice-sure emhtss
+          (snippet-sys-snippet-bind-selective emhtss
             (snippet-sys-snippet-zip-map-selective emhtss
               tails
               (snippet-sys-snippet-select emhtss (next interior)

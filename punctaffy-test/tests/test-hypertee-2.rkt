@@ -34,8 +34,8 @@
 (require #/only-in punctaffy/hypersnippet/snippet
   selected snippet-sys-shape->snippet snippet-sys-snippet-done
   snippet-sys-snippet-join snippet-sys-snippet-join-selective
-  snippet-sys-snippet-map snippet-sys-snippet-select
-  snippet-sys-snippet-select-everything
+  snippet-sys-snippet-join-selective-prefix snippet-sys-snippet-map
+  snippet-sys-snippet-select snippet-sys-snippet-select-everything
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-splice
   snippet-sys-snippet-undone snippet-sys-snippet-zip-selective/c
   snippet-sys-snippet-zip-map-selective unselected)
@@ -111,7 +111,7 @@
 ; NOTE: This checks the `(dlog 'm2 ...)` part. There's another such
 ; part, but it occurs recursively within that one.
 (check-equal?
-  (snippet-sys-snippet-join-selective ss
+  (snippet-sys-snippet-join-selective-prefix ss
     (hypertee-furl ds #/hypertee-coil-hole 10
       (hypertee-furl ds #/hypertee-coil-zero)
       (selected #/hypertee-furl ds #/hypertee-coil-hole 10
@@ -461,21 +461,23 @@
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
     (htb-labeled 0
-      (selected #/snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
+      (selected
+        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
+          (unselected 'a)))))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -491,16 +493,18 @@
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
     (htb-labeled 1 #/unselected 'a)
     0
     (htb-labeled 0
-      (selected #/snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
+      (selected
+        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
+          (unselected 'a)))))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -514,11 +518,11 @@
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 1 'a)
+      (htb-labeled 1 #/unselected 'a)
       0
-      (htb-labeled 0 #/trivial))
+      (htb-labeled 0 #/selected #/trivial))
     0
     (htb-labeled 1 #/unselected 'a)
     0
