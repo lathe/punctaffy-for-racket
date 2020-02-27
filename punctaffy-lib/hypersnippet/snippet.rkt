@@ -2980,12 +2980,12 @@
   (syntax-case stx () #/ (_ args ...)
     #`(dlog 'a1 #,(~a stx)
         (hypertee-furl args ...))))
+#;
 (define-match-expander-from-match-and-make
   unguarded-hypertee-furl
   hypertee-furl
   hypertee-furl
   hypertee-furl-dlog)
-#;
 (define-match-expander-from-match-and-make
   unguarded-hypertee-furl
   unguarded-hypertee-furl-orig
@@ -3798,7 +3798,8 @@
       ; use them for a `(snippet-sys-snippet-join-selective hnss ...)`
       ; instead.
       ;
-      (snippet-sys-snippet-join-selective emhtss
+      (dlog 'k1
+      #/snippet-sys-snippet-join-selective emhtss
         (snippet-sys-snippet-done
           emhtss
           (extended-with-top-dim-infinite)
@@ -3828,22 +3829,22 @@
                     (fn hole selectable-tail-tail
                       (mat selectable-tail-tail
                         (unselected data)
-                        (just #/unselected #/unselected data)
+                        (unselected #/unselected data)
                       #/dissect selectable-tail-tail
                         (selected tail-tail)
                       #/w- suffix-d
                         (snippet-sys-snippet-degree emhtss hole)
                       #/if (dim-sys-dim<? emds suffix-d prefix-d)
                         (dissect tail-tail (trivial)
-                        #/just #/selected #/trivial)
-                      #/just #/unselected #/selected tail-tail))))))
+                        #/selected #/trivial)
+                      #/unselected #/selected tail-tail))))))
             (selected
               (snippet-sys-snippet-map emhtss tails-selective
                 (fn hole selectable-tail
                   (mat selectable-tail (unselected data)
-                    (just #/unselected #/unselected data)
+                    (unselected #/unselected data)
                   #/dissect selectable-tail (selected tail)
-                    (just #/selected #/trivial))))))
+                    (selected #/trivial))))))
           (unselected #/unselected data)))
     
     #/hypernest-unchecked #/selective-snippet-nonzero
@@ -3945,7 +3946,7 @@
         (
           [dim-sys dim-sys?]
           [coil (dim-sys) (hypernest-coil/c dim-sys)])
-        [_ hypertee?])
+        [_ hypernest?])
       (unguarded-hypernest-furl dim-sys coil))
     hypernest-furl))
 #;
@@ -4394,7 +4395,8 @@
         #/dissect (dlog 'h2 #/dim-sys-dim=? uds d d-again) #t
         #/dissect data (unselected data)
         #/prepend-cons (unselected #/hnb-open d data)
-          (snippet-sys-snippet-join-selective emhtss
+          (dlog 'k2
+          #/snippet-sys-snippet-join-selective emhtss
             (snippet-sys-snippet-zip-map-selective emhtss
               tails
               (snippet-sys-snippet-select emhtss (next interior)
@@ -4411,13 +4413,19 @@
                     (unselected #/hnb-unlabeled d)
                     (next tail)))))))
       #/dissect d (fin-multiplied-dim 0 d)
-        (dissect data (selected data)
+        
+        ; TODO NOW: Remove this line, and figure out what we really
+        ; need to do about this.
+        (w- data (mat data (trivial) (selected data) data)
+        
+        #/dissect data (selected data)
         #/unguarded-hypertee-furl emds #/hypertee-coil-hole
           (extended-with-top-dim-infinite)
           hole
           (selected data)
           (snippet-sys-snippet-map emhtss tails #/fn hole tail
-            (dissect (snippet-sys-snippet-degree emhtss hole)
+            (dlogr 'j1 hole tail
+            #/dissect (snippet-sys-snippet-degree emhtss hole)
               (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
             #/prepend-cons (unselected #/hnb-unlabeled d)
               (next tail))))))
