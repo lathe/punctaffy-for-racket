@@ -178,16 +178,13 @@
 ; TODO NOW: Uncomment the following, which hasn't been working.
 #;
 (check-brackets-round-trip sample-closing-3a)
-; TODO NOW: Uncomment the following, which probably hasn't been
-; working.
+; TODO NOW: Uncomment the following, which hasn't been working.
 #;
 (check-brackets-round-trip sample-closing-4)
-; TODO NOW: Uncomment the following, which probably hasn't been
-; working.
+; TODO NOW: Uncomment the following, which hasn't been working.
 #;
 (check-brackets-round-trip sample-closing-5)
-; TODO NOW: Uncomment the following, which probably hasn't been
-; working.
+; TODO NOW: Uncomment the following, which hasn't been working.
 #;
 (check-brackets-round-trip sample-closing-3b)
 ; TODO NOW: Uncomment the following, which hasn't been working.
