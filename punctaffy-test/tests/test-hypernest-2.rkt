@@ -20,25 +20,28 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/only-in racket/contract/base contract)
 (require rackunit)
 
 (require #/only-in lathe-comforts dissect fn mat w-)
 (require #/only-in lathe-comforts/list list-map)
-(require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hn-bracs hnb-unlabeled hypernest-coil-bump
-  hypernest-coil-hole hypernest-coil-zero hypernest-from-brackets
-  hypernest-furl hypernest-get-brackets hypernest-get-coil
-  hypernest-shape hypernest-snippet-sys)
+  hypernest-coil/c hypernest-coil-hole hypernest-coil-zero
+  hypernest-from-brackets hypernest-furl hypernest-get-brackets
+  hypernest-get-coil hypernest-shape hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
-  ht-bracs htb-labeled hypertee-get-dim-sys
-  hypertee-snippet-format-sys hypertee-snippet-sys)
+  ht-bracs htb-labeled hypertee-coil-zero hypertee-furl
+  hypertee-get-dim-sys hypertee-snippet-format-sys
+  hypertee-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  selected snippet-sys-snippet-degree snippet-sys-snippet-done
-  snippet-sys-snippet-join snippet-sys-snippet-join-selective
-  snippet-sys-snippet-map unselected)
+  selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
+  snippet-sys-snippet-done snippet-sys-snippet-join
+  snippet-sys-snippet-join-selective snippet-sys-snippet-map
+  snippet-sys-snippetof unselected)
 
 ; (We provide nothing from this module.)
 
@@ -46,6 +49,8 @@
 (define ds (nat-dim-sys))
 (define htss (hypertee-snippet-sys ds))
 (define hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds))
+
+(check-equal? (snippet-sys-shape-snippet-sys hnss) htss)
 
 (define (make-hypernest-coil-hole overall-degree data tails-hypertee)
   (w- ds (hypertee-get-dim-sys tails-hypertee)
@@ -205,8 +210,31 @@
 ; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-0)
+
+(check-equal?
+  (contract
+    (snippet-sys-snippetof htss #/fn hole trivial?)
+    (hypertee-furl ds #/hypertee-coil-zero)
+    'pos
+    'neg)
+  (hypertee-furl ds #/hypertee-coil-zero))
+
+(check-equal?
+  (contract
+    (hypernest-coil/c ds)
+    (hypernest-coil-hole 1
+      (hypertee-furl ds #/hypertee-coil-zero)
+      'a
+      (hypertee-furl ds #/hypertee-coil-zero))
+    'pos
+    'neg)
+  (hypernest-coil-hole 1
+    (hypertee-furl ds #/hypertee-coil-zero)
+    'a
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
 ; TODO NOW: Uncomment the following, which hasn't been working.
-#;
+;#;
 (check-furl-round-trip sample-closing-1)
 ; TODO NOW: Uncomment the following, which hasn't been working.
 #;

@@ -103,6 +103,9 @@
 (provide #/contract-out
   [selected? (-> any/c boolean?)]
   [selected-value (-> selected? any/c)])
+; TODO NOW: Remove this.
+(provide
+  snippet-sys-snippet-degree)
 (provide #/contract-out
   [selectable? (-> any/c boolean?)]
   [selectable/c (-> contract? contract? contract?)]
@@ -111,6 +114,8 @@
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
+  ; TODO NOW: Uncomment this.
+  #;
   [snippet-sys-snippet-degree
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])]
@@ -1144,7 +1149,7 @@
   (#:method snippet-sys-snippet/c (#:this))
   (#:method snippet-sys-dim-sys (#:this))
   (#:method snippet-sys-shape-snippet-sys (#:this))
-  (#:method snippet-sys-snippet-degree (#:this) ())
+  (#:method unguarded-snippet-sys-snippet-degree (#:this) ())
   (#:method snippet-sys-shape->snippet (#:this) ())
   (#:method snippet-sys-snippet->maybe-shape (#:this) ())
   (#:method snippet-sys-snippet-set-degree-maybe (#:this) () ())
@@ -1154,6 +1159,18 @@
   (#:method snippet-sys-snippet-zip-map-selective (#:this) () () ())
   prop:snippet-sys make-snippet-sys-impl-from-various-1
   'snippet-sys 'snippet-sys-impl (list))
+
+; TODO NOW: Remove this, and rename
+; `unguarded-snippet-sys-snippet-degree` to be
+; `snippet-sys-snippet-degree`.
+(define/contract (attenuated-fn-snippet-sys-snippet-degree ss snippet)
+    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
+  (unguarded-snippet-sys-snippet-degree ss snippet))
+(define-syntax (snippet-sys-snippet-degree stx)
+  (syntax-case stx () #/ (_ ss snippet)
+    #`(dlog 'm1 #,(~a stx)
+        (attenuated-fn-snippet-sys-snippet-degree ss snippet))))
 
 ; TODO NOW: Remove this.
 (define/contract (attenuated-snippet-sys-snippet-undone ss snippet)
@@ -3142,11 +3159,11 @@
       ss)
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (dlogr 'b2
+      (dlogr 'b2 snippet
       #/dissect ss (hypertee-snippet-sys ds)
       #/dissect snippet (unguarded-hypertee-furl _ coil)
-      #/mat coil (hypertee-coil-zero) (dim-sys-dim-zero ds)
-      #/dissect coil (hypertee-coil-hole d hole data tails) d))
+      #/mat coil (hypertee-coil-zero) (dlogr 'b2.1 ds #/dim-sys-dim-zero ds)
+      #/dissect coil (hypertee-coil-hole d hole data tails) #/dlog 'b2.2 d))
     ; snippet-sys-shape->snippet
     (fn ss shape
       shape)
@@ -3416,8 +3433,8 @@
 ; TODO: Use the things that use this.
 (define
   (make-snippet-sys-impl-from-conversions
-    snippet-sys-snippet/c ss-> ->ds degree-> ->degree shape-> ->shape
-    snippet-> ->snippet)
+    snippet-sys-snippet/c ss-> ->ds ->shape-ss degree-> ->degree
+    shape-> ->shape snippet-> ->snippet)
   (make-snippet-sys-impl-from-various-1
     ; snippet-sys-snippet/c
     snippet-sys-snippet/c
@@ -3426,7 +3443,7 @@
       (->ds #/snippet-sys-dim-sys #/ss-> ss))
     ; snippet-sys-shape-snippet-sys
     (fn ss
-      (snippet-sys-shape-snippet-sys #/ss-> ss))
+      (->shape-ss #/snippet-sys-shape-snippet-sys #/ss-> ss))
     ; snippet-sys-snippet-degree
     (fn ss snippet
       (dlogr 'b3 ss
@@ -3568,6 +3585,9 @@
     ; ->ds
     (dissectfn (fin-multiplied-dim-sys 2 uds)
       uds)
+    ; ->shape-ss
+    (dissectfn (hypertee-snippet-sys #/fin-multiplied-dim-sys 2 uds)
+      (hypertee-snippet-sys uds))
     ; degree->
     (fn ss degree
       (dissect ss (hypernest-snippet-sys sfs uds)
@@ -3663,9 +3683,13 @@
       (and/c
         (match/c hypernest-coil-hole
           (dim-sys-0<dim/c ds)
-          (snippet-sys-snippetof ss #/fn hole trivial?)
+        ; TODO NOW: Uncomment this.
+        any/c #;
+          (snippet-sys-snippetof shape-ss #/fn hole trivial?)
           any/c
           any/c)
+        ; TODO NOW: Uncomment this.
+        any/c #;
         (by-own-method/c
           (hypernest-coil-hole
             overall-degree hole data tails-hypertee)
@@ -3736,8 +3760,15 @@
                     (fn hole shape-data subject-data trivial?)))))))))
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
-(define (unguarded-fn-hypernest-furl dim-sys coil)
-  (w- uds dim-sys
+; TODO NOW: Revert this to a `define` rather than a `define/contract`.
+(define/contract (unguarded-fn-hypernest-furl dim-sys coil)
+      (->i
+        (
+          [dim-sys dim-sys?]
+          [coil (dim-sys) (hypernest-coil/c dim-sys)])
+        [_ hypernest?])
+  (dlog 'l1
+  #/w- uds dim-sys
   #/w- mds (fin-multiplied-dim-sys 2 uds)
   #/w- emds (extended-with-top-dim-sys mds)
   #/w- emhtss (hypertee-snippet-sys emds)
@@ -3857,11 +3888,11 @@
     (hypernest-coil-zero)
   #/dissect hn-selective
     (selective-snippet-nonzero overall-degree
-      (unguarded-hypertee-furl uds
+      (unguarded-hypertee-furl emds
         (hypertee-coil-hole (extended-with-top-dim-infinite)
           hole data tails)))
-  #/w- mds (fin-multiplied-dim-sys 2 uds)
-  #/w- emds (extended-with-top-dim-sys mds)
+  #/dissect emds (extended-with-top-dim-sys mds)
+  #/dissect mds (fin-multiplied-dim-sys 2 uds)
   #/w- htss (hypertee-snippet-sys uds)
   #/w- emhtss (hypertee-snippet-sys emds)
   #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
