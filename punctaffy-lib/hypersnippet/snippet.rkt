@@ -1199,14 +1199,30 @@
 
 (define (snippet-sys-snippet-map-maybe ss snippet hv-to-maybe-v)
   (snippet-sys-snippet-splice ss snippet #/fn hole data
-    (maybe-map (hv-to-maybe-v hole data) #/fn data
+    (dlog 'o1 hv-to-maybe-v
+    #/maybe-map (hv-to-maybe-v hole data) #/fn data
       (unselected data))))
 
-(define (snippet-sys-snippet-map ss snippet hv-to-v)
+; TODO NOW: Revert this to a `define`.
+(define/contract (snippet-sys-snippet-map ss snippet hv-to-v)
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-v (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            any/c)])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss snippet))])
   (dlog 'd1
   #/just-value
   #/snippet-sys-snippet-map-maybe ss snippet #/fn hole data
-    (just #/hv-to-v hole data)))
+    (dlog 'd1.1 hv-to-v
+    #/just #/hv-to-v hole data)))
 
 (define (snippet-sys-snippet-select ss snippet check-hv?)
   (snippet-sys-snippet-map ss snippet #/fn hole data
@@ -3231,32 +3247,44 @@
         snippet snippet
         first-nontrivial-d (dim-sys-dim-zero ds)
         
-        (dissect snippet (unguarded-hypertee-furl _ coil)
+        (dlog 'e2.1
+        #/dissect snippet (unguarded-hypertee-furl _ coil)
         #/mat coil (hypertee-coil-zero)
-          (just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+          (dlog 'e2.2
+          #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+        #/dlog 'e2.3
         #/dissect coil (hypertee-coil-hole d hole data tails)
         #/maybe-bind
-          (if
-            (dim-sys-dim<? ds
+          (dlog 'e2.3.1
+          #/if
+            (dlog 'e2.3.2
+            #/dim-sys-dim<? ds
               (snippet-sys-snippet-degree ss hole)
               first-nontrivial-d)
-            (dissect data (trivial)
+            (dlog 'e2.3.3
+            #/dissect data (trivial)
               (just #/unselected #/trivial))
-            (hv-to-splice hole data))
+            (dlog 'e2.3.4 hv-to-splice
+            #/hv-to-splice hole data))
         #/fn splice
+        #/dlog 'e2.4
         #/maybe-bind
           (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-            (next tail
+            (dlog 'e2.5 (hypertee-get-dim-sys snippet) (hypertee-get-dim-sys tail)
+            #/next tail
               (dim-sys-dim-max ds
                 first-nontrivial-d
                 (snippet-sys-snippet-degree ss hole))))
         #/fn tails
+        #/dlog 'e2.6
         #/mat splice (unselected data)
           (just #/unguarded-hypertee-furl ds
             (hypertee-coil-hole d hole data tails))
         #/dissect splice (selected suffix)
+        #/dlog 'e2.7
         #/w- suffix
-          (snippet-sys-snippet-map ss suffix #/fn hole data
+          (dlog 'e2.8
+          #/snippet-sys-snippet-map ss suffix #/fn hole data
             (mat data (selected data) (selected data)
             #/dissect data (unselected data)
               (unselected #/unselected data)))
@@ -3266,7 +3294,8 @@
             (dissect data (trivial)
             #/just #/selected tail))
         #/fn suffix
-          (snippet-sys-snippet-join-selective-prefix ss suffix))))
+          (dlog 'e2.9
+          #/snippet-sys-snippet-join-selective-prefix ss suffix))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -3883,11 +3912,12 @@
       tails-assembled)))
 
 (define (hypernest-get-coil hn)
-  (dissect hn (hypernest-unchecked hn-selective)
+  (dlog 'n2 hn (hypernest-get-dim-sys hn)
+  #/dissect hn (hypernest-unchecked hn-selective)
   #/mat hn-selective (selective-snippet-zero _)
     (hypernest-coil-zero)
   #/dissect hn-selective
-    (selective-snippet-nonzero overall-degree
+    (selective-snippet-nonzero (fin-multiplied-dim 0 overall-degree)
       (unguarded-hypertee-furl emds
         (hypertee-coil-hole (extended-with-top-dim-infinite)
           hole data tails)))
@@ -3912,11 +3942,17 @@
       (snippet-sys-snippet-map htss
         (hypertee-map-dim unextend-dim tails)
         (fn hole tail
-          (hypernest-unchecked #/selective-snippet-nonzero
+          (dlog 'n2.1
+          #/hypernest-unchecked #/selective-snippet-nonzero
             (fin-multiplied-dim 0 overall-degree)
-            (snippet-sys-snippet-map-selective htss
-              (snippet-sys-snippet-select-if-degree< htss
-                (snippet-sys-snippet-degree htss hole)
+            (dlog 'n2.2
+            #/snippet-sys-snippet-map-selective emhtss
+              ; TODO: See if this ever selects bumps. Figure out if it
+              ; should avoid selecting bumps somehow.
+              (snippet-sys-snippet-select-if-degree< emhtss
+                (extended-with-top-dim-finite
+                  (fin-multiplied-dim 0
+                    (snippet-sys-snippet-degree htss hole)))
                 tail)
               (fn hole data
                 (dissect data (trivial)
@@ -3951,7 +3987,7 @@
     #'(app
         (fn v
           (maybe-if (hypernest? v) #/fn
-          #/list (hypernest-get-dim-sys v) (hypernest-get-coil v)))
+          #/list (hypernest-get-dim-sys v) (dlog 'n1 #/hypernest-get-coil v)))
         (just #/list ds coil))))
 
 (define-match-expander-from-match-and-make

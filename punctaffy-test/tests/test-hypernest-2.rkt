@@ -211,6 +211,9 @@
 #;
 (check-furl-round-trip sample-0)
 
+; NOTE: We used the following tests to debug the test below them.
+; TODO NOW: Uncomment these, which have been working.
+#;
 (check-equal?
   (contract
     (snippet-sys-snippetof htss #/fn hole trivial?)
@@ -218,7 +221,7 @@
     'pos
     'neg)
   (hypertee-furl ds #/hypertee-coil-zero))
-
+#;
 (check-equal?
   (contract
     (hypernest-coil/c ds)
@@ -233,14 +236,14 @@
     'a
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; TODO NOW: Uncomment the following, which hasn't been working.
-;#;
+; TODO NOW: Uncomment the following, which has been working.
+#;
 (check-furl-round-trip sample-closing-1)
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-closing-2)
 
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-equal?
   (hypernest-get-coil #/db->hn sample-closing-3a)
@@ -256,16 +259,30 @@
       0
     #/htb-labeled 0 #/hn-bracs ds 3 #/hnb-labeled 0 'a)))
 
+; TODO NOW: Uncomment the following, which has been working.
+#;
+(check-furl-round-trip sample-closing-3a)
+; TODO NOW: Uncomment the following, which has been working.
+#;
+(check-furl-round-trip sample-closing-4)
+; TODO NOW: Uncomment the following, which has been working.
+#;
+(check-furl-round-trip sample-closing-5)
+; TODO NOW: Uncomment the following, which has been working.
+#;
+(check-furl-round-trip sample-closing-3b)
+; TODO NOW: Uncomment the following, which hasn't been working.
+#;
+(check-furl-round-trip sample-opening-1a)
+; TODO NOW: Uncomment the following, which hasn't been working.
+#;
+(check-furl-round-trip sample-opening-1b)
+; TODO NOW: Uncomment the following, which hasn't been working.
+#;
+(check-furl-round-trip sample-opening-2)
 ; TODO NOW: Uncomment the following, which probably haven't all been
 ; working.
 #|
-(check-furl-round-trip sample-closing-3a)
-(check-furl-round-trip sample-closing-4)
-(check-furl-round-trip sample-closing-5)
-(check-furl-round-trip sample-closing-3b)
-(check-furl-round-trip sample-opening-1a)
-(check-furl-round-trip sample-opening-1b)
-(check-furl-round-trip sample-opening-2)
 
 
 
