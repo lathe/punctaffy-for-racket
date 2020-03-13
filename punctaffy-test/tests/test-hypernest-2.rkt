@@ -135,6 +135,18 @@
   #/hnb-labeled 0 'end))
 
 
+; NOTE: We used this to debug an issue with the following sample.
+; TODO NOW: Run the various tests on this one like the other samples.
+(define sample-opening-1aa
+  (make-sample 1
+    (hnb-open 2 'a)
+    1
+    (hnb-open 1 'a)
+    0
+    0
+    0
+    (hnb-labeled 0 'a)))
+
 (define sample-opening-1a
   (make-sample 1
     (hnb-open 1 'a)
@@ -271,6 +283,9 @@
 ; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-closing-3b)
+; TODO NOW: Uncomment the following, which hasn't been working.
+;#;
+(check-furl-round-trip sample-opening-1aa)
 ; TODO NOW: Uncomment the following, which hasn't been working.
 #;
 (check-furl-round-trip sample-opening-1a)

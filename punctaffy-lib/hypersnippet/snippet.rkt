@@ -1204,7 +1204,8 @@
       (unselected data))))
 
 ; TODO NOW: Revert this to a `define`.
-(define/contract (snippet-sys-snippet-map ss snippet hv-to-v)
+(define (snippet-sys-snippet-map ss snippet hv-to-v)
+#;
     (->i
       (
         [ss snippet-sys?]
@@ -1319,11 +1320,14 @@
           (get/build-late-neg-projection snippet-contract)
           (blame-add-context blame "the initial snippet check of"))
       #/fn v missing-party
-        (w- v (snippet-contract-projection v missing-party)
+        (dlog 'q1 ss h-to-value/c blame missing-party v
+        #/w- v (snippet-contract-projection v missing-party)
         #/snippet-sys-snippet-map ss v #/fn hole data
-          (w- value/c
+          (dlog 'q2
+          #/w- value/c
             (coerce-contract 'snippet-sys-snippetof
               (h-to-value/c hole))
+          #/dlog 'q3 hole data value/c
           #/
             (
               (get/build-late-neg-projection value/c)
@@ -2215,14 +2219,31 @@
       (by-own-method/c (selective-snippet-nonzero d content)
       #/match/c selective-snippet-nonzero any/c
         (snippet-sys-snippetof ess #/fn hole
-          (selectable/c
+          (dlog 'r1 (snippet-sys-snippet-degree shape-ess hole) d
+            (dim-sys-dim<? eds
+              (snippet-sys-snippet-degree shape-ess hole)
+              (extended-with-top-dim-finite d))
+            h-to-unselected/c
+          #/selectable/c
             (if
+              ; TODO NOW: Figure out the proper condition to put here.
+              ; Right now, for the sake of debugging, we're keeping
+              ; the old condition uncommented but duplicating the
+              ; branch and adding `dlog` calls to it.
+              #;
+              #t
               (dim-sys-dim<? eds
                 (snippet-sys-snippet-degree shape-ess hole)
                 (extended-with-top-dim-finite d))
               (h-to-unselected/c
                 (snippet-sys-morphism-sys-morph-snippet
                   unextend-hole hole))
+              (dlog 'r1.1
+              #/h-to-unselected/c
+                (dlog 'r1.2 hole
+                #/snippet-sys-morphism-sys-morph-snippet
+                  unextend-hole hole))
+              #;
               none/c)
             any/c))))
     `(selective-snippet/c ,sfs ,uds ,h-to-unselected/c)))
@@ -4201,14 +4222,18 @@
                 (get-part data)
                 data))
           #/if is-hypernest
-            (snippet-sys-snippet-map hnss
-              (hypernest-from-brackets ds overall-degree
+            (dlog 'p1
+            #/snippet-sys-snippet-map hnss
+              (dlog 'p1.1 ds overall-degree (reverse rev-brackets)
+              #/hypernest-from-brackets ds overall-degree
                 (reverse rev-brackets))
               (fn hole data
-                (get-subpart
+                (dlog 'p1.2
+                #/get-subpart
                   (snippet-sys-snippet-degree htss hole)
                   data)))
-            (snippet-sys-snippet-map htss
+            (dlog 'p2
+            #/snippet-sys-snippet-map htss
               (hypertee-from-brackets ds overall-degree
                 (reverse #/list-map rev-brackets #/fn closing-bracket
                   (mat closing-bracket (hnb-labeled d data)
