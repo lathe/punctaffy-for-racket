@@ -106,6 +106,9 @@
 ; TODO NOW: Remove this.
 (provide
   snippet-sys-snippet-degree)
+; TODO NOW: Remove this.
+(provide
+  snippet-sys-snippet-done)
 (provide #/contract-out
   [selectable? (-> any/c boolean?)]
   [selectable/c (-> contract? contract? contract?)]
@@ -209,6 +212,8 @@
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
   ; shape in its low-degree holes.
+  ; TODO NOW: Uncomment this.
+  #;
   [snippet-sys-snippet-done
     (->i
       (
@@ -1153,7 +1158,7 @@
   (#:method snippet-sys-shape->snippet (#:this) ())
   (#:method snippet-sys-snippet->maybe-shape (#:this) ())
   (#:method snippet-sys-snippet-set-degree-maybe (#:this) () ())
-  (#:method snippet-sys-snippet-done (#:this) () () ())
+  (#:method unguarded-snippet-sys-snippet-done (#:this) () () ())
   (#:method snippet-sys-snippet-undone (#:this) ())
   (#:method snippet-sys-snippet-splice (#:this) () ())
   (#:method snippet-sys-snippet-zip-map-selective (#:this) () () ())
@@ -1171,6 +1176,28 @@
   (syntax-case stx () #/ (_ ss snippet)
     #`(dlog 'm1 #,(~a stx)
         (attenuated-fn-snippet-sys-snippet-degree ss snippet))))
+
+; TODO NOW: Remove this, and rename
+; `unguarded-snippet-sys-snippet-done` to be
+; `snippet-sys-snippet-done`.
+(define/contract
+  (attenuated-fn-snippet-sys-snippet-done ss degree shape data)
+    (->i
+      (
+        [ss snippet-sys?]
+        [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
+        [shape (ss degree)
+          (snippet-sys-snippet-with-degree</c
+            (snippet-sys-shape-snippet-sys ss)
+            degree)]
+        [data any/c])
+      [_ (ss degree) (snippet-sys-snippet-with-degree=/c ss degree)])
+  (unguarded-snippet-sys-snippet-done ss degree shape data))
+(define-syntax (snippet-sys-snippet-done stx)
+  (syntax-case stx () #/ (_ ss degree shape data)
+    #`(dlog 'm1 #,(~a stx)
+        (attenuated-fn-snippet-sys-snippet-done
+          ss degree shape data))))
 
 ; TODO NOW: Remove this.
 (define/contract (attenuated-snippet-sys-snippet-undone ss snippet)
@@ -2940,6 +2967,24 @@
   hypertee-coil-hole
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
 
+; TODO NOW: Remove this, and change the places that call
+; `attenuated-hypertee-coil-hole` to call `hypertee-coil-hole`
+; instead. We don't need to keep the error check around in any form;
+; it's not a good check to make in general, but it's helpful for
+; diagnosing a particular bug we've come across in the present tests.
+(define
+  (attenuated-fn-hypertee-coil-hole overall-degree hole data tails)
+  (mat hole
+    (unguarded-hypertee-furl _
+      (hypertee-coil-hole (extended-with-top-dim-infinite) _ _ _))
+    (error "Did not expect a hypertee with infinite degree")
+  #/hypertee-coil-hole overall-degree hole data tails))
+(define-syntax (attenuated-hypertee-coil-hole stx)
+  (syntax-case stx () #/ (_ overall-degree hole data tails)
+    #`(dlog 'm2 #,(~a stx)
+        (attenuated-fn-hypertee-coil-hole
+          overall-degree hole data tails))))
+
 ; TODO: See if we can get this to return a flat contract. It's likely
 ; the only thing in our way is `by-own-method/c`.
 (define (hypertee-coil/c ds)
@@ -3155,7 +3200,7 @@
           (hvv-to-maybe-v hole shape-data snippet-data))))
   #/fn result-tails
   #/just #/unguarded-hypertee-furl ds
-    (hypertee-coil-hole snippet-d shape-hole result-data
+    (attenuated-hypertee-coil-hole snippet-d shape-hole result-data
       result-tails)))
 
 ; TODO: See if we should export this.
@@ -3167,7 +3212,7 @@
   #/unguarded-hypertee-furl target-ds
     (mat coil (hypertee-coil-zero) (hypertee-coil-zero)
     #/dissect coil (hypertee-coil-hole d hole data tails)
-    #/hypertee-coil-hole
+    #/attenuated-hypertee-coil-hole
       (dim-sys-morphism-sys-morph-dim dsms d)
       (hypertee-map-dim dsms hole)
       data
@@ -3228,11 +3273,11 @@
           (snippet-sys-snippet-set-degree-maybe ss degree tail))
       #/fn tails
         (unguarded-hypertee-furl ds
-          (hypertee-coil-hole degree hole data tails))))
+          (attenuated-hypertee-coil-hole degree hole data tails))))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
       (dissect ss (hypertee-snippet-sys ds)
-      #/unguarded-hypertee-furl ds #/hypertee-coil-hole
+      #/unguarded-hypertee-furl ds #/attenuated-hypertee-coil-hole
         degree
         (snippet-sys-snippet-map ss shape #/fn hole data #/trivial)
         data
@@ -3300,7 +3345,7 @@
         #/dlog 'e2.6
         #/mat splice (unselected data)
           (just #/unguarded-hypertee-furl ds
-            (hypertee-coil-hole d hole data tails))
+            (attenuated-hypertee-coil-hole d hole data tails))
         #/dissect splice (selected suffix)
         #/dlog 'e2.7
         #/w- suffix
@@ -3833,7 +3878,7 @@
     (hypernest-coil-hole overall-degree hole data tails-hypertee)
     (hypernest-unchecked #/selective-snippet-nonzero
       (fin-multiplied-dim 0 overall-degree)
-      (unguarded-hypertee-furl emds #/hypertee-coil-hole
+      (unguarded-hypertee-furl emds #/attenuated-hypertee-coil-hole
         (extended-with-top-dim-infinite)
         (hypertee-map-dim extend-dim hole)
         (selected data)
@@ -3894,6 +3939,12 @@
           ; `selectable?` values, and the selected ones are tail
           ; snippets whose own holes contain
           ; `(selectable/c any/c trivial?)` values.
+          ;
+          ; TODO NOW: This call is currently causing an error in the
+          ; test-hypernest-2.rkt tests because the shape has degree
+          ; `(extended-with-top-infinite)`, which is larger than the
+          ; given result degree. Something about this code needs to be
+          ; corrected.
           ;
           (snippet-sys-snippet-done
             emhtss
@@ -4511,7 +4562,7 @@
         (w- data (mat data (trivial) (selected data) data)
         
         #/dissect data (selected data)
-        #/unguarded-hypertee-furl emds #/hypertee-coil-hole
+        #/unguarded-hypertee-furl emds #/attenuated-hypertee-coil-hole
           (extended-with-top-dim-infinite)
           hole
           (selected data)
