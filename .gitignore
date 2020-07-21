@@ -3,3 +3,6 @@ compiled/
 
 # Added by DrRacket.
 *.bak
+
+# Added by Agda's typechecker.
+*.agdai
