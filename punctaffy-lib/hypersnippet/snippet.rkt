@@ -3997,6 +3997,12 @@
     #/dissect
       (snippet-sys-snippet-filter-maybe emhtss tails-selective)
       (just tails-shape)
+    #/dissect
+      (snippet-sys-snippet-set-degree-maybe emhtss
+        (extended-with-top-dim-finite
+          (fin-multiplied-dim 0 bump-degree))
+        tails-shape)
+      (just truncated-tails-shape)
     #/w- tails-assembled
       
       ; We construct the overall hypertee to use as the representation
@@ -4018,13 +4024,15 @@
       ;
       (dlog 'k1
       #/snippet-sys-snippet-join-selective emhtss
-        (snippet-sys-snippet-done
+        (dlog 'k1.1
+        #/snippet-sys-snippet-done
           emhtss
           (extended-with-top-dim-infinite)
           
           ; We construct the shape of the hole that we're using to
           ; represent the bump. This hole is shaped like a "done"
-          ; around the shape (`tails-shape`) of the bump's interior.
+          ; around the shape (`truncated-tails-shape`) of the bump's
+          ; interior.
           ;
           ; As expected by our `snippet-sys-snippet-join-selective`
           ; call, the elements in the holes this snippet are
@@ -4032,17 +4040,13 @@
           ; snippets whose own holes contain
           ; `(selectable/c any/c trivial?)` values.
           ;
-          ; TODO NOW: This call is currently causing an error in the
-          ; test-hypernest-2.rkt tests because the shape has degree
-          ; `(extended-with-top-infinite)`, which is larger than the
-          ; given result degree. Something about this code needs to be
-          ; corrected.
-          ;
-          (snippet-sys-snippet-done
+          (dlog 'k1.2 emhtss
+          #/snippet-sys-snippet-done
             emhtss
             (extended-with-top-dim-finite
               (fin-multiplied-dim 1 bump-degree))
-            (snippet-sys-snippet-map emhtss tails-shape
+            (dlog 'k1.3
+            #/snippet-sys-snippet-map emhtss truncated-tails-shape
               (fn hole tail
                 (w- prefix-d (snippet-sys-snippet-degree emhtss hole)
                 #/dissect tail
@@ -4062,7 +4066,8 @@
                         (dissect tail-tail (trivial)
                         #/selected #/trivial)
                       #/unselected #/selected tail-tail))))))
-            (selected
+            (dlog 'k1.4
+            #/selected
               (snippet-sys-snippet-map emhtss tails-selective
                 (fn hole selectable-tail
                   (mat selectable-tail (unselected data)
@@ -4406,8 +4411,23 @@
             (trivial)))
         shape))
   #/mat bracket (hnb-open bump-degree data)
-    ; TODO NOW: Implement this.
-    ('TODO)
+    (expect bumps-allowed #t
+      (raise-arguments-error err-name
+        "encountered an opening bracket in a hole"
+        "current-d" current-d
+        "bracket" (err-normalize-bracket bracket)
+        "brackets-remaining"
+        (map err-normalize-bracket brackets-remaining)
+        "brackets" (map err-normalize-bracket orig-brackets))
+    #/w- stack
+      (hyperstack-push bump-degree stack #/list #f bumps-allowed)
+    #/w- recursive-result
+      (explicit-hypernest-from-hyperstack-and-brackets
+        err-name err-normalize-bracket orig-brackets ds stack orig-d
+        bumps-allowed brackets-remaining)
+    #/dlog 'ze1
+    #/unguarded-hypernest-furl ds #/hypernest-coil-bump
+      current-d data bump-degree recursive-result)
   #/mat bracket (hnb-labeled hole-degree data)
     (process-hole hole-degree data #t)
   #/dissect bracket (hnb-unlabeled hole-degree)

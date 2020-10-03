@@ -137,13 +137,6 @@
 
 ; NOTE: We used this to debug an issue with the following sample.
 ; TODO NOW: Run the various tests on this one like the other samples.
-;
-; TODO NOW: Uncomment the following, which probably won't work at the
-; moment since the current implementation of
-; `explicit-hypernest-from-hyperstack-and-brackets` doesn't handle
-; `hnb-open` brackets at all.
-;
-#|
 (define sample-opening-1aa
   (make-sample 1
     (hnb-open 2 'a)
@@ -290,7 +283,9 @@
 ; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-closing-3b)
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which hasn't been working. This
+; was the one we were trying to make work before we started
+; reimplementing `explicit-hypernest-from-brackets`.
 ;#;
 (check-furl-round-trip sample-opening-1aa)
 ; TODO NOW: Uncomment the following, which hasn't been working.
@@ -304,7 +299,6 @@
 (check-furl-round-trip sample-opening-2)
 ; TODO NOW: Uncomment the following, which probably haven't all been
 ; working.
-|#
 #|
 
 
