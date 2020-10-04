@@ -3626,12 +3626,16 @@
         (->snippet ss snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
-      (maybe-map
+      (dlog 'n2.0.7.0.3
+      #/maybe-map
         (snippet-sys-snippet-zip-map-selective (ss-> ss)
-          (shape-> ss shape)
-          (snippet-> ss snippet)
+          (dlog 'n2.0.7.0.3.1
+          #/shape-> ss shape)
+          (dlog 'n2.0.7.0.3.2
+          #/snippet-> ss snippet)
           (fn hole shape-data snippet-data
-            (hvv-to-maybe-v
+            (dlog 'n2.0.7.0.3.3
+            #/hvv-to-maybe-v
               (->shape ss hole)
               shape-data
               snippet-data)))
@@ -4083,13 +4087,16 @@
 (define (hypernest-get-coil hn)
   (dlog 'n2 hn (hypernest-get-dim-sys hn)
   #/dissect hn (hypernest-unchecked hn-selective)
+  #/dlog 'n2.0.1
   #/mat hn-selective (selective-snippet-zero _)
     (hypernest-coil-zero)
+  #/dlog 'n2.0.2
   #/dissect hn-selective
     (selective-snippet-nonzero (fin-multiplied-dim 0 overall-degree)
       (unguarded-hypertee-furl emds
         (hypertee-coil-hole (extended-with-top-dim-infinite)
           hole data tails)))
+  #/dlog 'n2.0.3
   #/dissect emds (extended-with-top-dim-sys mds)
   #/dissect mds (fin-multiplied-dim-sys 2 uds)
   #/w- htss (hypertee-snippet-sys uds)
@@ -4099,11 +4106,14 @@
     (dim-sys-morphism-sys-chain-two
       (unextend-with-top-dim-sys-morphism-sys mds)
       (fin-untimes-dim-sys-morphism-sys 2 uds))
+  #/dlog 'n2.0.4
   #/dissect (snippet-sys-snippet-degree emhtss tails)
     (extended-with-top-dim-finite
       (fin-multiplied-dim i bump-degree))
+  #/dlog 'n2.0.5
   #/mat i 0
-    (dissect data (selected data)
+    (dlog 'n2.0.1
+    #/dissect data (selected data)
     #/attenuated-hypernest-coil-hole uds
       overall-degree
       (hypertee-map-dim unextend-dim hole)
@@ -4127,21 +4137,51 @@
                 (dissect data (trivial)
                 #/selected #/trivial)))))))
   #/dissect i 1
-    (dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone emhtss tails)
+    (dlog 'n2.0.2 tails
+    #/dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone emhtss tails)
       (just #/list _ tails interior)
+    #/dlog 'n2.0.3
     #/dissect (snippet-sys-snippet-degree emhtss tails)
       (extended-with-top-dim-finite
         (fin-multiplied-dim 0 bump-degree-again))
+    #/dlog 'n2.0.4
     #/dissect (dlog 'h4 #/dim-sys-dim=? uds bump-degree bump-degree-again) #t
+    #/dlog 'n2.0.5
     #/dissect data (unselected data)
+    #/dlog 'n2.0.6
     #/dissect
-      (snippet-sys-snippet-zip-map hnss
-        (hypertee-map-dim unextend-dim tails)
-        (hypernest-unchecked interior)
-        (fn tail interior-data
-          (dissect interior-data (trivial)
-          #/just #/hypernest-unchecked tail)))
+      (dlog 'n2.0.7 hnss ; (hypernest-unchecked interior)
+      #/snippet-sys-snippet-zip-map hnss
+        (dlog 'n2.0.7.0.1
+        #/hypertee-map-dim unextend-dim tails)
+        (dlog 'n2.0.7.0.2
+        #/hypernest-unchecked
+          (attenuated-selective-snippet-nonzero
+            (hypertee-snippet-format-sys)
+            mds
+            (fin-multiplied-dim 0 bump-degree)
+            (snippet-sys-snippet-select-everything emhtss interior)))
+        (fn hole tail interior-data
+          (dlog 'n2.0.7.1
+          #/dissect interior-data (trivial)
+          #/dlog 'n2.0.7.2 tail
+          #/just
+            (hypernest-unchecked
+              (attenuated-selective-snippet-nonzero
+                (hypertee-snippet-format-sys)
+                mds
+                (fin-multiplied-dim 0 overall-degree)
+                (snippet-sys-snippet-map-selective emhtss
+                  (snippet-sys-snippet-select-if-degree< emhtss
+                    (extended-with-top-dim-finite
+                      (fin-multiplied-dim 0
+                        (snippet-sys-snippet-degree htss hole)))
+                    tail)
+                  (fn hole data
+                    (dissect data (trivial)
+                    #/selected #/trivial))))))))
       (just tails-hypernest)
+    #/dlog 'n2.0.8
     #/hypernest-coil-bump
       overall-degree data bump-degree tails-hypernest)))
 
