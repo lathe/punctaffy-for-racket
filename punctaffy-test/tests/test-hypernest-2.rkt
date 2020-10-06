@@ -177,6 +177,10 @@
 
 (define (check-brackets-round-trip sample)
   (w- hn (db->hn sample)
+  
+  ; TODO NOW: Remove this.
+  #/begin (hypernest-get-brackets hn)
+  
   #/check-equal?
     (list
       (snippet-sys-snippet-degree hnss hn)
@@ -283,18 +287,18 @@
 ; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-closing-3b)
-; TODO NOW: Uncomment the following, which hasn't been working. This
-; was the one we were trying to make work before we started
-; reimplementing `explicit-hypernest-from-brackets`.
-;#;
+; TODO NOW: Uncomment the following, which has been working. This was
+; the one we were trying to make work before we started reimplementing
+; `explicit-hypernest-from-brackets`.
+#;
 (check-furl-round-trip sample-opening-1aa)
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-opening-1a)
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-opening-1b)
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-furl-round-trip sample-opening-2)
 ; TODO NOW: Uncomment the following, which probably haven't all been
