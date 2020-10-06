@@ -4446,21 +4446,7 @@
           err-name err-normalize-bracket orig-brackets ds stack orig-d
           bumps-now-allowed brackets-remaining)
       #/dlog 'zc8 hnss recursive-result
-      #/if #f ;(dim-sys-dim=0? ds hole-degree)
-        (snippet-sys-snippet-done hnss current-d
-          (hypernest-shape hnss recursive-result)
-          (if was-labeled
-            data
-            recursive-result))
-;      #/w- shape (hypernest-shape hnss recursive-result)
       #/dlog 'zc9 current-d hole-degree was-labeled orig-d orig-brackets brackets-remaining
-;      #/w- shape-trivial
-;        (snippet-sys-snippet-map htss shape #/fn hole tail #/trivial)
-      
-      ; TODO NOW: Remove the commented-out code and `if #f` clutter
-      ; around here, including the unused variable
-      ; `recursive-result-with-tails-removed` and the comments that
-      ; use `#;`.
       
       ; We truncate the shape of `recursive-result` to just the holes
       ; that are smaller than `hole-degree`.
@@ -4493,12 +4479,6 @@
       ; into the snippet content of this result.
       ;
       #/dlog 'zc9.4
-      #/w- recursive-result-with-tails-removed
-        (snippet-sys-snippet-map-selective hnss
-          recursive-result-with-selections
-        #/fn hole data
-          (trivial))
-      #/dlog 'zc9.5
       #/snippet-sys-snippet-join-selective-prefix hnss
         (dlog 'zc9.6
         #/snippet-sys-snippet-done hnss current-d
@@ -4511,23 +4491,7 @@
               #/snippet-sys-snippet-map-selective hnss
                 recursive-result-with-selections
               #/fn hole data
-                (trivial)))))
-      #;
-      #/if was-labeled
-        (snippet-sys-snippet-done hnss current-d shape data)
-        (snippet-sys-snippet-done hnss current-d shape recursive-result)
-      #;
-;      #/snippet-sys-snippet-join hnss
-      #/unguarded-hypernest-furl ds #/attenuated-hypernest-coil-hole ds
-        current-d
-        shape-trivial
-        (if was-labeled
-          (dlogr 'za1 hnss current-d shape-trivial
-          #/snippet-sys-snippet-done hnss current-d shape-trivial data)
-          (snippet-sys-snippet-map hnss recursive-result
-          #/fn hole tail
-            (trivial)))
-        shape))
+                (trivial)))))))
   #/mat bracket (hnb-open bump-degree data)
     (expect bumps-allowed #t
       (raise-arguments-error err-name
