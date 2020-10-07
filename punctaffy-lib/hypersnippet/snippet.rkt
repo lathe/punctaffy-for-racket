@@ -4470,28 +4470,27 @@
             truncated-shape))
         (just truncated-shape)
       
-      ; Then we make a `snippet-sys-snippet-done` out of that, with
-      ; the data being either `data` or `recursive-result` with its
-      ; holes smaller than `hole-degree` replaced with trivial values.
-      ; Then we do a selective join on that, joining just the holes
-      ; smaller than `hole-degree`. This concatenates all the tails 
-      ; carried by the recursive result that should be incorporated
-      ; into the snippet content of this result.
+      ; Then we make a `hypernest-coil-hole`-based hypernest out of
+      ; that, with the data in the hole being either `data` or
+      ; `recursive-result` with its holes smaller than `hole-degree`
+      ; replaced with trivial values. This way, all the tails carried
+      ; by the recursive result in holes of degree smaller than
+      ; `hole-degree` are incorporated into the snippet content of
+      ; this result.
       ;
       #/dlog 'zc9.4
-      #/snippet-sys-snippet-join-selective-prefix hnss
-        (dlog 'zc9.6
-        #/snippet-sys-snippet-done hnss current-d
-          (dlog 'zc9.7
-          #/snippet-sys-snippet-select-everything htss truncated-shape)
-          (unselected
-            (if was-labeled
-              data
-              (dlog 'zc9.8
-              #/snippet-sys-snippet-map-selective hnss
-                recursive-result-with-selections
-              #/fn hole data
-                (trivial)))))))
+      #/hypernest-furl ds #/attenuated-hypernest-coil-hole ds
+        current-d
+        (snippet-sys-snippet-map htss truncated-shape #/fn hole tail
+          (trivial))
+        (if was-labeled
+          data
+          (dlog 'zc9.8
+          #/snippet-sys-snippet-map-selective hnss
+            recursive-result-with-selections
+          #/fn hole data
+            (trivial)))
+        truncated-shape))
   #/mat bracket (hnb-open bump-degree data)
     (expect bumps-allowed #t
       (raise-arguments-error err-name
