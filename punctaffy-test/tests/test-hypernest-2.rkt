@@ -187,35 +187,17 @@
       (hypernest-get-brackets hn))
     sample))
 
-; TODO NOW: Uncomment the following, which has been working.
-#;
+; TODO NOW: Uncomment the following, which have been working.
+#|
 (check-brackets-round-trip sample-0)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-brackets-round-trip sample-closing-1)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-brackets-round-trip sample-closing-2)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-closing-3a)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-closing-4)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-closing-5)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-closing-3b)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-opening-1a)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-opening-1b)
-; TODO NOW: Uncomment the following, which hasn't been working.
-#;
 (check-brackets-round-trip sample-opening-2)
 
 (define (check-furl-round-trip sample)
@@ -223,13 +205,9 @@
   #/check-equal? (hypernest-furl ds #/hypernest-get-coil sample)
     sample))
 
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-0)
 
 ; NOTE: We used the following tests to debug the test below them.
-; TODO NOW: Uncomment these, which have been working.
-#;
 (check-equal?
   (contract
     (snippet-sys-snippetof htss #/fn hole trivial?)
@@ -237,7 +215,6 @@
     'pos
     'neg)
   (hypertee-furl ds #/hypertee-coil-zero))
-#;
 (check-equal?
   (contract
     (hypernest-coil/c ds)
@@ -252,15 +229,9 @@
     'a
     (hypertee-furl ds #/hypertee-coil-zero)))
 
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-closing-1)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-closing-2)
 
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-equal?
   (hypernest-get-coil #/db->hn sample-closing-3a)
   (make-hypernest-coil-hole 3 'a
@@ -275,35 +246,17 @@
       0
     #/htb-labeled 0 #/hn-bracs ds 3 #/hnb-labeled 0 'a)))
 
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-closing-3a)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-closing-4)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-closing-5)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-closing-3b)
-; TODO NOW: Uncomment the following, which has been working. This was
-; the one we were trying to make work before we started reimplementing
-; `explicit-hypernest-from-brackets`.
-#;
+; TODO NOW: Remove this note.
+; NOTE: This was the test we were trying to make work before we
+; started reimplementing `explicit-hypernest-from-brackets`.
 (check-furl-round-trip sample-opening-1aa)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-opening-1a)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-opening-1b)
-; TODO NOW: Uncomment the following, which has been working.
-#;
 (check-furl-round-trip sample-opening-2)
-; TODO NOW: Uncomment the following, which probably haven't all been
-; working.
-#|
 
 
 
@@ -386,6 +339,9 @@
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes with a degree-2 bump in between")
 
+|#
+; TODO NOW: Uncomment the following, which haven't all been working.
+#|
 (check-equal?
   (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
@@ -666,7 +622,7 @@
       (hnb-labeled 0 #/selected #/trivial))
     0
     (hnb-labeled 0
-      (selected #/snippet-sys-snippet-done 2 (ht-bracs ds 0)
+      (selected #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
         (unselected 'a))))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
@@ -692,7 +648,7 @@
     (hnb-labeled 1 #/unselected 'a)
     0
     (hnb-labeled 0
-      (selected #/snippet-sys-snippet-done 2 (ht-bracs ds 0)
+      (selected #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
         (unselected 'a))))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)

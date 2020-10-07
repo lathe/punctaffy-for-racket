@@ -2390,20 +2390,25 @@
         d))
     ; snippet-sys-shape->snippet
     (fn ss shape
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlog 'zj1
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- unextended-snippet (snippet-sys-shape->snippet uss shape)
       #/w- d (snippet-sys-snippet-degree uss unextended-snippet)
+      #/dlog 'zj2
       #/if (dim-sys-dim=0? uds d)
-        (selective-snippet-zero unextended-snippet)
+        (dlog 'zj3
+        #/selective-snippet-zero unextended-snippet)
       #/w- extended-snippet
-        (snippet-sys-morphism-sys-morph-snippet
+        (dlog 'zj4
+        #/snippet-sys-morphism-sys-morph-snippet
           (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (extend-with-top-dim-sys-morphism-sys uds))
           unextended-snippet)
+      #/dlog 'zj5
       #/expect
         (snippet-sys-snippet-set-degree-maybe ess
           (extended-with-top-dim-infinite)
@@ -2413,7 +2418,9 @@
         ; occur when one of the systems involved doesn't obey its
         ; laws.
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to infinity")
-      #/attenuated-selective-snippet-nonzero sfs uds d content))
+      #/dlog 'zj6
+      #/attenuated-selective-snippet-nonzero sfs uds d
+        (snippet-sys-snippet-select-everything ess content)))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
       (dissect ss (selective-snippet-sys sfs uds _)
@@ -2553,13 +2560,15 @@
         (attenuated-selective-snippet-nonzero sfs uds d snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlog 'zm1
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/mat snippet (selective-snippet-zero subject)
-        (maybe-map
+        (dlog 'zm2
+        #/maybe-map
           (snippet-sys-snippet-zip-map-selective uss shape subject
             hvv-to-maybe-v)
         #/fn snippet
@@ -2569,6 +2578,7 @@
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
           (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
+      #/dlog 'zm3
       #/maybe-map
         (snippet-sys-snippet-zip-map-selective ess
           (snippet-sys-morphism-sys-morph-snippet
@@ -2585,6 +2595,7 @@
           (w- unextended-hole
             (snippet-sys-morphism-sys-morph-snippet
               unextend-hole extended-hole)
+          #/dlog 'zm4
           #/maybe-map
             (hvv-to-maybe-v unextended-hole shape-data subject-data)
           #/fn result-data
@@ -3635,8 +3646,10 @@
           (snippet-> ss snippet))))
     ; snippet-sys-shape->snippet
     (fn ss shape
-      (->snippet ss
-        (snippet-sys-shape->snippet (ss-> ss) (shape-> ss shape))))
+      (dlog 'zi1
+      #/->snippet ss
+        (dlog 'zi2
+        #/snippet-sys-shape->snippet (dlog 'zi3 #/ss-> ss) (dlog 'zi4 #/shape-> ss shape))))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
       (maybe-map
@@ -3680,7 +3693,8 @@
     (fn ss shape snippet hvv-to-maybe-v
       (dlog 'n2.0.7.0.3
       #/maybe-map
-        (snippet-sys-snippet-zip-map-selective (ss-> ss)
+        (dlog 'n2.0.7.0.3.0.1
+        #/snippet-sys-snippet-zip-map-selective (ss-> ss)
           (dlog 'n2.0.7.0.3.1
           #/shape-> ss shape)
           (dlog 'n2.0.7.0.3.2
@@ -3744,10 +3758,13 @@
     `(hypernest/c ,sfs ,uds)))
 
 (define (hypernest-get-dim-sys hn)
-  (dissect hn (hypernest-unchecked hn-selective)
+  (dlog 'zk1 hn
+  #/dissect hn (hypernest-unchecked hn-selective)
   #/dissect
-    (selective-snippet-get-dim-sys hn-selective #/fn ht
-      (hypertee-get-dim-sys ht))
+    (dlog 'zk2
+    #/selective-snippet-get-dim-sys hn-selective #/fn ht
+      (dlog 'zk3
+      #/hypertee-get-dim-sys ht))
     (fin-multiplied-dim-sys 2 ds)
     ds))
 
@@ -4466,6 +4483,7 @@
               htss shape-with-selections)
           #/fn truncated-shape
           #/dlog 'zc9.3
+;          #/begin (displayln (format "~a ~a ~a ~a" current-d hole-degree (hyperstack-dimension stack) (snippet-sys-snippet-degree htss truncated-shape)))
           #/snippet-sys-snippet-set-degree-maybe htss hole-degree
             truncated-shape))
         (just truncated-shape)
@@ -4825,8 +4843,100 @@
         (htb-unlabeled closing-bracket)))))
 
 
+(define
+  (hyperstack-and-hypernest-get-brackets
+    stack orig-d bumps-allowed hn)
+  (dlog 'zh0 hn
+  #/w- ds (hypernest-get-dim-sys hn)
+  #/dlog 'zh0.0.1
+  #/w- htss (hypertee-snippet-sys ds)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- coil (hypernest-get-coil hn)
+  #/dlog 'zh0.1
+  #/mat coil (hypernest-coil-zero) (list)
+  #/dlog 'zh0.2
+  #/mat coil (hypernest-coil-hole current-d shape data tails)
+    (w- hole-degree (snippet-sys-snippet-degree htss shape)
+    #/dlog 'zh1
+    #/dissect
+      (hyperstack-pop hole-degree stack #/list #f bumps-allowed)
+      (list (list should-be-labeled bumps-now-allowed) stack)
+    #/w- updated-d (hyperstack-dimension stack)
+    #/dlog 'zh1.1
+    #/w- recursive-result
+      (dlog 'zh1.2
+      #/hyperstack-and-hypernest-get-brackets
+        stack orig-d bumps-now-allowed
+        (if should-be-labeled
+          (dlog 'zh1.3
+          #/snippet-sys-shape->snippet hnss
+            (just-value
+              (dlog 'zh1.4
+              #/snippet-sys-snippet-set-degree-maybe
+                htss updated-d tails)))
+          (dlog 'zh1.5 tails data
+          #/if (dim-sys-dim=0? ds hole-degree)
+            data
+            (just-value
+              (snippet-sys-snippet-zip-map-selective hnss
+                tails
+                (snippet-sys-snippet-select-if-degree<
+                  hnss hole-degree data)
+                (fn hole tail data
+                  (dlog 'zh2
+                  #/dissect data (trivial)
+                  #/just tail)))))))
+    #/cons
+      (if should-be-labeled
+        (hnb-labeled hole-degree data)
+        (hnb-unlabeled hole-degree))
+      recursive-result)
+  #/dlog 'zh3
+  #/dissect coil
+    (hypernest-coil-bump current-d data bump-degree tails-hypernest)
+    (w- stack
+      (hyperstack-push bump-degree stack #/list #f bumps-allowed)
+;    #/w- updated-d (hyperstack-dimension stack)
+    #/w- recursive-result
+      (2:dlog 'zh4 current-d (hyperstack-dimension stack) (build-list (hyperstack-dimension stack) #/fn i #/hyperstack-peek stack i)
+      #/hyperstack-and-hypernest-get-brackets
+        stack orig-d bumps-allowed
+        #;tails-hypernest
+        #;
+        (snippet-sys-snippet-join hnss tails-hypernest)
+        (snippet-sys-snippet-join-selective-prefix hnss
+          (snippet-sys-snippet-select hnss tails-hypernest
+            (fn hole data
+              (dissect
+                (hyperstack-peek stack
+                  (snippet-sys-snippet-degree htss hole))
+                (list should-be-labeled bumps-allowed)
+              ; TODO: See what we should do if these are ever not
+              ; equal.
+              #/dissect (equal? should-be-labeled (not bumps-allowed))
+                #t
+                should-be-labeled))))
+        ; TODO NOW: Remove this.
+        #;
+        (2:dlog 'zh4 current-d (hyperstack-dimension stack)
+        #/snippet-sys-snippet-join-selective-prefix hnss
+          (snippet-sys-snippet-select-if-degree< hnss bump-degree
+            tails-hypernest)))
+    #/cons (hnb-open bump-degree data) recursive-result)))
+
+(define (hypernest-get-brackets hn)
+  (dlog 'zl1 hn
+  #/w- ds (hypernest-get-dim-sys hn)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- degree (snippet-sys-snippet-degree hnss hn)
+  #/hyperstack-and-hypernest-get-brackets
+    (make-hyperstack ds degree #/list #t #f)
+    degree #t hn))
+
 ; TODO: Export this.
 ; TODO: Use this.
+; TODO NOW: Remove this once we get the other one working.
+#;
 (define (hypernest-get-brackets hn)
   ; TODO NOW: Replace uses of `hypertee-furl` here with
   ; `unguarded-hypertee-furl`.
