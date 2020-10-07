@@ -4007,8 +4007,18 @@
                 ; something out of this.
                 ;
                 #/and/c
-                  (snippet-sys-snippet-with-degree=/c
-                    ss overall-degree)
+                  (snippet-sys-snippet-with-degree=/c ss
+                    
+                    ; TODO: Almost all of the unit tests in
+                    ; test-hypernest-2.rkt, with the exception of the
+                    ; `sample-hn-expr-shape-as-ast` test, continue to
+                    ; work if we just use `overall-degree` here. We
+                    ; should write more tests for this case (that is,
+                    ; the situation where a hypernest has a bump with
+                    ; a hole of degree greater than the overall
+                    ; hypernest).
+                    ;
+                    (dim-sys-dim-max ds overall-degree hole-d))
                   (snippet-sys-snippet-zip-selective/c ss hole
                     (fn tail-hole subject-data
                       (w- tail-hole-d

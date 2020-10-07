@@ -340,8 +340,8 @@
   "Joining hypernests to cancel out simple degree-1 holes with a degree-2 bump in between")
 
 |#
-; TODO NOW: Uncomment the following, which haven't all been working.
-#|
+; TODO NOW: Uncomment the following, which hasn't been working.
+#;
 (check-equal?
   (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
@@ -370,6 +370,8 @@
 
 
 
+; TODO NOW: Uncomment the following, which have been working.
+#|
 ; ====================================================================
 ; Testing hypernest `snippet-sys-snippet-join` on a more realistic
 ; case
@@ -687,7 +689,7 @@
 ; ===== Testing `hypernest-shape` ====================================
 
 (check-equal?
-  (hypernest-shape #/hn-bracs ds 1
+  (hypernest-shape hnss #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
@@ -696,7 +698,7 @@
   "Truncating a degree-1 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-shape #/hn-bracs ds 1
+  (hypernest-shape hnss #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-open 1 'a)
@@ -709,7 +711,7 @@
   "Truncating a degree-1 hypernest with multiple bumps to a hypertee")
 
 (check-equal?
-  (hypernest-shape #/hn-bracs ds 1
+  (hypernest-shape hnss #/hn-bracs ds 1
     (hnb-open 2 'a)
     1
     (hnb-open 1 'a)
@@ -724,7 +726,7 @@
   "Truncating a degree-1 hypernest with a degree-2 bump to a hypertee")
 
 (check-equal?
-  (hypernest-shape #/hn-bracs ds 2
+  (hypernest-shape hnss #/hn-bracs ds 2
     (hnb-open 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -739,7 +741,7 @@
   "Truncating a degree-2 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-shape #/hn-bracs ds 2
+  (hypernest-shape hnss #/hn-bracs ds 2
     (hnb-open 2 'a)
     1
     (hnb-labeled 1 'a)
