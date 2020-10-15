@@ -3926,49 +3926,82 @@
 
 ; TODO: Export these.
 ; TODO: Use these.
-; TODO: Define `hypernest` in terms of `hypernest-unchecked`.
-; TODO: Change the way a `hypernest?` is written using
+; TODO: Define `hypernest-zero` in terms of
+; `hypernest-zero-unchecked`.
+; TODO: Change the way a `hypernest-zero?` is written using
 ; `gen:custom-write`.
 (define-imitation-simple-struct
-  (hypernest? hypernest-degree hypernest-extended-snippet)
-  hypernest-unchecked
-  'hypernest (current-inspector) (auto-write) (auto-equal))
+  (hypernest-zero? hypernest-zero-content)
+  hypernest-zero-unchecked
+  'hypernest-zero (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export these.
+; TODO: Use these.
+; TODO: Define `hypernest-nonzero` in terms of
+; `hypernest-zero-unchecked`.
+; TODO: Change the way a `hypernest-nonzero?` is written using
+; `gen:custom-write`.
+(define-imitation-simple-struct
+  (hypernest-nonzero?
+    hypernest-nonzero-degree
+    hypernest-nonzero-content)
+  hypernest-nonzero-unchecked
+  'hypernest-nonzero (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (hypernest? v)
+  (or
+    (hypernest-zero? v)
+    (hypernest-nonzero? v)))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (hypernest/c sfs uds)
-  (w- ess (hypernest-extended-snippet-sys sfs uds)
+  (w- ffdstsss (snippet-format-sys-functor sfs)
+  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+  #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/rename-contract
-    (and/c (match/c hypernest-unchecked (dim-sys-dim/c uds) any/c)
-    #/by-own-method/c (hypernest-unchecked d _)
-    #/match/c hypernest-unchecked
-      any/c
+    (or/c
+      (match/c hypernest-zero-unchecked
+        (snippet-sys-snippet-with-degree=/c uss
+          (dim-sys-dim-zero uds)))
       (and/c
-        (snippet-sys-snippet-with-degree=/c ess
-          (extended-with-top-dim-infinite))
-        (snippet-sys-snippetof ess #/fn hole
-          (mat (snippet-sys-snippet-degree shape-ess hole)
-            (extended-with-top-dim-finite
-              (extended-with-top-dim-finite hole-d))
-            (if (dim-sys-dim<? uds hole-d d)
-              any/c
-              none/c)
-          #/expect (attenuated-snippet-sys-snippet-undone ess hole)
-            (just undone-result)
-            none/c
-          #/dissect undone-result
-            (list
+        (match/c hypernest-nonzero-unchecked
+          (dim-sys-0<dim/c uds)
+          any/c)
+      #/by-own-method/c (hypernest-nonzero-unchecked d _)
+      #/match/c hypernest-nonzero-unchecked
+        any/c
+        (and/c
+          (snippet-sys-snippet-with-degree=/c ess
+            (extended-with-top-dim-infinite))
+          (snippet-sys-snippetof ess #/fn hole
+            (mat (snippet-sys-snippet-degree shape-ess hole)
               (extended-with-top-dim-finite
-                (extended-with-top-dim-infinite))
-              interior-shape
-              (trivial))
-            any/c))))
+                (extended-with-top-dim-finite hole-d))
+              (if (dim-sys-dim<? uds hole-d d)
+                any/c
+                none/c)
+            #/expect (attenuated-snippet-sys-snippet-undone ess hole)
+              (just undone-result)
+              none/c
+            #/dissect undone-result
+              (list
+                (extended-with-top-dim-finite
+                  (extended-with-top-dim-infinite))
+                interior-shape
+                (trivial))
+              any/c)))))
     `(hypernest/c ,sfs ,uds)))
 
 (define (hypernest-get-dim-sys hn)
   (dlog 'zk1 hn
-  #/dissect hn (hypernest-unchecked d hn-extended)
+  #/mat hn (hypernest-zero-unchecked content)
+    (hypertee-get-dim-sys content)
+  #/dissect hn (hypernest-nonzero-unchecked d hn-extended)
   #/dissect
     (dlog 'zk2
     #/hypertee-get-dim-sys hn-extended)
@@ -4001,19 +4034,24 @@
     ; snippet-sys-snippet-degree
     (fn ss snippet
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/dissect snippet (hypernest-unchecked d hn-extended)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (dim-sys-dim-zero uds)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
         d))
     ; snippet-sys-shape->snippet
     (fn ss shape
       (dissect ss (hypernest-snippet-sys sfs uds)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+      #/w- shape-uss (snippet-sys-shape-snippet-sys uss)
+      #/w- d (snippet-sys-snippet-degree shape-uss shape)
+      #/w- shape-as-snippet (snippet-sys-shape->snippet uss shape)
+      #/if (dim-sys-dim=0? uds d)
+        (hypernest-zero-unchecked shape-as-snippet)
       #/w- eds
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
-      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
-      #/w- shape-uss (snippet-sys-shape-snippet-sys uss)
-      #/hypernest-unchecked
-        (snippet-sys-snippet-degree shape-uss shape)
+      #/hypernest-nonzero-unchecked d
         (just-value #/snippet-sys-snippet-set-degree-maybe ess
           (extended-with-top-dim-infinite)
           (snippet-sys-morphism-sys-morph-snippet
@@ -4022,12 +4060,15 @@
                 (extend-with-top-dim-sys-morphism-sys uds)
                 (extend-with-top-dim-sys-morphism-sys
                   (extended-with-top-dim-sys uds))))
-            (snippet-sys-shape->snippet uss shape)))))
+            shape-as-snippet))))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/dissect snippet (hypernest-unchecked d hn-extended)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (w- uss (functor-sys-apply-to-object ffdstsss uds)
+        #/snippet-sys-snippet->maybe-shape uss content)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
       #/w- eds
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
@@ -4052,7 +4093,18 @@
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss new-degree snippet
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/dissect snippet (hypernest-unchecked d hn-extended)
+      #/w- new-degree-is-zero (dim-sys-dim=0? uds new-degree)
+      #/mat snippet (hypernest-zero-unchecked content)
+        ; TODO: See if we should at least attempt setting the degree
+        ; of the content. If we do, and if the attempt is successful,
+        ; we may need to return a `hypernest-nonzero-unchecked`.
+        (maybe-if new-degree-is-zero #/fn snippet)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+      #/if new-degree-is-zero
+        ; TODO: See if we should at least attempt setting the degree
+        ; of the content. If we do, and if the attempt is successful,
+        ; we may need to return a `hypernest-zero-unchecked`.
+        (nothing)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
@@ -4070,7 +4122,7 @@
             (extended-with-top-dim-finite new-degree))
           hn-unextended)
       #/dissectfn _
-        (hypernest-unchecked new-degree hn-extended)))
+        (hypernest-nonzero-unchecked new-degree hn-extended)))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
       (dissect ss (hypernest-snippet-sys sfs uds)
@@ -4079,7 +4131,7 @@
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
-      #/hypernest-unchecked degree
+      #/hypernest-nonzero-unchecked degree
         (just-value #/snippet-sys-snippet-set-degree-maybe ess
           (extended-with-top-dim-infinite)
           (snippet-sys-morphism-sys-morph-snippet
@@ -4092,7 +4144,9 @@
     ; snippet-sys-snippet-undone
     (fn ss snippet
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/dissect snippet (hypernest-unchecked d hn-extended)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (nothing)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
@@ -4115,7 +4169,9 @@
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/dissect snippet (hypernest-unchecked d hn-extended)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (just snippet)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
@@ -4155,15 +4211,36 @@
           #/fn splice
             (mat splice (unselected data) (unselected data)
             #/dissect splice
-              (selected #/hypernest-unchecked _ suffix-extended)
+              (selected
+                (hypernest-nonzero-unchecked _ suffix-extended))
               (selected #/extend-selection suffix-extended))))
       #/fn result-extended
-        (hypernest-unchecked d result-extended)))
+        (hypernest-nonzero-unchecked d result-extended)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/dissect snippet (hypernest-unchecked d hn-extended)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- extended-hvv-to-maybe-v
+        (fn hole shape-data snippet-data
+          (hvv-to-maybe-v
+            (snippet-sys-morphism-sys-morph-snippet
+              (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+                (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                  (dim-sys-morphism-sys-chain-two
+                    (unextend-with-top-dim-sys-morphism-sys
+                      (extended-with-top-finite-dim-sys uds))
+                    (unextend-with-top-dim-sys-morphism-sys uds))))
+              hole)
+            shape-data
+            snippet-data))
+      #/mat snippet (hypernest-zero-unchecked content)
+        (w- uss (functor-sys-apply-to-object ffdstsss uds)
+        #/maybe-map
+          (snippet-sys-snippet-zip-map-selective uss shape content
+            extended-hvv-to-maybe-v)
+        #/fn content
+          (hypernest-zero-unchecked content))
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
       #/w- eds
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
@@ -4189,20 +4266,9 @@
                     (extended-with-top-dim-sys uds)))))
             shape)
           (extend-selection hn-extended)
-          (fn hole shape-data snippet-data
-            (hvv-to-maybe-v
-              (snippet-sys-morphism-sys-morph-snippet
-                (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-                  (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
-                    (dim-sys-morphism-sys-chain-two
-                      (unextend-with-top-dim-sys-morphism-sys
-                        (extended-with-top-finite-dim-sys uds))
-                      (unextend-with-top-dim-sys-morphism-sys uds))))
-                hole)
-              shape-data
-              snippet-data)))
+          extended-hvv-to-maybe-v)
       #/fn result-extended
-        (hypernest-unchecked d result-extended)))))
+        (hypernest-nonzero-unchecked d result-extended)))))
 (define-match-expander-attenuated
   attenuated-hypernest-snippet-sys
   unguarded-hypernest-snippet-sys
@@ -4226,12 +4292,11 @@
         (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
     any/c)
   (dlogr 'zc10
-  #/dissect ss
-    (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
-  #/dissect hn (hypernest-unchecked d hn-extended)
-  
   #/dissect ss (hypernest-snippet-sys sfs uds)
-  #/dissect hn (hypernest-unchecked d hn-extended)
+  #/mat hn (hypernest-zero-unchecked content)
+    (dissect (snippet-sys-snippet->maybe-shape ss hn) (just shape)
+      shape)
+  #/dissect hn (hypernest-nonzero-unchecked d hn-extended)
   #/w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- ess (functor-sys-apply-to-object ffdstsss eds)
@@ -4245,7 +4310,7 @@
   #/dlogr 'zc11 ss hn-unextended
   #/dissect
     (snippet-sys-snippet->maybe-shape ss
-      (hypernest-unchecked d hn-unextended))
+      (hypernest-nonzero-unchecked d hn-unextended))
     (just shape)
     shape))
 
@@ -4440,12 +4505,12 @@
       (extend-with-top-dim-sys-morphism-sys
         (extended-with-top-dim-sys uds)))
   #/mat coil (hypernest-coil-zero)
-    (hypernest-unchecked (dim-sys-dim-zero uds)
-      (unguarded-hypertee-furl eds #/hypertee-coil-zero))
+    (hypernest-zero-unchecked
+      (unguarded-hypertee-furl uds #/hypertee-coil-zero))
   #/mat coil
     (hypernest-coil-hole overall-degree hole data tails-hypertee)
     (dlog 'l1.1 overall-degree tails-hypertee
-    #/hypernest-unchecked overall-degree
+    #/hypernest-nonzero-unchecked overall-degree
       (dlogr 'l1.2
       #/unguarded-hypertee-furl eds #/hypertee-coil-hole
         (extended-with-top-dim-infinite)
@@ -4456,13 +4521,15 @@
           (dlog 'l1.4
           #/hypertee-map-dim extend-dim tails-hypertee)
           (fn hole tail
-            (dissect tail (hypernest-unchecked _ tail-extended)
+            (dissect tail
+              (hypernest-nonzero-unchecked _ tail-extended)
               tail-extended)))))
   #/dissect coil
     (hypernest-coil-bump
       overall-degree data bump-degree tails-hypernest)
     (dlog 'l1.5
-    #/dissect tails-hypernest (hypernest-unchecked _ tails-extended)
+    #/dissect tails-hypernest
+      (hypernest-nonzero-unchecked _ tails-extended)
     #/dlog 'l1.6
     #/dissect
       (if (dim-sys-dim=0? uds bump-degree)
@@ -4499,12 +4566,13 @@
           (extended-with-top-dim-infinite))
         (snippet-sys-snippet-map ehtss truncated-tails-shape
           (fn hole tail
-            (dissect tail (hypernest-unchecked _ tail-extended)
+            (dissect tail
+              (hypernest-nonzero-unchecked _ tail-extended)
               tail-extended)))
         interior)
     #/dlog 'l1.9 data
     #/3:dlog 'zo4
-    #/hypernest-unchecked overall-degree
+    #/hypernest-nonzero-unchecked overall-degree
       (hypertee-furl eds #/attenuated-hypertee-coil-hole eds
         (extended-with-top-dim-infinite)
         (snippet-sys-snippet-map ehtss tails-assembled #/fn hole tail
@@ -4514,13 +4582,13 @@
 
 (define (hypernest-get-coil hn)
   (dlog 'n2 hn (hypernest-get-dim-sys hn)
+  #/mat hn (hypernest-zero-unchecked content)
+    (dissect content (unguarded-hypertee-furl _ #/hypertee-coil-zero)
+    #/hypernest-coil-zero)
   #/dissect hn
-    (hypernest-unchecked overall-degree
+    (hypernest-nonzero-unchecked overall-degree
       (unguarded-hypertee-furl eds hn-extended-coil))
   #/dlog 'n2.0.1
-  #/mat hn-extended-coil (hypertee-coil-zero)
-    (hypernest-coil-zero)
-  #/dlog 'n2.0.2
   #/dissect hn-extended-coil
     (hypertee-coil-hole (extended-with-top-dim-infinite)
       hole data tails)
@@ -4550,7 +4618,7 @@
         (hypertee-map-dim unextend-dim tails)
         (fn hole tail
           (dlog 'n2.1
-          #/hypernest-unchecked overall-degree tail))))
+          #/hypernest-nonzero-unchecked overall-degree tail))))
   #/dissect half-extended-hole-degree (extended-with-top-dim-infinite)
     (dlog 'n2.0.2 tails
     #/dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone ehtss tails)
@@ -4566,11 +4634,11 @@
     #/dlog 'n2.0.5
     #/w- interior-hypernest
       (dlogr 'n2.0.7.0.2 bump-degree interior
-      #/hypernest-unchecked
+      #/hypernest-nonzero-unchecked
         (dim-sys-dim-max uds overall-degree bump-degree)
         interior)
     #/dissect
-      (dlog 'n2.0.7 hnss ; (hypernest-unchecked interior)
+      (dlog 'n2.0.7 hnss ; interior-hypernest
       #/if (dim-sys-dim=0? uds bump-degree)
         (just interior-hypernest)
       #/snippet-sys-snippet-zip-map hnss
@@ -4581,7 +4649,7 @@
           (dlog 'n2.0.7.1 overall-degree
           #/dissect interior-data (trivial)
           #/dlog 'n2.0.7.2 tail
-          #/just #/hypernest-unchecked overall-degree tail)))
+          #/just #/hypernest-nonzero-unchecked overall-degree tail)))
       (just tails-hypernest)
     #/dlog 'n2.0.8
     #/hypernest-coil-bump
