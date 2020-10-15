@@ -112,9 +112,10 @@
   dim-sys-morphism-sys-replace-target dim-sys-morphism-sys-source
   dim-sys-morphism-sys-target extended-with-top-dim-sys
   extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
-  extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
-  fin-multiplied-dim fin-multiplied-dim-sys
-  fin-times-dim-sys-morphism-sys fin-untimes-dim-sys-morphism-sys
+  extended-with-top-dim-infinite extended-with-top-finite-dim-sys
+  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
+  fin-multiplied-dim-sys fin-times-dim-sys-morphism-sys
+  fin-untimes-dim-sys-morphism-sys
   functor-from-dim-sys-sys-apply-to-morphism
   natural-transformation-from-from-dim-sys-sys-apply-to-morphism
   unextend-with-top-dim-sys-morphism-sys)
@@ -1443,7 +1444,8 @@
       ; already, but we only check its first-order part.
       ;
       #/snippet-sys-snippet-all? ss v #/fn hole data
-        (w- value/c
+        (dlog 'zr1 h-to-value/c hole
+        #/w- value/c
           (coerce-contract 'snippet-sys-snippetof #/h-to-value/c hole)
         #/contract-first-order-passes? value/c data)))
   #/make-contract #:name name #:first-order first-order
@@ -3935,7 +3937,7 @@
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (hypernest/c sfs uds)
-  (w- ess (hypernest-selective-snippet-sys sfs uds)
+  (w- ess (hypernest-extended-snippet-sys sfs uds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/rename-contract
     (and/c (match/c hypernest-unchecked (dim-sys-dim/c uds) any/c)
@@ -3945,7 +3947,7 @@
       (and/c
         (snippet-sys-snippet-with-degree=/c ess
           (extended-with-top-dim-infinite))
-        (snippet-sys-snippetof selective-ess #/fn hole
+        (snippet-sys-snippetof ess #/fn hole
           (mat (snippet-sys-snippet-degree shape-ess hole)
             (extended-with-top-dim-finite
               (extended-with-top-dim-finite hole-d))
@@ -3958,7 +3960,7 @@
           #/dissect undone-result
             (list
               (extended-with-top-dim-finite
-                (extended-with-top-dim-finite d))
+                (extended-with-top-dim-infinite))
               interior-shape
               (trivial))
             any/c))))
@@ -4043,7 +4045,7 @@
             (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
               (dim-sys-morphism-sys-chain-two
                 (unextend-with-top-dim-sys-morphism-sys
-                  (extended-with-top-dim-sys uds))
+                  (extended-with-top-finite-dim-sys uds))
                 (unextend-with-top-dim-sys-morphism-sys uds))))
           shape)))
     ; snippet-sys-snippet-set-degree-maybe
@@ -4076,9 +4078,7 @@
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
-      #/hypernest-unchecked
-        (extended-with-top-dim-finite
-          (extended-with-top-dim-finite degree))
+      #/hypernest-unchecked degree
         (just-value #/snippet-sys-snippet-set-degree-maybe ess
           (extended-with-top-dim-infinite)
           (snippet-sys-morphism-sys-morph-snippet
@@ -4097,6 +4097,7 @@
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/dlog 'zq2
       #/maybe-map (snippet-sys-snippet-undone ess hn-extended)
       #/dissectfn (list (extended-with-top-dim-infinite) shape data)
         (list
@@ -4106,7 +4107,7 @@
               (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                 (dim-sys-morphism-sys-chain-two
                   (unextend-with-top-dim-sys-morphism-sys
-                    (extended-with-top-dim-sys uds))
+                    (extended-with-top-finite-dim-sys uds))
                   (unextend-with-top-dim-sys-morphism-sys uds))))
             shape)
           data)))
@@ -4130,8 +4131,9 @@
               data
               (unselected data))))
       #/maybe-map
-        (snippet-sys-snippet-splice ess hn-selected #/fn hole data
-          (expect
+        (snippet-sys-snippet-splice ess hn-extended #/fn hole data
+          (dlog 'zq1
+          #/expect
             (dim-sys-dim<? eds
               (snippet-sys-snippet-degree shape-ess hole)
               (extended-with-top-dim-finite
@@ -4145,7 +4147,7 @@
                   (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                     (dim-sys-morphism-sys-chain-two
                       (unextend-with-top-dim-sys-morphism-sys
-                        (extended-with-top-dim-sys uds))
+                        (extended-with-top-finite-dim-sys uds))
                       (unextend-with-top-dim-sys-morphism-sys uds))))
                 hole)
               data)
@@ -4193,13 +4195,13 @@
                   (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                     (dim-sys-morphism-sys-chain-two
                       (unextend-with-top-dim-sys-morphism-sys
-                        (extended-with-top-dim-sys uds))
+                        (extended-with-top-finite-dim-sys uds))
                       (unextend-with-top-dim-sys-morphism-sys uds))))
                 hole)
               shape-data
               snippet-data)))
       #/fn result-extended
-        (hypernest-unchecked d result-extended))))))
+        (hypernest-unchecked d result-extended)))))
 (define-match-expander-attenuated
   attenuated-hypernest-snippet-sys
   unguarded-hypernest-snippet-sys
@@ -4419,7 +4421,7 @@
     any/c)
   (dlog 'l1
   #/w- uds dim-sys
-  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys eds)
+  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- ehtss (hypertee-snippet-sys eds)
   #/w- extend-dim
     (dim-sys-morphism-sys-chain-two
@@ -4434,7 +4436,7 @@
     (dlog 'l1.1 overall-degree tails-hypertee
     #/hypernest-unchecked overall-degree
       (dlogr 'l1.2
-      #/unguarded-hypertee-furl #/hypertee-coil-hole
+      #/unguarded-hypertee-furl eds #/hypertee-coil-hole
         (extended-with-top-dim-infinite)
         (hypertee-map-dim extend-dim hole)
         data
@@ -4470,7 +4472,7 @@
     #/dlog 'l1.8
     #/3:dlog 'zo1 data
     #/w- interior
-      (snippet-sys-snippet-map-selective ehtss tails-extended
+      (snippet-sys-snippet-map-selective ehtss
         ; TODO: We're computing this once already, during the
         ; computation of `truncated-tails-shape`. Let's deduplicate
         ; this effort.
@@ -4520,10 +4522,10 @@
   #/w- unextend-dim
     (dim-sys-morphism-sys-chain-two
       (unextend-with-top-dim-sys-morphism-sys
-        (extended-with-top-dim-sys uds))
+        (extended-with-top-finite-dim-sys uds))
       (unextend-with-top-dim-sys-morphism-sys uds))
   #/dlog 'n2.0.4
-  #/dissect (snippet-sys-snippet-degree emhtss tails)
+  #/dissect (snippet-sys-snippet-degree ehtss tails)
     (extended-with-top-dim-finite half-extended-hole-degree)
   #/dlog 'n2.0.5
   #/mat half-extended-hole-degree
@@ -4547,7 +4549,7 @@
         tails
         interior)
     #/dlog 'n2.0.3
-    #/dissect (snippet-sys-snippet-degree emhtss tails)
+    #/dissect (snippet-sys-snippet-degree ehtss tails)
       (extended-with-top-dim-finite
         (extended-with-top-dim-finite bump-degree))
     #/dlog 'n2.0.5
@@ -4839,8 +4841,10 @@
           (not should-be-labeled)
           ; TODO NOW: Remove this condition if we're not using it.
 ;          #;
+          #;
           (dim-sys-dim<? ds (snippet-sys-snippet-degree htss hole)
             bump-degree)
+          #f
           data
           (snippet-sys-snippet-done hnss current-d hole data))))
   #/mat bracket (hnb-labeled hole-degree data)
