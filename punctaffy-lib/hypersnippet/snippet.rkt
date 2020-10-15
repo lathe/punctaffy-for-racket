@@ -13,7 +13,7 @@
 (define-for-syntax debugging-with-prints-for-get-brackets
   debugging-in-inexpensive-ways)
 (define-for-syntax debugging-with-prints-for-hypernest-furl
-  #t #;debugging-in-inexpensive-ways)
+  debugging-in-inexpensive-ways)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)
@@ -4032,6 +4032,7 @@
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/dlogr 'zs1
       #/maybe-map (snippet-sys-snippet->maybe-shape ess hn-extended)
       #/fn shape
         (dissect
@@ -4214,7 +4215,16 @@
   attenuated-hypernest-snippet-sys
   attenuated-hypernest-snippet-sys)
 
-(define (hypernest-shape ss hn)
+; TODO NOW: Revert this to a `define` rather than a `define/contract`.
+(define/contract (hypernest-shape ss hn)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss hypernest-snippet-sys?]
+        [hn (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss)
+        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
+    any/c)
   (dlogr 'zc10
   #/dissect ss
     (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
@@ -4232,8 +4242,9 @@
           (extended-with-top-dim-infinite))
         hn-extended))
     (just hn-unextended)
+  #/dlogr 'zc11 ss hn-unextended
   #/dissect
-    (snippet-sys-snippet->maybe-shape ess
+    (snippet-sys-snippet->maybe-shape ss
       (hypernest-unchecked d hn-unextended))
     (just shape)
     shape))

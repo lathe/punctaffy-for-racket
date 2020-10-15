@@ -187,9 +187,9 @@
       (hypernest-get-brackets hn))
     sample))
 
-; TODO NOW: Uncomment the following, which have been working.
-#|
+; TODO NOW: Uncomment the following, which haven't been working.
 (check-brackets-round-trip sample-0)
+#|
 (check-brackets-round-trip sample-closing-1)
 (check-brackets-round-trip sample-closing-2)
 (check-brackets-round-trip sample-closing-3a)
@@ -340,9 +340,8 @@
   "Joining hypernests to cancel out simple degree-1 holes with a degree-2 bump in between")
 
 |#
-; TODO NOW: Remove the following, which is one particularly simple
-; part of the below test that hasn't been working.
-; fails
+; TODO NOW: Turn the following simplifications of the below test into
+; unit tests of their own (just to check they don't raise exceptions).
 #;
   (hn-bracs ds 2
     (hnb-open 2 'a)
@@ -352,7 +351,6 @@
     0
     0
     (hnb-labeled 0 'c))
-; fails
 #;
   (hn-bracs ds 2
     (hnb-open 2 'a)
@@ -360,7 +358,6 @@
     0
     0
     (hnb-labeled 0 'c))
-; succeeded, 24m10.171s
 #;
   (hn-bracs ds 2
     (hnb-open 2 'a)
@@ -368,8 +365,7 @@
     (hnb-open 1 'b)
     0
     (hnb-labeled 0 'c))
-; failed, 3m5.561s
-;#;
+#;
   (hn-bracs ds 2
     (hnb-open 1 'a)
     (hnb-open 0 'b)
