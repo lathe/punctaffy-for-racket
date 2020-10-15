@@ -4112,12 +4112,94 @@
           data)))
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
-      ; TODO NOW NOW: Implement this.
-      (error "Unimplemented"))
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/dissect snippet (hypernest-unchecked d hn-extended)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/w- extend-selection
+        (fn hn-extended
+          (snippet-sys-snippet-map ess hn-extended #/fn hole data
+            (if
+              (dim-sys-dim<? eds
+                (snippet-sys-snippet-degree shape-ess hole)
+                (extended-with-top-dim-finite
+                  (extended-with-top-dim-infinite)))
+              data
+              (unselected data))))
+      #/maybe-map
+        (snippet-sys-snippet-splice ess hn-selected #/fn hole data
+          (expect
+            (dim-sys-dim<? eds
+              (snippet-sys-snippet-degree shape-ess hole)
+              (extended-with-top-dim-finite
+                (extended-with-top-dim-infinite)))
+            #t
+            (just #/unselected data)
+          #/maybe-map
+            (hv-to-splice
+              (snippet-sys-morphism-sys-morph-snippet
+                (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+                  (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                    (dim-sys-morphism-sys-chain-two
+                      (unextend-with-top-dim-sys-morphism-sys
+                        (extended-with-top-dim-sys uds))
+                      (unextend-with-top-dim-sys-morphism-sys uds))))
+                hole)
+              data)
+          #/fn splice
+            (mat splice (unselected data) (unselected data)
+            #/dissect splice
+              (selected #/hypernest-unchecked _ suffix-extended)
+              (selected #/extend-selection suffix-extended))))
+      #/fn result-extended
+        (hypernest-unchecked d result-extended)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
-      ; TODO NOW NOW: Implement this.
-      (error "Unimplemented")))))
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/dissect snippet (hypernest-unchecked d hn-extended)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/w- extend-selection
+        (fn hn-extended
+          (snippet-sys-snippet-map ess hn-extended #/fn hole data
+            (if
+              (dim-sys-dim<? eds
+                (snippet-sys-snippet-degree shape-ess hole)
+                (extended-with-top-dim-finite
+                  (extended-with-top-dim-infinite)))
+              data
+              (unselected data))))
+      #/maybe-map
+        (snippet-sys-snippet-zip-map-selective ess
+          (snippet-sys-morphism-sys-morph-snippet
+            (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+              (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                (dim-sys-morphism-sys-chain-two
+                  (extend-with-top-dim-sys-morphism-sys uds)
+                  (extend-with-top-dim-sys-morphism-sys
+                    (extended-with-top-dim-sys uds)))))
+            shape)
+          (extend-selection hn-extended)
+          (fn hole shape-data snippet-data
+            (hvv-to-maybe-v
+              (snippet-sys-morphism-sys-morph-snippet
+                (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+                  (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                    (dim-sys-morphism-sys-chain-two
+                      (unextend-with-top-dim-sys-morphism-sys
+                        (extended-with-top-dim-sys uds))
+                      (unextend-with-top-dim-sys-morphism-sys uds))))
+                hole)
+              shape-data
+              snippet-data)))
+      #/fn result-extended
+        (hypernest-unchecked d result-extended))))))
 (define-match-expander-attenuated
   attenuated-hypernest-snippet-sys
   unguarded-hypernest-snippet-sys
@@ -4327,12 +4409,6 @@
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
 ; TODO NOW: Revert this to a `define` rather than a `define/contract`.
-;
-; TODO NOW NOW: Change this to stop using the old
-; `hypernest-unchecked` representation. The old representation uses a
-; selective snippet with unselected holes for bumps, and the new one
-; uses a degree and a snippet with infinite-degree holes for bumps.
-;
 (define/contract (unguarded-fn-hypernest-furl dim-sys coil)
   (ifc debugging-with-contracts
     (->i
@@ -4343,149 +4419,85 @@
     any/c)
   (dlog 'l1
   #/w- uds dim-sys
-  #/w- mds (fin-multiplied-dim-sys 2 uds)
-  #/w- emds (extended-with-top-dim-sys mds)
-  #/w- emhtss (hypertee-snippet-sys emds)
+  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys eds)
+  #/w- ehtss (hypertee-snippet-sys eds)
   #/w- extend-dim
     (dim-sys-morphism-sys-chain-two
-      (fin-times-dim-sys-morphism-sys 2 uds #/fn d 0)
-      (extend-with-top-dim-sys-morphism-sys mds))
+      (extend-with-top-dim-sys-morphism-sys uds)
+      (extend-with-top-dim-sys-morphism-sys
+        (extended-with-top-dim-sys uds)))
   #/mat coil (hypernest-coil-zero)
-    (hypernest-unchecked #/selective-snippet-zero
-      (unguarded-hypertee-furl mds #/hypertee-coil-zero))
+    (hypernest-unchecked (dim-sys-dim-zero uds)
+      (unguarded-hypertee-furl eds #/hypertee-coil-zero))
   #/mat coil
     (hypernest-coil-hole overall-degree hole data tails-hypertee)
     (dlog 'l1.1 overall-degree tails-hypertee
-    #/hypernest-unchecked #/attenuated-selective-snippet-nonzero (hypertee-snippet-format-sys) mds
-      (fin-multiplied-dim 0 overall-degree)
+    #/hypernest-unchecked overall-degree
       (dlogr 'l1.2
-      #/unguarded-hypertee-furl emds #/attenuated-hypertee-coil-hole emds
+      #/unguarded-hypertee-furl #/hypertee-coil-hole
         (extended-with-top-dim-infinite)
         (hypertee-map-dim extend-dim hole)
-        (selected data)
+        data
         (dlog 'l1.3
-        #/snippet-sys-snippet-map emhtss
+        #/snippet-sys-snippet-map ehtss
           (dlog 'l1.4
           #/hypertee-map-dim extend-dim tails-hypertee)
           (fn hole tail
-            (dissect tail
-              (hypernest-unchecked #/selective-snippet-nonzero
-                (fin-multiplied-dim 0 _)
-                tail-selective)
-            #/snippet-sys-snippet-map-selective emhtss
-              (snippet-sys-snippet-select-if-degree< emhtss
-                (snippet-sys-snippet-degree emhtss hole)
-                tail-selective)
-            #/fn hole data
-              (dissect data (selected #/trivial)
-              #/trivial))))))
+            (dissect tail (hypernest-unchecked _ tail-extended)
+              tail-extended)))))
   #/dissect coil
     (hypernest-coil-bump
       overall-degree data bump-degree tails-hypernest)
     (dlog 'l1.5
-    #/dissect tails-hypernest
-      (hypernest-unchecked #/selective-snippet-nonzero _
-        tails-selective)
+    #/dissect tails-hypernest (hypernest-unchecked _ tails-extended)
     #/dlog 'l1.6
     #/dissect
       (if (dim-sys-dim=0? uds bump-degree)
         (just #/unguarded-hypertee-furl uds #/hypertee-coil-zero)
         (maybe-bind
-          (snippet-sys-snippet-filter-maybe emhtss tails-selective)
+          (snippet-sys-snippet-filter-maybe ehtss
+            (snippet-sys-snippet-select-if-degree< ehtss
+              (extended-with-top-dim-finite
+                (extended-with-top-dim-infinite))
+              tails-extended))
         #/fn tails-shape
         #/dlog 'l1.7
-        #/snippet-sys-snippet-set-degree-maybe emhtss
+        #/snippet-sys-snippet-set-degree-maybe ehtss
           (extended-with-top-dim-finite
-            (fin-multiplied-dim 0 bump-degree))
+            (extended-with-top-dim-finite bump-degree))
           tails-shape))
       (just truncated-tails-shape)
     #/dlog 'l1.8
     #/3:dlog 'zo1 data
+    #/w- interior
+      (snippet-sys-snippet-map-selective ehtss tails-extended
+        ; TODO: We're computing this once already, during the
+        ; computation of `truncated-tails-shape`. Let's deduplicate
+        ; this effort.
+        (snippet-sys-snippet-select-if-degree< ehtss
+          (extended-with-top-dim-finite
+            (extended-with-top-dim-infinite))
+          tails-extended)
+        (fn hole tail
+          (trivial)))
     #/w- tails-assembled
-      
-      ; We construct the overall hypertee to use as the representation
-      ; of the resulting hypernest.
-      ;
-      ; This hypertee begins with at least one hole, representing the
-      ; bump of the `hypernest-coil-bump` coil.
-      ;
-      ; It also contains other holes representing the rest of the
-      ; bumps and holes of the hypernest. We add in the rest of those
-      ; holes by using appropriate tails in a
-      ; `snippet-sys-snippet-join-selective`. The `tails-hypernest`
-      ; and each of the (hypernest) tails carried in its holes gives
-      ; us what we need for one of those (hypertee) tails.
-      ;
-      ; TODO: See if it's simpler to keep the tails as hypernests and
-      ; use them for a `(snippet-sys-snippet-join-selective hnss ...)`
-      ; instead.
-      ;
-      (dlog 'k1
-      #/snippet-sys-snippet-join-selective emhtss
-        (dlog 'k1.1
-        #/snippet-sys-snippet-done
-          emhtss
-          (extended-with-top-dim-infinite)
-          
-          ; We construct the shape of the hole that we're using to
-          ; represent the bump. This hole is shaped like a "done"
-          ; around the shape (`truncated-tails-shape`) of the bump's
-          ; interior.
-          ;
-          ; As expected by our `snippet-sys-snippet-join-selective`
-          ; call, the elements in the holes of this snippet are
-          ; `selectable?` values, and the selected ones are tail
-          ; snippets whose own holes contain
-          ; `(selectable/c any/c trivial?)` values.
-          ;
-          (dlog 'k1.2 emhtss
-          #/snippet-sys-snippet-done
-            emhtss
-            (extended-with-top-dim-finite
-              (fin-multiplied-dim 1 bump-degree))
-            (dlog 'k1.3
-            #/snippet-sys-snippet-map emhtss truncated-tails-shape
-              (fn hole tail
-                (3:dlog 'zo2 tail
-                #/w- prefix-d (snippet-sys-snippet-degree emhtss hole)
-                #/dissect tail
-                  (hypernest-unchecked
-                    (selective-snippet-nonzero _ tail))
-                #/selected
-                  (snippet-sys-snippet-map emhtss tail
-                    (fn hole selectable-tail-tail
-                      (mat selectable-tail-tail
-                        (unselected data)
-                        (unselected #/unselected data)
-                      #/dissect selectable-tail-tail
-                        (selected tail-tail)
-                      #/w- suffix-d
-                        (snippet-sys-snippet-degree emhtss hole)
-                      #/if (dim-sys-dim<? emds suffix-d prefix-d)
-                        (dissect tail-tail (trivial)
-                        #/selected #/trivial)
-                      #/unselected #/selected tail-tail))))))
-            (dlog 'k1.4
-            #/selected
-              (snippet-sys-snippet-map emhtss tails-selective
-                (fn hole selectable-tail
-                  (3:dlog 'zo3 selectable-tail
-                  #/mat selectable-tail (unselected data)
-                    (unselected #/unselected data)
-                  #/dissect selectable-tail (selected tail)
-                    (dissect (snippet-sys-snippet-degree emhtss hole)
-                      (extended-with-top-dim-finite
-                        (fin-multiplied-dim 0 hole-degree))
-                    #/if (dim-sys-dim<? uds hole-degree bump-degree)
-                      (selected #/trivial)
-                      (unselected #/selected tail)))))))
-          (unselected #/unselected data)))
-    
+      (snippet-sys-snippet-done ehtss
+        (extended-with-top-dim-finite
+          (extended-with-top-dim-infinite))
+        (snippet-sys-snippet-map ehtss truncated-tails-shape
+          (fn hole tail
+            (dissect tail (hypernest-unchecked _ tail-extended)
+              tail-extended)))
+        interior)
     #/dlog 'l1.9 data
     #/3:dlog 'zo4
-    #/hypernest-unchecked #/attenuated-selective-snippet-nonzero (hypertee-snippet-format-sys) mds
-      (fin-multiplied-dim 0 overall-degree)
-      tails-assembled)))
+    #/hypernest-unchecked overall-degree
+      (hypertee-furl eds #/attenuated-hypertee-coil-hole eds
+        (extended-with-top-dim-infinite)
+        (snippet-sys-snippet-map ehtss tails-assembled #/fn hole tail
+          (trivial))
+        data
+        tails-assembled))))
 
 (define (hypernest-get-coil hn)
   (dlog 'n2 hn (hypernest-get-dim-sys hn)
