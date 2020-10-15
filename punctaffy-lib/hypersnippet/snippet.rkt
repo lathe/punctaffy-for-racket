@@ -4487,41 +4487,36 @@
       (fin-multiplied-dim 0 overall-degree)
       tails-assembled)))
 
-; TODO NOW NOW: Change this to stop using the old
-; `hypernest-unchecked` representation. The old representation uses a
-; selective snippet with unselected holes for bumps, and the new one
-; uses a degree and a snippet with infinite-degree holes for bumps.
-;
 (define (hypernest-get-coil hn)
   (dlog 'n2 hn (hypernest-get-dim-sys hn)
-  #/dissect hn (hypernest-unchecked hn-selective)
+  #/dissect hn
+    (hypernest-unchecked overall-degree
+      (unguarded-hypertee-furl eds hn-extended-coil))
   #/dlog 'n2.0.1
-  #/mat hn-selective (selective-snippet-zero _)
+  #/mat hn-extended-coil (hypertee-coil-zero)
     (hypernest-coil-zero)
   #/dlog 'n2.0.2
-  #/dissect hn-selective
-    (selective-snippet-nonzero (fin-multiplied-dim 0 overall-degree)
-      (unguarded-hypertee-furl emds
-        (hypertee-coil-hole (extended-with-top-dim-infinite)
-          hole data tails)))
+  #/dissect hn-extended-coil
+    (hypertee-coil-hole (extended-with-top-dim-infinite)
+      hole data tails)
   #/dlog 'n2.0.3
-  #/dissect emds (extended-with-top-dim-sys mds)
-  #/dissect mds (fin-multiplied-dim-sys 2 uds)
+  #/dissect eds
+    (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- htss (hypertee-snippet-sys uds)
-  #/w- emhtss (hypertee-snippet-sys emds)
+  #/w- ehtss (hypertee-snippet-sys eds)
   #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
   #/w- unextend-dim
     (dim-sys-morphism-sys-chain-two
-      (unextend-with-top-dim-sys-morphism-sys mds)
-      (fin-untimes-dim-sys-morphism-sys 2 uds))
+      (unextend-with-top-dim-sys-morphism-sys
+        (extended-with-top-dim-sys uds))
+      (unextend-with-top-dim-sys-morphism-sys uds))
   #/dlog 'n2.0.4
   #/dissect (snippet-sys-snippet-degree emhtss tails)
-    (extended-with-top-dim-finite
-      (fin-multiplied-dim i bump-degree))
+    (extended-with-top-dim-finite half-extended-hole-degree)
   #/dlog 'n2.0.5
-  #/mat i 0
+  #/mat half-extended-hole-degree
+    (extended-with-top-dim-finite hole-degree)
     (dlog 'n2.0.1
-    #/dissect data (selected data)
     #/attenuated-hypernest-coil-hole uds
       overall-degree
       (hypertee-map-dim unextend-dim hole)
@@ -4530,48 +4525,25 @@
         (hypertee-map-dim unextend-dim tails)
         (fn hole tail
           (dlog 'n2.1
-          #/hypernest-unchecked #/attenuated-selective-snippet-nonzero (hypertee-snippet-format-sys) mds
-            (fin-multiplied-dim 0 overall-degree)
-            (dlog 'n2.2
-            #/snippet-sys-snippet-map-selective emhtss
-              ; TODO: See if this ever selects bumps. Figure out if it
-              ; should avoid selecting bumps somehow.
-              (snippet-sys-snippet-select-if-degree< emhtss
-                (extended-with-top-dim-finite
-                  (fin-multiplied-dim 0
-                    (snippet-sys-snippet-degree htss hole)))
-                tail)
-              (fn hole data
-                (dissect data (trivial)
-                #/selected #/trivial)))))))
-  #/dissect i 1
+          #/hypernest-unchecked overall-degree tail))))
+  #/dissect half-extended-hole-degree (extended-with-top-dim-infinite)
     (dlog 'n2.0.2 tails
-    #/dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone emhtss tails)
-      (just #/list _ tails interior)
+    #/dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone ehtss tails)
+      (just #/list
+        (extended-with-top-dim-finite
+          (extended-with-top-dim-infinite))
+        tails
+        interior)
     #/dlog 'n2.0.3
     #/dissect (snippet-sys-snippet-degree emhtss tails)
       (extended-with-top-dim-finite
-        (fin-multiplied-dim 0 bump-degree-again))
-    #/dlog 'n2.0.4
-    #/dissect (dlog 'h4 #/dim-sys-dim=? uds bump-degree bump-degree-again) #t
+        (extended-with-top-dim-finite bump-degree))
     #/dlog 'n2.0.5
-    #/dissect data (unselected data)
-    #/dlog 'n2.0.6
     #/w- interior-hypernest
       (dlogr 'n2.0.7.0.2 bump-degree interior
-      #/hypernest-unchecked #/attenuated-selective-snippet-nonzero
-        (hypertee-snippet-format-sys)
-        mds
-        (fin-multiplied-dim 0
-          (dim-sys-dim-max uds overall-degree bump-degree))
-        (snippet-sys-snippet-map-selective emhtss
-          (snippet-sys-snippet-select-if-degree< emhtss
-            (extended-with-top-dim-finite
-              (fin-multiplied-dim 0 bump-degree))
-            interior)
-          (fn hole data
-            (dissect data (trivial)
-            #/selected #/trivial))))
+      #/hypernest-unchecked
+        (dim-sys-dim-max uds overall-degree bump-degree)
+        interior)
     #/dissect
       (dlog 'n2.0.7 hnss ; (hypernest-unchecked interior)
       #/if (dim-sys-dim=0? uds bump-degree)
@@ -4584,21 +4556,7 @@
           (dlog 'n2.0.7.1 overall-degree
           #/dissect interior-data (trivial)
           #/dlog 'n2.0.7.2 tail
-          #/just
-            (hypernest-unchecked
-              (attenuated-selective-snippet-nonzero
-                (hypertee-snippet-format-sys)
-                mds
-                (fin-multiplied-dim 0 overall-degree)
-                (snippet-sys-snippet-map-selective emhtss
-                  (snippet-sys-snippet-select-if-degree< emhtss
-                    (extended-with-top-dim-finite
-                      (fin-multiplied-dim 0
-                        (snippet-sys-snippet-degree htss hole)))
-                    tail)
-                  (fn hole data
-                    (dissect data (trivial)
-                    #/selected #/trivial))))))))
+          #/just #/hypernest-unchecked overall-degree tail)))
       (just tails-hypernest)
     #/dlog 'n2.0.8
     #/hypernest-coil-bump
