@@ -2,7 +2,7 @@
 
 (require #/for-syntax racket/base)
 (require #/for-syntax racket/syntax)
-(define-for-syntax debugging-in-inexpensive-ways #t)
+(define-for-syntax debugging-in-inexpensive-ways #f)
 (define-for-syntax debugging-with-contracts
   debugging-in-inexpensive-ways)
 (define-for-syntax debugging-with-prints
@@ -4455,6 +4455,8 @@
               (snippet-sys-snippetof ss #/fn hole
                 (w- hole-d
                   (snippet-sys-snippet-degree shape-ss hole)
+                #/expect (dim-sys-dim<? ds hole-d bump-degree) #t
+                  any/c
                 
                 ; What this means is that this should be a snippet
                 ; whose low-degree holes correspond to the holes of
@@ -4556,7 +4558,7 @@
         ; this effort.
         (snippet-sys-snippet-select-if-degree< ehtss
           (extended-with-top-dim-finite
-            (extended-with-top-dim-infinite))
+            (extended-with-top-dim-finite bump-degree))
           tails-extended)
         (fn hole tail
           (trivial)))
@@ -4580,7 +4582,12 @@
         data
         tails-assembled))))
 
-(define (hypernest-get-coil hn)
+; TODO NOW: Revert this to a `define`.
+(define/contract (hypernest-get-coil hn)
+  (ifc debugging-with-contracts
+    (->i ([hn hypernest?])
+      [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])
+    any/c)
   (dlog 'n2 hn (hypernest-get-dim-sys hn)
   #/mat hn (hypernest-zero-unchecked content)
     (dissect content (unguarded-hypertee-furl _ #/hypertee-coil-zero)
@@ -4651,7 +4658,7 @@
           #/dlog 'n2.0.7.2 tail
           #/just #/hypernest-nonzero-unchecked overall-degree tail)))
       (just tails-hypernest)
-    #/dlog 'n2.0.8
+    #/dlog 'n2.0.8 overall-degree bump-degree tails tails-hypernest
     #/hypernest-coil-bump
       overall-degree data bump-degree tails-hypernest)))
 
@@ -4919,11 +4926,11 @@
           #;
           (not should-be-labeled)
           ; TODO NOW: Remove this condition if we're not using it.
-;          #;
           #;
           (dim-sys-dim<? ds (snippet-sys-snippet-degree htss hole)
             bump-degree)
-          #f
+;          #f
+          #t
           data
           (snippet-sys-snippet-done hnss current-d hole data))))
   #/mat bracket (hnb-labeled hole-degree data)
@@ -5290,9 +5297,10 @@
       (2:dlog 'zh4 current-d (hyperstack-dimension stack) (build-list (hyperstack-dimension stack) #/fn i #/hyperstack-peek stack i)
       #/hyperstack-and-hypernest-get-brackets
         stack orig-d bumps-allowed
-        #;tails-hypernest
+        tails-hypernest
         #;
         (snippet-sys-snippet-join hnss tails-hypernest)
+        #;
         (snippet-sys-snippet-join-selective-prefix hnss
           (snippet-sys-snippet-select hnss tails-hypernest
             (fn hole data
@@ -5304,6 +5312,12 @@
               ; equal.
               #/dissect (equal? should-be-labeled (not bumps-allowed))
                 #t
+              #/begin
+                ; TODO NOW: Remove this.
+                (when should-be-labeled
+                  (mat data (trivial)
+                    (error "hmm")
+                    (void)))
                 should-be-labeled))))
         ; TODO NOW: Remove this.
         #;

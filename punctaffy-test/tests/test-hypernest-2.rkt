@@ -187,9 +187,9 @@
       (hypernest-get-brackets hn))
     sample))
 
-; TODO NOW: Uncomment the following, which haven't been working.
-(check-brackets-round-trip sample-0)
+; TODO NOW: Uncomment the following, which have been working.
 #|
+(check-brackets-round-trip sample-0)
 (check-brackets-round-trip sample-closing-1)
 (check-brackets-round-trip sample-closing-2)
 (check-brackets-round-trip sample-closing-3a)
@@ -371,7 +371,7 @@
     (hnb-open 0 'b)
     0
     (hnb-labeled 0 'c))
-; TODO NOW: Uncomment the following, which hasn't been working.
+; TODO NOW: Uncomment the following, which has been working.
 #;
 (check-equal?
   (snippet-sys-snippet-join hnss #/hn-bracs ds 2
