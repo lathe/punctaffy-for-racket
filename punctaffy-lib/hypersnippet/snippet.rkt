@@ -1,7 +1,47 @@
 #lang parendown racket/base
 
-; TODO NOW: Remove these.
+; punctaffy/hypersnippet/snippet
+;
+; An interface for data structures that are hypersnippet-shaped.
+
+;   Copyright 2019, 2020 The Lathe Authors
+;
+;   Licensed under the Apache License, Version 2.0 (the "License");
+;   you may not use this file except in compliance with the License.
+;   You may obtain a copy of the License at
+;
+;       http://www.apache.org/licenses/LICENSE-2.0
+;
+;   Unless required by applicable law or agreed to in writing,
+;   software distributed under the License is distributed on an
+;   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+;   either express or implied. See the License for the specific
+;   language governing permissions and limitations under the License.
+
+
 (require #/for-syntax racket/base)
+
+; TODO: Consider writing some abstractions or organization techniques
+; that would help with the places marked as "NOTE DEBUGGABILITY" and
+; the more urgent "TODO DEBUGGABILITY".
+;
+; It's hard to overstate how much we should keep this debugging
+; scaffolding in place for the next time we need it.
+; Hypersnippet-related bugs are rather confusing, and they can involve
+; violations of rather intricate contracts -- contracts which
+; themselves rely on the very operations that might be buggy.
+;
+; Note that we usually won't want to activate all the debug
+; scaffolding at the same time. If we enable contract checking on
+; basic hypersnippet-processing operations like
+; `snippet-sys-snippet-map`, performance can degrade dramatically,
+; taking the tests in `punctaffy/tests/test-hypernest-2` from under a
+; minute to over two hours in length. Somewhat surprisingly, they
+; still terminate, but the recursive feedback between the contracts
+; and the operations they're protecting/using seems to lead to
+; diabolically long execution times.
+
+; NOTE DEBUGGABILITY: These are here for debugging.
 (require #/for-syntax #/only-in racket/syntax syntax-local-eval)
 (define-for-syntax debugging-in-inexpensive-ways #f)
 (define-for-syntax debugging-with-contracts
@@ -22,12 +62,14 @@
     #'then
     #'else))
 
-; TODO NOW: Remove these imports and all the places they're used.
+; NOTE DEBUGGABILITY: These are here for debugging, as are all the
+; `dlog` and `dlogr` calls throughout this file.
 ;
-; NOTE: We could also do `(require lathe-debugging/placebo)` instead
-; of defining this submodule, but that would introduce a package
-; dependency on `lathe-debugging`, which at this point still isn't a
-; published package.
+; NOTE DEBUGGABILITY: We could also do
+; `(require lathe-debugging/placebo)` instead of defining this
+; submodule, but that would introduce a package dependency on
+; `lathe-debugging`, which at this point still isn't a published
+; package.
 ;
 (module private/lathe-debugging/placebo racket/base
   (provide #/all-defined-out)
@@ -44,24 +86,6 @@
   (require #/prefix-in 3: 'private/lathe-debugging/placebo))
 (require #/for-syntax #/only-in racket/format ~a)
 (require #/only-in racket/contract/base contract)
-
-; punctaffy/hypersnippet/snippet
-;
-; An interface for data structures that are hypersnippet-shaped.
-
-;   Copyright 2019, 2020 The Lathe Authors
-;
-;   Licensed under the Apache License, Version 2.0 (the "License");
-;   you may not use this file except in compliance with the License.
-;   You may obtain a copy of the License at
-;
-;       http://www.apache.org/licenses/LICENSE-2.0
-;
-;   Unless required by applicable law or agreed to in writing,
-;   software distributed under the License is distributed on an
-;   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-;   either express or implied. See the License for the specific
-;   language governing permissions and limitations under the License.
 
 
 (require #/for-syntax racket/base)
@@ -145,13 +169,18 @@
 (provide #/contract-out
   [selected? (-> any/c boolean?)]
   [selected-value (-> selected? any/c)])
-; TODO NOW: Remove this.
+; TODO DEBUGGABILITY: Provide a contract-protected version instead.
+; We're currently defining this as a macro instead of a function, to
+; help with debugging this file, but when the debug scaffolding is
+; deactivated, this is unprotected.
 (provide
   snippet-sys-snippet-degree)
-; TODO NOW: Remove this.
+; TODO DEBUGGABILITY: Provide a contract-protected version instead.
+; See the note on the `snippet-sys-snippet-degree` macro export.
 (provide
   snippet-sys-snippet-done)
-; TODO NOW: Remove this.
+; TODO DEBUGGABILITY: Provide a contract-protected version instead.
+; See the note on the `snippet-sys-snippet-degree` macro export.
 (provide
   snippet-sys-snippet-splice)
 (provide #/contract-out
@@ -162,7 +191,9 @@
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
-  ; TODO NOW: Uncomment this.
+  ; TODO DEBUGGABILITY: Provide a contract-protected version like this
+  ; commented-out export instead. See the note on the
+  ; `snippet-sys-snippet-degree` macro export.
   #;
   [snippet-sys-snippet-degree
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
@@ -254,10 +285,15 @@
         [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss degree)
         (maybe/c #/snippet-sys-snippet-with-degree=/c ss degree)])]
+  
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
   ; shape in its low-degree holes.
-  ; TODO NOW: Uncomment this.
+  ;
+  ; TODO DEBUGGABILITY: Provide a contract-protected version like this
+  ; commented-out export instead. See the note on the
+  ; `snippet-sys-snippet-degree` macro export.
+  ;
   #;
   [snippet-sys-snippet-done
     (->i
@@ -291,7 +327,9 @@
           (snippet-sys-snippet-with-degree=/c ss
             (snippet-sys-snippet-degree ss snippet))
           (snippet-sys-snippetof ss #/fn hole selected?))])]
-  ; TODO NOW: Uncomment this.
+  ; TODO DEBUGGABILITY: Provide a contract-protected version like this
+  ; commented-out export instead. See the note on the
+  ; `snippet-sys-snippet-degree` macro export.
   #;
   [snippet-sys-snippet-splice
     (->i
@@ -1174,9 +1212,9 @@
   prop:snippet-sys make-snippet-sys-impl-from-various-1
   'snippet-sys 'snippet-sys-impl (list))
 
-; TODO NOW: Remove this, and rename
-; `unguarded-snippet-sys-snippet-degree` to be
-; `snippet-sys-snippet-degree`.
+; NOTE DEBUGGABILITY: This is here for debugging. If not for
+; debugging, we would rename `unguarded-snippet-sys-snippet-degree` to
+; be `snippet-sys-snippet-degree`.
 (define/contract (attenuated-fn-snippet-sys-snippet-degree ss snippet)
   (ifc debugging-with-contracts
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
@@ -1188,9 +1226,9 @@
     #`(dlog 'm1 #,(~a stx)
         (attenuated-fn-snippet-sys-snippet-degree ss snippet))))
 
-; TODO NOW: Remove this, and rename
-; `unguarded-snippet-sys-snippet-done` to be
-; `snippet-sys-snippet-done`.
+; NOTE DEBUGGABILITY: This is here for debugging. If not for
+; debugging, we would rename `unguarded-snippet-sys-snippet-done` to
+; be `snippet-sys-snippet-done`.
 (define/contract
   (attenuated-fn-snippet-sys-snippet-done ss degree shape data)
   (ifc debugging-with-contracts
@@ -1212,7 +1250,7 @@
         (attenuated-fn-snippet-sys-snippet-done
           ss degree shape data))))
 
-; TODO NOW: Remove this.
+; NOTE DEBUGGABILITY: This is here for debugging.
 (define/contract (attenuated-snippet-sys-snippet-undone ss snippet)
   (ifc debugging-with-contracts
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
@@ -1225,9 +1263,9 @@
     any/c)
   (snippet-sys-snippet-undone ss snippet))
 
-; TODO NOW: Remove this, and rename
-; `unguarded-snippet-sys-snippet-splice` to be
-; `snippet-sys-snippet-splice`.
+; NOTE DEBUGGABILITY: This is here for debugging. If not for
+; debugging, we would rename `unguarded-snippet-sys-snippet-splice` to
+; be `snippet-sys-snippet-splice`.
 (define/contract
   (attenuated-fn-snippet-sys-snippet-splice ss snippet hv-to-splice)
   (ifc debugging-with-expensive-splice-contract
@@ -1302,7 +1340,7 @@
     #/maybe-map (hv-to-maybe-v hole data) #/fn data
       (unselected data))))
 
-; TODO NOW: Revert this to a `define`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (snippet-sys-snippet-map ss snippet hv-to-v)
   (ifc debugging-with-expensive-map-contract
     (->i
@@ -1420,11 +1458,11 @@
     (fn v
       (and (contract-first-order-passes? snippet-contract v)
       
-      ; TODO NOW: Either fully verify that `v` is a valid hypersnippet
-      ; before we call `snippet-sys-snippet-all`, or use a variant of
-      ; `snippet-sys-snippet-all?` that doesn't mind if its input
-      ; isn't a valid hypersnippet. We do check the `snippet-contract`
-      ; already, but we only check its first-order part.
+      ; TODO: Extend the `snippet-sys?` interface with a method that
+      ; can perform a `snippet-sys-snippet-all?` like this, but that
+      ; gracefully returns `#f` if its input isn't a valid
+      ; hypersnippet, as long as its input passes the first-order
+      ; check of the hypersnippet contract. Then use that method here.
       ;
       #/snippet-sys-snippet-all? ss v #/fn hole data
         (dlog 'zr1 h-to-value/c hole
@@ -1467,12 +1505,13 @@
       (dlogr 'zg1
       #/and (contract-first-order-passes? snippet-contract v)
       
-      ; TODO NOW: Either fully verify that `v` is a valid hypersnippet
-      ; before we call `snippet-sys-snippet-select` and
-      ; `snippet-sys-snippet-zip-all-selective?`, or use variants of
-      ; those that don't mind if their input isn't a valid
-      ; hypersnippet. We do check the `snippet-contract` already, but
-      ; we only check its first-order part.
+      ; TODO: Extend the `snippet-sys?` interface with a method that
+      ; can perform a combination of
+      ; `snippet-sys-snippet-zip-all-selective?` and
+      ; `snippet-sys-snippet-select` like this, but that gracefully
+      ; returns `#f` if its input isn't a valid hypersnippet, as long
+      ; as its input passes the first-order check of the hypersnippet
+      ; contract. Then use that method here.
       ;
       #/snippet-sys-snippet-zip-all-selective? ss shape
         (snippet-sys-snippet-select ss v #/fn hole data
@@ -1531,7 +1570,7 @@
     (dim-sys-dim<? ds actual-degree degree)))
 
 ; TODO: Use the things that use this.
-; TODO NOW: Turn this `define-contract` back into a `define`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract
   (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
   (ifc debugging-with-contracts
@@ -1581,7 +1620,7 @@
     (just #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
-; TODO NOW: Turn this `define-contract` back into a `define`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (snippet-sys-snippet-join-selective ss snippet)
   (ifc debugging-with-contracts
     (->i
@@ -1623,7 +1662,7 @@
   (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
 ; TODO: Use the things that use this.
-; TODO NOW: Turn this `define-contract` back into a `define`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (snippet-sys-snippet-bind ss prefix hv-to-suffix)
   (ifc debugging-with-contracts
     (->i
@@ -1668,7 +1707,7 @@
     (selected #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
-; TODO NOW: Turn this `define-contract` back into a `define`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (snippet-sys-snippet-join ss snippet)
   (ifc debugging-with-contracts
     (->i
@@ -2263,10 +2302,8 @@
   (auto-write)
   (auto-equal))
 
-; TODO NOW: Remove this, and change the places that call
-; `attenuated-selective-snippet-nonzero` to call
-; `selective-snippet-nonzero` instead. Remove their `sfs` and `uds`
-; arguments.
+; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
+; unattenuated version, this one has extra `sfs` and `uds` arguments.
 (define/contract
   (attenuated-selective-snippet-nonzero sfs uds d content)
   (ifc debugging-with-contracts
@@ -3051,12 +3088,12 @@
   hypertee-coil-hole
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
 
-; TODO NOW: Remove this, and change the places that call
-; `attenuated-hypertee-coil-hole` to call `hypertee-coil-hole`
-; instead. We don't need to keep the `extended-with-top-dim-infinite`
-; error check around in any form; it's not a good check to make in
-; general, but it's helpful for diagnosing a particular bug we've come
-; across in the present tests.
+; NOTE DEBUGGABILITY: This is here for debugging.
+;
+; TODO NOW: Remove the `extended-with-top-dim-infinite` error check.
+; It's not a good check to make in general, but it was helpful once
+; for diagnosing a particular bug we came across in the tests.
+;
 (define/contract
   (attenuated-fn-hypertee-coil-hole ds overall-degree hole data tails)
   (ifc debugging-with-contracts
@@ -3163,13 +3200,12 @@
 ; `gen:custom-write`.
 (define-imitation-simple-struct
   (hypertee? hypertee-get-dim-sys hypertee-get-coil)
-  ; TODO NOW: While we debug this module, we've set up a system where
-  ; we currently rename this from `unguarded-hypertee-furl` to
+  ; NOTE DEBUGGABILITY: For debugging, we've set up a system where we
+  ; currently rename this from `unguarded-hypertee-furl` to
   ; `unguarded-hypertee-furl-orig` and define
   ; `unguarded-hypertee-furl` to be either the guarded version or the
   ; unguarded version (according to the
   ; `debugging-with-expensive-hypertee-furl-contract` branch below).
-  ; Change it back when the tests pass.
   unguarded-hypertee-furl-orig
   'hypertee (current-inspector) (auto-write) (auto-equal))
 ; TODO: We have a dilemma. The `define/contract` version of
@@ -3492,7 +3528,7 @@
         #/fn suffix
           (dlog 'e2.9
           #/snippet-sys-snippet-join-selective ss suffix))))
-    ; TODO NOW: Figure out why the following variation of
+    ; TODO: Figure out why the following variation of
     ; `snippet-sys-snippet-splice` was breaking.
     #;
     (fn ss snippet hv-to-splice
@@ -3535,9 +3571,11 @@
       #/dissect splice (selected suffix)
         (dlog 'e2.7 tails
         #/w- hole-d (snippet-sys-snippet-degree ss hole)
-        ; TODO NOW: Figure out why `maybe-bind` works here and
-        ; `dissect` doesn't. If there's a good reason, then let's use
-        ; `maybe-map` here in preference to `maybe-bind`.
+        ; TODO: This `dissect` is the place the errors occur when we
+        ; use this approach. Figure out what's going on here. It
+        ; doesn't appear that using `maybe-bind` helps here (although
+        ; it makes this a little closer to the working variation,
+        ; which uses `maybe-map` here).
         #/dissect
 ;        #/maybe-bind
           (if (dim-sys-dim=0? ds hole-d)
@@ -4157,7 +4195,7 @@
   attenuated-hypernest-snippet-sys
   attenuated-hypernest-snippet-sys)
 
-; TODO NOW: Revert this to a `define` rather than a `define/contract`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (hypernest-shape ss hn)
   (ifc debugging-with-contracts
     (->i
@@ -4213,8 +4251,8 @@
   hypernest-coil-bump
   'hypernest-coil-bump (current-inspector) (auto-write) (auto-equal))
 
-; TODO NOW: Replace uses of this with `hypernest-coil-hole`, and
-; remove the `ds` argument.
+; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
+; unattenuated version, this one has an extra `ds` argument.
 (define/contract
   (attenuated-hypernest-coil-hole
     ds overall-degree hole data tails-hypertee)
@@ -4360,7 +4398,7 @@
                     (fn hole shape-data subject-data trivial?)))))))))
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
-; TODO NOW: Revert this to a `define` rather than a `define/contract`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (unguarded-fn-hypernest-furl dim-sys coil)
   (ifc debugging-with-contracts
     (->i
@@ -4454,7 +4492,7 @@
         data
         tails-assembled))))
 
-; TODO NOW: Revert this to a `define`.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
 (define/contract (hypernest-get-coil hn)
   (ifc debugging-with-contracts
     (->i ([hn hypernest?])
@@ -4774,8 +4812,9 @@
         err-name err-normalize-bracket orig-brackets ds stack orig-d
         bumps-allowed brackets-remaining)
     #/dlog 'ze1 brackets-remaining brackets recursive-result
-    ; TODO NOW: Remove this commented-out version that uses
-    ; `hypernest-furl` instead of `unguarded-hypernest-furl`.
+    ; TODO DEBUGGABILITY: Come up with a way to automatically change
+    ; this to a `hypernest-furl` call when we activate one of the
+    ; debugging modes. For now, it's just a commented-out alternative.
 ;    #/hypernest-furl ds #/hypernest-coil-bump
     #/unguarded-hypernest-furl ds #/hypernest-coil-bump
       current-d data bump-degree recursive-result)
