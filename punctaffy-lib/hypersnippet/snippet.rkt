@@ -4,7 +4,7 @@
 ;
 ; An interface for data structures that are hypersnippet-shaped.
 
-;   Copyright 2019 The Lathe Authors
+;   Copyright 2019, 2020 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -19,6 +19,78 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/for-syntax racket/base)
+
+; TODO: Consider writing some abstractions or organization techniques
+; that would help with the places marked as "NOTE DEBUGGABILITY" and
+; the more urgent "TODO DEBUGGABILITY".
+;
+; It's hard to overstate how much we should keep this debugging
+; scaffolding in place for the next time we need it.
+; Hypersnippet-related bugs are rather confusing, and they can involve
+; violations of rather intricate contracts -- contracts which
+; themselves rely on the very operations that might be buggy.
+;
+; Note that we usually won't want to activate all the debug
+; scaffolding at the same time. If we enable contract checking on
+; basic hypersnippet-processing operations like
+; `snippet-sys-snippet-map`, performance can degrade dramatically,
+; taking the tests in `punctaffy/tests/test-hypernest-2` from under a
+; minute to over two hours in length. Somewhat surprisingly, they
+; still terminate, but the recursive feedback between the contracts
+; and the operations they're protecting/using seems to lead to
+; diabolically long execution times.
+
+; NOTE DEBUGGABILITY: These are here for debugging.
+(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
+(define-for-syntax debugging-in-inexpensive-ways #f)
+(define-for-syntax debugging-with-contracts
+  debugging-in-inexpensive-ways)
+(define-for-syntax debugging-with-prints
+  debugging-in-inexpensive-ways)
+(define-for-syntax debugging-with-expensive-splice-contract #f)
+(define-for-syntax debugging-with-expensive-map-contract #f)
+(define-for-syntax debugging-with-expensive-hypertee-furl-contract #f)
+(define-for-syntax debugging-with-prints-for-get-brackets
+  debugging-in-inexpensive-ways)
+(define-for-syntax debugging-with-prints-for-hypernest-furl
+  debugging-in-inexpensive-ways)
+(define-syntax (ifc stx)
+  (syntax-protect
+  #/syntax-case stx () #/ (_ condition then else)
+  #/if (syntax-local-eval #'condition)
+    #'then
+    #'else))
+
+; NOTE DEBUGGABILITY: These are here for debugging, as are all the
+; `dlog` and `dlogr` calls throughout this file.
+;
+; NOTE DEBUGGABILITY: We could also do
+; `(require lathe-debugging/placebo)` instead of defining this
+; submodule, but that would introduce a package dependency on
+; `lathe-debugging`, which at this point still isn't a published
+; package.
+;
+(module private/lathe-debugging/placebo racket/base
+  (provide #/all-defined-out)
+  (define-syntax-rule (dlog value ... body) body)
+  (define-syntax-rule (dlogr value ... body) body))
+(ifc debugging-with-prints
+  (require lathe-debugging)
+  (require 'private/lathe-debugging/placebo))
+(ifc debugging-with-prints-for-get-brackets
+  (require #/prefix-in 2: lathe-debugging)
+  (require #/prefix-in 2: 'private/lathe-debugging/placebo))
+(ifc debugging-with-prints-for-hypernest-furl
+  (require #/prefix-in 3: lathe-debugging)
+  (require #/prefix-in 3: 'private/lathe-debugging/placebo))
+(require #/for-syntax #/only-in racket/format ~a)
+(require #/only-in racket/contract/base contract)
+
+
+(require #/for-syntax racket/base)
+(require #/for-syntax #/only-in syntax/parse expr syntax-parse)
+
 ; NOTE: The Racket documentation says `get/build-late-neg-projection`
 ; is in `racket/contract/combinator`, but it isn't. It's in
 ; `racket/contract/base`. Since it's also in `racket/contract` and the
@@ -27,17 +99,22 @@
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
   -> ->i and/c any/c contract? contract-name contract-out
-  flat-contract? flat-contract-predicate list/c none/c not/c or/c
+  flat-contract? flat-contract-predicate list/c listof none/c or/c
   rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract raise-blame-error)
+(require #/only-in racket/contract/region define/contract)
+(require #/only-in racket/match define-match-expander)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/contract by-own-method/c)
+(require #/only-in lathe-comforts/contract
+  by-own-method/c value-name-for-contract)
 (require #/only-in lathe-comforts/list list-map)
-(require #/only-in lathe-comforts/match match/c)
+(require #/only-in lathe-comforts/match
+  define-match-expander-attenuated
+  define-match-expander-from-match-and-make match/c)
 (require #/only-in lathe-comforts/maybe
   just just? just-value maybe? maybe-bind maybe/c maybe-if maybe-map
   nothing)
@@ -48,12 +125,10 @@
 (require #/only-in lathe-morphisms/in-fp/set
   makeshift-set-sys-from-contract)
 (require #/only-in lathe-morphisms/in-fp/category
-  functor-sys-apply-to-morphism functor-sys-apply-to-object
-  functor-sys/c functor-sys-impl?
+  functor-sys-apply-to-object functor-sys/c functor-sys-impl?
   make-category-sys-impl-from-chain-two
   make-functor-sys-impl-from-apply
   make-natural-transformation-sys-impl-from-apply
-  natural-transformation-sys-apply-to-morphism
   natural-transformation-sys/c natural-transformation-sys-chain-two
   natural-transformation-sys-identity natural-transformation-sys-impl?
   natural-transformation-sys-source natural-transformation-sys-target
@@ -65,15 +140,19 @@
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-category-sys dim-sys-category-sys? dim-sys-dim<?
   dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
-  dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max dim-sys-dim-zero
-  dim-sys-morphism-sys? dim-sys-morphism-sys-chain-two
-  dim-sys-morphism-sys-identity dim-sys-morphism-sys-morph-dim
-  dim-sys-morphism-sys-replace-source
+  dim-sys-0<dim/c dim-sys-dim</c dim-sys-dim=/c dim-sys-dim-max
+  dim-sys-dim-zero dim-sys-morphism-sys?
+  dim-sys-morphism-sys-chain-two dim-sys-morphism-sys-identity
+  dim-sys-morphism-sys-morph-dim dim-sys-morphism-sys-replace-source
   dim-sys-morphism-sys-replace-target dim-sys-morphism-sys-source
   dim-sys-morphism-sys-target extended-with-top-dim-sys
   extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
-  extended-with-top-dim-infinite extend-with-top-dim-sys-morphism-sys
-  fin-multiplied-dim fin-multiplied-dim-sys
+  extended-with-top-dim-infinite extended-with-top-finite-dim-sys
+  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
+  fin-multiplied-dim-sys fin-times-dim-sys-morphism-sys
+  fin-untimes-dim-sys-morphism-sys
+  functor-from-dim-sys-sys-apply-to-morphism
+  natural-transformation-from-from-dim-sys-sys-apply-to-morphism
   unextend-with-top-dim-sys-morphism-sys)
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
@@ -90,6 +169,20 @@
 (provide #/contract-out
   [selected? (-> any/c boolean?)]
   [selected-value (-> selected? any/c)])
+; TODO DEBUGGABILITY: Provide a contract-protected version instead.
+; We're currently defining this as a macro instead of a function, to
+; help with debugging this file, but when the debug scaffolding is
+; deactivated, this is unprotected.
+(provide
+  snippet-sys-snippet-degree)
+; TODO DEBUGGABILITY: Provide a contract-protected version instead.
+; See the note on the `snippet-sys-snippet-degree` macro export.
+(provide
+  snippet-sys-snippet-done)
+; TODO DEBUGGABILITY: Provide a contract-protected version instead.
+; See the note on the `snippet-sys-snippet-degree` macro export.
+(provide
+  snippet-sys-snippet-splice)
 (provide #/contract-out
   [selectable? (-> any/c boolean?)]
   [selectable/c (-> contract? contract? contract?)]
@@ -98,11 +191,15 @@
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
+  ; TODO DEBUGGABILITY: Provide a contract-protected version like this
+  ; commented-out export instead. See the note on the
+  ; `snippet-sys-snippet-degree` macro export.
+  #;
   [snippet-sys-snippet-degree
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])]
   [snippet-sys-snippet-with-degree/c
-    (-> snippet-sys? contract? contract?)]
+    (-> snippet-sys? flat-contract? contract?)]
   [snippet-sys-snippet-with-degree</c
     (->i
       (
@@ -134,9 +231,7 @@
       (
         [ss snippet-sys?]
         [shape (ss)
-          (snippet-sys-snippetof
-            (snippet-sys-shape-snippet-sys ss)
-            (fn hole trivial?))]
+          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [check-subject-hv? (ss)
           (->
             (snippet-sys-snippetof
@@ -178,10 +273,10 @@
             (snippet-sys-shape-snippet-sys ss)
           #/snippet-sys-snippet-degree ss snippet))])]
   ; TODO: See if the result contract should be more specific. The
-  ; should always exist if the given degree is equal to the degree
-  ; returned by `snippet-sys-snippet-undone`, and it should always
-  ; exist if the given degree is greater than that degree and that
-  ; degree is nonzero.
+  ; result should always exist if the given degree is equal to the
+  ; degree returned by `snippet-sys-snippet-undone`, and it should
+  ; always exist if the given degree is greater than that degree and
+  ; that degree is nonzero.
   [snippet-sys-snippet-set-degree-maybe
     (->i
       (
@@ -190,9 +285,16 @@
         [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss degree)
         (maybe/c #/snippet-sys-snippet-with-degree=/c ss degree)])]
+  
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
   ; shape in its low-degree holes.
+  ;
+  ; TODO DEBUGGABILITY: Provide a contract-protected version like this
+  ; commented-out export instead. See the note on the
+  ; `snippet-sys-snippet-degree` macro export.
+  ;
+  #;
   [snippet-sys-snippet-done
     (->i
       (
@@ -225,34 +327,48 @@
           (snippet-sys-snippet-with-degree=/c ss
             (snippet-sys-snippet-degree ss snippet))
           (snippet-sys-snippetof ss #/fn hole selected?))])]
+  ; TODO DEBUGGABILITY: Provide a contract-protected version like this
+  ; commented-out export instead. See the note on the
+  ; `snippet-sys-snippet-degree` macro export.
+  #;
   [snippet-sys-snippet-splice
     (->i
       (
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
-              [hole
+              [prefix-hole
                 (snippet-sys-snippetof
                   (snippet-sys-shape-snippet-sys ss)
                   (fn hole trivial?))]
               [data any/c])
-            [_ (hole)
-              (maybe/c #/selectable/c any/c
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              #/maybe/c #/selectable/c any/c
+                
                 ; What this means is that this should be a snippet
-                ; which contains a `selected` or `unselected` entry in
-                ; each hole, and its `selected` holes should
-                ; correspond to the holes of `hole` and contain
-                ; `trivial?` values.
+                ; whose low-degree holes correspond to the holes of
+                ; `prefix-hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
                 (and/c
                   (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippetof ss #/fn hole
-                    (selectable/c any/c trivial?))
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn hole subject-data #/selected? subject-data)
-                    (fn hole shape-data subject-data any/c))))])])
+                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                    (fn suffix-hole subject-data
+                      (w- suffix-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss suffix-hole)
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                    (fn hole shape-data subject-data trivial?))))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -276,6 +392,255 @@
             any/c
             maybe?)])
       [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])]
+  [snippet-sys-snippet-any?
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [check-hv? (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            boolean?)])
+      [_ boolean?])]
+  [snippet-sys-snippet-all?
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [check-hv? (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            boolean?)])
+      [_ boolean?])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
+  [snippet-sys-snippet-map-maybe
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-maybe-v (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            maybe?)])
+      [_ (ss snippet)
+        (maybe/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet)))])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
+  [snippet-sys-snippet-map
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-v (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            any/c)])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss snippet))])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
+  [snippet-sys-snippet-select
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [check-hv? (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            boolean?)])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss snippet))])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
+  [snippet-sys-snippet-select-if-degree
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [check-degree? (ss)
+          (-> (dim-sys-dim/c #/snippet-sys-dim-sys ss) boolean?)])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss snippet))])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
+  [snippet-sys-snippet-select-if-degree<
+    (->i
+      (
+        [ss snippet-sys?]
+        [degreee (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
+        [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss snippet))])]
+  [snippet-sys-snippet-bind-selective
+    (->i
+      (
+        [ss snippet-sys?]
+        [prefix (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-suffix (ss prefix)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss prefix)
+          #/->i
+            (
+              [prefix-hole
+                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [data any/c])
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              #/selectable/c any/c
+                
+                ; What this means is that this should be a snippet
+                ; whose low-degree holes correspond to the holes of
+                ; `prefix-hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
+                (and/c
+                  (snippet-sys-snippet-with-degree=/c ss d)
+                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                    (fn suffix-hole subject-data
+                      (w- suffix-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss suffix-hole)
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                    (fn hole shape-data subject-data trivial?))))])])
+      [_ (ss prefix)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss prefix)])]
+  [snippet-sys-snippet-join-selective
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c (snippet-sys-snippet/c ss)
+          #/by-own-method/c snippet
+          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/snippet-sys-snippetof ss #/fn prefix-hole
+            (w- prefix-hole-d
+              (snippet-sys-snippet-degree shape-ss prefix-hole)
+            #/by-own-method/c data
+            #/selectable/c any/c
+              
+              ; What this means is that this should be a snippet whose
+              ; low-degree holes correspond to the holes of
+              ; `prefix-hole` and contain `trivial?` values.
+              ;
+              ; TODO: See if we can factor out a
+              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+              ; something out of this.
+              ;
+              (and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                  (fn suffix-hole subject-data
+                    (w- suffix-hole-d
+                      (snippet-sys-snippet-degree
+                        shape-ss suffix-hole)
+                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                  (fn hole shape-data subject-data trivial?)))))])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss snippet)])]
+  [snippet-sys-snippet-bind
+    (->i
+      (
+        [ss snippet-sys?]
+        [prefix (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-suffix (ss prefix)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss prefix)
+          #/->i
+            (
+              [prefix-hole
+                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [data any/c])
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              
+              ; What this means is that this should be a snippet
+              ; whose low-degree holes correspond to the holes of
+              ; `prefix-hole` and contain `trivial?` values.
+              ;
+              ; TODO: See if we can factor out a
+              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+              ; something out of this.
+              ;
+              #/and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                  (fn suffix-hole subject-data
+                    (w- suffix-hole-d
+                      (snippet-sys-snippet-degree
+                        shape-ss suffix-hole)
+                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                  (fn hole shape-data subject-data trivial?)))])])
+      [_ (ss prefix)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss prefix)])]
+  [snippet-sys-snippet-join
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c (snippet-sys-snippet/c ss)
+          #/by-own-method/c snippet
+          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/snippet-sys-snippetof ss #/fn prefix-hole
+            (w- prefix-hole-d
+              (snippet-sys-snippet-degree shape-ss prefix-hole)
+            #/by-own-method/c data
+            
+            ; What this means is that this should be a snippet whose
+            ; low-degree holes correspond to the holes of
+            ; `prefix-hole` and contain `trivial?` values.
+            ;
+            ; TODO: See if we can factor out a
+            ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+            ; something out of this.
+            ;
+            #/and/c
+              (snippet-sys-snippet-with-degree=/c ss d)
+              (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                (fn suffix-hole subject-data
+                  (w- suffix-hole-d
+                    (snippet-sys-snippet-degree
+                      shape-ss suffix-hole)
+                  #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                (fn hole shape-data subject-data trivial?))))])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss snippet)])]
   [prop:snippet-sys (struct-type-property/c snippet-sys-impl?)]
   ; TODO: See if we can come up with a better name or interface for
   ; this.
@@ -348,28 +713,41 @@
           [ss snippet-sys?]
           [snippet (ss) (snippet-sys-snippet/c ss)]
           [hv-to-splice (ss snippet)
-            (w- d (snippet-sys-snippet-degree ss snippet)
+            (w- ds (snippet-sys-dim-sys ss)
+            #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+            #/w- d (snippet-sys-snippet-degree ss snippet)
             #/->i
               (
-                [hole
+                [prefix-hole
                   (snippet-sys-snippetof
                     (snippet-sys-shape-snippet-sys ss)
                     (fn hole trivial?))]
                 [data any/c])
-              [_ (hole)
-                (maybe/c #/selectable/c any/c
+              [_ (prefix-hole)
+                (w- prefix-hole-d
+                  (snippet-sys-snippet-degree shape-ss prefix-hole)
+                #/maybe/c #/selectable/c any/c
+                  
                   ; What this means is that this should be a snippet
-                  ; which contains a `selected` or `unselected` entry
-                  ; in each hole, and its `selected` holes should
-                  ; correspond to the holes of `hole` and contain
-                  ; `trivial?` values.
+                  ; whose low-degree holes correspond to the holes of
+                  ; `prefix-hole` and contain `trivial?` values.
+                  ;
+                  ; TODO: See if we can factor out a
+                  ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                  ; something out of this.
+                  ;
                   (and/c
                     (snippet-sys-snippet-with-degree=/c ss d)
-                    (snippet-sys-snippetof ss #/fn hole
-                      (selectable/c any/c trivial?))
-                    (snippet-sys-snippet-zip-selective/c ss hole
-                      (fn hole subject-data #/selected? subject-data)
-                      (fn hole shape-data subject-data any/c))))])])
+                    (snippet-sys-snippet-zip-selective/c ss
+                      prefix-hole
+                      (fn suffix-hole subject-data
+                        (w- suffix-hole-d
+                          (snippet-sys-snippet-degree
+                            shape-ss suffix-hole)
+                        #/dim-sys-dim<?
+                          ds suffix-hole-d prefix-hole-d))
+                      (fn hole shape-data subject-data
+                        trivial?))))])])
         [_ (ss snippet)
           (maybe/c
             (snippet-sys-snippet-with-degree=/c ss
@@ -618,6 +996,176 @@
                 (snippet-format-sys-morphism-sys-target ms))))])
       functor-sys-impl?)])
 
+(module+ private/hypertee #/provide
+  hypertee-coil-zero)
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-coil-zero? (-> any/c boolean?)])
+(module+ private/hypertee #/provide
+  hypertee-coil-hole)
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-coil-hole? (-> any/c boolean?)]
+  [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
+  [hypertee-coil-hole-hole (-> hypertee-coil-hole? any/c)]
+  [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
+  [hypertee-coil-hole-tails (-> hypertee-coil-hole? any/c)])
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-coil/c (-> dim-sys? contract?)])
+(module+ private/hypertee #/provide
+  hypertee-furl)
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee? (-> any/c boolean?)]
+  [hypertee-get-dim-sys (-> hypertee? dim-sys?)]
+  [hypertee-get-coil
+    (->i ([ht hypertee?])
+      [_ (ht) (hypertee-coil/c #/hypertee-get-dim-sys ht)])]
+  [hypertee/c (-> dim-sys? contract?)])
+(module+ private/hypertee #/provide
+  hypertee-snippet-sys)
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-snippet-sys? (-> any/c boolean?)]
+  [hypertee-snippet-sys-dim-sys (-> hypertee-snippet-sys? dim-sys?)])
+(module+ private/hypertee #/provide
+  hypertee-snippet-format-sys)
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-snippet-format-sys? (-> any/c boolean?)])
+
+(module+ private/hypertee #/provide
+  htb-labeled)
+(module+ private/hypertee #/provide #/contract-out
+  [htb-labeled? (-> any/c boolean?)]
+  [htb-labeled-degree (-> htb-labeled? any/c)]
+  [htb-labeled-data (-> htb-labeled? any/c)])
+(module+ private/hypertee #/provide
+  htb-unlabeled)
+(module+ private/hypertee #/provide #/contract-out
+  [htb-unlabeled? (-> any/c boolean?)]
+  [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
+(module+ private/hypertee #/provide #/contract-out
+  [hypertee-bracket? (-> any/c boolean?)]
+  [hypertee-bracket/c (-> contract? contract?)]
+  [hypertee-bracket-degree (-> hypertee-bracket? any/c)]
+  [hypertee-from-brackets
+    (->i
+      (
+        [ds dim-sys?]
+        [degree (ds) (dim-sys-dim/c ds)]
+        [brackets (ds)
+          (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
+      [_ (ds) (hypertee/c ds)])]
+  [ht-bracs
+    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+      #:rest
+      [brackets (ds)
+        (w- dim/c (dim-sys-dim/c ds)
+        #/listof #/or/c (hypertee-bracket/c dim/c) dim/c)]
+      [_ (ds) (hypertee/c ds)])]
+  [hypertee-get-brackets
+    (->i ([ht hypertee?])
+      [_ (ht)
+        (w- ds (hypertee-get-dim-sys ht)
+        #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])])
+
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest? (-> any/c boolean?)]
+  [hypernest/c (-> snippet-format-sys? dim-sys? contract?)]
+  [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
+(module+ private/hypernest #/provide
+  hypernest-snippet-sys)
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-snippet-sys? (-> any/c boolean?)]
+  [hypernest-snippet-sys-snippet-format-sys
+    (-> hypernest-snippet-sys? snippet-format-sys?)]
+  [hypernest-snippet-sys-dim-sys
+    (-> hypernest-snippet-sys? dim-sys?)]
+  [hypernest-shape
+    (->i
+      (
+        [ss hypernest-snippet-sys?]
+        [hn (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss)
+        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])])
+
+(module+ private/hypernest #/provide
+  hypernest-coil-zero)
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-coil-zero? (-> any/c boolean?)])
+(module+ private/hypernest #/provide
+  hypernest-coil-hole)
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-coil-hole? (-> any/c boolean?)]
+  [hypernest-coil-hole-overall-degree (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-hole-hole (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-hole-data (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-hole-tails-hypertee
+    (-> hypernest-coil-hole? any/c)])
+(module+ private/hypernest #/provide
+  hypernest-coil-bump)
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-coil-bump? (-> any/c boolean?)]
+  [hypernest-coil-bump-overall-degree (-> hypernest-coil-bump? any/c)]
+  [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
+  [hypernest-coil-bump-bump-degree (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-bump-tails-hypernest
+    (-> hypernest-coil-hole? any/c)])
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-coil/c (-> dim-sys? contract?)])
+(module+ private/hypernest #/provide
+  hypernest-furl)
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-get-coil
+    (->i ([hn hypernest?])
+      [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])])
+
+(module+ private/hypernest #/provide
+  hnb-open)
+(module+ private/hypernest #/provide #/contract-out
+  [hnb-open? (-> any/c boolean?)]
+  [hnb-open-degree (-> hnb-open? any/c)]
+  [hnb-open-data (-> hnb-open? any/c)])
+(module+ private/hypernest #/provide
+  hnb-labeled)
+(module+ private/hypernest #/provide #/contract-out
+  [hnb-labeled? (-> any/c boolean?)]
+  [hnb-labeled-degree (-> hnb-labeled? any/c)]
+  [hnb-labeled-data (-> hnb-labeled? any/c)])
+(module+ private/hypernest #/provide
+  hnb-unlabeled)
+(module+ private/hypernest #/provide #/contract-out
+  [hnb-unlabeled? (-> any/c boolean?)]
+  [hnb-unlabeled-degree (-> hnb-unlabeled? any/c)])
+(module+ private/hypernest #/provide #/contract-out
+  [hypernest-bracket? (-> any/c boolean?)]
+  [hypernest-bracket/c (-> contract? contract?)]
+  [hypernest-bracket-degree (-> hypernest-bracket? any/c)]
+  [hypertee-bracket->hypernest-bracket
+    (-> hypertee-bracket? (or/c hnb-labeled? hnb-unlabeled?))]
+  [compatible-hypernest-bracket->hypertee-bracket
+    (-> (or/c hnb-labeled? hnb-unlabeled?) hypernest-bracket?)]
+  [hypernest-from-brackets
+    (->i
+      (
+        [ds dim-sys?]
+        [degree (ds) (dim-sys-dim/c ds)]
+        [brackets (ds)
+          (listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
+      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
+  [hn-bracs
+    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+      #:rest
+      [brackets (ds)
+        (w- dim/c (dim-sys-dim/c ds)
+        #/listof #/or/c (hypernest-bracket/c dim/c) dim/c)]
+      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
+  [hypernest-get-brackets
+    (->i ([hn hypernest?])
+      [_ (hn)
+        (w- ds (hypernest-get-dim-sys hn)
+        #/listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])])
+
+(module+ private/test #/provide
+  snippet-sys-snippet-filter-maybe)
+
+
 
 (define-imitation-simple-struct
   (unselected? unselected-value)
@@ -643,46 +1191,178 @@
        ,(contract-name unselected/c)
        ,(contract-name selected/c))))
 
+; TODO: See if we should export this.
+(define (selectable-map s v-to-v)
+  (mat s (unselected v) (unselected v)
+  #/dissect s (selected v) (selected #/v-to-v v)))
+
 
 (define-imitation-simple-generics snippet-sys? snippet-sys-impl?
   (#:method snippet-sys-snippet/c (#:this))
   (#:method snippet-sys-dim-sys (#:this))
   (#:method snippet-sys-shape-snippet-sys (#:this))
-  (#:method snippet-sys-snippet-degree (#:this) ())
+  (#:method unguarded-snippet-sys-snippet-degree (#:this) ())
   (#:method snippet-sys-shape->snippet (#:this) ())
   (#:method snippet-sys-snippet->maybe-shape (#:this) ())
   (#:method snippet-sys-snippet-set-degree-maybe (#:this) () ())
-  (#:method snippet-sys-snippet-done (#:this) () () ())
+  (#:method unguarded-snippet-sys-snippet-done (#:this) () () ())
   (#:method snippet-sys-snippet-undone (#:this) ())
-  (#:method snippet-sys-snippet-splice (#:this) () ())
+  (#:method unguarded-snippet-sys-snippet-splice (#:this) () ())
   (#:method snippet-sys-snippet-zip-map-selective (#:this) () () ())
   prop:snippet-sys make-snippet-sys-impl-from-various-1
   'snippet-sys 'snippet-sys-impl (list))
 
-; TODO: See if this should have the question mark in its name.
+; NOTE DEBUGGABILITY: This is here for debugging. If not for
+; debugging, we would rename `unguarded-snippet-sys-snippet-degree` to
+; be `snippet-sys-snippet-degree`.
+(define/contract (attenuated-fn-snippet-sys-snippet-degree ss snippet)
+  (ifc debugging-with-contracts
+    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
+    any/c)
+  (unguarded-snippet-sys-snippet-degree ss snippet))
+(define-syntax (snippet-sys-snippet-degree stx)
+  (syntax-case stx () #/ (_ ss snippet)
+    #`(dlog 'm1 #,(~a stx)
+        (attenuated-fn-snippet-sys-snippet-degree ss snippet))))
+
+; NOTE DEBUGGABILITY: This is here for debugging. If not for
+; debugging, we would rename `unguarded-snippet-sys-snippet-done` to
+; be `snippet-sys-snippet-done`.
+(define/contract
+  (attenuated-fn-snippet-sys-snippet-done ss degree shape data)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss snippet-sys?]
+        [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
+        [shape (ss degree)
+          (snippet-sys-snippet-with-degree</c
+            (snippet-sys-shape-snippet-sys ss)
+            degree)]
+        [data any/c])
+      [_ (ss degree) (snippet-sys-snippet-with-degree=/c ss degree)])
+    any/c)
+  (unguarded-snippet-sys-snippet-done ss degree shape data))
+(define-syntax (snippet-sys-snippet-done stx)
+  (syntax-case stx () #/ (_ ss degree shape data)
+    #`(dlog 'm3 #,(~a stx)
+        (attenuated-fn-snippet-sys-snippet-done
+          ss degree shape data))))
+
+; NOTE DEBUGGABILITY: This is here for debugging.
+(define/contract (attenuated-snippet-sys-snippet-undone ss snippet)
+  (ifc debugging-with-contracts
+    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss snippet)
+        (maybe/c #/list/c
+          (dim-sys-dim=/c (snippet-sys-dim-sys ss)
+            (snippet-sys-snippet-degree ss snippet))
+          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
+          any/c)])
+    any/c)
+  (snippet-sys-snippet-undone ss snippet))
+
+; NOTE DEBUGGABILITY: This is here for debugging. If not for
+; debugging, we would rename `unguarded-snippet-sys-snippet-splice` to
+; be `snippet-sys-snippet-splice`.
+(define/contract
+  (attenuated-fn-snippet-sys-snippet-splice ss snippet hv-to-splice)
+  (ifc debugging-with-expensive-splice-contract
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-splice (ss snippet)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/->i
+            (
+              [prefix-hole
+                (snippet-sys-snippetof
+                  (snippet-sys-shape-snippet-sys ss)
+                  (fn hole trivial?))]
+              [data any/c])
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              #/maybe/c #/selectable/c any/c
+                
+                ; What this means is that this should be a snippet
+                ; whose low-degree holes correspond to the holes of
+                ; `prefix-hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
+                (and/c
+                  (snippet-sys-snippet-with-degree=/c ss d)
+                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                    (fn suffix-hole subject-data
+                      (w- suffix-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss suffix-hole)
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                    (fn hole shape-data subject-data trivial?))))])])
+      [_ (ss snippet)
+        (maybe/c
+          (snippet-sys-snippet-with-degree=/c ss
+          #/snippet-sys-snippet-degree ss snippet))])
+    any/c)
+  (unguarded-snippet-sys-snippet-splice ss snippet hv-to-splice))
+(define-syntax (snippet-sys-snippet-splice stx)
+  (syntax-case stx () #/ (_ ss snippet hv-to-splice)
+    #`(dlog 'm4 #,(~a stx)
+        (attenuated-fn-snippet-sys-snippet-splice
+          ss snippet hv-to-splice))))
+
 ; TODO: See if we should have a way to implement this that doesn't
 ; involve constructing another snippet along the way, since we just
 ; end up ignoring it.
-; TODO: Export this.
 (define (snippet-sys-snippet-all? ss snippet check-hv?)
-  (just? #/snippet-sys-snippet-splice ss snippet #/fn hole data
-    (if (check-hv? hole data)
+  (dlog 'zn1 check-hv?
+  #/just? #/snippet-sys-snippet-splice ss snippet #/fn hole data
+    (dlog 'zn2
+    #/if (check-hv? hole data)
       (just #/unselected data)
       (nothing))))
 
-; TODO: Export this.
+; TODO: Use the things that use this.
+(define (snippet-sys-snippet-any? ss snippet check-hv?)
+  (not #/snippet-sys-snippet-all? ss snippet #/fn hole data
+    (not #/check-hv? hole data)))
+
 (define (snippet-sys-snippet-map-maybe ss snippet hv-to-maybe-v)
   (snippet-sys-snippet-splice ss snippet #/fn hole data
-    (maybe-map (hv-to-maybe-v hole data) #/fn data
+    (dlog 'o1 hv-to-maybe-v
+    #/maybe-map (hv-to-maybe-v hole data) #/fn data
       (unselected data))))
 
-; TODO: Export this.
-(define (snippet-sys-snippet-map ss snippet hv-to-v)
-  (just-value
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (snippet-sys-snippet-map ss snippet hv-to-v)
+  (ifc debugging-with-expensive-map-contract
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-v (ss)
+          (->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            any/c
+            any/c)])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss snippet))])
+    any/c)
+  (dlog 'd1
+  #/just-value
   #/snippet-sys-snippet-map-maybe ss snippet #/fn hole data
-    (just #/hv-to-v hole data)))
+    (dlog 'd1.1 hv-to-v
+    #/just #/hv-to-v hole data)))
 
-; TODO: Export this.
 (define (snippet-sys-snippet-select ss snippet check-hv?)
   (snippet-sys-snippet-map ss snippet #/fn hole data
     (if (check-hv? hole data)
@@ -693,18 +1373,30 @@
   (snippet-sys-snippet-select ss snippet #/fn hole data #t))
 
 ; TODO: See if this should have the question mark in its name.
+;
 ; TODO: Export this.
+;
+; TODO: See if the places that call this should also specify a
+; condition to check for the unselected holes. Currently, we just
+; accept the unselected holes regardless of what they contain.
+;
 (define
   (snippet-sys-snippet-zip-all-selective? ss shape snippet check-hvv?)
-  (expect
+  (w- snippet
+    (snippet-sys-snippet-map ss snippet #/fn hole data
+      (mat data (selected data) (selected data)
+      #/dissect data (unselected data)
+        (unselected #/unselected data)))
+  #/expect
     (snippet-sys-snippet-zip-map-selective ss shape snippet
     #/fn hole shape-data snippet-data
-      (just #/list shape-data snippet-data))
+      (just #/selected #/list shape-data snippet-data))
     (just zipped)
     #f
   #/snippet-sys-snippet-all? ss zipped #/fn hole data
-    (dissect data (list shape-data snippet-data)
-    #/check-hvv? shape-data snippet-data)))
+    (mat data (unselected data) #t
+    #/dissect data (selected #/list shape-data snippet-data)
+    #/check-hvv? hole shape-data snippet-data)))
 
 (define (snippet-sys-snippet-with-degree/c ss degree/c)
   (w- degree/c
@@ -712,26 +1404,36 @@
   #/w- name
     `(snippet-sys-snippet-with-degree/c ,ss ,(contract-name degree/c))
   #/w- snippet-contract (snippet-sys-snippet/c ss)
-  #/w- first-order
+  #/
+    (if (flat-contract? snippet-contract)
+      make-flat-contract
+      make-contract)
+    
+    #:name name
+    
+    #:first-order
     (fn v
       (and
         (contract-first-order-passes? snippet-contract v)
         (contract-first-order-passes? degree/c
           (snippet-sys-snippet-degree ss v))))
-  #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
     (fn blame
       (w- snippet-contract-projection
         (
           (get/build-late-neg-projection snippet-contract)
-          (blame-add-context blame "initial snippet check of"))
+          (blame-add-context blame "the initial snippet check of"))
       #/w- degree/c-projection
         (
           (get/build-late-neg-projection degree/c)
-          (blame-add-context blame "degree check of"))
+          (blame-add-context blame "the degree check of"))
       #/fn v missing-party
-        (w- v (snippet-contract-projection v missing-party)
+        (w- v
+          (w- next-v (snippet-contract-projection v missing-party)
+          #/if (flat-contract? snippet-contract)
+            v
+            next-v)
         #/begin
           (degree/c-projection (snippet-sys-snippet-degree ss v)
             missing-party)
@@ -741,13 +1443,13 @@
   (rename-contract
     (snippet-sys-snippet-with-degree/c ss
       (dim-sys-dim</c (snippet-sys-dim-sys ss) degree))
-    `(snippet-sy-ssnippet-with-degree</c ,ss ,degree)))
+    `(snippet-sys-snippet-with-degree</c ,ss ,degree)))
 
 (define (snippet-sys-snippet-with-degree=/c ss degree)
   (rename-contract
     (snippet-sys-snippet-with-degree/c ss
       (dim-sys-dim=/c (snippet-sys-dim-sys ss) degree))
-    `(snippet-sy-ssnippet-with-degree=/c ,ss ,degree)))
+    `(snippet-sys-snippet-with-degree=/c ,ss ,degree)))
 
 (define (snippet-sys-snippetof ss h-to-value/c)
   (w- name `(snippet-sys-snippetof ,ss ,h-to-value/c)
@@ -755,8 +1457,18 @@
   #/w- first-order
     (fn v
       (and (contract-first-order-passes? snippet-contract v)
+      
+      ; TODO: Extend the `snippet-sys?` interface with a method that
+      ; can perform a `snippet-sys-snippet-all?` like this, but that
+      ; gracefully returns `#f` if its input isn't a valid
+      ; hypersnippet, as long as its input passes the first-order
+      ; check of the hypersnippet contract. Then use that method here.
+      ;
       #/snippet-sys-snippet-all? ss v #/fn hole data
-        (contract-first-order-passes? (h-to-value/c hole) data)))
+        (dlog 'zr1 h-to-value/c hole
+        #/w- value/c
+          (coerce-contract 'snippet-sys-snippetof #/h-to-value/c hole)
+        #/contract-first-order-passes? value/c data)))
   #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
@@ -764,14 +1476,20 @@
       (w- snippet-contract-projection
         (
           (get/build-late-neg-projection snippet-contract)
-          (blame-add-context blame "initial snippet check of"))
+          (blame-add-context blame "the initial snippet check of"))
       #/fn v missing-party
-        (w- v (snippet-contract-projection v missing-party)
+        (dlog 'q1 ss h-to-value/c blame missing-party v
+        #/w- v (snippet-contract-projection v missing-party)
         #/snippet-sys-snippet-map ss v #/fn hole data
-          (
+          (dlog 'q2
+          #/w- value/c
+            (coerce-contract 'snippet-sys-snippetof
+              (h-to-value/c hole))
+          #/dlog 'q3 hole data value/c
+          #/
             (
-              (get/build-late-neg-projection #/h-to-value/c hole)
-              (blame-add-context blame "hole value of"))
+              (get/build-late-neg-projection value/c)
+              (blame-add-context blame "a hole value of"))
             data
             missing-party))))))
 
@@ -784,14 +1502,25 @@
   #/w- snippet-contract (snippet-sys-snippet/c ss)
   #/w- first-order
     (fn v
-      (and (contract-first-order-passes? snippet-contract v)
+      (dlogr 'zg1
+      #/and (contract-first-order-passes? snippet-contract v)
+      
+      ; TODO: Extend the `snippet-sys?` interface with a method that
+      ; can perform a combination of
+      ; `snippet-sys-snippet-zip-all-selective?` and
+      ; `snippet-sys-snippet-select` like this, but that gracefully
+      ; returns `#f` if its input isn't a valid hypersnippet, as long
+      ; as its input passes the first-order check of the hypersnippet
+      ; contract. Then use that method here.
+      ;
       #/snippet-sys-snippet-zip-all-selective? ss shape
         (snippet-sys-snippet-select ss v #/fn hole data
           (check-subject-hv? hole data))
       #/fn hole shape-data subject-data
-        (contract-first-order-passes?
-          (hvv-to-subject-v/c hole shape-data subject-data)
-          subject-data)))
+        (w- value/c
+          (coerce-contract 'snippet-sys-snippet-zip-selective/c
+            (hvv-to-subject-v/c hole shape-data subject-data))
+        #/contract-first-order-passes? value/c subject-data)))
   #/make-contract #:name name #:first-order first-order
     
     #:late-neg-projection
@@ -799,29 +1528,34 @@
       (w- snippet-contract-projection
         (
           (get/build-late-neg-projection snippet-contract)
-          (blame-add-context blame "initial snippet check of"))
+          (blame-add-context blame "the initial snippet check of"))
       #/fn v missing-party
-        (w- v (snippet-contract-projection v missing-party)
+        (dlog 'zg2 check-subject-hv?
+        #/dlog 'zg2.1 shape
+        #/dlog 'zg2.2 v
+        #/w- v (snippet-contract-projection v missing-party)
         #/expect
           (snippet-sys-snippet-zip-map-selective ss shape
             (snippet-sys-snippet-select ss v #/fn hole data
               (check-subject-hv? hole data))
           #/fn hole shape-data subject-data
-            (just #/
+            (w- value/c
+              (coerce-contract 'snippet-sys-snippet-zip-selective/c
+                (hvv-to-subject-v/c hole shape-data subject-data))
+            #/just #/
               (
-                (get/build-late-neg-projection
-                  (hvv-to-subject-v/c hole shape-data subject-data))
-                (blame-add-context blame "hole value of"))
+                (get/build-late-neg-projection value/c)
+                (blame-add-context blame "a hole value of"))
               subject-data
               missing-party))
           (just result)
-          (raise-blame-error blame #:missing-party missing-party v
+          (dlog 'zg3
+          #/raise-blame-error blame #:missing-party missing-party v
             '(expected: "~e" given: "~e")
             name v)
           result)))))
 
 
-; TODO: Export this.
 ; TODO: Use the things that use this.
 (define
   (snippet-sys-snippet-select-if-degree ss snippet check-degree?)
@@ -829,40 +1563,189 @@
   #/snippet-sys-snippet-select ss snippet #/fn hole data
     (check-degree? #/snippet-sys-snippet-degree shape-ss hole)))
 
-; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (snippet-sys-snippet-select-if-degree< ss degree snippet)
   (w- ds (snippet-sys-dim-sys ss)
   #/snippet-sys-snippet-select-if-degree ss snippet #/fn actual-degree
     (dim-sys-dim<? ds actual-degree degree)))
 
-; TODO: Export this.
 ; TODO: Use the things that use this.
-(define (snippet-sys-snippet-splice-sure ss snippet hv-to-splice)
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract
+  (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss snippet-sys?]
+        [prefix (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-suffix (ss prefix)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss prefix)
+          #/->i
+            (
+              [prefix-hole
+                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [data any/c])
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              #/selectable/c any/c
+                
+                ; What this means is that this should be a snippet
+                ; whose low-degree holes correspond to the holes of
+                ; `prefix-hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
+                (and/c
+                  (snippet-sys-snippet-with-degree=/c ss d)
+                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                    (fn suffix-hole subject-data
+                      (dlogr 'g1 prefix-hole suffix-hole
+                      #/w- suffix-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss suffix-hole)
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                    (fn hole shape-data subject-data trivial?))))])])
+      [_ (ss prefix)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss prefix)])
+    any/c)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/just-value #/snippet-sys-snippet-splice ss snippet #/fn hole data
-    (just #/hv-to-splice hole data)))
+  #/dlog 'd2 prefix
+  #/just-value #/dlog 'd2.1 #/snippet-sys-snippet-splice ss prefix #/fn hole data
+    (just #/hv-to-suffix hole data)))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
-(define (snippet-sys-snippet-bind ss prefix hv-to-suffix)
-  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/snippet-sys-snippet-splice-sure ss prefix #/fn hole data
-    (selected #/snippet-sys-snippet-select-if-degree< ss
-      (snippet-sys-snippet-degree shape-ss hole)
-      (hv-to-suffix hole data))))
-
-; TODO: Export this.
 ; TODO: Use this.
-(define (snippet-sys-snippet-join ss snippet)
-  (snippet-sys-snippet-bind ss snippet #/fn hole data data))
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (snippet-sys-snippet-join-selective ss snippet)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c (snippet-sys-snippet/c ss)
+          #/by-own-method/c snippet
+          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/snippet-sys-snippetof ss #/fn prefix-hole
+            (w- prefix-hole-d
+              (snippet-sys-snippet-degree shape-ss prefix-hole)
+            #/by-own-method/c data
+            #/selectable/c any/c
+              
+              ; What this means is that this should be a snippet whose
+              ; low-degree holes correspond to the holes of
+              ; `prefix-hole` and contain `trivial?` values.
+              ;
+              ; TODO: See if we can factor out a
+              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+              ; something out of this.
+              ;
+              (and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                  (fn suffix-hole subject-data
+                    (w- suffix-hole-d
+                      (snippet-sys-snippet-degree
+                        shape-ss suffix-hole)
+                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                  (fn hole shape-data subject-data trivial?)))))])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss snippet)])
+    any/c)
+  (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
-; TODO: See if this should have the question mark in its name.
-; TODO: Export this.
 ; TODO: Use the things that use this.
-(define (snippet-sys-snippet-any? ss snippet check-hv?)
-  (not #/snippet-sys-snippet-all? ss snippet #/fn hole data
-    (not #/check-hv? hole data)))
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (snippet-sys-snippet-bind ss prefix hv-to-suffix)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss snippet-sys?]
+        [prefix (ss) (snippet-sys-snippet/c ss)]
+        [hv-to-suffix (ss prefix)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss prefix)
+          #/->i
+            (
+              [prefix-hole
+                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [data any/c])
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              
+              ; What this means is that this should be a snippet
+              ; whose low-degree holes correspond to the holes of
+              ; `prefix-hole` and contain `trivial?` values.
+              ;
+              ; TODO: See if we can factor out a
+              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+              ; something out of this.
+              ;
+              #/and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                  (fn suffix-hole subject-data
+                    (w- suffix-hole-d
+                      (snippet-sys-snippet-degree
+                        shape-ss suffix-hole)
+                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                  (fn hole shape-data subject-data trivial?)))])])
+      [_ (ss prefix)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss prefix)])
+    any/c)
+  (snippet-sys-snippet-bind-selective ss prefix #/fn hole data
+    (selected #/hv-to-suffix hole data)))
+
+; TODO: Use this.
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (snippet-sys-snippet-join ss snippet)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss snippet-sys?]
+        [snippet (ss)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c (snippet-sys-snippet/c ss)
+          #/by-own-method/c snippet
+          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/snippet-sys-snippetof ss #/fn prefix-hole
+            (w- prefix-hole-d
+              (snippet-sys-snippet-degree shape-ss prefix-hole)
+            #/by-own-method/c data
+            
+            ; What this means is that this should be a snippet whose
+            ; low-degree holes correspond to the holes of
+            ; `prefix-hole` and contain `trivial?` values.
+            ;
+            ; TODO: See if we can factor out a
+            ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+            ; something out of this.
+            ;
+            #/and/c
+              (snippet-sys-snippet-with-degree=/c ss d)
+              (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                (fn suffix-hole subject-data
+                  (w- suffix-hole-d
+                    (snippet-sys-snippet-degree
+                      shape-ss suffix-hole)
+                  #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                (fn hole shape-data subject-data trivial?))))])
+      [_ (ss snippet)
+        (snippet-sys-snippet-with-degree=/c ss
+        #/snippet-sys-snippet-degree ss snippet)])
+    any/c)
+  (snippet-sys-snippet-bind ss snippet #/fn hole data data))
 
 
 (define-imitation-simple-generics
@@ -907,11 +1790,11 @@
       (w- source/c-projection
         (
           (get/build-late-neg-projection source/c)
-          (blame-add-context blame "source of"))
+          (blame-add-context blame "the source of"))
       #/w- target/c-projection
         (
           (get/build-late-neg-projection target/c)
-          (blame-add-context blame "target of"))
+          (blame-add-context blame "the target of"))
       #/fn v missing-party
         (w- replace-if-not-flat
           (fn c c-projection replace get v
@@ -1209,11 +2092,11 @@
       (w- source/c-projection
         (
           (get/build-late-neg-projection source/c)
-          (blame-add-context blame "source of"))
+          (blame-add-context blame "the source of"))
       #/w- target/c-projection
         (
           (get/build-late-neg-projection target/c)
-          (blame-add-context blame "target of"))
+          (blame-add-context blame "the target of"))
       #/fn v missing-party
         (w- replace-if-not-flat
           (fn c c-projection replace get v
@@ -1389,8 +2272,20 @@
     (fn fs a b ms #/apply-to-snippet-format-sys-morphism-sys fs ms)))
 
 
-; TODO: Export these.
-; TODO: Use the things that use these.
+; NOTE: The original purpose of the `selective-snippet?` data
+; structure was an implementation strategy for hypernests. However,
+; selective snippets have a pretty critical flaw for that purpose:
+; They can't have unselected holes of degree N occurring beyond the
+; holes of an unselected hole of degree M for (N > M). At this point,
+; we're keeping around our selective snippet implementation just
+; because it demonstrates how to define a
+; `snippet-format-sys-endofunctor-sys?` (in this case,
+; `selective-snippet-format-sys-endofunctor-sys`). Someday we may want
+; to define a `snippet-format-sys-endofunctor-sys?` for the
+; "hypernest" functor that takes a snippet format system (usually the
+; hypertee snippet format system) to a hypernest snippet format
+; system.
+
 (define-imitation-simple-struct
   (selective-snippet-zero? selective-snippet-zero-content)
   selective-snippet-zero
@@ -1398,8 +2293,6 @@
   (auto-write)
   (auto-equal))
 
-; TODO: Export these.
-; TODO: Use the things that use these.
 (define-imitation-simple-struct
   (selective-snippet-nonzero?
     selective-snippet-nonzero-degree
@@ -1409,48 +2302,94 @@
   (auto-write)
   (auto-equal))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
+; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
+; unattenuated version, this one has extra `sfs` and `uds` arguments.
+(define/contract
+  (attenuated-selective-snippet-nonzero sfs uds d content)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [sfs snippet-format-sys?]
+        [uds dim-sys?]
+        [d (uds) (dim-sys-0<dim/c uds)]
+        [content (sfs uds d)
+          (w- eds (extended-with-top-dim-sys uds)
+          #/w- ffdstsss (snippet-format-sys-functor sfs)
+          #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+          #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+          #/and/c
+            (snippet-sys-snippet-with-degree=/c ess
+              (extended-with-top-dim-infinite))
+            (snippet-sys-snippetof ess #/fn hole
+              (dlog 'zdr1 (snippet-sys-snippet-degree shape-ess hole)
+                d
+                (dim-sys-dim<? eds
+                  (snippet-sys-snippet-degree shape-ess hole)
+                  (extended-with-top-dim-finite d))
+              #/selectable/c any/c
+                (if
+                  (dim-sys-dim<? eds
+                    (snippet-sys-snippet-degree shape-ess hole)
+                    (extended-with-top-dim-finite d))
+                  any/c
+                  none/c))))])
+      [_ any/c])
+    any/c)
+  (selective-snippet-nonzero d content))
+
 (define (selective-snippet? v)
   (or
     (selective-snippet-zero? v)
     (selective-snippet-nonzero? v)))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
 (define (selective-snippet/c sfs uds h-to-unselected/c)
   (w- eds (extended-with-top-dim-sys uds)
   #/w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- uss (functor-sys-apply-to-object ffdstsss uds)
   #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+  #/w- unextend-hole
+    (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+      (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+        (unextend-with-top-dim-sys-morphism-sys uds)))
   #/rename-contract
     (or/c
       (match/c selective-snippet-zero
-        (snippet-sys-snippet-with-degree/c uss
+        (snippet-sys-snippet-with-degree=/c uss
           (dim-sys-dim-zero uds)))
     #/and/c
       (match/c selective-snippet-nonzero
-        (and/c
-          (dim-sys-dim/c uds)
-          (not/c #/dim-sys-dim=/c eds #/dim-sys-dim-zero uds))
-        (snippet-sys-snippet-with-degree/c ess
+        (dim-sys-0<dim/c uds)
+        (snippet-sys-snippet-with-degree=/c ess
           (extended-with-top-dim-infinite)))
-      (by-own-method/c (selective-snippet-nonzero d maybe-content)
+      (by-own-method/c (selective-snippet-nonzero d content)
       #/match/c selective-snippet-nonzero any/c
         (snippet-sys-snippetof ess #/fn hole
-          (selectable/c
+          (dlog 'r1 (snippet-sys-snippet-degree shape-ess hole) d
+            (dim-sys-dim<? eds
+              (snippet-sys-snippet-degree shape-ess hole)
+              (extended-with-top-dim-finite d))
+            h-to-unselected/c
+          #/selectable/c
+            (h-to-unselected/c
+              (snippet-sys-morphism-sys-morph-snippet
+                unextend-hole hole))
             (if
               (dim-sys-dim<? eds
                 (snippet-sys-snippet-degree shape-ess hole)
                 (extended-with-top-dim-finite d))
-              (h-to-unselected/c hole)
-              none/c)
-            any/c))))
+              any/c
+              none/c)))))
     `(selective-snippet/c ,sfs ,uds ,h-to-unselected/c)))
 
-; TODO: Export these.
-; TODO: Use these.
+(define (selective-snippet-get-dim-sys s content-get-dim-sys)
+  (mat s (selective-snippet-zero content)
+    (content-get-dim-sys content)
+  #/dissect s (selective-snippet-nonzero d content)
+    (dissect (content-get-dim-sys content)
+      (extended-with-top-dim-sys ds)
+      ds)))
+
 (define-imitation-simple-struct
   (selective-snippet-sys?
     selective-snippet-sys-snippet-format-sys
@@ -1478,26 +2417,32 @@
       #/snippet-sys-shape-snippet-sys uss))
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlogr 'b1
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/expect snippet (selective-snippet-nonzero d content)
         (dim-sys-dim-zero uds)
         d))
     ; snippet-sys-shape->snippet
     (fn ss shape
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlog 'zj1
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- unextended-snippet (snippet-sys-shape->snippet uss shape)
       #/w- d (snippet-sys-snippet-degree uss unextended-snippet)
+      #/dlog 'zj2
       #/if (dim-sys-dim=0? uds d)
-        (selective-snippet-zero unextended-snippet)
+        (dlog 'zj3
+        #/selective-snippet-zero unextended-snippet)
       #/w- extended-snippet
-        (snippet-sys-morphism-sys-morph-snippet
-          (functor-sys-apply-to-morphism ffdstsss
+        (dlog 'zj4
+        #/snippet-sys-morphism-sys-morph-snippet
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (extend-with-top-dim-sys-morphism-sys uds))
           unextended-snippet)
+      #/dlog 'zj5
       #/expect
         (snippet-sys-snippet-set-degree-maybe ess
           (extended-with-top-dim-infinite)
@@ -1507,7 +2452,9 @@
         ; occur when one of the systems involved doesn't obey its
         ; laws.
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to infinity")
-      #/selective-snippet-nonzero d content))
+      #/dlog 'zj6
+      #/attenuated-selective-snippet-nonzero sfs uds d
+        (snippet-sys-snippet-select-everything ess content)))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
       (dissect ss (selective-snippet-sys sfs uds _)
@@ -1523,8 +2470,8 @@
       #/fn shape
       #/maybe-bind
         (snippet-sys-snippet-map-maybe shape-ess shape #/fn hole data
-          (expect data (selected data) (nothing)
-          #/just data))
+          (mat data (unselected data) (nothing)
+          #/dissect data (selected data) (just data)))
       #/fn shape
       #/expect
         (snippet-sys-snippet-set-degree-maybe shape-ess
@@ -1535,11 +2482,12 @@
         ; occur when one of the systems involved doesn't obey its
         ; laws.
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a snippet to a finite degree if that snippet had holes of only lesser degree")
-      #/snippet-sys-morphism-sys-morph-snippet
-        (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-sys-apply-to-morphism ffdstsss
-            (unextend-with-top-dim-sys-morphism-sys uds)))
-        shape))
+      #/just
+        (snippet-sys-morphism-sys-morph-snippet
+          (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+            (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+              (unextend-with-top-dim-sys-morphism-sys uds)))
+          shape)))
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss new-degree snippet
       (dissect ss (selective-snippet-sys sfs uds _)
@@ -1552,39 +2500,43 @@
       #/expect (dim-sys-dim=0? uds new-degree) #f (nothing)
       #/expect
         (snippet-sys-snippet-all? ess content #/fn hole data
-          (expect data (selected data) #t
+          (mat data (unselected data) #t
+          #/dissect data (selected data)
           #/dim-sys-dim<? eds
             (snippet-sys-snippet-degree shape-ess hole)
             (extended-with-top-dim-finite new-degree)))
         #t
         (nothing)
-      #/just #/selective-snippet-nonzero new-degree content))
+      #/just #/attenuated-selective-snippet-nonzero sfs uds new-degree content))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlogr 'zb1 ss degree shape
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- extend
-        (functor-sys-apply-to-morphism ffdstsss
+        (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
           (extend-with-top-dim-sys-morphism-sys uds))
       #/expect
         (snippet-sys-snippet-set-degree-maybe ess
           (extended-with-top-dim-infinite)
-          (snippet-sys-morphism-sys-morph-snippet extend
-            (snippet-sys-snippet-select-everything
-              (snippet-sys-snippet-done ess degree
-                (snippet-sys-morphism-sys-morph-snippet
-                  (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-                    extend)
-                  shape)
-                data))))
+          (dlog 'zb3
+          #/snippet-sys-snippet-select-everything ess
+            (dlog 'zb4
+            #/snippet-sys-snippet-done ess
+              (extended-with-top-dim-finite degree)
+              (snippet-sys-morphism-sys-morph-snippet
+                (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+                  extend)
+                shape)
+              data)))
         (just content)
         ; TODO: Improve this error. If this can occur at all, it must
         ; occur when one of the systems involved doesn't obey its
         ; laws.
         (error "Expected an extended-with-top snippet-sys to always allow setting the degree of a nonzero-degree snippet to infinity")
-      #/selective-snippet-nonzero degree content))
+      #/attenuated-selective-snippet-nonzero sfs uds degree content))
     ; snippet-sys-snippet-undone
     (fn ss snippet
       (dissect ss (selective-snippet-sys sfs uds _)
@@ -1595,17 +2547,18 @@
       #/expect snippet (selective-snippet-nonzero d content) (nothing)
       #/maybe-bind
         (snippet-sys-snippet-map-maybe ess content #/fn hole data
-          (expect data (selected data) (nothing)
-          #/just data))
+          (mat data (unselected data) (nothing)
+          #/dissect data (selected data) (just data)))
       #/fn content
-      #/snippet-sys-snippet-undone uss
+      #/dlog 'i1 #/attenuated-snippet-sys-snippet-undone uss
         (snippet-sys-morphism-sys-morph-snippet
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds))
           content)))
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlog 'e1
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
@@ -1613,14 +2566,17 @@
         (just snippet)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
       #/maybe-map
         (snippet-sys-snippet-splice ess prefix
         #/fn extended-hole data
+          ; TODO: Test this.
           (mat data (unselected data)
             (just #/unselected #/unselected data)
           #/dissect data (selected data)
+          #/w- extended-hole-degree
+            (snippet-sys-snippet-degree ess extended-hole)
           #/w- unextended-hole
             (snippet-sys-morphism-sys-morph-snippet
               unextend-hole extended-hole)
@@ -1629,25 +2585,31 @@
             #/dissect splice
               (selected #/selective-snippet-nonzero d suffix)
             #/selected
-              (snippet-sys-snippet-map ess suffix #/fn hole data
-                (mat data (unselected data)
-                  (unselected #/unselected data)
-                #/dissect data (selected data)
-                #/mat data (unselected data)
-                  (unselected #/selected data)
-                #/dissect data (selected #/trivial)
-                #/selected #/trivial)))))
+              (snippet-sys-snippet-map-selective ess
+                (snippet-sys-snippet-select-if-degree< ess
+                  extended-hole-degree
+                  suffix)
+                (fn hole data
+                  (mat data (unselected data)
+                    (unselected data)
+                  #/dissect data (selected data)
+                  #/mat data (unselected data)
+                    (selected data)
+                  #/dissect data (selected #/trivial)
+                    (trivial)))))))
       #/fn snippet
-        (selective-snippet-nonzero d snippet)))
+        (attenuated-selective-snippet-nonzero sfs uds d snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
-      (dissect ss (selective-snippet-sys sfs uds _)
+      (dlog 'zm1
+      #/dissect ss (selective-snippet-sys sfs uds _)
       #/w- ffdstsss (snippet-format-sys-functor sfs)
       #/w- eds (extended-with-top-dim-sys uds)
       #/w- uss (functor-sys-apply-to-object ffdstsss uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/mat snippet (selective-snippet-zero subject)
-        (maybe-map
+        (dlog 'zm2
+        #/maybe-map
           (snippet-sys-snippet-zip-map-selective uss shape subject
             hvv-to-maybe-v)
         #/fn snippet
@@ -1655,13 +2617,14 @@
       #/dissect snippet (selective-snippet-nonzero d subject)
       #/w- unextend-hole
         (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-          (functor-sys-apply-to-morphism ffdstsss
+          (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
             (unextend-with-top-dim-sys-morphism-sys uds)))
+      #/dlog 'zm3
       #/maybe-map
         (snippet-sys-snippet-zip-map-selective ess
           (snippet-sys-morphism-sys-morph-snippet
             (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-              (functor-sys-apply-to-morphism ffdstsss
+              (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                 (extend-with-top-dim-sys-morphism-sys uds)))
             shape)
           (snippet-sys-snippet-map ess subject #/fn hole data
@@ -1673,12 +2636,13 @@
           (w- unextended-hole
             (snippet-sys-morphism-sys-morph-snippet
               unextend-hole extended-hole)
+          #/dlog 'zm4
           #/maybe-map
             (hvv-to-maybe-v unextended-hole shape-data subject-data)
           #/fn result-data
             (selected result-data)))
       #/fn snippet
-        (selective-snippet-nonzero d snippet)))))
+        (attenuated-selective-snippet-nonzero sfs uds d snippet)))))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -1692,12 +2656,10 @@
 (define
   (snippet-format-sys-morphism-sys-apply-to-dim-sys-morphism-sys
     sfsms dsms)
-  (natural-transformation-sys-apply-to-morphism
+  (natural-transformation-from-from-dim-sys-sys-apply-to-morphism
     (snippet-format-sys-morphism-sys-functor-morphism sfsms)
     dsms))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
 (define (selective-snippet-map-all sfsms dsms s)
   (w- make-ssms
     (fn dsms
@@ -1708,7 +2670,9 @@
       (snippet-sys-morphism-sys-morph-snippet (make-ssms dsms)
         content))
   #/dissect s (selective-snippet-nonzero d content)
-    (selective-snippet-nonzero
+    (attenuated-selective-snippet-nonzero
+      (snippet-format-sys-morphism-sys-target sfsms)
+      (dim-sys-morphism-sys-target dsms)
       (dim-sys-morphism-sys-morph-dim
         (snippet-sys-morphism-sys-dim-sys-morphism-sys
           (make-ssms dsms))
@@ -1717,9 +2681,6 @@
         (make-ssms #/extended-with-top-dim-sys-morphism-sys dsms)
         content))))
 
-; TODO: Export these.
-; TODO: Use these.
-;
 ; TODO: See if this can somehow have endpoints with meaningful
 ; `h-to-unselected/c` information.
 ;
@@ -1812,9 +2773,6 @@
           (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
         #/selective-snippet-map-all sfsms dsms s)))))
 
-; TODO: Export these.
-; TODO: Use these.
-;
 ; TODO: See if this can somehow involve meaningful `h-to-unselected/c`
 ; information.
 ;
@@ -1846,8 +2804,6 @@
           (snippet-format-sys-morphism-sys-identity sfs)
           dsms)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-format-sys?
     selective-snippet-format-sys-original)
@@ -1867,8 +2823,6 @@
         (selective-functor-from-dim-sys-to-snippet-sys-sys
           orig-sfs)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
     selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-snippet-format-sys-morphism-sys)
@@ -1939,14 +2893,12 @@
           (snippet-format-sys-morphism-sys-replace-target
             sfsms new-t)))
       ; natural-transformation-sys-apply-to-morphism
-      (fn ms dsms
+      (fn ms a b dsms
         (dissect ms
           (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
             sfsms)
         #/selective-map-all-snippet-sys-morphism-sys sfsms dsms)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-format-sys-morphism-sys?
     selective-snippet-format-sys-morphism-sys-original)
@@ -2013,8 +2965,6 @@
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           orig-sfsms)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-format-sys-endofunctor-sys?)
   selective-snippet-format-sys-endofunctor-sys
@@ -2030,10 +2980,44 @@
       (fn es sfs #/selective-snippet-format-sys sfs)
       (fn es ms #/selective-snippet-format-sys-morphism-sys ms))))
 
+; TODO: See if this has a good design. The interface seems a little
+; sloppy since `content-shape` is set up to take any snippet system,
+; but we only supply it with some specific snippet systems.
+(define (selective-snippet-shape ss s content-shape)
+  (dlog 'zc13
+  #/dissect ss (selective-snippet-sys sfs uds _)
+  #/w- eds (extended-with-top-dim-sys uds)
+  #/w- ffdstsss (snippet-format-sys-functor sfs)
+  #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+  #/w- e-shape-ss (snippet-sys-shape-snippet-sys ess)
+  #/mat s (selective-snippet-zero content) (content-shape uss content)
+  #/dlog 'zc14
+  #/dissect s (selective-snippet-nonzero d content)
+    (dlog 'zc14.1 d content
+    #/dlog 'zc14.2 (attenuated-selective-snippet-nonzero sfs uds d content)
+    #/dissect (snippet-sys-snippet-filter-maybe ess content)
+      (just filtered-content)
+    #/dlog 'zc15 eds d filtered-content
+    #/dissect
+      (dlog 'zc15.1
+      #/snippet-sys-snippet-set-degree-maybe e-shape-ss
+        (extended-with-top-dim-finite d)
+        (dlogr 'zc16
+        #/content-shape ess filtered-content))
+      (just shape)
+    #/dlog 'zc16
+    #/snippet-sys-morphism-sys-morph-snippet
+      (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+        (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+          (unextend-with-top-dim-sys-morphism-sys uds)))
+      shape)))
+
 
 ; TODO: Consider rearranging everything in this file, but especially
 ; the things below. Currently the file is in three parts: The things
-; needed for `selective-snippet-sys?`, the things needed for
+; needed for `selective-snippet-sys?` (which we used to use to
+; implement `hypernest-snippet-sys?`), the things needed for
 ; `hypertee-snippet-sys?`, and the things needed for
 ; `hypernest-snippet-sys?`. Each time, some generic `snippet-sys?`
 ; utilities are added, but as we have more code that uses
@@ -2064,8 +3048,12 @@
     (hvv=? hole a-data b-data)))
 
 ; TODO: Find a better name for this.
-; TODO: Export this.
+;
+; TODO: Export this, and stop exporting it from the `private/test`
+; submodule once we do. Make sure to export it with a contract.
+;
 ; TODO: Use the things that use this.
+;
 (define (snippet-sys-snippet-filter-maybe ss snippet)
   (w- ds (snippet-sys-dim-sys ss)
   #/w- d (snippet-sys-snippet-degree ss snippet)
@@ -2076,7 +3064,7 @@
       (snippet-sys-snippet-set-degree-maybe ss d
         (snippet-sys-shape->snippet ss hole))
     #/fn patch
-      (selected #/snippet-sys-snippet-select-everything ss patch))))
+      (selected patch))))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -2086,7 +3074,6 @@
     #/dissect data (selected data) (hv-to-v hole data))))
 
 
-; TODO: Export these.
 ; TODO: Use the things that use these.
 (define-imitation-simple-struct
   (hypertee-coil-zero?)
@@ -2100,27 +3087,178 @@
     hypertee-coil-hole-tails)
   hypertee-coil-hole
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
-; TODO: Define `hypertee-furl` in terms of `hypertee-furl-unchecked`.
+
+; NOTE DEBUGGABILITY: This is here for debugging.
+(define/contract
+  (attenuated-fn-hypertee-coil-hole ds overall-degree hole data tails)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ds dim-sys?]
+        [overall-degree (ds) (dim-sys-0<dim/c ds)]
+        [hole (ds overall-degree)
+          (w- ss (hypertee-snippet-sys ds)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c
+            (snippet-sys-snippetof ss #/fn hole trivial?)
+            (snippet-sys-snippet-with-degree</c ss overall-degree))]
+        [data any/c]
+        [tails (ds overall-degree hole)
+          (w- ss (hypertee-snippet-sys ds)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/snippet-sys-snippet-zip-selective/c ss hole
+            (fn hole subject-data #t)
+            (fn hole shape-data subject-data
+              (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+              
+              ; What this means is that this should be a snippet whose
+              ; low-degree holes correspond to the holes of `hole` and
+              ; contain `trivial?` values.
+              ;
+              ; TODO: See if we can factor out a
+              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+              ; something out of this.
+              ;
+              #/and/c
+                (snippet-sys-snippet-with-degree=/c ss overall-degree)
+                (snippet-sys-snippet-zip-selective/c ss hole
+                  (fn tail-hole subject-data
+                    (w- tail-hole-d
+                      (snippet-sys-snippet-degree
+                        shape-ss tail-hole)
+                    #/dim-sys-dim<? ds tail-hole-d hole-d))
+                  (fn hole shape-data subject-data trivial?)))))])
+      [_ any/c])
+    any/c)
+  (hypertee-coil-hole overall-degree hole data tails))
+(define-syntax (attenuated-hypertee-coil-hole stx)
+  (syntax-case stx () #/ (_ ds overall-degree hole data tails)
+    #`(dlog 'm2 #,(~a stx)
+        (
+          #,@
+          (if debugging-with-contracts
+            #'(attenuated-fn-hypertee-coil-hole ds)
+            #'(hypertee-coil-hole))
+          overall-degree hole data tails))))
+
+; TODO: See if we can get this to return a flat contract. It's likely
+; the only thing in our way is `by-own-method/c`.
+(define (hypertee-coil/c ds)
+  (w- ss (hypertee-snippet-sys ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/rename-contract
+    (or/c
+      hypertee-coil-zero?
+      (and/c
+        (match/c hypertee-coil-hole
+          (dim-sys-0<dim/c ds)
+          (snippet-sys-snippetof ss #/fn hole trivial?)
+          any/c
+          any/c)
+        (by-own-method/c
+          (hypertee-coil-hole overall-degree hole data tails)
+          (match/c hypertee-coil-hole
+            any/c
+            (snippet-sys-snippet-with-degree</c ss overall-degree)
+            any/c
+            (snippet-sys-snippet-zip-selective/c ss hole
+              (fn hole subject-data #t)
+              (fn hole shape-data subject-data
+                (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+                
+                ; What this means is that this should be a snippet
+                ; whose low-degree holes correspond to the holes of
+                ; `hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
+                #/and/c
+                  (snippet-sys-snippet-with-degree=/c
+                    ss overall-degree)
+                  (snippet-sys-snippet-zip-selective/c ss hole
+                    (fn tail-hole subject-data
+                      (w- tail-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss tail-hole)
+                      #/dim-sys-dim<? ds tail-hole-d hole-d))
+                    (fn hole shape-data subject-data trivial?)))))))))
+    `(hypertee-coil/c ,(value-name-for-contract ds))))
+
+; TODO: Use the things that use these.
 ; TODO: Change the way a `hypertee?` is written using
 ; `gen:custom-write`.
 (define-imitation-simple-struct
-  (hypertee? hypertee-dim-sys hypertee-unfurl)
-  hypertee-furl-unchecked
+  (hypertee? hypertee-get-dim-sys hypertee-get-coil)
+  ; NOTE DEBUGGABILITY: For debugging, we've set up a system where we
+  ; currently rename this from `unguarded-hypertee-furl` to
+  ; `unguarded-hypertee-furl-orig` and define
+  ; `unguarded-hypertee-furl` to be either the guarded version or the
+  ; unguarded version (according to the
+  ; `debugging-with-expensive-hypertee-furl-contract` branch below).
+  unguarded-hypertee-furl-orig
   'hypertee (current-inspector) (auto-write) (auto-equal))
+; TODO: We have a dilemma. The `define/contract` version of
+; `attenuated-hypertee-furl` will give less precise source location
+; information in its errors, and it won't catch applications with
+; incorrect arity. On the other hand, the
+; `define-match-expander-attenuated` version can't express a fully
+; precise contract for `coil`, namely `(hypertee-coil/c dim-sys)`.
+; Dependent contracts would be difficult to make matchers for, but
+; perhaps we could implement an alternative to
+; `define-match-expander-attenuated` that just defined the
+; function-like side and not actually the match expander.
+(define attenuated-hypertee-furl
+  (let ()
+    (define/contract (hypertee-furl dim-sys coil)
+      (->i
+        (
+          [dim-sys dim-sys?]
+          [coil (dim-sys) (hypertee-coil/c dim-sys)])
+        [_ hypertee?])
+      (unguarded-hypertee-furl-orig dim-sys coil))
+    hypertee-furl))
+#;
+(define-match-expander-attenuated
+  attenuated-hypertee-furl
+  unguarded-hypertee-furl-orig
+  [dim-sys dim-sys?]
+  [coil any/c]
+  #t)
+(define-match-expander-from-match-and-make
+  hypertee-furl
+  unguarded-hypertee-furl-orig
+  attenuated-hypertee-furl
+  attenuated-hypertee-furl)
+(define-syntax (hypertee-furl-dlog stx)
+  (syntax-case stx () #/ (_ args ...)
+    #`(dlog 'a1 #,(~a stx)
+        (hypertee-furl args ...))))
+(ifc debugging-with-expensive-hypertee-furl-contract
+  (define-match-expander-from-match-and-make
+    unguarded-hypertee-furl
+    hypertee-furl
+    hypertee-furl
+    hypertee-furl-dlog)
+  (define-match-expander-from-match-and-make
+    unguarded-hypertee-furl
+    unguarded-hypertee-furl-orig
+    unguarded-hypertee-furl-orig
+    unguarded-hypertee-furl-orig))
 
-; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (hypertee/c ds)
-  (rename-contract (match/c hypertee-furl-unchecked (ok/c ds) any/c)
-    `(hypertee/c ,ds)))
+  (rename-contract (match/c unguarded-hypertee-furl (ok/c ds) any/c)
+    `(hypertee/c ,(value-name-for-contract ds))))
 
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
 (define (hypertee-map-cps ds state ht on-hole then)
   (w- ss (hypertee-snippet-sys ds)
-  #/dissect ht (hypertee-furl-unchecked _ coil)
+  #/dissect ht (unguarded-hypertee-furl _ coil)
   #/mat coil (hypertee-coil-zero)
-    (then state #/hypertee-furl-unchecked ds #/hypertee-coil-zero)
+    (then state #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
   #/dissect coil (hypertee-coil-hole d hole data tails)
   #/on-hole state hole data #/fn state data
   #/hypertee-map-cps ds state tails
@@ -2137,8 +3275,8 @@
             (on-hole state hole data then)))
         then))
   #/fn state tails
-  #/then state #/hypertee-furl-unchecked ds
-    (hypertee-coil-hole d hole data tails)))
+  #/then state #/unguarded-hypertee-furl ds
+    (attenuated-hypertee-coil-hole ds d hole data tails)))
 
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
@@ -2155,7 +3293,7 @@
   #/then state)
   
   (w- ss (hypertee-snippet-sys ds)
-  #/dissect ht (hypertee-furl-unchecked _ coil)
+  #/dissect ht (unguarded-hypertee-furl _ coil)
   #/mat coil (hypertee-coil-zero) (then state)
   #/dissect coil (hypertee-coil-hole d hole data tails)
   #/on-hole state hole data #/fn state
@@ -2184,18 +3322,17 @@
 
 (define (hypertee-zip-map ds shape snippet hvv-to-maybe-v)
   (w- ss (hypertee-snippet-sys ds)
-  #/dissect shape (hypertee-furl-unchecked _ shape-coil)
-  #/dissect snippet (hypertee-furl-unchecked _ snippet-coil)
+  #/dissect shape (unguarded-hypertee-furl _ shape-coil)
+  #/dissect snippet (unguarded-hypertee-furl _ snippet-coil)
   #/mat shape-coil (hypertee-coil-zero)
     (expect snippet-coil (hypertee-coil-zero) (nothing)
-    #/just #/hypertee-furl-unchecked ds #/hypertee-coil-zero)
+    #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
   #/dissect shape-coil
     (hypertee-coil-hole shape-d shape-hole shape-data shape-tails)
   #/expect snippet-coil
     (hypertee-coil-hole
       snippet-d snippet-hole snippet-data snippet-tails)
     (nothing)
-  #/expect (dim-sys-dim=? ds shape-d snippet-d) #t (nothing)
   #/expect
     (snippet-sys-shape=? ss shape-hole snippet-hole
     #/fn hole shape-data snippet-data
@@ -2207,17 +3344,10 @@
   #/maybe-bind (hvv-to-maybe-v shape-hole shape-data snippet-data)
   #/fn result-data
   #/maybe-bind
-    (snippet-sys-snippet-zip-map ss shape-tails snippet-tails
+    (hypertee-zip-map ds shape-tails snippet-tails
     #/fn hole shape-tail snippet-tail
       (w- d (snippet-sys-snippet-degree ss hole)
-      #/snippet-sys-snippet-zip-map-selective ss
-        shape-tail
-        (snippet-sys-snippet-map ss snippet-tail #/fn hole data
-          (if
-            (dim-sys-dim<? ds (snippet-sys-snippet-degree ss hole) d)
-            (dissect data (trivial)
-              (selected #/trivial))
-            data))
+      #/hypertee-zip-map ds shape-tail snippet-tail
       #/fn hole shape-data snippet-data
         (if (dim-sys-dim<? ds (snippet-sys-snippet-degree ss hole) d)
           (dissect shape-data (trivial)
@@ -2225,30 +3355,30 @@
             (just #/trivial))
           (hvv-to-maybe-v hole shape-data snippet-data))))
   #/fn result-tails
-  #/just #/hypertee-furl-unchecked ds
-    (hypertee-coil-hole shape-d shape-hole result-data result-tails)))
+  #/just #/unguarded-hypertee-furl ds
+    (attenuated-hypertee-coil-hole ds snippet-d shape-hole result-data
+      result-tails)))
 
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
 (define (hypertee-map-dim dsms ht)
   (w- target-ds (dim-sys-morphism-sys-target dsms)
   #/w- target-ss (hypertee-snippet-sys target-ds)
-  #/dissect ht (hypertee-furl-unchecked _ coil)
-  #/hypertee-furl-unchecked target-ds
+  #/dissect ht (unguarded-hypertee-furl _ coil)
+  #/unguarded-hypertee-furl target-ds
     (mat coil (hypertee-coil-zero) (hypertee-coil-zero)
     #/dissect coil (hypertee-coil-hole d hole data tails)
-    #/hypertee-coil-hole
+    #/attenuated-hypertee-coil-hole target-ds
       (dim-sys-morphism-sys-morph-dim dsms d)
       (hypertee-map-dim dsms hole)
       data
       (snippet-sys-snippet-map target-ss (hypertee-map-dim dsms tails)
         (fn hole tail #/hypertee-map-dim dsms tail)))))
 
-; TODO: Export these.
 ; TODO: Use these.
 (define-imitation-simple-struct
   (hypertee-snippet-sys? hypertee-snippet-sys-dim-sys)
-  hypertee-snippet-sys
+  unguarded-hypertee-snippet-sys
   'hypertee-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:atomic-set-element-sys
     (make-atomic-set-element-sys-impl-from-contract
@@ -2267,10 +3397,11 @@
       ss)
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (dissect ss (hypertee-snippet-sys ds)
-      #/dissect snippet (hypertee-furl-unchecked _ coil)
-      #/mat coil (hypertee-coil-zero) (dim-sys-dim-zero ds)
-      #/dissect coil (hypertee-coil-hole d hole data tails) d))
+      (dlogr 'b2 snippet
+      #/dissect ss (hypertee-snippet-sys ds)
+      #/dissect snippet (unguarded-hypertee-furl _ coil)
+      #/mat coil (hypertee-coil-zero) (dlogr 'b2.1 ds #/dim-sys-dim-zero ds)
+      #/dissect coil (hypertee-coil-hole d hole data tails) #/dlog 'b2.2 d))
     ; snippet-sys-shape->snippet
     (fn ss shape
       shape)
@@ -2280,29 +3411,29 @@
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss degree snippet
       (dissect ss (hypertee-snippet-sys ds)
-      #/dissect snippet (hypertee-furl-unchecked _ coil)
+      #/dissect snippet (unguarded-hypertee-furl _ coil)
       #/mat coil (hypertee-coil-zero)
         (expect (dim-sys-dim=0? ds degree) #t (nothing)
-        #/just #/hypertee-furl-unchecked ds #/hypertee-coil-zero)
+        #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
       #/dissect coil (hypertee-coil-hole d hole data tails)
-        (expect
-          (and
-            (not #/dim-sys-dim=0? ds degree)
-            (dim-sys-dim<? ds
-              (snippet-sys-snippet-degree ss hole)
-              degree))
-          #t
-          (nothing)
-        #/maybe-map
-          (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-            (snippet-sys-snippet-set-degree-maybe ss degree tail))
-        #/fn tails
-          (hypertee-furl-unchecked ds
-            (hypertee-coil-hole d hole data tails)))))
+      #/expect
+        (and
+          (not #/dim-sys-dim=0? ds degree)
+          (dim-sys-dim<? ds
+            (snippet-sys-snippet-degree ss hole)
+            degree))
+        #t
+        (nothing)
+      #/maybe-map
+        (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+          (snippet-sys-snippet-set-degree-maybe ss degree tail))
+      #/fn tails
+        (unguarded-hypertee-furl ds
+          (attenuated-hypertee-coil-hole ds degree hole data tails))))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
       (dissect ss (hypertee-snippet-sys ds)
-      #/hypertee-furl-unchecked ds #/hypertee-coil-hole
+      #/unguarded-hypertee-furl ds #/attenuated-hypertee-coil-hole ds
         degree
         (snippet-sys-snippet-map ss shape #/fn hole data #/trivial)
         data
@@ -2311,15 +3442,15 @@
     ; snippet-sys-snippet-undone
     (fn ss snippet
       (dissect ss (hypertee-snippet-sys ds)
-      #/dissect snippet (hypertee-furl-unchecked _ coil)
+      #/dissect snippet (unguarded-hypertee-furl _ coil)
       #/expect coil (hypertee-coil-hole d hole data tails) (nothing)
       #/maybe-map
         (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-          (maybe-bind (snippet-sys-snippet-undone ss tail)
+          (maybe-bind (dlog 'i2 #/attenuated-snippet-sys-snippet-undone ss tail)
           #/dissectfn (list tail-d tail-shape data)
           #/expect
             (and
-              (dim-sys-dim=? ds d tail-d)
+              (dlog 'h5 #/dim-sys-dim=? ds d tail-d)
               (snippet-sys-shape=? ss hole tail-shape
               #/fn hole hole-data tail-shape-data
                 (dissect hole-data (trivial)
@@ -2332,46 +3463,125 @@
         (list d shape data)))
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
-      (dissect ss (hypertee-snippet-sys ds)
+      (dlog 'e2
+      #/dissect ss (hypertee-snippet-sys ds)
       #/w-loop next
         snippet snippet
         first-nontrivial-d (dim-sys-dim-zero ds)
         
-        (dissect snippet (hypertee-furl-unchecked _ coil)
+        (dlog 'e2.1
+        #/dissect snippet (unguarded-hypertee-furl _ coil)
         #/mat coil (hypertee-coil-zero)
-          (just #/hypertee-furl-unchecked ds #/hypertee-coil-zero)
+          (dlog 'e2.2
+          #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+        #/dlogr 'e2.3
         #/dissect coil (hypertee-coil-hole d hole data tails)
+        #/w- hole-d (snippet-sys-snippet-degree ss hole)
         #/maybe-bind
-          (if
-            (dim-sys-dim<? ds
-              (snippet-sys-snippet-degree ss hole)
-              first-nontrivial-d)
-            (dissect data (trivial)
-              (unselected #/trivial))
-            (hv-to-splice hole data))
+          (dlogr 'e2.3.1
+          #/if
+            (dlog 'e2.3.2
+            #/dim-sys-dim<? ds hole-d first-nontrivial-d)
+            (dlog 'e2.3.3
+            #/dissect data (trivial)
+              (just #/unselected #/trivial))
+            (dlog 'e2.3.4 hv-to-splice
+            #/hv-to-splice hole data))
         #/fn splice
+        #/dlog 'e2.4
+        #/maybe-bind
+          (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+            (dlog 'e2.5 (hypertee-get-dim-sys snippet) (hypertee-get-dim-sys tail)
+            #/next tail
+              (dim-sys-dim-max ds
+                first-nontrivial-d
+                (snippet-sys-snippet-degree ss hole))))
+        #/fn tails
+        #/dlog 'e2.6
         #/mat splice (unselected data)
-          (maybe-bind
-            (snippet-sys-snippet-map ss tails #/fn hole tail
-              (next tail
-                (dim-sys-dim-max ds
-                  first-nontrivial-d
-                  (snippet-sys-snippet-degree ss hole))))
-          #/fn tails
-          #/just #/hypertee-furl-unchecked ds
-            (hypertee-coil-hole d hole data tails))
+          (just #/unguarded-hypertee-furl ds
+            (attenuated-hypertee-coil-hole ds d hole data tails))
         #/dissect splice (selected suffix)
+        #/dlog 'e2.7
         #/w- suffix
-          (snippet-sys-snippet-map ss suffix #/fn hole data
-            (expect data (unselected data) data
-            #/unselected #/unselected data))
+          (dlog 'e2.8
+          #/snippet-sys-snippet-map ss
+            (snippet-sys-snippet-select-if-degree< ss hole-d suffix)
+          #/fn hole data
+            (mat data (selected data) (selected data)
+            #/dissect data (unselected data)
+              (unselected #/unselected data)))
         #/maybe-map
           (snippet-sys-snippet-zip-map-selective ss tails suffix
           #/fn hole tail data
             (dissect data (trivial)
-              tail))
+            #/just #/selected tail))
         #/fn suffix
-          (snippet-sys-snippet-bind ss suffix #/fn hole data data))))
+          (dlog 'e2.9
+          #/snippet-sys-snippet-join-selective ss suffix))))
+    ; TODO: Figure out why the following variation of
+    ; `snippet-sys-snippet-splice` was breaking.
+    #;
+    (fn ss snippet hv-to-splice
+      (dlog 'e2
+      #/dissect ss (hypertee-snippet-sys ds)
+      #/dissect snippet (unguarded-hypertee-furl _ coil)
+      #/mat coil (hypertee-coil-zero)
+        (dlog 'e2.2
+        #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+      #/dlogr 'e2.3
+      #/dissect coil (hypertee-coil-hole d hole data tails)
+      #/maybe-bind
+        (dlog 'e2.3.1 hv-to-splice
+        #/hv-to-splice hole data)
+      #/fn splice
+      #/dlog 'e2.4
+      #/maybe-bind
+        (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+          (dlog 'e2.5 (hypertee-get-dim-sys snippet) (hypertee-get-dim-sys tail)
+          #/w- hole-d (snippet-sys-snippet-degree ss hole)
+          #/snippet-sys-snippet-splice ss tail #/fn tail-hole data
+            (dlog 'e2.5.1
+            #/if
+              (dim-sys-dim<? ds
+                (snippet-sys-snippet-degree ss tail-hole)
+                hole-d)
+              (3:dlog 'e2.5.1.1 coil
+              #/3:dlog 'e2.5.1.2 tail
+              #/3:dlog 'e2.5.1.3 data
+              #/dissect data (trivial)
+              #/just #/unselected #/trivial)
+            #/hv-to-splice tail-hole data)))
+      #/fn tails
+      #/dlog 'e2.6 splice
+      #/mat splice (unselected data)
+        (dlog 'e2.6.1
+        #/just #/unguarded-hypertee-furl ds
+          (dlog 'e2.6.2
+          #/attenuated-hypertee-coil-hole ds d hole data tails))
+      #/dissect splice (selected suffix)
+        (dlog 'e2.7 tails
+        #/w- hole-d (snippet-sys-snippet-degree ss hole)
+        ; TODO: This `dissect` is the place the errors occur when we
+        ; use this approach. Figure out what's going on here. It
+        ; doesn't appear that using `maybe-bind` helps here (although
+        ; it makes this a little closer to the working variation,
+        ; which uses `maybe-map` here).
+        #/dissect
+;        #/maybe-bind
+          (if (dim-sys-dim=0? ds hole-d)
+            (just suffix)
+          #/snippet-sys-snippet-zip-map ss tails suffix
+            (fn hole tail data
+              (dissect data (trivial)
+              #/just tail)))
+          (just suffix)
+;        #/fn suffix
+        #/dlog 'e2.9
+        #/just
+          (snippet-sys-snippet-join-selective ss
+            (snippet-sys-snippet-select-if-degree< ss hole-d
+              suffix)))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -2387,7 +3597,12 @@
       ; and then parse those unselected holes to turn the result back
       ; into a replacement for `tails`.
       
-      (dissect ss (hypertee-snippet-sys ds)
+      (dlog 'zp1
+      #/dissect ss (hypertee-snippet-sys ds)
+      #/mat shape (unguarded-hypertee-furl _ #/hypertee-coil-zero)
+        (snippet-sys-snippet-map-maybe ss snippet #/fn hole data
+          (mat data (selected data) (nothing)
+          #/dissect data (unselected data) (just data)))
       #/w- numbered-snippet
         (hypertee-map-cps ds 0 snippet
           (fn state hole data then
@@ -2397,27 +3612,41 @@
               (then (add1 state) #/selected #/list state data)))
         #/fn state numbered-snippet
           numbered-snippet)
+      #/dlog 'zp2-shape shape
       #/maybe-bind
         (snippet-sys-snippet-filter-maybe ss numbered-snippet)
       #/fn filtered-numbered-snippet
+      #/dlog 'zp2.1-snippet snippet
+      #/dlog 'zp3-filtered-numbered-snippet filtered-numbered-snippet
       #/maybe-bind
         (hypertee-zip-map ds shape filtered-numbered-snippet
         #/fn hole shape-data snippet-data
           (dissect snippet-data (list i snippet-data)
-          #/maybe-map (hvv-to-maybe-v shape-data snippet-data)
+          #/maybe-map (hvv-to-maybe-v hole shape-data snippet-data)
           #/fn result-data
             (list i result-data)))
       #/fn filtered-numbered-result
+      #/dlog 'zp4
       #/w- env
         (hypertee-each-ltr ds (make-immutable-hasheq)
           filtered-numbered-result
         #/fn env hole data
           (dissect data (list i data)
           #/hash-set env i data))
-      #/snippet-sys-snippet-map-selective ss numbered-snippet
+      #/just #/snippet-sys-snippet-map-selective ss numbered-snippet
       #/fn hole data
         (dissect data (list i data)
         #/hash-ref env i)))))
+(define-match-expander-attenuated
+  attenuated-hypertee-snippet-sys
+  unguarded-hypertee-snippet-sys
+  [dim-sys dim-sys?]
+  #t)
+(define-match-expander-from-match-and-make
+  hypertee-snippet-sys
+  unguarded-hypertee-snippet-sys
+  attenuated-hypertee-snippet-sys
+  attenuated-hypertee-snippet-sys)
 
 ; TODO: Export these.
 ; TODO: Use these.
@@ -2520,152 +3749,874 @@
 
 
 ; TODO: Find a better name for this.
+;
 ; TODO: Export this.
-; TODO: Use the things that use this.
+;
+; TODO: See if we'll ever use this. We used to use it to implement
+; `hypernest-snippet-sys?`.
+;
 (define
   (make-snippet-sys-impl-from-conversions
-    snippet-sys-snippet/c ss-> snippet-> ->snippet)
+    snippet-sys-snippet/c ss-> ->ds ->shape-ss degree-> ->degree
+    shape-> ->shape snippet-> ->snippet)
   (make-snippet-sys-impl-from-various-1
     ; snippet-sys-snippet/c
     snippet-sys-snippet/c
     ; snippet-sys-dim-sys
     (fn ss
-      (snippet-sys-dim-sys #/ss-> ss))
+      (->ds #/snippet-sys-dim-sys #/ss-> ss))
     ; snippet-sys-shape-snippet-sys
     (fn ss
-      (snippet-sys-shape-snippet-sys #/ss-> ss))
+      (->shape-ss #/snippet-sys-shape-snippet-sys #/ss-> ss))
     ; snippet-sys-snippet-degree
     (fn ss snippet
-      (snippet-sys-snippet-degree (ss-> ss) (snippet-> snippet)))
+      (dlogr 'b3 ss
+      #/->degree ss
+        (snippet-sys-snippet-degree (ss-> ss)
+          (snippet-> ss snippet))))
     ; snippet-sys-shape->snippet
     (fn ss shape
-      (->snippet #/snippet-sys-shape->snippet (ss-> ss) shape))
+      (dlog 'zi1
+      #/->snippet ss
+        (dlog 'zi2
+        #/snippet-sys-shape->snippet (dlog 'zi3 #/ss-> ss) (dlog 'zi4 #/shape-> ss shape))))
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
-      (snippet-sys-snippet->maybe-shape (ss-> ss)
-        (snippet-> snippet)))
+      (maybe-map
+        (snippet-sys-snippet->maybe-shape (ss-> ss)
+          (snippet-> ss snippet))
+      #/fn shape
+        (->shape ss shape)))
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss degree snippet
       (maybe-map
-        (snippet-sys-snippet-set-degree-maybe (ss-> ss) degree
-          (snippet-> snippet))
+        (snippet-sys-snippet-set-degree-maybe (ss-> ss)
+          (degree-> ss degree)
+          (snippet-> ss snippet))
       #/fn selective
-        (->snippet selective)))
+        (->snippet ss selective)))
     ; snippet-sys-snippet-done
     (fn ss degree shape data
-      (->snippet #/snippet-sys-snippet-done (ss-> ss)
-        degree shape data))
+      (->snippet ss
+        (snippet-sys-snippet-done (ss-> ss)
+          (degree-> ss degree)
+          (shape-> ss shape)
+          data)))
     ; snippet-sys-snippet-undone
     (fn ss snippet
-      (snippet-sys-snippet-undone (ss-> ss) (snippet-> snippet)))
+      (maybe-map
+        (dlog 'i3 #/attenuated-snippet-sys-snippet-undone (ss-> ss) (snippet-> ss snippet))
+      #/dissectfn (list d hole data)
+        (list (->degree ss d) (->shape ss hole) data)))
     ; snippet-sys-snippet-splice
     (fn ss snippet hv-to-splice
-      (maybe-map
-        (snippet-sys-snippet-splice (ss-> ss) (snippet-> snippet)
+      (dlog 'e3 snippet hv-to-splice
+      #/maybe-map
+        (snippet-sys-snippet-splice (ss-> ss) (snippet-> ss snippet)
         #/fn hole data
-          (maybe-map (hv-to-splice hole data) #/fn data
-            (mat data (unselected data) (unselected data)
-            #/dissect data (selected suffix)
-            #/selected #/snippet-> suffix)))
+          (maybe-map (hv-to-splice (->shape ss hole) data) #/fn data
+            (selectable-map data #/fn suffix
+              (snippet-> ss suffix))))
       #/fn snippet
-        (snippet-> snippet)))
+        (->snippet ss snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
-      (maybe-map
-        (snippet-sys-snippet-zip-map-selective (ss-> ss)
-          shape (snippet-> snippet) hvv-to-maybe-v)
-      #/fn selective
-        (snippet-> selective)))))
+      (dlog 'n2.0.7.0.3
+      #/maybe-map
+        (dlog 'n2.0.7.0.3.0.1
+        #/snippet-sys-snippet-zip-map-selective (ss-> ss)
+          (dlog 'n2.0.7.0.3.1
+          #/shape-> ss shape)
+          (dlog 'n2.0.7.0.3.2
+          #/snippet-> ss snippet)
+          (fn hole shape-data snippet-data
+            (dlog 'n2.0.7.0.3.3
+            #/hvv-to-maybe-v
+              (->shape ss hole)
+              shape-data
+              snippet-data)))
+      #/fn snippet
+        (->snippet ss snippet)))))
 
-
-; TODO: Export this.
-; TODO: Use the things that use this.
-(define (hypernest-selective-snippet-sys sfs uds)
-  (w- ffdstsss (snippet-format-sys-functor sfs)
-  #/w- eds (fin-multiplied-dim-sys 2 uds)
-  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
-  #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
-  #/selective-snippet-sys sfs eds #/fn hole
-    (expect (snippet-sys-snippet-undone shape-ess hole)
-      (just undone-hole)
-      none/c
-    #/expect (snippet-sys-snippet-degree shape-ess hole)
-      (fin-multiplied-dim 1 hole-d)
-      none/c
-    #/expect (snippet-sys-snippet-degree shape-ess undone-hole)
-      (fin-multiplied-dim 0 undone-hole-d)
-      none/c
-    #/expect (dim-sys-dim=? uds hole-d undone-hole-d) #t
-      none/c
-      any/c)))
 
 ; TODO: Export these.
 ; TODO: Use these.
-; TODO: Define `hypernest` in terms of `hypernest-unchecked`.
-; TODO: Change the way a `hypernest?` is written using
+; TODO: Define `hypernest-zero` in terms of
+; `hypernest-zero-unchecked`.
+; TODO: Change the way a `hypernest-zero?` is written using
 ; `gen:custom-write`.
 (define-imitation-simple-struct
-  (hypernest? hypernest-selective-snippet)
-  hypernest-unchecked
-  'hypernest (current-inspector) (auto-write) (auto-equal))
+  (hypernest-zero? hypernest-zero-content)
+  hypernest-zero-unchecked
+  'hypernest-zero (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export these.
+; TODO: Use these.
+; TODO: Define `hypernest-nonzero` in terms of
+; `hypernest-zero-unchecked`.
+; TODO: Change the way a `hypernest-nonzero?` is written using
+; `gen:custom-write`.
+(define-imitation-simple-struct
+  (hypernest-nonzero?
+    hypernest-nonzero-degree
+    hypernest-nonzero-content)
+  hypernest-nonzero-unchecked
+  'hypernest-nonzero (current-inspector) (auto-write) (auto-equal))
+
+; TODO: Export this.
+; TODO: Use the things that use this.
+(define (hypernest? v)
+  (or
+    (hypernest-zero? v)
+    (hypernest-nonzero? v)))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
 (define (hypernest/c sfs uds)
   (w- ffdstsss (snippet-format-sys-functor sfs)
-  #/w- eds (fin-multiplied-dim-sys 2 uds)
+  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+  #/w- uss (functor-sys-apply-to-object ffdstsss uds)
   #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
   #/rename-contract
-    (match/c hypernest-unchecked
+    (or/c
+      (match/c hypernest-zero-unchecked
+        (snippet-sys-snippet-with-degree=/c uss
+          (dim-sys-dim-zero uds)))
       (and/c
-        (snippet-sys-snippet-with-degree/c ess #/fn d
-          (mat d (fin-multiplied-dim 0 d) #t #f))
-        (snippet-sys-snippetof
-          (hypernest-selective-snippet-sys sfs uds)
-          (fn hole
-            (expect (snippet-sys-snippet-degree shape-ess hole)
-              (fin-multiplied-dim 0 d)
+        (match/c hypernest-nonzero-unchecked
+          (dim-sys-0<dim/c uds)
+          any/c)
+      #/by-own-method/c (hypernest-nonzero-unchecked d _)
+      #/match/c hypernest-nonzero-unchecked
+        any/c
+        (and/c
+          (snippet-sys-snippet-with-degree=/c ess
+            (extended-with-top-dim-infinite))
+          (snippet-sys-snippetof ess #/fn hole
+            (mat (snippet-sys-snippet-degree shape-ess hole)
+              (extended-with-top-dim-finite
+                (extended-with-top-dim-finite hole-d))
+              (if (dim-sys-dim<? uds hole-d d)
+                any/c
+                none/c)
+            #/expect (attenuated-snippet-sys-snippet-undone ess hole)
+              (just undone-result)
               none/c
+            #/dissect undone-result
+              (list
+                (extended-with-top-dim-finite
+                  (extended-with-top-dim-infinite))
+                interior-shape
+                (trivial))
               any/c)))))
     `(hypernest/c ,sfs ,uds)))
 
-; TODO: Export these.
-;
-; TODO: Use these.
-;
+(define (hypernest-get-dim-sys hn)
+  (dlog 'zk1 hn
+  #/mat hn (hypernest-zero-unchecked content)
+    (hypertee-get-dim-sys content)
+  #/dissect hn (hypernest-nonzero-unchecked d hn-extended)
+  #/dissect
+    (dlog 'zk2
+    #/hypertee-get-dim-sys hn-extended)
+    (extended-with-top-dim-sys #/extended-with-top-dim-sys ds)
+    ds))
+
 (define-imitation-simple-struct
   (hypernest-snippet-sys?
     hypernest-snippet-sys-snippet-format-sys
     hypernest-snippet-sys-dim-sys)
-  hypernest-snippet-sys
+  unguarded-hypernest-snippet-sys
   'hypernest-snippet-sys (current-inspector) (auto-write) (auto-equal)
   (#:prop prop:atomic-set-element-sys
     (make-atomic-set-element-sys-impl-from-contract
       ; atomic-set-element-sys-accepts/c
       (dissectfn (hypernest-snippet-sys sfs uds)
         (match/c hypernest-snippet-sys (ok/c sfs) (ok/c uds)))))
-  (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-conversions
+  (#:prop prop:snippet-sys #/make-snippet-sys-impl-from-various-1
     ; snippet-sys-snippet/c
     (dissectfn (hypernest-snippet-sys sfs uds)
       (hypernest/c sfs uds))
-    ; ss->
+    ; snippet-sys-dim-sys
     (dissectfn (hypernest-snippet-sys sfs uds)
-      (hypernest-selective-snippet-sys sfs uds))
-    ; snippet->
-    (dissectfn (hypernest-unchecked selective)
-      selective)
-    ; ->snippet
-    (fn selective
-      (hypernest-unchecked selective))))
+      uds)
+    ; snippet-sys-shape-snippet-sys
+    (dissectfn (hypernest-snippet-sys sfs uds)
+      (w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+      #/snippet-sys-shape-snippet-sys uss))
+    ; snippet-sys-snippet-degree
+    (fn ss snippet
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (dim-sys-dim-zero uds)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+        d))
+    ; snippet-sys-shape->snippet
+    (fn ss shape
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+      #/w- shape-uss (snippet-sys-shape-snippet-sys uss)
+      #/w- d (snippet-sys-snippet-degree shape-uss shape)
+      #/w- shape-as-snippet (snippet-sys-shape->snippet uss shape)
+      #/if (dim-sys-dim=0? uds d)
+        (hypernest-zero-unchecked shape-as-snippet)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/hypernest-nonzero-unchecked d
+        (just-value #/snippet-sys-snippet-set-degree-maybe ess
+          (extended-with-top-dim-infinite)
+          (snippet-sys-morphism-sys-morph-snippet
+            (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+              (dim-sys-morphism-sys-chain-two
+                (extend-with-top-dim-sys-morphism-sys uds)
+                (extend-with-top-dim-sys-morphism-sys
+                  (extended-with-top-dim-sys uds))))
+            shape-as-snippet))))
+    ; snippet-sys-snippet->maybe-shape
+    (fn ss snippet
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (w- uss (functor-sys-apply-to-object ffdstsss uds)
+        #/snippet-sys-snippet->maybe-shape uss content)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/dlogr 'zs1
+      #/maybe-map (snippet-sys-snippet->maybe-shape ess hn-extended)
+      #/fn shape
+        (dissect
+          (snippet-sys-snippet-set-degree-maybe shape-ess
+            (extended-with-top-dim-finite
+              (extended-with-top-dim-finite d))
+            shape)
+          (just shape)
+        #/snippet-sys-morphism-sys-morph-snippet
+          (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+            (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+              (dim-sys-morphism-sys-chain-two
+                (unextend-with-top-dim-sys-morphism-sys
+                  (extended-with-top-finite-dim-sys uds))
+                (unextend-with-top-dim-sys-morphism-sys uds))))
+          shape)))
+    ; snippet-sys-snippet-set-degree-maybe
+    (fn ss new-degree snippet
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- new-degree-is-zero (dim-sys-dim=0? uds new-degree)
+      #/mat snippet (hypernest-zero-unchecked content)
+        ; TODO: See if we should at least attempt setting the degree
+        ; of the content. If we do, and if the attempt is successful,
+        ; we may need to return a `hypernest-nonzero-unchecked`.
+        (maybe-if new-degree-is-zero #/fn snippet)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+      #/if new-degree-is-zero
+        ; TODO: See if we should at least attempt setting the degree
+        ; of the content. If we do, and if the attempt is successful,
+        ; we may need to return a `hypernest-zero-unchecked`.
+        (nothing)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/dissect
+        (snippet-sys-snippet-filter-maybe ess
+          (snippet-sys-snippet-select-if-degree< ess
+            (extended-with-top-dim-finite
+              (extended-with-top-dim-infinite))
+            hn-extended))
+        (just hn-unextended)
+      #/maybe-map
+        (snippet-sys-snippet-set-degree-maybe ess
+          (extended-with-top-dim-finite
+            (extended-with-top-dim-finite new-degree))
+          hn-unextended)
+      #/dissectfn _
+        (hypernest-nonzero-unchecked new-degree hn-extended)))
+    ; snippet-sys-snippet-done
+    (fn ss degree shape data
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- uss (functor-sys-apply-to-object ffdstsss uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/hypernest-nonzero-unchecked degree
+        (just-value #/snippet-sys-snippet-set-degree-maybe ess
+          (extended-with-top-dim-infinite)
+          (snippet-sys-morphism-sys-morph-snippet
+            (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+              (dim-sys-morphism-sys-chain-two
+                (extend-with-top-dim-sys-morphism-sys uds)
+                (extend-with-top-dim-sys-morphism-sys
+                  (extended-with-top-dim-sys uds))))
+            (snippet-sys-snippet-done uss degree shape data)))))
+    ; snippet-sys-snippet-undone
+    (fn ss snippet
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (nothing)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/dlog 'zq2
+      #/maybe-map (snippet-sys-snippet-undone ess hn-extended)
+      #/dissectfn (list (extended-with-top-dim-infinite) shape data)
+        (list
+          d
+          (snippet-sys-morphism-sys-morph-snippet
+            (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+              (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                (dim-sys-morphism-sys-chain-two
+                  (unextend-with-top-dim-sys-morphism-sys
+                    (extended-with-top-finite-dim-sys uds))
+                  (unextend-with-top-dim-sys-morphism-sys uds))))
+            shape)
+          data)))
+    ; snippet-sys-snippet-splice
+    (fn ss snippet hv-to-splice
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/mat snippet (hypernest-zero-unchecked content)
+        (just snippet)
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/maybe-map
+        (snippet-sys-snippet-splice ess hn-extended #/fn hole data
+          (dlog 'zq1
+          #/expect
+            (dim-sys-dim<? eds
+              (snippet-sys-snippet-degree shape-ess hole)
+              (extended-with-top-dim-finite
+                (extended-with-top-dim-infinite)))
+            #t
+            (just #/unselected data)
+          #/maybe-map
+            (hv-to-splice
+              (snippet-sys-morphism-sys-morph-snippet
+                (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+                  (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                    (dim-sys-morphism-sys-chain-two
+                      (unextend-with-top-dim-sys-morphism-sys
+                        (extended-with-top-finite-dim-sys uds))
+                      (unextend-with-top-dim-sys-morphism-sys uds))))
+                hole)
+              data)
+          #/fn splice
+            (mat splice (unselected data) (unselected data)
+            #/dissect splice
+              (selected
+                (hypernest-nonzero-unchecked _ suffix-extended))
+              (selected suffix-extended))))
+      #/fn result-extended
+        (hypernest-nonzero-unchecked d result-extended)))
+    ; snippet-sys-snippet-zip-map-selective
+    (fn ss shape snippet hvv-to-maybe-v
+      (dissect ss (hypernest-snippet-sys sfs uds)
+      #/w- ffdstsss (snippet-format-sys-functor sfs)
+      #/w- extended-hvv-to-maybe-v
+        (fn hole shape-data snippet-data
+          (hvv-to-maybe-v
+            (snippet-sys-morphism-sys-morph-snippet
+              (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+                (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                  (dim-sys-morphism-sys-chain-two
+                    (unextend-with-top-dim-sys-morphism-sys
+                      (extended-with-top-finite-dim-sys uds))
+                    (unextend-with-top-dim-sys-morphism-sys uds))))
+              hole)
+            shape-data
+            snippet-data))
+      #/mat snippet (hypernest-zero-unchecked content)
+        (w- uss (functor-sys-apply-to-object ffdstsss uds)
+        #/maybe-map
+          (snippet-sys-snippet-zip-map-selective uss shape content
+            extended-hvv-to-maybe-v)
+        #/fn content
+          (hypernest-zero-unchecked content))
+      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
+      #/w- eds
+        (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+      #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+      #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+      #/w- extend-selection
+        (fn hn-extended
+          (snippet-sys-snippet-map ess hn-extended #/fn hole data
+            (if
+              (dim-sys-dim<? eds
+                (snippet-sys-snippet-degree shape-ess hole)
+                (extended-with-top-dim-finite
+                  (extended-with-top-dim-infinite)))
+              data
+              (unselected data))))
+      #/maybe-map
+        (snippet-sys-snippet-zip-map-selective ess
+          (snippet-sys-morphism-sys-morph-snippet
+            (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+              (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
+                (dim-sys-morphism-sys-chain-two
+                  (extend-with-top-dim-sys-morphism-sys uds)
+                  (extend-with-top-dim-sys-morphism-sys
+                    (extended-with-top-dim-sys uds)))))
+            shape)
+          (extend-selection hn-extended)
+          extended-hvv-to-maybe-v)
+      #/fn result-extended
+        (hypernest-nonzero-unchecked d result-extended)))))
+(define-match-expander-attenuated
+  attenuated-hypernest-snippet-sys
+  unguarded-hypernest-snippet-sys
+  [snippet-format-sys snippet-format-sys?]
+  [dim-sys dim-sys?]
+  #t)
+(define-match-expander-from-match-and-make
+  hypernest-snippet-sys
+  unguarded-hypernest-snippet-sys
+  attenuated-hypernest-snippet-sys
+  attenuated-hypernest-snippet-sys)
+
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (hypernest-shape ss hn)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ss hypernest-snippet-sys?]
+        [hn (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss)
+        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
+    any/c)
+  (dlogr 'zc10
+  #/dissect ss (hypernest-snippet-sys sfs uds)
+  #/mat hn (hypernest-zero-unchecked content)
+    (dissect (snippet-sys-snippet->maybe-shape ss hn) (just shape)
+      shape)
+  #/dissect hn (hypernest-nonzero-unchecked d hn-extended)
+  #/w- ffdstsss (snippet-format-sys-functor sfs)
+  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+  #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+  #/dissect
+    (snippet-sys-snippet-filter-maybe ess
+      (snippet-sys-snippet-select-if-degree< ess
+        (extended-with-top-dim-finite
+          (extended-with-top-dim-infinite))
+        hn-extended))
+    (just hn-unextended)
+  #/dlogr 'zc11 ss hn-unextended
+  #/dissect
+    (snippet-sys-snippet->maybe-shape ss
+      (hypernest-nonzero-unchecked d hn-unextended))
+    (just shape)
+    shape))
 
 
-; TODO: Export this.
-; TODO: Use the things that use this.
-(define (snippet-sys-snippet-select-nothing ss snippet)
-  (snippet-sys-snippet-select ss snippet #/fn hole data #f))
+; TODO: Use the things that use these.
+(define-imitation-simple-struct
+  (hypernest-coil-zero?)
+  hypernest-coil-zero
+  'hypernest-coil-zero (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hypernest-coil-hole?
+    hypernest-coil-hole-overall-degree
+    hypernest-coil-hole-hole
+    hypernest-coil-hole-data
+    hypernest-coil-hole-tails-hypertee)
+  hypernest-coil-hole
+  'hypernest-coil-hole (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hypernest-coil-bump?
+    hypernest-coil-bump-overall-degree
+    hypernest-coil-bump-data
+    hypernest-coil-bump-bump-degree
+    hypernest-coil-bump-tails-hypernest)
+  hypernest-coil-bump
+  'hypernest-coil-bump (current-inspector) (auto-write) (auto-equal))
 
-; TODO: Export these.
+; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
+; unattenuated version, this one has an extra `ds` argument.
+(define/contract
+  (attenuated-hypernest-coil-hole
+    ds overall-degree hole data tails-hypertee)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [ds dim-sys?]
+        [overall-degree (ds) (dim-sys-0<dim/c ds)]
+        [hole (ds overall-degree)
+          (w- ss
+            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/and/c
+            (snippet-sys-snippetof shape-ss #/fn hole trivial?)
+            (snippet-sys-snippet-with-degree</c
+              shape-ss overall-degree))]
+        [data any/c]
+        [tails-hypertee (ds overall-degree hole)
+          (w- ss
+            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/snippet-sys-snippet-zip-selective/c shape-ss hole
+            (fn hole subject-data #t)
+            (fn hole shape-data subject-data
+              (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+              
+              ; What this means is that this should be a snippet
+              ; whose low-degree holes correspond to the holes of
+              ; `hole` and contain `trivial?` values.
+              ;
+              ; TODO: See if we can factor out a
+              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+              ; something out of this.
+              ;
+              #/and/c
+                (snippet-sys-snippet-with-degree=/c
+                  ss overall-degree)
+                (snippet-sys-snippet-zip-selective/c ss hole
+                  (fn tail-hole subject-data
+                    (w- tail-hole-d
+                      (snippet-sys-snippet-degree
+                        shape-ss tail-hole)
+                    #/dim-sys-dim<? ds tail-hole-d hole-d))
+                  (fn hole shape-data subject-data trivial?)))))])
+      [_ any/c])
+    any/c)
+  (hypernest-coil-hole overall-degree hole data tails-hypertee))
+
+; TODO: See if we can get this to return a flat contract. It's likely
+; the only thing in our way is `by-own-method/c`.
+(define (hypernest-coil/c ds)
+  (w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/rename-contract
+    (or/c
+      hypernest-coil-zero?
+      (and/c
+        (match/c hypernest-coil-hole
+          (dim-sys-0<dim/c ds)
+          (snippet-sys-snippetof shape-ss #/fn hole trivial?)
+          any/c
+          any/c)
+        (by-own-method/c
+          (hypernest-coil-hole
+            overall-degree hole data tails-hypertee)
+          (match/c hypernest-coil-hole
+            any/c
+            (snippet-sys-snippet-with-degree</c
+              shape-ss overall-degree)
+            any/c
+            (snippet-sys-snippet-zip-selective/c shape-ss hole
+              (fn hole subject-data #t)
+              (fn hole shape-data subject-data
+                (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+                
+                ; What this means is that this should be a snippet
+                ; whose low-degree holes correspond to the holes of
+                ; `hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
+                #/and/c
+                  (snippet-sys-snippet-with-degree=/c
+                    ss overall-degree)
+                  (snippet-sys-snippet-zip-selective/c ss hole
+                    (fn tail-hole subject-data
+                      (w- tail-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss tail-hole)
+                      #/dim-sys-dim<? ds tail-hole-d hole-d))
+                    (fn hole shape-data subject-data trivial?))))))))
+      (and/c
+        (match/c hypernest-coil-bump
+          (dim-sys-0<dim/c ds)
+          any/c
+          (dim-sys-dim/c ds)
+          any/c)
+        (by-own-method/c
+          (hypernest-coil-bump
+            overall-degree data bump-degree tails-hypernest)
+          (match/c hypernest-coil-bump
+            any/c
+            any/c
+            any/c
+            (and/c
+              (snippet-sys-snippet-with-degree=/c ss
+                (dim-sys-dim-max ds overall-degree bump-degree))
+              (snippet-sys-snippetof ss #/fn hole
+                (w- hole-d
+                  (snippet-sys-snippet-degree shape-ss hole)
+                #/expect (dim-sys-dim<? ds hole-d bump-degree) #t
+                  any/c
+                
+                ; What this means is that this should be a snippet
+                ; whose low-degree holes correspond to the holes of
+                ; `hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
+                #/and/c
+                  (snippet-sys-snippet-with-degree=/c ss
+                    
+                    ; TODO: Almost all of the unit tests in
+                    ; test-hypernest-2.rkt, with the exception of the
+                    ; `sample-hn-expr-shape-as-ast` test, continue to
+                    ; work if we just use `overall-degree` here. We
+                    ; should write more tests for this case (that is,
+                    ; the situation where a hypernest has a bump with
+                    ; a hole of degree greater than the overall
+                    ; hypernest).
+                    ;
+                    (dim-sys-dim-max ds overall-degree hole-d))
+                  (snippet-sys-snippet-zip-selective/c ss hole
+                    (fn tail-hole subject-data
+                      (w- tail-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss tail-hole)
+                      #/dim-sys-dim<? ds tail-hole-d hole-d))
+                    (fn hole shape-data subject-data trivial?)))))))))
+    `(hypernest-coil/c ,(value-name-for-contract ds))))
+
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (unguarded-fn-hypernest-furl dim-sys coil)
+  (ifc debugging-with-contracts
+    (->i
+      (
+        [dim-sys dim-sys?]
+        [coil (dim-sys) (hypernest-coil/c dim-sys)])
+      [_ hypernest?])
+    any/c)
+  (dlog 'l1
+  #/w- uds dim-sys
+  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+  #/w- ehtss (hypertee-snippet-sys eds)
+  #/w- extend-dim
+    (dim-sys-morphism-sys-chain-two
+      (extend-with-top-dim-sys-morphism-sys uds)
+      (extend-with-top-dim-sys-morphism-sys
+        (extended-with-top-dim-sys uds)))
+  #/mat coil (hypernest-coil-zero)
+    (hypernest-zero-unchecked
+      (unguarded-hypertee-furl uds #/hypertee-coil-zero))
+  #/mat coil
+    (hypernest-coil-hole overall-degree hole data tails-hypertee)
+    (dlog 'l1.1 overall-degree tails-hypertee
+    #/hypernest-nonzero-unchecked overall-degree
+      (dlogr 'l1.2
+      #/unguarded-hypertee-furl eds #/hypertee-coil-hole
+        (extended-with-top-dim-infinite)
+        (hypertee-map-dim extend-dim hole)
+        data
+        (dlog 'l1.3
+        #/snippet-sys-snippet-map ehtss
+          (dlog 'l1.4
+          #/hypertee-map-dim extend-dim tails-hypertee)
+          (fn hole tail
+            (dissect tail
+              (hypernest-nonzero-unchecked _ tail-extended)
+              tail-extended)))))
+  #/dissect coil
+    (hypernest-coil-bump
+      overall-degree data bump-degree tails-hypernest)
+    (dlog 'l1.5
+    #/dissect tails-hypernest
+      (hypernest-nonzero-unchecked _ tails-extended)
+    #/dlog 'l1.6
+    #/dissect
+      (if (dim-sys-dim=0? uds bump-degree)
+        (just #/unguarded-hypertee-furl uds #/hypertee-coil-zero)
+        (maybe-bind
+          (snippet-sys-snippet-filter-maybe ehtss
+            (snippet-sys-snippet-select-if-degree< ehtss
+              (extended-with-top-dim-finite
+                (extended-with-top-dim-infinite))
+              tails-extended))
+        #/fn tails-shape
+        #/dlog 'l1.7
+        #/snippet-sys-snippet-set-degree-maybe ehtss
+          (extended-with-top-dim-finite
+            (extended-with-top-dim-finite bump-degree))
+          tails-shape))
+      (just truncated-tails-shape)
+    #/dlog 'l1.8
+    #/3:dlog 'zo1 data
+    #/w- interior
+      (snippet-sys-snippet-map-selective ehtss
+        ; TODO: We're computing this once already, during the
+        ; computation of `truncated-tails-shape`. Let's deduplicate
+        ; this effort.
+        (snippet-sys-snippet-select-if-degree< ehtss
+          (extended-with-top-dim-finite
+            (extended-with-top-dim-finite bump-degree))
+          tails-extended)
+        (fn hole tail
+          (trivial)))
+    #/w- tails-assembled
+      (snippet-sys-snippet-done ehtss
+        (extended-with-top-dim-finite
+          (extended-with-top-dim-infinite))
+        (snippet-sys-snippet-map ehtss truncated-tails-shape
+          (fn hole tail
+            (dissect tail
+              (hypernest-nonzero-unchecked _ tail-extended)
+              tail-extended)))
+        interior)
+    #/dlog 'l1.9 data
+    #/3:dlog 'zo4
+    #/hypernest-nonzero-unchecked overall-degree
+      (hypertee-furl eds #/attenuated-hypertee-coil-hole eds
+        (extended-with-top-dim-infinite)
+        (snippet-sys-snippet-map ehtss tails-assembled #/fn hole tail
+          (trivial))
+        data
+        tails-assembled))))
+
+; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define/contract (hypernest-get-coil hn)
+  (ifc debugging-with-contracts
+    (->i ([hn hypernest?])
+      [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])
+    any/c)
+  (dlog 'n2 hn (hypernest-get-dim-sys hn)
+  #/mat hn (hypernest-zero-unchecked content)
+    (dissect content (unguarded-hypertee-furl _ #/hypertee-coil-zero)
+    #/hypernest-coil-zero)
+  #/dissect hn
+    (hypernest-nonzero-unchecked overall-degree
+      (unguarded-hypertee-furl eds hn-extended-coil))
+  #/dlog 'n2.0.1
+  #/dissect hn-extended-coil
+    (hypertee-coil-hole (extended-with-top-dim-infinite)
+      hole data tails)
+  #/dlog 'n2.0.3
+  #/dissect eds
+    (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
+  #/w- htss (hypertee-snippet-sys uds)
+  #/w- ehtss (hypertee-snippet-sys eds)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
+  #/w- unextend-dim
+    (dim-sys-morphism-sys-chain-two
+      (unextend-with-top-dim-sys-morphism-sys
+        (extended-with-top-finite-dim-sys uds))
+      (unextend-with-top-dim-sys-morphism-sys uds))
+  #/dlog 'n2.0.4
+  #/dissect (snippet-sys-snippet-degree ehtss tails)
+    (extended-with-top-dim-finite half-extended-hole-degree)
+  #/dlog 'n2.0.5
+  #/mat half-extended-hole-degree
+    (extended-with-top-dim-finite hole-degree)
+    (dlog 'n2.0.1
+    #/attenuated-hypernest-coil-hole uds
+      overall-degree
+      (hypertee-map-dim unextend-dim hole)
+      data
+      (snippet-sys-snippet-map htss
+        (hypertee-map-dim unextend-dim tails)
+        (fn hole tail
+          (dlog 'n2.1
+          #/hypernest-nonzero-unchecked overall-degree tail))))
+  #/dissect half-extended-hole-degree (extended-with-top-dim-infinite)
+    (dlog 'n2.0.2 tails
+    #/dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone ehtss tails)
+      (just #/list
+        (extended-with-top-dim-finite
+          (extended-with-top-dim-infinite))
+        tails
+        interior)
+    #/dlog 'n2.0.3
+    #/dissect (snippet-sys-snippet-degree ehtss tails)
+      (extended-with-top-dim-finite
+        (extended-with-top-dim-finite bump-degree))
+    #/dlog 'n2.0.5
+    #/w- interior-hypernest
+      (dlogr 'n2.0.7.0.2 bump-degree interior
+      #/hypernest-nonzero-unchecked
+        (dim-sys-dim-max uds overall-degree bump-degree)
+        interior)
+    #/dissect
+      (dlog 'n2.0.7 hnss ; interior-hypernest
+      #/if (dim-sys-dim=0? uds bump-degree)
+        (just interior-hypernest)
+      #/snippet-sys-snippet-zip-map hnss
+        (dlogr 'n2.0.7.0.1 tails
+        #/hypertee-map-dim unextend-dim tails)
+        interior-hypernest
+        (fn hole tail interior-data
+          (dlog 'n2.0.7.1 overall-degree
+          #/dissect interior-data (trivial)
+          #/dlog 'n2.0.7.2 tail
+          #/just #/hypernest-nonzero-unchecked overall-degree tail)))
+      (just tails-hypernest)
+    #/dlog 'n2.0.8 overall-degree bump-degree tails tails-hypernest
+    #/hypernest-coil-bump
+      overall-degree data bump-degree tails-hypernest)))
+
+; TODO: See if we need to rename this to `hypernest-furl` for better
+; error messages. If so, we might need to put it in a submodule to
+; avoid a namespace collision.
+(define-match-expander (match-hypernest-furl stx)
+  ; TODO: We should really use a syntax class for match patterns
+  ; rather than `expr` here, but it doesn't look like one exists yet.
+  (syntax-protect
+  #/syntax-parse stx #/ (_ ds:expr coil:expr)
+    #'(app
+        (fn v
+          (maybe-if (hypernest? v) #/fn
+          #/list (hypernest-get-dim-sys v) (dlog 'n1 #/hypernest-get-coil v)))
+        (just #/list ds coil))))
+
+(define-match-expander-from-match-and-make
+  unguarded-hypernest-furl
+  match-hypernest-furl
+  unguarded-fn-hypernest-furl
+  unguarded-fn-hypernest-furl)
+
+; TODO: We have a dilemma. The `define/contract` version of
+; `attenuated-hypertee-furl` will give less precise source location
+; information in its errors, and it won't catch applications with
+; incorrect arity. On the other hand, the
+; `define-match-expander-attenuated` version can't express a fully
+; precise contract for `coil`, namely `(hypertee-coil/c dim-sys)`.
+; Dependent contracts would be difficult to make matchers for, but
+; perhaps we could implement an alternative to
+; `define-match-expander-attenuated` that just defined the
+; function-like side and not actually the match expander.
+(define attenuated-fn-hypernest-furl
+  (let ()
+    (define/contract (hypernest-furl dim-sys coil)
+      (->i
+        (
+          [dim-sys dim-sys?]
+          [coil (dim-sys) (hypernest-coil/c dim-sys)])
+        [_ hypernest?])
+      (unguarded-hypernest-furl dim-sys coil))
+    hypernest-furl))
+#;
+(define-match-expander-attenuated
+  attenuated-hypernest-furl
+  unguarded-hypernest-furl
+  [dim-sys dim-sys?]
+  [coil any/c]
+  #t)
+(define-match-expander-from-match-and-make
+  hypernest-furl
+  unguarded-hypernest-furl
+  attenuated-fn-hypernest-furl
+  attenuated-fn-hypernest-furl)
+
+
 ; TODO: Use these.
 (define-imitation-simple-struct
   (htb-labeled? htb-labeled-degree htb-labeled-data)
@@ -2676,12 +4627,10 @@
   htb-unlabeled
   'htb-unlabeled (current-inspector) (auto-write) (auto-equal))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypertee-bracket? v)
   (or (htb-labeled? v) (htb-unlabeled? v)))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypertee-bracket/c dim/c)
   (w- dim/c (coerce-contract 'hypertee-bracket/c dim/c)
@@ -2691,13 +4640,11 @@
       (match/c htb-unlabeled dim/c))
     `(hypertee-bracket/c ,(contract-name dim/c))))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypertee-bracket-degree bracket)
   (mat bracket (htb-labeled d data) d
   #/dissect bracket (htb-unlabeled d) d))
 
-; TODO: Export these.
 ; TODO: Use these.
 (define-imitation-simple-struct
   (hnb-open? hnb-open-degree hnb-open-data)
@@ -2712,12 +4659,10 @@
   hnb-unlabeled
   'hnb-unlabeled (current-inspector) (auto-write) (auto-equal))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypernest-bracket? v)
   (or (hnb-open? v) (hnb-labeled? v) (hnb-unlabeled? v)))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypernest-bracket/c dim/c)
   (w- dim/c (coerce-contract 'hypernest-bracket/c dim/c)
@@ -2728,486 +4673,272 @@
       (match/c hnb-unlabeled dim/c))
     `(hypernest-bracket/c ,(contract-name dim/c))))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypernest-bracket-degree bracket)
   (mat bracket (hnb-open d data) d
   #/mat bracket (hnb-labeled d data) d
   #/dissect bracket (hnb-unlabeled d) d))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (hypertee-bracket->hypernest-bracket bracket)
   (mat bracket (htb-labeled d data) (hnb-labeled d data)
   #/dissect bracket (htb-unlabeled d) (hnb-unlabeled d)))
 
-; TODO: Export this.
 ; TODO: Use this.
 (define (compatible-hypernest-bracket->hypertee-bracket bracket)
   (mat bracket (hnb-labeled d data) (htb-labeled d data)
   #/dissect bracket (hnb-unlabeled d) (htb-unlabeled d)))
 
 (define
-  (explicit-hypernest-from-brackets
-    err-name err-normalize-bracket uds degree brackets)
-  
-  (struct parent-same-part (should-annotate-as-nontrivial))
-  (struct parent-new-part ())
-  (struct parent-part (i should-annotate-as-trivial))
-  
-  (struct part-state
-    (
-      is-hypernest
-      first-nontrivial-degree
-      first-non-interpolation-degree
-      overall-degree
-      rev-brackets))
-  
-  (w- mds (fin-multiplied-dim-sys 2 uds)
-  #/w- emds (extended-with-top-dim-sys mds)
-  #/w- htss (hypertee-snippet-sys emds)
-  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
-  #/w- opening-degree degree
-  #/if (dim-sys-dim=0? uds opening-degree)
-    (expect brackets (list)
-      (error "Expected brackets to be empty since degree was zero")
-    #/hypernest-unchecked #/selective-snippet-zero
-      (hypertee-furl-unchecked mds #/hypertee-coil-zero))
-  #/expect brackets (cons first-bracket brackets)
-    (error "Expected brackets to be nonempty since degree was nonzero")
-  #/w- root-i 'root
-  #/w- stack
-    (make-hyperstack uds opening-degree #/parent-same-part #t)
-  #/dissect
-    (mat first-bracket (hnb-open bump-degree data)
-      (list
-        (fn root-part
-          (dissect root-part
-            (hypernest-unchecked #/selective-snippet-nonzero _
-              root-part-selective)
-          #/dissect
-            (snippet-sys-snippet-filter-maybe htss
-              root-part-selective)
-            (just root-part-shape)
-          #/w- root-part-assembled
-            
-            ; We construct the overall hypertee to use as the
-            ; representation of the resulting hypernest.
-            ;
-            ; This hypertee begins with at least one hole,
-            ; representing the bump we parsed from the brackets.
-            ;
-            ; It also contains other holes representing the rest of
-            ; the bumps and holes of the hypernest. We add in the rest
-            ; of those holes by using appropriate tails in a
-            ; `snippet-sys-snippet-splice-sure`. The `root-part` and
-            ; each of the (hypernest) tails carried in its holes gives
-            ; us what we need for one of those (hypertee) tails.
-            ;
-            ; TODO: See if it's simpler to keep the tails as
-            ; hypernests and use them for a
-            ; `(snippet-sys-snippet-splice-sure hnss ...)` instead.
-            ;
-            (snippet-sys-snippet-splice-sure htss
-              (snippet-sys-snippet-done
-                htss
-                (extended-with-top-dim-infinite)
-                
-                ; We construct the shape of the hole that we're using
-                ; to represent the bump. This hole is shaped like a
-                ; "done" around the shape of the hole's interior
-                ; (`root-part`).
-                ;
-                ; As expected by our `snippet-sys-snippet-splice-sure`
-                ; call, the elements in the holes this snippet are
-                ; `selectable?` values, and the selected ones are tail
-                ; snippets whose own holes contain
-                ; `(selectable/c any/c trivial?)` values.
-                ;
-                (snippet-sys-snippet-done
-                  htss
-                  (extended-with-top-dim-finite
-                    (fin-multiplied-dim 1 bump-degree))
-                  (snippet-sys-snippet-map htss root-part-shape
-                    (fn hole tail
-                      (w- prefix-d
-                        (snippet-sys-snippet-degree htss hole)
-                      #/dissect tail
-                        (hypernest-unchecked
-                          (selective-snippet-nonzero _ tail))
-                      #/selected
-                        (snippet-sys-snippet-map htss tail
-                          (fn hole selectable-tail-tail
-                            (mat selectable-tail-tail
-                              (unselected data)
-                              (just #/unselected #/unselected data)
-                            #/dissect selectable-tail-tail
-                              (selected tail-tail)
-                            #/w- suffix-d
-                              (snippet-sys-snippet-degree htss hole)
-                            #/if
-                              (dim-sys-dim<? emds suffix-d prefix-d)
-                              (dissect tail-tail (trivial)
-                              #/just #/selected #/trivial)
-                            #/just #/unselected
-                              (selected tail-tail)))))))
-                  (selected
-                    (snippet-sys-snippet-map htss root-part-selective
-                      (fn hole selectable-tail
-                        (mat selectable-tail (unselected data)
-                          (just #/unselected #/unselected data)
-                        #/dissect selectable-tail (selected tail)
-                          (just #/selected #/trivial))))))
-                (unselected #/unselected data))
-              (fn hole splice splice))
-          
-          #/hypernest-unchecked #/selective-snippet-nonzero
-            (fin-multiplied-dim 0 opening-degree)
-            root-part-assembled))
-        (part-state #t (dim-sys-dim-zero uds) bump-degree
-          (dim-sys-dim-max uds opening-degree bump-degree)
-          (list))
-        (hyperstack-push bump-degree stack #/parent-new-part))
-    #/mat first-bracket (hnb-labeled hole-degree data)
-      (expect (dim-sys-dim<? uds hole-degree opening-degree) #t
-        (raise-arguments-error err-name
-          "encountered a closing bracket of degree too high for where it occurred, and it was the first bracket"
-          "overall-degree" opening-degree
-          "first-bracket" (err-normalize-bracket first-bracket)
-          "brackets" (map err-normalize-bracket brackets))
-      #/dissect (hyperstack-pop hole-degree stack #/parent-new-part)
-        (list (parent-same-part #t) stack)
-      #/list
-        (fn root-part
-          (hypernest-unchecked #/selective-snippet-nonzero
-            (fin-multiplied-dim 0 opening-degree)
-            (hypertee-furl-unchecked emds #/hypertee-coil-hole
-              (extended-with-top-dim-infinite)
-              (snippet-sys-snippet-map htss root-part #/fn hole data
-                (trivial))
-              (selected data)
-              root-part)))
-        (part-state
-          #f (dim-sys-dim-zero uds) hole-degree hole-degree (list))
-        stack)
-    #/error "Expected the first bracket of a hypernest to be annotated")
-    (list finish root-part stack)
-  #/w-loop next
-    brackets-remaining brackets
-    parts (hash-set (make-immutable-hasheq) root-i root-part)
-    stack stack
-    current-i root-i
-    new-i 0
-    (dissect (hash-ref parts current-i)
-      (part-state
-        current-is-hypernest
-        current-first-nontrivial-degree
-        current-first-non-interpolation-degree
-        current-overall-degree
-        current-rev-brackets)
-    #/w- current-d (hyperstack-dimension stack)
-    #/expect brackets-remaining (cons bracket brackets-remaining)
-      (expect (dim-sys-dim=0? uds current-d) #t
-        (error "Expected more closing brackets")
-      #/let ()
-        (define (get-part i)
-          (dissect (hash-ref parts i)
-            (part-state
-              is-hypernest
-              first-nontrivial-degree
-              first-non-interpolation-degree
-              overall-degree
-              rev-brackets)
-          #/w- get-subpart
-            (fn d data
-              (if
-                (and
-                  (dim-sys-dim<=? uds first-nontrivial-degree d)
-                  (dim-sys-dim<? uds d first-non-interpolation-degree))
-                (get-part data)
-                data))
-          #/if is-hypernest
-            (snippet-sys-snippet-map hnss
-              (hypernest-from-brackets uds overall-degree
-                (reverse rev-brackets))
-              (fn hole data
-                (get-subpart
-                  (snippet-sys-snippet-degree htss hole)
-                  data)))
-            (snippet-sys-snippet-map htss
-              (hypertee-from-brackets uds overall-degree
-                (reverse #/list-map rev-brackets #/fn closing-bracket
-                  (mat closing-bracket (hnb-labeled d data)
-                    (htb-labeled d data)
-                  #/dissect closing-bracket (hnb-unlabeled d)
-                    (htb-unlabeled d))))
-              (fn hole data
-                (get-subpart
-                  (snippet-sys-snippet-degree htss hole)
-                  data)))))
-      #/finish #/get-part root-i)
-    
-    #/mat bracket (hnb-open bump-degree bump-value)
-      (expect current-is-hypernest #t
-        (error "Encountered a bump inside a hole")
-      #/next
-        brackets-remaining
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons bracket current-rev-brackets)))
-        (hyperstack-push bump-degree stack #/parent-same-part #f)
-        current-i
-        new-i)
-    #/dissect
-      (mat bracket (hnb-labeled hole-degree hole-value)
-        (list hole-degree hole-value)
-      #/dissect bracket (hnb-unlabeled hole-degree)
-        (list hole-degree (trivial)))
-      (list hole-degree hole-value)
-    #/expect (dim-sys-dim<? uds hole-degree current-d) #t
+  (explicit-hypernest-from-hyperstack-and-brackets
+    err-name err-normalize-bracket orig-brackets ds stack orig-d
+    bumps-allowed brackets)
+  (w- htss (hypertee-snippet-sys ds)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- current-d (hyperstack-dimension stack)
+  #/expect brackets (cons bracket brackets-remaining)
+    (expect (dlog 'zc4
+            #/dim-sys-dim=0? ds current-d) #t
       (raise-arguments-error err-name
-        "encountered a closing bracket of degree too high for where it occurred"
+        "encountered the end of the brackets when the current degree was nonzero"
+        "current-d" current-d
+        "brackets" (map err-normalize-bracket orig-brackets))
+    #/unguarded-hypernest-furl ds #/hypernest-coil-zero)
+  #/w- process-hole
+    (fn hole-degree data was-labeled
+      (dlog 'zc5
+      #/expect (dim-sys-dim<? ds hole-degree current-d) #t
+        (raise-arguments-error err-name
+          "encountered a closing bracket of degree too high for where it occurred"
+          "current-d" current-d
+          "bracket" (err-normalize-bracket bracket)
+          "brackets-remaining"
+          (map err-normalize-bracket brackets-remaining)
+          "brackets" (map err-normalize-bracket orig-brackets))
+      #/dissect
+        (hyperstack-pop hole-degree stack #/list #f bumps-allowed)
+        (list (list should-have-been-labeled bumps-now-allowed) stack)
+      #/dlog 'zc6
+      #/if (and was-labeled (not should-have-been-labeled))
+        (raise-arguments-error err-name
+          "encountered an annotated closing bracket where only an unannotated closing bracket was expected"
+          "current-d" current-d
+          "bracket" (err-normalize-bracket bracket)
+          "brackets-remaining"
+          (map err-normalize-bracket brackets-remaining)
+          "brackets" (map err-normalize-bracket orig-brackets))
+      #/if (and should-have-been-labeled (not was-labeled))
+        (raise-arguments-error err-name
+          "encountered an unannotated closing bracket where only an annotated closing bracket was expected"
+          "current-d" current-d
+          "bracket" (err-normalize-bracket bracket)
+          "brackets-remaining"
+          (map err-normalize-bracket brackets-remaining)
+          "brackets" (map err-normalize-bracket orig-brackets))
+      #/dlog 'zc7
+      #/w- recursive-result
+        (explicit-hypernest-from-hyperstack-and-brackets
+          err-name err-normalize-bracket orig-brackets ds stack orig-d
+          bumps-now-allowed brackets-remaining)
+      #/dlog 'zc8 hnss recursive-result
+      #/dlog 'zc9 current-d hole-degree was-labeled orig-d orig-brackets brackets-remaining
+      
+      ; We truncate the shape of `recursive-result` to just the holes
+      ; that are smaller than `hole-degree`.
+      ;
+      #/w- recursive-result-with-selections
+        (snippet-sys-snippet-select-if-degree<
+          hnss hole-degree recursive-result)
+      #/dlog 'zc9.1
+      #/dissect
+        (if (dim-sys-dim=0? ds hole-degree)
+          (just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+          (w- shape-with-selections
+            (hypernest-shape hnss recursive-result-with-selections)
+          #/dlog 'zc9.2 shape-with-selections
+          #/maybe-bind
+            (snippet-sys-snippet-filter-maybe
+              htss shape-with-selections)
+          #/fn truncated-shape
+          #/dlog 'zc9.3
+;          #/begin (displayln (format "~a ~a ~a ~a" current-d hole-degree (hyperstack-dimension stack) (snippet-sys-snippet-degree htss truncated-shape)))
+          #/snippet-sys-snippet-set-degree-maybe htss hole-degree
+            truncated-shape))
+        (just truncated-shape)
+      
+      ; Then we make a `hypernest-coil-hole`-based hypernest out of
+      ; that, with the data in the hole being either `data` or
+      ; `recursive-result` with its holes smaller than `hole-degree`
+      ; replaced with trivial values. This way, all the tails carried
+      ; by the recursive result in holes of degree smaller than
+      ; `hole-degree` are incorporated into the snippet content of
+      ; this result.
+      ;
+      #/dlog 'zc9.4
+      #/hypernest-furl ds #/attenuated-hypernest-coil-hole ds
+        current-d
+        (snippet-sys-snippet-map htss truncated-shape #/fn hole tail
+          (trivial))
+        (if was-labeled
+          data
+          (dlog 'zc9.8
+          #/snippet-sys-snippet-map-selective hnss
+            recursive-result-with-selections
+          #/fn hole data
+            (trivial)))
+        truncated-shape))
+  #/mat bracket (hnb-open bump-degree data)
+    (expect bumps-allowed #t
+      (raise-arguments-error err-name
+        "encountered an opening bracket in a hole"
         "current-d" current-d
         "bracket" (err-normalize-bracket bracket)
         "brackets-remaining"
         (map err-normalize-bracket brackets-remaining)
-        "brackets" (map err-normalize-bracket brackets))
-    #/w- parent (hyperstack-peek stack hole-degree)
-    #/begin
-      (mat bracket (hnb-labeled hole-degree hole-value)
-        (expect parent (parent-same-part #t)
-          (raise-arguments-error err-name
-            "encountered an annotated closing bracket of degree too low for where it occurred"
-            "current-d" current-d
-            "bracket" (err-normalize-bracket bracket)
-            "brackets-remaining"
-            (map err-normalize-bracket brackets-remaining)
-            "brackets" (map err-normalize-bracket brackets))
-        #/void)
-        (mat parent (parent-same-part #t)
-          (raise-arguments-error err-name
-            "encountered an unannotated closing bracket of degree too high for where it occurred"
-            "current-d" current-d
-            "bracket" (err-normalize-bracket bracket)
-            "brackets-remaining"
-            (map err-normalize-bracket brackets-remaining)
-            "brackets" (map err-normalize-bracket brackets))
-        #/void))
-    #/mat parent (parent-same-part should-annotate-as-nontrivial)
-      (dissect
-        (hyperstack-pop hole-degree stack #/parent-same-part #f)
-        (list _ updated-stack)
-      #/dissect
-        (eq? should-annotate-as-nontrivial
-          (mat bracket (hnb-labeled hole-degree hole-value)
-            #t
-            #f))
-        #t
-      #/w- parts
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons bracket current-rev-brackets)))
-      #/next brackets-remaining parts updated-stack current-i new-i)
-    #/mat parent (parent-new-part)
-      (dissect
-        (hyperstack-pop hole-degree stack #/parent-part current-i #t)
-        (list _ updated-stack)
-      #/mat bracket (hnb-labeled hole-degree hole-value)
-        ; TODO: Is this really an internal error, or is there some way
-        ; to cause it with an incorrect sequence of input brackets?
-        (error "Internal error: Expected the beginning of an interpolation to be unannotated")
-      #/w- parent-i new-i
-      #/w- new-i (add1 new-i)
-      #/w- parts
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons (hnb-labeled hole-degree parent-i)
-              current-rev-brackets)))
-      #/w- parts
-        (hash-set parts parent-i
-          (part-state #t hole-degree hole-degree
-            (dim-sys-dim-max uds opening-degree hole-degree)
-            (list)))
-      #/next brackets-remaining parts updated-stack parent-i new-i)
-    #/dissect parent (parent-part parent-i should-annotate-as-trivial)
-      (dissect hole-value (trivial)
-      #/dissect
-        (hyperstack-pop hole-degree stack #/parent-part current-i #f)
-        (list _ updated-stack)
-      #/dissect (hash-ref parts parent-i)
-        (part-state
-          parent-is-hypernest
-          parent-first-nontrivial-degree
-          parent-first-non-interpolation-degree
-          parent-overall-degree
-          parent-rev-brackets)
-      #/w- parts
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons
-              (if should-annotate-as-trivial
-                (hnb-labeled hole-degree (trivial))
-                (hnb-unlabeled hole-degree))
-              current-rev-brackets)))
-      #/w- parts
-        (hash-set parts parent-i
-          (part-state
-            parent-is-hypernest
-            parent-first-nontrivial-degree
-            parent-first-non-interpolation-degree
-            parent-overall-degree
-            (cons (hnb-unlabeled hole-degree) parent-rev-brackets)))
-      #/next brackets-remaining parts updated-stack parent-i new-i))))
+        "brackets" (map err-normalize-bracket orig-brackets))
+    #/w- stack
+      (hyperstack-push bump-degree stack #/list #f bumps-allowed)
+    #/w- recursive-result
+      (explicit-hypernest-from-hyperstack-and-brackets
+        err-name err-normalize-bracket orig-brackets ds stack orig-d
+        bumps-allowed brackets-remaining)
+    #/dlog 'ze1 brackets-remaining brackets recursive-result
+    ; TODO DEBUGGABILITY: Come up with a way to automatically change
+    ; this to a `hypernest-furl` call when we activate one of the
+    ; debugging modes. For now, it's just a commented-out alternative.
+;    #/hypernest-furl ds #/hypernest-coil-bump
+    #/unguarded-hypernest-furl ds #/hypernest-coil-bump
+      current-d data bump-degree recursive-result)
+  #/mat bracket (hnb-labeled hole-degree data)
+    (process-hole hole-degree data #t)
+  #/dissect bracket (hnb-unlabeled hole-degree)
+    (process-hole hole-degree (trivial) #f)))
 
-; TODO: Export this.
+(define
+  (explicit-hypernest-from-brackets
+    err-name err-normalize-bracket ds degree brackets)
+  (w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/dlog 'zc2
+  #/explicit-hypernest-from-hyperstack-and-brackets
+    err-name err-normalize-bracket brackets ds
+    (make-hyperstack ds degree #/list #t #f)
+    degree #t brackets))
+
 ; TODO: Use this.
 (define (hypernest-from-brackets ds degree brackets)
   (explicit-hypernest-from-brackets
     'hypernest-from-brackets (fn hnb hnb) ds degree brackets))
 
-; TODO: Export this.
+; TODO: Use this.
+(define (hn-bracs ds degree . brackets)
+  (explicit-hypernest-from-brackets 'hn-bracs (fn hnb hnb) ds degree
+    (list-map brackets #/fn closing-bracket
+      (if (hypernest-bracket? closing-bracket)
+        closing-bracket
+        (hnb-unlabeled closing-bracket)))))
+
+(define (explicit-hypertee-from-brackets err-name ds degree brackets)
+  (dlog 'd3
+  #/just-value
+    (snippet-sys-snippet->maybe-shape
+      (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+      (dlog 'zc1
+      #/explicit-hypernest-from-brackets
+        err-name
+        (fn hnb #/compatible-hypernest-bracket->hypertee-bracket hnb)
+        ds
+        degree
+        (list-map brackets #/fn htb
+          (hypertee-bracket->hypernest-bracket htb))))))
+
 ; TODO: Use this.
 (define (hypertee-from-brackets ds degree brackets)
-  (explicit-hypernest-from-brackets
-    'hypertee-from-brackets
-    (fn hnb #/compatible-hypernest-bracket->hypertee-bracket hnb)
-    ds
-    degree
-    (list-map brackets #/fn htb
-      (hypertee-bracket->hypernest-bracket htb))))
+  (explicit-hypertee-from-brackets
+    'hypertee-from-brackets ds degree brackets))
 
+; TODO: Use this.
+(define (ht-bracs ds degree . brackets)
+  (explicit-hypertee-from-brackets 'ht-bracs ds degree
+    (list-map brackets #/fn closing-bracket
+      (if (hypertee-bracket? closing-bracket)
+        closing-bracket
+        (htb-unlabeled closing-bracket)))))
+
+
+(define
+  (hyperstack-and-hypernest-get-brackets
+    stack orig-d bumps-allowed hn)
+  (dlog 'zh0 hn
+  #/w- ds (hypernest-get-dim-sys hn)
+  #/dlog 'zh0.0.1
+  #/w- htss (hypertee-snippet-sys ds)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- coil (hypernest-get-coil hn)
+  #/dlog 'zh0.1
+  #/mat coil (hypernest-coil-zero) (list)
+  #/dlog 'zh0.2
+  #/mat coil (hypernest-coil-hole current-d shape data tails)
+    (w- hole-degree (snippet-sys-snippet-degree htss shape)
+    #/dlog 'zh1
+    #/dissect
+      (hyperstack-pop hole-degree stack #/list #f bumps-allowed)
+      (list (list should-be-labeled bumps-now-allowed) stack)
+    #/w- updated-d (hyperstack-dimension stack)
+    #/dlog 'zh1.1
+    #/w- recursive-result
+      (dlog 'zh1.2
+      #/hyperstack-and-hypernest-get-brackets
+        stack orig-d bumps-now-allowed
+        (if should-be-labeled
+          (dlog 'zh1.3
+          #/snippet-sys-shape->snippet hnss
+            (just-value
+              (dlog 'zh1.4
+              #/snippet-sys-snippet-set-degree-maybe
+                htss updated-d tails)))
+          (dlog 'zh1.5 tails data
+          #/if (dim-sys-dim=0? ds hole-degree)
+            data
+            (just-value
+              (snippet-sys-snippet-zip-map-selective hnss
+                tails
+                (snippet-sys-snippet-select-if-degree<
+                  hnss hole-degree data)
+                (fn hole tail data
+                  (dlog 'zh2
+                  #/dissect data (trivial)
+                  #/just tail)))))))
+    #/cons
+      (if should-be-labeled
+        (hnb-labeled hole-degree data)
+        (hnb-unlabeled hole-degree))
+      recursive-result)
+  #/dlog 'zh3
+  #/dissect coil
+    (hypernest-coil-bump current-d data bump-degree tails-hypernest)
+    (w- stack
+      (hyperstack-push bump-degree stack #/list #f bumps-allowed)
+    #/w- recursive-result
+      (2:dlog 'zh4 current-d (hyperstack-dimension stack) (build-list (hyperstack-dimension stack) #/fn i #/hyperstack-peek stack i)
+      #/hyperstack-and-hypernest-get-brackets
+        stack orig-d bumps-allowed tails-hypernest)
+    #/cons (hnb-open bump-degree data) recursive-result)))
+
+(define (hypernest-get-brackets hn)
+  (dlog 'zl1 hn
+  #/w- ds (hypernest-get-dim-sys hn)
+  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- degree (snippet-sys-snippet-degree hnss hn)
+  #/hyperstack-and-hypernest-get-brackets
+    (make-hyperstack ds degree #/list #t #f)
+    degree #t hn))
 
 ; TODO: Export this.
 ; TODO: Use this.
-(define (hypernest-brackets hn)
-  (dissect hn (hypernest-unchecked hn-selective)
-  #/mat hn-selective (selective-snippet-zero ht) (list)
-  #/dissect hn-selective (selective-snippet-nonzero _ ht)
-  #/dissect ht (hypertee-furl-unchecked emds _)
-  #/dissect emds (extended-with-top-dim-sys mds)
-  #/dissect mds (fin-multiplied-dim-sys 2 uds)
-  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
-  #/w- htss (hypertee-snippet-sys emds)
-  #/w- prepend
-    (fn hnb rest
-      (snippet-sys-snippet-splice-sure htss
-        (hypertee-from-brackets emds
-          (extended-with-top-dim-infinite)
-          (list
-            (htb-labeled
-              (extended-with-top-dim-finite
-                (fin-multiplied-dim 1 #/dim-sys-dim-zero uds))
-              (unselected hnb))
-            (htb-unlabeled #/dim-sys-dim-zero emds)
-            (htb-labeled (dim-sys-dim-zero emds)
-              (selected #/snippet-sys-snippet-select-nothing htss
-                rest))))
-        (fn hole splice splice)))
-  #/w- ht->list
-    (fn ht
-      (w-loop next ht ht rev-result (list)
-        (dissect ht
-          (hypertee-furl-unchecked _
-            (hypertee-coil-hole
-              (extended-with-top-dim-infinite)
-              hole
-              data
-              (hypertee-furl-unchecked _ tails-coil)))
-        #/mat tails-coil (hypertee-coil-zero)
-          (dissect data (trivial)
-          #/reverse rev-result)
-        #/dissect tails-coil
-          (hypertee-coil-hole
-            (extended-with-top-dim-finite #/fin-multiplied-dim 1 d)
-            tails-hole
-            tail
-            (hypertee-furl-unchecked _ #/hypertee-coil-zero))
-        #/dissect (dim-sys-dim=0? uds d) #t
-        #/next tail #/cons data rev-result)))
-  #/ht->list #/snippet-sys-snippet-splice-sure htss
-    (w-loop next ht ht
-      (dissect ht
-        (hypertee-furl-unchecked _
-          (hypertee-coil-hole (extended-with-top-dim-infinite)
-            hole data tails))
-      #/dissect (snippet-sys-snippet-degree htss tails)
-        (extended-with-top-dim-finite d)
-      #/mat d (fin-multiplied-dim 1 d)
-        (dissect (snippet-sys-snippet-undone uds tails)
-          (just #/list
-            (extended-with-top-dim-finite
-              (fin-multiplied-dim 1 d-again))
-            tails
-            interior)
-        #/dissect (dim-sys-dim=? uds d d-again) #t
-        #/dissect (snippet-sys-snippet-degree htss tails)
-          (extended-with-top-dim-finite
-            (fin-multiplied-dim 0 d-again))
-        #/dissect (dim-sys-dim=? uds d d-again) #t
-        #/dissect data (unselected data)
-        #/prepend (unselected #/hnb-open d data)
-          (snippet-sys-snippet-splice-sure htss
-            (snippet-sys-snippet-zip-map-selective htss
-              tails
-              (snippet-sys-snippet-select htss (next interior)
-                (fn hole data
-                  (selected? data)))
-            #/fn hole tail data
-              (dissect data (selected #/trivial)
-              #/dissect (snippet-sys-snippet-degree htss hole)
-                (extended-with-top-dim-finite
-                  (fin-multiplied-dim 0 d))
-              #/selected
-                (prepend (unselected #/hnb-unlabeled d) (next tail))))
-            (fn hole splice splice)))
-      #/dissect d (fin-multiplied-dim 0 d)
-        (dissect data (selected data)
-        #/hypertee-coil-hole (extended-with-top-dim-infinite)
-          hole
-          (selected data)
-          (snippet-sys-snippet-map htss tails #/fn hole tail
-            (dissect (snippet-sys-snippet-degree htss hole)
-              (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
-            #/prepend (unselected #/hnb-unlabeled d) (next tail))))))
-    (fn hole selectable-data
-      (dissect (snippet-sys-snippet-degree htss hole)
-        (extended-with-top-dim-finite d)
-      #/mat d (fin-multiplied-dim 1 d)
-        (dissect selectable-data (unselected data)
-        #/unselected data)
-      #/dissect d (fin-multiplied-dim 0 d)
-        (dissect selectable-data (selected data)
-        #/dissect
-          (snippet-sys-snippet-set-degree-maybe htss
-            (extended-with-top-dim-infinite)
-            hole)
-          (just rest)
-        #/selected #/snippet-sys-snippet-select-if-degree< htss
-          (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
-          (prepend (hnb-labeled d data) rest))))))
-
-; TODO: Export this.
-; TODO: Use this.
-(define (hypertee-brackets ht)
-  (dissect ht (hypertee-furl-unchecked ds coil)
+(define (hypertee-get-brackets ht)
+  (dissect ht (unguarded-hypertee-furl ds coil)
   #/list-map
-    (hypernest-brackets #/snippet-sys-shape->snippet
+    (hypernest-get-brackets #/snippet-sys-shape->snippet
       (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
       ht)
   #/fn hnb

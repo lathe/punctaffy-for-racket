@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; punctaffy/tests/test-hypernest
+; punctaffy/tests/test-hypernest-2
 ;
 ; Unit tests of the hypernest data structure for hypersnippet-shaped
 ; data.
@@ -20,32 +20,60 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/only-in racket/contract/base contract)
 (require rackunit)
 
 (require #/only-in lathe-comforts dissect fn mat w-)
 (require #/only-in lathe-comforts/list list-map)
-(require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-comforts/trivial trivial trivial?)
 
-(require punctaffy/hypersnippet/dim)
-(require punctaffy/hypersnippet/hypernest)
-(require punctaffy/hypersnippet/hypertee)
+(require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
+(require #/only-in punctaffy/hypersnippet/hypernest-2
+  hnb-labeled hnb-open hn-bracs hnb-unlabeled hypernest-coil-bump
+  hypernest-coil/c hypernest-coil-hole hypernest-coil-zero
+  hypernest-from-brackets hypernest-furl hypernest-get-brackets
+  hypernest-get-coil hypernest-shape hypernest-snippet-sys)
+(require #/only-in punctaffy/hypersnippet/hypertee-2
+  ht-bracs htb-labeled hypertee-coil-zero hypertee-furl
+  hypertee-get-dim-sys hypertee-snippet-format-sys
+  hypertee-snippet-sys)
+(require #/only-in punctaffy/hypersnippet/snippet
+  selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
+  snippet-sys-snippet-done snippet-sys-snippet-join
+  snippet-sys-snippet-join-selective snippet-sys-snippet-map
+  snippet-sys-snippetof unselected)
 
 ; (We provide nothing from this module.)
 
 
 (define ds (nat-dim-sys))
+(define htss (hypertee-snippet-sys ds))
+(define hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds))
+
+(check-equal? (snippet-sys-shape-snippet-sys hnss) htss)
+
+(define (make-hypernest-coil-hole overall-degree data tails-hypertee)
+  (w- ds (hypertee-get-dim-sys tails-hypertee)
+  #/w- htss (hypertee-snippet-sys ds)
+  #/hypernest-coil-hole
+    overall-degree
+    (snippet-sys-snippet-map htss tails-hypertee #/fn hole data
+      (trivial))
+    data
+    tails-hypertee))
 
 (define (hnz)
   (hypernest-furl ds #/hypernest-coil-zero))
 
 (define (hnh overall-degree data tails-hypertee)
-  (hypernest-furl ds
-  #/hypernest-coil-hole overall-degree data tails-hypertee))
+  (w- ds (hypertee-get-dim-sys tails-hypertee)
+  #/hypernest-furl ds
+    (make-hypernest-coil-hole overall-degree data tails-hypertee)))
 
 (define (hno overall-degree data bump-degree tails-hypernest)
   (hypernest-furl ds
-  #/hypernest-coil-bump
-    overall-degree data bump-degree tails-hypernest))
+    (hypernest-coil-bump
+      overall-degree data bump-degree tails-hypernest)))
 
 
 
@@ -107,6 +135,20 @@
   #/hnb-labeled 0 'end))
 
 
+; NOTE: We used this to debug an issue with `sample-opening-1a`. When
+; it was broken, it was raising an exception at the time of the
+; `make-sample` call, but we still run the various tests on it like
+; the other samples just to be sure.
+(define sample-opening-1aa
+  (make-sample 1
+    (hnb-open 2 'a)
+    1
+    (hnb-open 1 'a)
+    0
+    0
+    0
+    (hnb-labeled 0 'a)))
+
 (define sample-opening-1a
   (make-sample 1
     (hnb-open 1 'a)
@@ -138,7 +180,9 @@
 (define (check-brackets-round-trip sample)
   (w- hn (db->hn sample)
   #/check-equal?
-    (list (hypernest-degree hn) (hypernest-get-brackets hn))
+    (list
+      (snippet-sys-snippet-degree hnss hn)
+      (hypernest-get-brackets hn))
     sample))
 
 (check-brackets-round-trip sample-0)
@@ -148,25 +192,49 @@
 (check-brackets-round-trip sample-closing-4)
 (check-brackets-round-trip sample-closing-5)
 (check-brackets-round-trip sample-closing-3b)
+(check-brackets-round-trip sample-opening-1aa)
 (check-brackets-round-trip sample-opening-1a)
 (check-brackets-round-trip sample-opening-1b)
 (check-brackets-round-trip sample-opening-2)
 
 (define (check-furl-round-trip sample)
   (w- sample (db->hn sample)
-  #/check-equal? (hypernest-furl ds #/hypernest-unfurl sample)
+  #/check-equal? (hypernest-furl ds #/hypernest-get-coil sample)
     sample))
 
 (check-furl-round-trip sample-0)
+
+; NOTE: We used the following tests to debug the test below them.
+(check-equal?
+  (contract
+    (snippet-sys-snippetof htss #/fn hole trivial?)
+    (hypertee-furl ds #/hypertee-coil-zero)
+    'pos
+    'neg)
+  (hypertee-furl ds #/hypertee-coil-zero))
+(check-equal?
+  (contract
+    (hypernest-coil/c ds)
+    (hypernest-coil-hole 1
+      (hypertee-furl ds #/hypertee-coil-zero)
+      'a
+      (hypertee-furl ds #/hypertee-coil-zero))
+    'pos
+    'neg)
+  (hypernest-coil-hole 1
+    (hypertee-furl ds #/hypertee-coil-zero)
+    'a
+    (hypertee-furl ds #/hypertee-coil-zero)))
+
 (check-furl-round-trip sample-closing-1)
 (check-furl-round-trip sample-closing-2)
 
 (check-equal?
-  (hypernest-unfurl #/db->hn sample-closing-3a)
-  (hypernest-coil-hole 3 'a
+  (hypernest-get-coil #/db->hn sample-closing-3a)
+  (make-hypernest-coil-hole 3 'a
     ; TODO: We basically just transcribed this from the result of
-    ; `(hypernest-unfurl #/db->hn sample-closing-3a)`. Make sure it's
-    ; correct.
+    ; `(hypernest-get-coil #/db->hn sample-closing-3a)`. Make sure
+    ; it's correct.
     (ht-bracs ds 2
       (htb-labeled 1 #/hn-bracs ds 3
         (hnb-labeled 1 'a)
@@ -179,48 +247,54 @@
 (check-furl-round-trip sample-closing-4)
 (check-furl-round-trip sample-closing-5)
 (check-furl-round-trip sample-closing-3b)
+(check-furl-round-trip sample-opening-1aa)
 (check-furl-round-trip sample-opening-1a)
 (check-furl-round-trip sample-opening-1b)
 (check-furl-round-trip sample-opening-2)
 
 
 
-; ===== Testing `hypernest-join-all-degrees` without bumps ===========
+; ====================================================================
+; Testing hypernest `snippet-sys-snippet-join` without bumps
+; ====================================================================
 
 ; TODO: Put a similar test in test-hypertee.rkt.
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 2
-    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 2
+    (hnb-labeled 0 #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+      'a))
   (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out a simple degree-0 hole")
 
 ; TODO: Put a similar test in test-hypertee.rkt.
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 2
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+      'a))
   (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out a single simple degree-1 hole")
 
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 2
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+      'a))
   (hn-bracs ds 2
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes")
 
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 2
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
@@ -229,7 +303,8 @@
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+      'a))
   (hn-bracs ds 2
     (hnb-open 1 'a)
     0
@@ -237,7 +312,7 @@
   "Joining hypernests to cancel out simple degree-1 holes with a degree-1 bump in between")
 
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 2
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
@@ -248,7 +323,8 @@
     0
     0
     0
-    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+      'a))
   (hn-bracs ds 2
     (hnb-open 2 'a)
     1
@@ -257,8 +333,47 @@
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes with a degree-2 bump in between")
 
+
+; NOTE: The following are simplified versions of the "degree-2 bump in
+; between" test below. When it was failing, we used these for
+; debugging.
+;
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 2 'a)
+      (hnb-open 1 'b)
+      0
+      1
+      0
+      0
+      (hnb-labeled 0 'c))))
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 2 'a)
+      (hnb-open 1 'b)
+      0
+      0
+      (hnb-labeled 0 'c))))
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 2 'a)
+      0
+      (hnb-open 1 'b)
+      0
+      (hnb-labeled 0 'c))))
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 1 'a)
+      (hnb-open 0 'b)
+      0
+      (hnb-labeled 0 'c))))
+
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 2
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
       (hnb-labeled 0 #/trivial))
     0
@@ -271,7 +386,8 @@
     0
     0
     0
-    (hnb-labeled 0 #/hypernest-done 2 'a #/ht-bracs ds 0))
+    (hnb-labeled 0 #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+      'a))
   (hn-bracs ds 2
     (hnb-open 2 'a)
     (hnb-open 1 'a)
@@ -285,10 +401,11 @@
 
 
 ; ====================================================================
-; Testing `hypernest-join-all-degrees` on a more realistic case
+; Testing hypernest `snippet-sys-snippet-join` on a more realistic
+; case
 ; ====================================================================
 
-; A `hypernest-join-all-degrees` call on a value of this shape came up
+; A `snippet-sys-snippet-join` call on a value of this shape came up
 ; while debugging a test in test-hypernest-qq.rkt.
 (define sample-hn-expr-shape-as-ast
   (hno 1 'a 3
@@ -383,9 +500,9 @@
 
 ; We check that `sample-hn-expr-shape-as-ast` is equivalent to this
 ; implementation that I find to be much more readable. It becomes
-; really clear that passing this value into
-; `hypernest-join-all-degrees` *should* work because the only hole it
-; has to deal with is a degree-0 hole with contents that properly fit.
+; really clear that passing this value into `snippet-sys-snippet-join`
+; *should* work because the only hole it has to deal with is a
+; degree-0 hole with contents that properly fit.
 (check-equal?
   (hn-bracs ds 1
     (hnb-open 3 'a)
@@ -422,7 +539,7 @@
 ; had trouble with, here's a simplified test that still fails in the
 ; same way.
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 1
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 1
     (hnb-open 3 'a)
     2
     1
@@ -441,7 +558,7 @@
   "Joining with a complex degree-3 bump in the way")
 
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 1
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 1
     (hnb-open 3 'a)
     2
     (hnb-open 4 'a)
@@ -502,11 +619,11 @@
 
 
 ; ====================================================================
-; Testing `hypernest-join-all-degrees` on bumps of degree 0
+; Testing hypernest `snippet-sys-snippet-join` on bumps of degree 0
 ; ====================================================================
 
 (check-equal?
-  (hypernest-join-all-degrees #/hn-bracs ds 1
+  (snippet-sys-snippet-join hnss #/hn-bracs ds 1
     (hnb-open 0 'a)
     (hnb-labeled 0 (hn-bracs ds 1 (hnb-labeled 0 (trivial)))))
   (hn-bracs ds 1
@@ -516,32 +633,27 @@
 
 
 
-; ===== Testing `hypernest-join-all-degrees-selective` ===============
-
-(define (hnterp val)
-  (hypernest-join-selective-interpolation val))
-
-(define (hnnonterp val)
-  (hypernest-join-selective-non-interpolation val))
+; ===== Testing hypernest `snippet-sys-snippet-join-selective` =======
 
 (check-equal?
-  (hypernest-join-all-degrees-selective #/hn-bracs ds 2
-    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
-      (hnb-labeled 1 #/hnnonterp 'a)
+  (snippet-sys-snippet-join-selective hnss #/hn-bracs ds 2
+    (hnb-labeled 1 #/selected #/hn-bracs ds 2
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/hnnonterp 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/hnterp #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
-      (hnb-labeled 1 #/hnnonterp 'a)
+    (hnb-labeled 1 #/selected #/hn-bracs ds 2
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/hnnonterp 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/hnterp #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
     (hnb-labeled 0
-      (hnterp #/hypernest-done 2 (hnnonterp 'a) #/ht-bracs ds 0)))
+      (selected #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+        'a)))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
@@ -555,18 +667,19 @@
   "Joining hypernests selectively when there isn't any selectiveness being exercised")
 
 (check-equal?
-  (hypernest-join-all-degrees-selective #/hn-bracs ds 2
-    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
-      (hnb-labeled 1 #/hnnonterp 'a)
+  (snippet-sys-snippet-join-selective hnss #/hn-bracs ds 2
+    (hnb-labeled 1 #/selected #/hn-bracs ds 2
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/hnnonterp 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/hnterp #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 1 #/hnnonterp 'a)
+    (hnb-labeled 1 #/unselected 'a)
     0
     (hnb-labeled 0
-      (hnterp #/hypernest-done 2 (hnnonterp 'a) #/ht-bracs ds 0)))
+      (selected #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
+        'a)))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
@@ -575,20 +688,20 @@
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 0 'a))
-  "Joining hypernests selectively when there's a degree-1 non-interpolation in the root")
+  "Joining hypernests selectively when there's a degree-1 non-interpolation")
 
 (check-equal?
-  (hypernest-join-all-degrees-selective #/hn-bracs ds 2
-    (hnb-labeled 1 #/hnterp #/hn-bracs ds 2
-      (hnb-labeled 1 #/hnnonterp 'a)
+  (snippet-sys-snippet-join-selective hnss #/hn-bracs ds 2
+    (hnb-labeled 1 #/selected #/hn-bracs ds 2
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/hnnonterp 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/hnterp #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
-    (hnb-labeled 1 #/hnnonterp 'a)
+    (hnb-labeled 1 #/unselected 'a)
     0
-    (hnb-labeled 0 #/hnnonterp 'a))
+    (hnb-labeled 0 #/unselected 'a))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
@@ -597,14 +710,14 @@
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 0 'a))
-  "Joining hypernests selectively when there's a degree-0 non-interpolation in the root")
+  "Joining hypernests selectively when there's a degree-0 non-interpolation")
 
 
 
-; ===== Testing `hypernest-filter-to-hypertee` =======================
+; ===== Testing `hypernest-shape` ====================================
 
 (check-equal?
-  (hypernest-filter-to-hypertee #/hn-bracs ds 1
+  (hypernest-shape hnss #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-labeled 0 'a))
@@ -613,7 +726,7 @@
   "Truncating a degree-1 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-filter-to-hypertee #/hn-bracs ds 1
+  (hypernest-shape hnss #/hn-bracs ds 1
     (hnb-open 1 'a)
     0
     (hnb-open 1 'a)
@@ -626,7 +739,7 @@
   "Truncating a degree-1 hypernest with multiple bumps to a hypertee")
 
 (check-equal?
-  (hypernest-filter-to-hypertee #/hn-bracs ds 1
+  (hypernest-shape hnss #/hn-bracs ds 1
     (hnb-open 2 'a)
     1
     (hnb-open 1 'a)
@@ -641,7 +754,7 @@
   "Truncating a degree-1 hypernest with a degree-2 bump to a hypertee")
 
 (check-equal?
-  (hypernest-filter-to-hypertee #/hn-bracs ds 2
+  (hypernest-shape hnss #/hn-bracs ds 2
     (hnb-open 1 'a)
     0
     (hnb-labeled 1 'a)
@@ -656,7 +769,7 @@
   "Truncating a degree-2 hypernest to a hypertee")
 
 (check-equal?
-  (hypernest-filter-to-hypertee #/hn-bracs ds 2
+  (hypernest-shape hnss #/hn-bracs ds 2
     (hnb-open 2 'a)
     1
     (hnb-labeled 1 'a)

@@ -49,9 +49,16 @@
 (require #/only-in lathe-morphisms/in-fp/set
   makeshift-set-sys-from-contract)
 (require #/only-in lathe-morphisms/in-fp/category
-  functor-sys-apply-to-object functor-sys/c functor-sys-impl?
-  make-category-sys-impl-from-chain-two
-  make-functor-sys-impl-from-apply prop:category-sys prop:functor-sys)
+  category-sys-morphism/c functor-sys-apply-to-object
+  functor-sys-apply-to-morphism functor-sys/c functor-sys-impl?
+  functor-sys-target make-category-sys-impl-from-chain-two
+  make-functor-sys-impl-from-apply
+  natural-transformation-sys-apply-to-morphism
+  natural-transformation-sys/c
+  natural-transformation-sys-endpoint-target
+  natural-transformation-sys-source
+  natural-transformation-sys-target prop:category-sys
+  prop:functor-sys)
 (require #/only-in lathe-morphisms/in-fp/mediary/set
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
@@ -90,10 +97,10 @@
       [_ boolean?])]
   [dim-sys-dim</c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ contract?])]
+      [_ flat-contract?])]
   [dim-sys-dim=/c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ contract?])]
+      [_ flat-contract?])]
   [dim-sys-dim=0?
     (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
   [dim-sys-0<dim/c (-> dim-sys? contract?)]
@@ -158,6 +165,33 @@
   dim-sys-category-sys)
 (provide #/contract-out
   [dim-sys-category-sys? (-> any/c boolean?)]
+  [functor-from-dim-sys-sys-apply-to-morphism
+    (->i
+      (
+        [fs (functor-sys/c dim-sys-category-sys? any/c)]
+        [dsms dim-sys-morphism-sys?])
+      [_ (fs dsms)
+        (category-sys-morphism/c (functor-sys-target fs)
+          (functor-sys-apply-to-object fs
+            (dim-sys-morphism-sys-source dsms))
+          (functor-sys-apply-to-object fs
+            (dim-sys-morphism-sys-target dsms)))])]
+  [natural-transformation-from-from-dim-sys-sys-apply-to-morphism
+    (->i
+      (
+        [nts
+          (natural-transformation-sys/c
+            dim-sys-category-sys? any/c any/c any/c)]
+        [dsms dim-sys-morphism-sys?])
+      [_ (nts dsms)
+        (category-sys-morphism/c
+          (natural-transformation-sys-endpoint-target nts)
+          (functor-sys-apply-to-object
+            (natural-transformation-sys-source nts)
+            (dim-sys-morphism-sys-source dsms))
+          (functor-sys-apply-to-object
+            (natural-transformation-sys-target nts)
+            (dim-sys-morphism-sys-target dsms)))])]
   [dim-sys-endofunctor-sys? (-> any/c boolean?)]
   [make-dim-sys-endofunctor-sys-impl-from-apply
     (->
@@ -336,6 +370,14 @@
         (-> (dim-sys-dim/c #/fin-times-dim-sys-morphism-sys-source ms)
           (and/c natural?
             (</c #/fin-times-dim-sys-morphism-sys-bound ms)))])])
+(provide
+  fin-untimes-dim-sys-morphism-sys)
+(provide #/contract-out
+  [fin-untimes-dim-sys-morphism-sys? (-> any/c boolean?)]
+  [fin-untimes-dim-sys-morphism-sys-bound
+    (-> fin-untimes-dim-sys-morphism-sys? exact-positive-integer?)]
+  [fin-untimes-dim-sys-morphism-sys-target
+    (-> fin-untimes-dim-sys-morphism-sys? dim-sys?)])
 (provide
   fin-multiplied-dim-successors-sys)
 (provide #/contract-out
@@ -550,6 +592,20 @@
       (fn cs a b c ab bc
         (dim-sys-morphism-sys-chain-two ab bc)))))
 
+(define (functor-from-dim-sys-sys-apply-to-morphism fs dsms)
+  (functor-sys-apply-to-morphism fs
+    (dim-sys-morphism-sys-source dsms)
+    (dim-sys-morphism-sys-target dsms)
+    dsms))
+
+(define
+  (natural-transformation-from-from-dim-sys-sys-apply-to-morphism
+    nts dsms)
+  (natural-transformation-sys-apply-to-morphism nts
+    (dim-sys-morphism-sys-source dsms)
+    (dim-sys-morphism-sys-target dsms)
+    dsms))
+
 (define (dim-sys-endofunctor-sys? v)
   (
     (flat-contract-predicate
@@ -723,7 +779,7 @@
         #/mat first (extended-with-top-dim-infinite)
           (extended-with-top-dim-infinite)
         #/dissect first (extended-with-top-dim-finite orig-first)
-        #/next (dim-sys-dim-max state orig-first) rest)))))
+        #/next (dim-sys-dim-max orig-ds state orig-first) rest)))))
 (define-match-expander-attenuated
   attenuated-extended-with-top-dim-sys
   unguarded-extended-with-top-dim-sys
@@ -917,11 +973,11 @@
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
-      (dissectfn (extend-with-top-dim-sys-morphism-sys target)
+      (dissectfn (unextend-with-top-dim-sys-morphism-sys target)
         (extended-with-top-finite-dim-sys target))
       ; dim-sys-morphism-sys-replace-source
       (fn ms new-s
-        (dissect ms (extend-with-top-dim-sys-morphism-sys target)
+        (dissect ms (unextend-with-top-dim-sys-morphism-sys target)
         #/expect new-s (extended-with-top-finite-dim-sys new-t)
           (w- s (extended-with-top-finite-dim-sys target)
           #/raise-arguments-error 'dim-sys-morphism-sys-replace-source
@@ -929,9 +985,9 @@
             "ms" ms
             "s" s
             "new-s" new-s)
-        #/extend-with-top-dim-sys-morphism-sys new-t))
+        #/unextend-with-top-dim-sys-morphism-sys new-t))
       ; dim-sys-morphism-sys-target
-      (dissectfn (extend-with-top-dim-sys-morphism-sys target)
+      (dissectfn (unextend-with-top-dim-sys-morphism-sys target)
         target)
       ; dim-sys-morphism-sys-replace-target
       (fn ms new-t
@@ -1094,10 +1150,13 @@
         (expect rest (cons first rest) state
         #/dissect state (fin-multiplied-dim state-i state-orig)
         #/dissect first (fin-multiplied-dim first-i first-orig)
-        #/w- max-orig (dim-sys-dim-max state-orig first-orig)
+        #/w- max-orig
+          (dim-sys-dim-max orig-ds state-orig first-orig)
         #/w- state
-          (expect (dim-sys-dim=? max-orig state-orig) #t first
-          #/expect (dim-sys-dim=? max-orig first-orig) #t state
+          (expect (dim-sys-dim=? orig-ds max-orig state-orig) #t
+            first
+          #/expect (dim-sys-dim=? orig-ds max-orig first-orig) #t
+            state
           #/fin-multiplied-dim (max state-i first-i) max-orig)
         #/next state rest)))))
 (define-match-expander-attenuated
@@ -1325,6 +1384,68 @@
   unguarded-fin-times-dim-sys-morphism-sys
   attenuated-fin-times-dim-sys-morphism-sys
   attenuated-fin-times-dim-sys-morphism-sys)
+(define-imitation-simple-struct
+  (fin-untimes-dim-sys-morphism-sys?
+    fin-untimes-dim-sys-morphism-sys-bound
+    fin-untimes-dim-sys-morphism-sys-target)
+  unguarded-fin-untimes-dim-sys-morphism-sys
+  'fin-untimes-dim-sys-morphism-sys (current-inspector)
+  (auto-write)
+  (auto-equal)
+  (#:prop prop:atomic-set-element-sys
+    (make-atomic-set-element-sys-impl-from-contract
+      ; atomic-set-element-sys-accepts/c
+      (dissectfn (fin-untimes-dim-sys-morphism-sys bound target)
+        (match/c fin-untimes-dim-sys-morphism-sys
+          (=/c bound)
+          (ok/c target)))))
+  (#:prop prop:dim-sys-morphism-sys
+    (make-dim-sys-morphism-sys-impl-from-morph
+      ; dim-sys-morphism-sys-source
+      (dissectfn (fin-untimes-dim-sys-morphism-sys bound target)
+        (fin-multiplied-dim-sys bound target))
+      ; dim-sys-morphism-sys-replace-source
+      (fn ms new-s
+        (dissect ms (fin-untimes-dim-sys-morphism-sys bound target)
+        #/expect new-s (fin-multiplied-dim-sys new-bound new-t)
+          (w- s (fin-multiplied-dim-sys bound target)
+          #/raise-arguments-error 'dim-sys-morphism-sys-replace-source
+            "tried to replace the source with a source that was rather different"
+            "ms" ms
+            "s" s
+            "new-s" new-s)
+        #/expect (= bound new-bound) #t
+          (w- s (fin-multiplied-dim-sys bound target)
+          #/raise-arguments-error 'dim-sys-morphism-sys-replace-source
+            "tried to replace the source with a source that had a different bound"
+            "ms" ms
+            "s" s
+            "new-s" new-s
+            "bound" bound
+            "new-bound" new-bound)
+        #/fin-untimes-dim-sys-morphism-sys bound new-t))
+      ; dim-sys-morphism-sys-target
+      (dissectfn (fin-untimes-dim-sys-morphism-sys bound target)
+        target)
+      ; dim-sys-morphism-sys-replace-target
+      (fn ms new-t
+        (dissect ms (fin-untimes-dim-sys-morphism-sys bound target)
+        #/fin-untimes-dim-sys-morphism-sys bound new-t))
+      ; dim-sys-morphism-sys-morph-dim
+      (fn ms d
+        (dissect d (fin-multiplied-dim i d)
+          d)))))
+(define-match-expander-attenuated
+  attenuated-fin-untimes-dim-sys-morphism-sys
+  unguarded-fin-untimes-dim-sys-morphism-sys
+  [bound exact-positive-integer?]
+  [target dim-sys?]
+  #t)
+(define-match-expander-from-match-and-make
+  fin-untimes-dim-sys-morphism-sys
+  unguarded-fin-untimes-dim-sys-morphism-sys
+  attenuated-fin-untimes-dim-sys-morphism-sys
+  attenuated-fin-untimes-dim-sys-morphism-sys)
 (define-imitation-simple-struct
   (fin-multiplied-dim-successors-sys?
     fin-multiplied-dim-successors-sys-bound
