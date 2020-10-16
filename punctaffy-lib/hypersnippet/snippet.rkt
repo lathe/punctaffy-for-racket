@@ -1,7 +1,8 @@
 #lang parendown racket/base
 
+; TODO NOW: Remove these.
 (require #/for-syntax racket/base)
-(require #/for-syntax racket/syntax)
+(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
 (define-for-syntax debugging-in-inexpensive-ways #f)
 (define-for-syntax debugging-with-contracts
   debugging-in-inexpensive-ways)
@@ -22,15 +23,25 @@
     #'else))
 
 ; TODO NOW: Remove these imports and all the places they're used.
+;
+; NOTE: We could also do `(require lathe-debugging/placebo)` instead
+; of defining this submodule, but that would introduce a package
+; dependency on `lathe-debugging`, which at this point still isn't a
+; published package.
+;
+(module private/lathe-debugging/placebo racket/base
+  (provide #/all-defined-out)
+  (define-syntax-rule (dlog value ... body) body)
+  (define-syntax-rule (dlogr value ... body) body))
 (ifc debugging-with-prints
   (require lathe-debugging)
-  (require lathe-debugging/placebo))
+  (require 'private/lathe-debugging/placebo))
 (ifc debugging-with-prints-for-get-brackets
   (require #/prefix-in 2: lathe-debugging)
-  (require #/prefix-in 2: lathe-debugging/placebo))
+  (require #/prefix-in 2: 'private/lathe-debugging/placebo))
 (ifc debugging-with-prints-for-hypernest-furl
   (require #/prefix-in 3: lathe-debugging)
-  (require #/prefix-in 3: lathe-debugging/placebo))
+  (require #/prefix-in 3: 'private/lathe-debugging/placebo))
 (require #/for-syntax #/only-in racket/format ~a)
 (require #/only-in racket/contract/base contract)
 
