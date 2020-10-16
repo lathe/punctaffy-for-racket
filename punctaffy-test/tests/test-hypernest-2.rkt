@@ -638,22 +638,22 @@
 (check-equal?
   (snippet-sys-snippet-join-selective hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/selected #/hn-bracs ds 2
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/selected #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
     (hnb-labeled 1 #/selected #/hn-bracs ds 2
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/selected #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
     (hnb-labeled 0
       (selected #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
-        (unselected 'a))))
+        'a)))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
@@ -669,17 +669,17 @@
 (check-equal?
   (snippet-sys-snippet-join-selective hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/selected #/hn-bracs ds 2
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/selected #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
     (hnb-labeled 1 #/unselected 'a)
     0
     (hnb-labeled 0
       (selected #/snippet-sys-snippet-done hnss 2 (ht-bracs ds 0)
-        (unselected 'a))))
+        'a)))
   (hn-bracs ds 2
     (hnb-labeled 1 'a)
     0
@@ -688,16 +688,16 @@
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 0 'a))
-  "Joining hypernests selectively when there's a degree-1 non-interpolation in the root")
+  "Joining hypernests selectively when there's a degree-1 non-interpolation")
 
 (check-equal?
   (snippet-sys-snippet-join-selective hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/selected #/hn-bracs ds 2
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 1 #/unselected 'a)
+      (hnb-labeled 1 'a)
       0
-      (hnb-labeled 0 #/selected #/trivial))
+      (hnb-labeled 0 #/trivial))
     0
     (hnb-labeled 1 #/unselected 'a)
     0
@@ -710,7 +710,7 @@
     (hnb-labeled 1 'a)
     0
     (hnb-labeled 0 'a))
-  "Joining hypernests selectively when there's a degree-0 non-interpolation in the root")
+  "Joining hypernests selectively when there's a degree-0 non-interpolation")
 
 
 

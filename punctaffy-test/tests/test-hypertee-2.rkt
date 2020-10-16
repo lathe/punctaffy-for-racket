@@ -34,8 +34,8 @@
 (require #/only-in punctaffy/hypersnippet/snippet
   selected snippet-sys-shape->snippet snippet-sys-snippet-done
   snippet-sys-snippet-join snippet-sys-snippet-join-selective
-  snippet-sys-snippet-join-selective-prefix snippet-sys-snippet-map
-  snippet-sys-snippet-select snippet-sys-snippet-select-everything
+  snippet-sys-snippet-map snippet-sys-snippet-select
+  snippet-sys-snippet-select-everything
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-splice
   snippet-sys-snippet-undone snippet-sys-snippet-zip-selective/c
   snippet-sys-snippet-zip-map-selective unselected)
@@ -109,7 +109,7 @@
     (hypertee-furl ds #/hypertee-coil-zero)))
 
 (check-equal?
-  (snippet-sys-snippet-join-selective-prefix ss
+  (snippet-sys-snippet-join-selective ss
     (hypertee-furl ds #/hypertee-coil-hole 10
       (hypertee-furl ds #/hypertee-coil-zero)
       (selected #/hypertee-furl ds #/hypertee-coil-hole 10
@@ -196,6 +196,7 @@
       1 (htb-labeled 1 'a) 0 0
     0
   #/htb-labeled 0 'a))
+
 (define sample-closing-4
   (ht-bracs ds 4
     (htb-labeled 3 'a)
@@ -455,23 +456,21 @@
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 0
-      (selected
-        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
-          (unselected 'a)))))
+      (selected #/snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -487,18 +486,16 @@
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/unselected 'a)
     0
     (htb-labeled 0
-      (selected
-        (snippet-sys-snippet-done ss 2 (ht-bracs ds 0)
-          (unselected 'a)))))
+      (selected #/snippet-sys-snippet-done ss 2 (ht-bracs ds 0) 'a)))
   (ht-bracs ds 2
     (htb-labeled 1 'a)
     0
@@ -507,16 +504,16 @@
     (htb-labeled 1 'a)
     0
     (htb-labeled 0 'a))
-  "Joining hypertees selectively when there's a degree-1 non-interpolation in the root")
+  "Joining hypertees selectively when there's a degree-1 non-interpolation")
 
 (check-equal?
   (snippet-sys-snippet-join-selective ss #/ht-bracs ds 2
     (htb-labeled 1 #/selected #/ht-bracs ds 2
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 1 #/unselected 'a)
+      (htb-labeled 1 'a)
       0
-      (htb-labeled 0 #/selected #/trivial))
+      (htb-labeled 0 #/trivial))
     0
     (htb-labeled 1 #/unselected 'a)
     0
@@ -529,4 +526,4 @@
     (htb-labeled 1 'a)
     0
     (htb-labeled 0 'a))
-  "Joining hypertees selectively when there's a degree-0 non-interpolation in the root")
+  "Joining hypertees selectively when there's a degree-0 non-interpolation")

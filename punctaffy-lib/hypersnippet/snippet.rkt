@@ -299,28 +299,38 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
-              [hole
+              [prefix-hole
                 (snippet-sys-snippetof
                   (snippet-sys-shape-snippet-sys ss)
                   (fn hole trivial?))]
               [data any/c])
-            [_ (hole)
-              (maybe/c #/selectable/c any/c
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              #/maybe/c #/selectable/c any/c
+                
                 ; What this means is that this should be a snippet
-                ; which contains a `selected` or `unselected` entry in
-                ; each hole, and its `selected` holes should
-                ; correspond to the holes of `hole` and contain
-                ; `trivial?` values.
+                ; whose low-degree holes correspond to the holes of
+                ; `prefix-hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
                 (and/c
                   (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippetof ss #/fn hole
-                    (selectable/c any/c trivial?))
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn hole subject-data #/selected? subject-data)
-                    (fn hole shape-data subject-data any/c))))])])
+                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                    (fn suffix-hole subject-data
+                      (w- suffix-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss suffix-hole)
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                    (fn hole shape-data subject-data trivial?))))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -449,37 +459,6 @@
     (->i
       (
         [ss snippet-sys?]
-        [snippet (ss) (snippet-sys-snippet/c ss)]
-        [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
-          #/->i
-            (
-              [hole
-                (snippet-sys-snippetof
-                  (snippet-sys-shape-snippet-sys ss)
-                  (fn hole trivial?))]
-              [data any/c])
-            [_ (hole)
-              (selectable/c any/c
-                ; What this means is that this should be a snippet
-                ; which contains a `selected` or `unselected` entry in
-                ; each hole, and its `selected` holes should
-                ; correspond to the holes of `hole` and contain
-                ; `trivial?` values.
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippetof ss #/fn hole
-                    (selectable/c any/c trivial?))
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn hole subject-data #/selected? subject-data)
-                    (fn hole shape-data subject-data any/c))))])])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])]
-  [snippet-sys-snippet-bind-selective-prefix
-    (->i
-      (
-        [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
           (w- ds (snippet-sys-dim-sys ss)
@@ -516,36 +495,6 @@
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])]
   [snippet-sys-snippet-join-selective
-    (->i
-      (
-        [ss snippet-sys?]
-        [snippet (ss)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c snippet
-          #/w- d (snippet-sys-snippet-degree ss snippet)
-          #/snippet-sys-snippetof ss #/fn prefix-hole
-            (w- prefix-hole-d
-              (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/by-own-method/c data
-            #/selectable/c any/c
-              ; What this means is that this should be a snippet which
-              ; contains a `selected` or `unselected` entry in each
-              ; hole, and its `selected` holes should correspond to
-              ; the holes of `hole` and contain `trivial?` values.
-              (and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
-                (snippet-sys-snippetof ss #/fn hole
-                  (selectable/c any/c trivial?))
-                (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                  (fn suffix-hole subject-data
-                    (selected? subject-data))
-                  (fn hole shape-data subject-data any/c)))))])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])]
-  [snippet-sys-snippet-join-selective-prefix
     (->i
       (
         [ss snippet-sys?]
@@ -726,28 +675,41 @@
           [ss snippet-sys?]
           [snippet (ss) (snippet-sys-snippet/c ss)]
           [hv-to-splice (ss snippet)
-            (w- d (snippet-sys-snippet-degree ss snippet)
+            (w- ds (snippet-sys-dim-sys ss)
+            #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+            #/w- d (snippet-sys-snippet-degree ss snippet)
             #/->i
               (
-                [hole
+                [prefix-hole
                   (snippet-sys-snippetof
                     (snippet-sys-shape-snippet-sys ss)
                     (fn hole trivial?))]
                 [data any/c])
-              [_ (hole)
-                (maybe/c #/selectable/c any/c
+              [_ (prefix-hole)
+                (w- prefix-hole-d
+                  (snippet-sys-snippet-degree shape-ss prefix-hole)
+                #/maybe/c #/selectable/c any/c
+                  
                   ; What this means is that this should be a snippet
-                  ; which contains a `selected` or `unselected` entry
-                  ; in each hole, and its `selected` holes should
-                  ; correspond to the holes of `hole` and contain
-                  ; `trivial?` values.
+                  ; whose low-degree holes correspond to the holes of
+                  ; `prefix-hole` and contain `trivial?` values.
+                  ;
+                  ; TODO: See if we can factor out a
+                  ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                  ; something out of this.
+                  ;
                   (and/c
                     (snippet-sys-snippet-with-degree=/c ss d)
-                    (snippet-sys-snippetof ss #/fn hole
-                      (selectable/c any/c trivial?))
-                    (snippet-sys-snippet-zip-selective/c ss hole
-                      (fn hole subject-data #/selected? subject-data)
-                      (fn hole shape-data subject-data any/c))))])])
+                    (snippet-sys-snippet-zip-selective/c ss
+                      prefix-hole
+                      (fn suffix-hole subject-data
+                        (w- suffix-hole-d
+                          (snippet-sys-snippet-degree
+                            shape-ss suffix-hole)
+                        #/dim-sys-dim<?
+                          ds suffix-hole-d prefix-hole-d))
+                      (fn hole shape-data subject-data
+                        trivial?))))])])
         [_ (ss snippet)
           (maybe/c
             (snippet-sys-snippet-with-degree=/c ss
@@ -1274,28 +1236,38 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
+          (w- ds (snippet-sys-dim-sys ss)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
-              [hole
+              [prefix-hole
                 (snippet-sys-snippetof
                   (snippet-sys-shape-snippet-sys ss)
                   (fn hole trivial?))]
               [data any/c])
-            [_ (hole)
-              (maybe/c #/selectable/c any/c
+            [_ (prefix-hole)
+              (w- prefix-hole-d
+                (snippet-sys-snippet-degree shape-ss prefix-hole)
+              #/maybe/c #/selectable/c any/c
+                
                 ; What this means is that this should be a snippet
-                ; which contains a `selected` or `unselected` entry in
-                ; each hole, and its `selected` holes should
-                ; correspond to the holes of `hole` and contain
-                ; `trivial?` values.
+                ; whose low-degree holes correspond to the holes of
+                ; `prefix-hole` and contain `trivial?` values.
+                ;
+                ; TODO: See if we can factor out a
+                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
+                ; something out of this.
+                ;
                 (and/c
                   (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippetof ss #/fn hole
-                    (selectable/c any/c trivial?))
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn hole subject-data #/selected? subject-data)
-                    (fn hole shape-data subject-data any/c))))])])
+                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
+                    (fn suffix-hole subject-data
+                      (w- suffix-hole-d
+                        (snippet-sys-snippet-degree
+                          shape-ss suffix-hole)
+                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
+                    (fn hole shape-data subject-data trivial?))))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -1560,48 +1532,8 @@
 
 ; TODO: Use the things that use this.
 ; TODO NOW: Turn this `define-contract` back into a `define`.
-(define/contract (snippet-sys-snippet-bind-selective ss snippet hv-to-splice)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [snippet (ss) (snippet-sys-snippet/c ss)]
-        [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
-          #/->i
-            (
-              [hole
-                (snippet-sys-snippetof
-                  (snippet-sys-shape-snippet-sys ss)
-                  (fn hole trivial?))]
-              [data any/c])
-            [_ (hole)
-              (selectable/c any/c
-                ; What this means is that this should be a snippet
-                ; which contains a `selected` or `unselected` entry in
-                ; each hole, and its `selected` holes should
-                ; correspond to the holes of `hole` and contain
-                ; `trivial?` values.
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippetof ss #/fn hole
-                    (selectable/c any/c trivial?))
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn hole subject-data #/selected? subject-data)
-                    (fn hole shape-data subject-data any/c))))])])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])
-    any/c)
-  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/dlog 'd2 snippet
-  #/just-value #/dlog 'd2.1 #/snippet-sys-snippet-splice ss snippet #/fn hole data
-    (just #/hv-to-splice hole data)))
-
-; TODO: Use the things that use this.
-; TODO NOW: Turn this `define-contract` back into a `define`.
 (define/contract
-  (snippet-sys-snippet-bind-selective-prefix ss prefix hv-to-suffix)
+  (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
   (ifc debugging-with-contracts
     (->i
       (
@@ -1644,51 +1576,13 @@
         #/snippet-sys-snippet-degree ss prefix)])
     any/c)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/snippet-sys-snippet-bind-selective ss prefix #/fn hole data
-    (selectable-map (hv-to-suffix hole data) #/fn suffix
-      (snippet-sys-snippet-select-if-degree< ss
-        (snippet-sys-snippet-degree shape-ss hole)
-        suffix))))
+  #/dlog 'd2 prefix
+  #/just-value #/dlog 'd2.1 #/snippet-sys-snippet-splice ss prefix #/fn hole data
+    (just #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
 ; TODO NOW: Turn this `define-contract` back into a `define`.
 (define/contract (snippet-sys-snippet-join-selective ss snippet)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [snippet (ss)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c snippet
-          #/w- d (snippet-sys-snippet-degree ss snippet)
-          #/snippet-sys-snippetof ss #/fn prefix-hole
-            (w- prefix-hole-d
-              (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/by-own-method/c data
-            #/selectable/c any/c
-              ; What this means is that this should be a snippet which
-              ; contains a `selected` or `unselected` entry in each
-              ; hole, and its `selected` holes should correspond to
-              ; the holes of `hole` and contain `trivial?` values.
-              (and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
-                (snippet-sys-snippetof ss #/fn hole
-                  (selectable/c any/c trivial?))
-                (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                  (fn suffix-hole subject-data
-                    (selected? subject-data))
-                  (fn hole shape-data subject-data any/c)))))])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])
-    any/c)
-  (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
-
-; TODO: Use this.
-; TODO NOW: Turn this `define-contract` back into a `define`.
-(define/contract (snippet-sys-snippet-join-selective-prefix ss snippet)
   (ifc debugging-with-contracts
     (->i
       (
@@ -1726,8 +1620,7 @@
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss snippet)])
     any/c)
-  (snippet-sys-snippet-bind-selective-prefix ss snippet #/fn hole data
-    data))
+  (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
 ; TODO: Use the things that use this.
 ; TODO NOW: Turn this `define-contract` back into a `define`.
@@ -1771,7 +1664,7 @@
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])
     any/c)
-  (snippet-sys-snippet-bind-selective-prefix ss prefix #/fn hole data
+  (snippet-sys-snippet-bind-selective ss prefix #/fn hole data
     (selected #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
@@ -2641,9 +2534,12 @@
       #/maybe-map
         (snippet-sys-snippet-splice ess prefix
         #/fn extended-hole data
+          ; TODO: Test this.
           (mat data (unselected data)
             (just #/unselected #/unselected data)
           #/dissect data (selected data)
+          #/w- extended-hole-degree
+            (snippet-sys-snippet-degree ess extended-hole)
           #/w- unextended-hole
             (snippet-sys-morphism-sys-morph-snippet
               unextend-hole extended-hole)
@@ -2652,14 +2548,18 @@
             #/dissect splice
               (selected #/selective-snippet-nonzero d suffix)
             #/selected
-              (snippet-sys-snippet-map ess suffix #/fn hole data
-                (mat data (unselected data)
-                  (unselected #/unselected data)
-                #/dissect data (selected data)
-                #/mat data (unselected data)
-                  (unselected #/selected data)
-                #/dissect data (selected #/trivial)
-                #/selected #/trivial)))))
+              (snippet-sys-snippet-map-selective ess
+                (snippet-sys-snippet-select-if-degree< ess
+                  extended-hole-degree
+                  suffix)
+                (fn hole data
+                  (mat data (unselected data)
+                    (unselected data)
+                  #/dissect data (selected data)
+                  #/mat data (unselected data)
+                    (selected data)
+                  #/dissect data (selected #/trivial)
+                    (trivial)))))))
       #/fn snippet
         (attenuated-selective-snippet-nonzero sfs uds d snippet)))
     ; snippet-sys-snippet-zip-map-selective
@@ -3127,7 +3027,7 @@
       (snippet-sys-snippet-set-degree-maybe ss d
         (snippet-sys-shape->snippet ss hole))
     #/fn patch
-      (selected #/snippet-sys-snippet-select-everything ss patch))))
+      (selected patch))))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -3448,10 +3348,6 @@
       (snippet-sys-snippet-map target-ss (hypertee-map-dim dsms tails)
         (fn hole tail #/hypertee-map-dim dsms tail)))))
 
-; TODO NOW: Remove this.
-(define (splice-loop/c ds ss)
-  (-> (snippet-sys-snippet/c ss) (dim-sys-dim/c ds) any/c))
-
 ; TODO: Use these.
 (define-imitation-simple-struct
   (hypertee-snippet-sys? hypertee-snippet-sys-dim-sys)
@@ -3547,24 +3443,18 @@
         first-nontrivial-d (dim-sys-dim-zero ds)
         
         (dlog 'e2.1
-        #/w- next
-          (contract (splice-loop/c ds ss)
-            next
-            'splice-loop-pos
-            'splice-loop-neg)
         #/dissect snippet (unguarded-hypertee-furl _ coil)
         #/mat coil (hypertee-coil-zero)
           (dlog 'e2.2
           #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
         #/dlogr 'e2.3
         #/dissect coil (hypertee-coil-hole d hole data tails)
+        #/w- hole-d (snippet-sys-snippet-degree ss hole)
         #/maybe-bind
           (dlogr 'e2.3.1
           #/if
             (dlog 'e2.3.2
-            #/dim-sys-dim<? ds
-              (snippet-sys-snippet-degree ss hole)
-              first-nontrivial-d)
+            #/dim-sys-dim<? ds hole-d first-nontrivial-d)
             (dlog 'e2.3.3
             #/dissect data (trivial)
               (just #/unselected #/trivial))
@@ -3575,84 +3465,22 @@
         #/maybe-bind
           (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
             (dlog 'e2.5 (hypertee-get-dim-sys snippet) (hypertee-get-dim-sys tail)
-            #/w- hole-d (snippet-sys-snippet-degree ss hole)
-            #/snippet-sys-snippet-splice ss tail #/fn tail-hole data
-              (dlog 'e2.5.1
-              #/if
-                (dim-sys-dim<? ds
-                  (snippet-sys-snippet-degree ss tail-hole)
-                  hole-d)
-                (3:dlog 'e2.5.1.1 coil
-                #/3:dlog 'e2.5.1.2 tail
-                #/3:dlog 'e2.5.1.3 data
-                #/dissect data (trivial)
-                #/just #/unselected #/selected #/trivial)
-              #/maybe-map (hv-to-splice tail-hole data) #/fn splice
-                (mat splice (unselected data)
-                  (unselected #/unselected data)
-                #/dissect splice (selected suffix)
-                  (dlog 'e2.5.2
-                  #/selected
-                    (snippet-sys-snippet-map ss suffix #/fn hole data
-                      (mat data (unselected data)
-                        (unselected #/unselected data)
-                      #/dissect data (selected #/trivial)
-                        (selected #/trivial))))))))
+            #/next tail
+              (dim-sys-dim-max ds
+                first-nontrivial-d
+                (snippet-sys-snippet-degree ss hole))))
         #/fn tails
-;        #/maybe-bind
-;          (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
-;            (dlog 'e2.5 (hypertee-get-dim-sys snippet) (hypertee-get-dim-sys tail)
-;            #/next tail
-;              (dim-sys-dim-max ds
-;                first-nontrivial-d
-;                (snippet-sys-snippet-degree ss hole))))
-;        #/fn tails
-        #/dlog 'e2.6 splice
-;        #/mat splice (unselected data)
-;          (just #/unguarded-hypertee-furl ds
-;            (attenuated-hypertee-coil-hole ds d hole data tails))
+        #/dlog 'e2.6
         #/mat splice (unselected data)
-          (dlog 'e2.6.1
-          #/just #/unguarded-hypertee-furl ds
-            (dlog 'e2.6.2
-            #/attenuated-hypertee-coil-hole ds d hole data
-              
-              ; TODO: This basically cancels out a bunch of the work
-              ; we did to make `tails`. Consider constructing `tails`
-              ; in a simpler way here and saving the complicated
-              ; construction for the branch where `splice` is
-              ; `selected`.
-              ;
-              (dlog 'e2.6.3
-              #/snippet-sys-snippet-map ss tails #/fn hole tail
-                (dlog 'e2.6.4
-                #/w- hole-d (snippet-sys-snippet-degree ss hole)
-                #/snippet-sys-snippet-map ss tail #/fn tail-hole data
-                  (dlog 'e2.6.5
-                  #/if
-                    (dim-sys-dim<? ds
-                      (snippet-sys-snippet-degree ss tail-hole)
-                      hole-d)
-                    (mat data (unselected data)
-                      
-                      ; TODO NOW: It seems we got the design of
-                      ; `snippet-sys-snippet-splice` itself wrong,
-                      ; since there seems to be no way to splice in a
-                      ; suffix's hole into the result if it occurs
-                      ; beyond another result hole of higher degree.
-                      ; Let's redesign `snippet-sys-snippet-splice` to
-                      ; make its tails non-selective.
-                      ;
-                      (error "Encountered an unselected hole of low degree in a suffix of a hypertee `snippet-sys-snippet-splice` operation")
-                    #/dissect data (selected #/trivial)
-                    #/trivial)
-                  #/dissect data (unselected data) data)))))
-        
+          (just #/unguarded-hypertee-furl ds
+            (attenuated-hypertee-coil-hole ds d hole data tails))
         #/dissect splice (selected suffix)
         #/dlog 'e2.7
         #/w- suffix
           (dlog 'e2.8
-          #/snippet-sys-snippet-map ss suffix #/fn hole data
+          #/snippet-sys-snippet-map ss
+            (snippet-sys-snippet-select-if-degree< ss hole-d suffix)
+          #/fn hole data
             (mat data (selected data) (selected data)
             #/dissect data (unselected data)
               (unselected #/unselected data)))
@@ -3664,6 +3492,67 @@
         #/fn suffix
           (dlog 'e2.9
           #/snippet-sys-snippet-join-selective ss suffix))))
+    ; TODO NOW: Figure out why the following variation of
+    ; `snippet-sys-snippet-splice` was breaking.
+    #;
+    (fn ss snippet hv-to-splice
+      (dlog 'e2
+      #/dissect ss (hypertee-snippet-sys ds)
+      #/dissect snippet (unguarded-hypertee-furl _ coil)
+      #/mat coil (hypertee-coil-zero)
+        (dlog 'e2.2
+        #/just #/unguarded-hypertee-furl ds #/hypertee-coil-zero)
+      #/dlogr 'e2.3
+      #/dissect coil (hypertee-coil-hole d hole data tails)
+      #/maybe-bind
+        (dlog 'e2.3.1 hv-to-splice
+        #/hv-to-splice hole data)
+      #/fn splice
+      #/dlog 'e2.4
+      #/maybe-bind
+        (snippet-sys-snippet-map-maybe ss tails #/fn hole tail
+          (dlog 'e2.5 (hypertee-get-dim-sys snippet) (hypertee-get-dim-sys tail)
+          #/w- hole-d (snippet-sys-snippet-degree ss hole)
+          #/snippet-sys-snippet-splice ss tail #/fn tail-hole data
+            (dlog 'e2.5.1
+            #/if
+              (dim-sys-dim<? ds
+                (snippet-sys-snippet-degree ss tail-hole)
+                hole-d)
+              (3:dlog 'e2.5.1.1 coil
+              #/3:dlog 'e2.5.1.2 tail
+              #/3:dlog 'e2.5.1.3 data
+              #/dissect data (trivial)
+              #/just #/unselected #/trivial)
+            #/hv-to-splice tail-hole data)))
+      #/fn tails
+      #/dlog 'e2.6 splice
+      #/mat splice (unselected data)
+        (dlog 'e2.6.1
+        #/just #/unguarded-hypertee-furl ds
+          (dlog 'e2.6.2
+          #/attenuated-hypertee-coil-hole ds d hole data tails))
+      #/dissect splice (selected suffix)
+        (dlog 'e2.7 tails
+        #/w- hole-d (snippet-sys-snippet-degree ss hole)
+        ; TODO NOW: Figure out why `maybe-bind` works here and
+        ; `dissect` doesn't. If there's a good reason, then let's use
+        ; `maybe-map` here in preference to `maybe-bind`.
+        #/dissect
+;        #/maybe-bind
+          (if (dim-sys-dim=0? ds hole-d)
+            (just suffix)
+          #/snippet-sys-snippet-zip-map ss tails suffix
+            (fn hole tail data
+              (dissect data (trivial)
+              #/just tail)))
+          (just suffix)
+;        #/fn suffix
+        #/dlog 'e2.9
+        #/just
+          (snippet-sys-snippet-join-selective ss
+            (snippet-sys-snippet-select-if-degree< ss hole-d
+              suffix)))))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
       
@@ -4174,16 +4063,6 @@
         (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
       #/w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
-      #/w- extend-selection
-        (fn hn-extended
-          (snippet-sys-snippet-map ess hn-extended #/fn hole data
-            (if
-              (dim-sys-dim<? eds
-                (snippet-sys-snippet-degree shape-ess hole)
-                (extended-with-top-dim-finite
-                  (extended-with-top-dim-infinite)))
-              data
-              (unselected data))))
       #/maybe-map
         (snippet-sys-snippet-splice ess hn-extended #/fn hole data
           (dlog 'zq1
@@ -4210,7 +4089,7 @@
             #/dissect splice
               (selected
                 (hypernest-nonzero-unchecked _ suffix-extended))
-              (selected #/extend-selection suffix-extended))))
+              (selected suffix-extended))))
       #/fn result-extended
         (hypernest-nonzero-unchecked d result-extended)))
     ; snippet-sys-snippet-zip-map-selective
