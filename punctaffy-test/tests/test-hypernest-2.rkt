@@ -135,8 +135,10 @@
   #/hnb-labeled 0 'end))
 
 
-; NOTE: We used this to debug an issue with the following sample.
-; TODO NOW: Run the various tests on this one like the other samples.
+; NOTE: We used this to debug an issue with `sample-opening-1a`. When
+; it was broken, it was raising an exception at the time of the
+; `make-sample` call, but we still run the various tests on it like
+; the other samples just to be sure.
 (define sample-opening-1aa
   (make-sample 1
     (hnb-open 2 'a)
@@ -177,18 +179,12 @@
 
 (define (check-brackets-round-trip sample)
   (w- hn (db->hn sample)
-  
-  ; TODO NOW: Remove this.
-  #/begin (hypernest-get-brackets hn)
-  
   #/check-equal?
     (list
       (snippet-sys-snippet-degree hnss hn)
       (hypernest-get-brackets hn))
     sample))
 
-; TODO NOW: Uncomment the following, which have been working.
-#|
 (check-brackets-round-trip sample-0)
 (check-brackets-round-trip sample-closing-1)
 (check-brackets-round-trip sample-closing-2)
@@ -196,6 +192,7 @@
 (check-brackets-round-trip sample-closing-4)
 (check-brackets-round-trip sample-closing-5)
 (check-brackets-round-trip sample-closing-3b)
+(check-brackets-round-trip sample-opening-1aa)
 (check-brackets-round-trip sample-opening-1a)
 (check-brackets-round-trip sample-opening-1b)
 (check-brackets-round-trip sample-opening-2)
@@ -250,9 +247,6 @@
 (check-furl-round-trip sample-closing-4)
 (check-furl-round-trip sample-closing-5)
 (check-furl-round-trip sample-closing-3b)
-; TODO NOW: Remove this note.
-; NOTE: This was the test we were trying to make work before we
-; started reimplementing `explicit-hypernest-from-brackets`.
 (check-furl-round-trip sample-opening-1aa)
 (check-furl-round-trip sample-opening-1a)
 (check-furl-round-trip sample-opening-1b)
@@ -339,40 +333,45 @@
     (hnb-labeled 0 'a))
   "Joining hypernests to cancel out simple degree-1 holes with a degree-2 bump in between")
 
-|#
-; TODO NOW: Turn the following simplifications of the below test into
-; unit tests of their own (just to check they don't raise exceptions).
-#;
-  (hn-bracs ds 2
-    (hnb-open 2 'a)
-    (hnb-open 1 'b)
-    0
-    1
-    0
-    0
-    (hnb-labeled 0 'c))
-#;
-  (hn-bracs ds 2
-    (hnb-open 2 'a)
-    (hnb-open 1 'b)
-    0
-    0
-    (hnb-labeled 0 'c))
-#;
-  (hn-bracs ds 2
-    (hnb-open 2 'a)
-    0
-    (hnb-open 1 'b)
-    0
-    (hnb-labeled 0 'c))
-#;
-  (hn-bracs ds 2
-    (hnb-open 1 'a)
-    (hnb-open 0 'b)
-    0
-    (hnb-labeled 0 'c))
-; TODO NOW: Uncomment the following, which has been working.
-#;
+
+; NOTE: The following are simplified versions of the "degree-2 bump in
+; between" test below. When it was failing, we used these for
+; debugging.
+;
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 2 'a)
+      (hnb-open 1 'b)
+      0
+      1
+      0
+      0
+      (hnb-labeled 0 'c))))
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 2 'a)
+      (hnb-open 1 'b)
+      0
+      0
+      (hnb-labeled 0 'c))))
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 2 'a)
+      0
+      (hnb-open 1 'b)
+      0
+      (hnb-labeled 0 'c))))
+(check-not-exn
+  (fn
+    (hn-bracs ds 2
+      (hnb-open 1 'a)
+      (hnb-open 0 'b)
+      0
+      (hnb-labeled 0 'c))))
+
 (check-equal?
   (snippet-sys-snippet-join hnss #/hn-bracs ds 2
     (hnb-labeled 1 #/hn-bracs ds 2
@@ -401,8 +400,6 @@
 
 
 
-; TODO NOW: Uncomment the following, which have been working.
-#|
 ; ====================================================================
 ; Testing hypernest `snippet-sys-snippet-join` on a more realistic
 ; case
@@ -785,4 +782,3 @@
     0
     (htb-labeled 0 'a))
   "Truncating a degree-2 hypernest with a degree-2 bump to a hypertee")
-|#
