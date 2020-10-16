@@ -2340,8 +2340,20 @@
     (fn fs a b ms #/apply-to-snippet-format-sys-morphism-sys fs ms)))
 
 
-; TODO: Export these.
-; TODO: Use the things that use these.
+; NOTE: The original purpose of the `selective-snippet?` data
+; structure was an implementation strategy for hypernests. However,
+; selective snippets have a pretty critical flaw for that purpose:
+; They can't have unselected holes of degree N occurring beyond the
+; holes of an unselected hole of degree M for (N > M). At this point,
+; we're keeping around our selective snippet implementation just
+; because it demonstrates how to define a
+; `snippet-format-sys-endofunctor-sys?` (in this case,
+; `selective-snippet-format-sys-endofunctor-sys`). Someday we may want
+; to define a `snippet-format-sys-endofunctor-sys?` for the
+; "hypernest" functor that takes a snippet format system (usually the
+; hypertee snippet format system) to a hypernest snippet format
+; system.
+
 (define-imitation-simple-struct
   (selective-snippet-zero? selective-snippet-zero-content)
   selective-snippet-zero
@@ -2349,8 +2361,6 @@
   (auto-write)
   (auto-equal))
 
-; TODO: Export these.
-; TODO: Use the things that use these.
 (define-imitation-simple-struct
   (selective-snippet-nonzero?
     selective-snippet-nonzero-degree
@@ -2397,15 +2407,11 @@
     any/c)
   (selective-snippet-nonzero d content))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
 (define (selective-snippet? v)
   (or
     (selective-snippet-zero? v)
     (selective-snippet-nonzero? v)))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
 (define (selective-snippet/c sfs uds h-to-unselected/c)
   (w- eds (extended-with-top-dim-sys uds)
   #/w- ffdstsss (snippet-format-sys-functor sfs)
@@ -2446,7 +2452,6 @@
               none/c)))))
     `(selective-snippet/c ,sfs ,uds ,h-to-unselected/c)))
 
-; TODO: See if we should export this.
 (define (selective-snippet-get-dim-sys s content-get-dim-sys)
   (mat s (selective-snippet-zero content)
     (content-get-dim-sys content)
@@ -2455,8 +2460,6 @@
       (extended-with-top-dim-sys ds)
       ds)))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-sys?
     selective-snippet-sys-snippet-format-sys
@@ -2720,8 +2723,6 @@
     (snippet-format-sys-morphism-sys-functor-morphism sfsms)
     dsms))
 
-; TODO: Export this.
-; TODO: Use the things that use this.
 (define (selective-snippet-map-all sfsms dsms s)
   (w- make-ssms
     (fn dsms
@@ -2743,9 +2744,6 @@
         (make-ssms #/extended-with-top-dim-sys-morphism-sys dsms)
         content))))
 
-; TODO: Export these.
-; TODO: Use these.
-;
 ; TODO: See if this can somehow have endpoints with meaningful
 ; `h-to-unselected/c` information.
 ;
@@ -2838,9 +2836,6 @@
           (selective-map-all-snippet-sys-morphism-sys sfsms dsms)
         #/selective-snippet-map-all sfsms dsms s)))))
 
-; TODO: Export these.
-; TODO: Use these.
-;
 ; TODO: See if this can somehow involve meaningful `h-to-unselected/c`
 ; information.
 ;
@@ -2872,8 +2867,6 @@
           (snippet-format-sys-morphism-sys-identity sfs)
           dsms)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-format-sys?
     selective-snippet-format-sys-original)
@@ -2893,8 +2886,6 @@
         (selective-functor-from-dim-sys-to-snippet-sys-sys
           orig-sfs)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
     selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-snippet-format-sys-morphism-sys)
@@ -2971,8 +2962,6 @@
             sfsms)
         #/selective-map-all-snippet-sys-morphism-sys sfsms dsms)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-format-sys-morphism-sys?
     selective-snippet-format-sys-morphism-sys-original)
@@ -3039,8 +3028,6 @@
         (selective-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys
           orig-sfsms)))))
 
-; TODO: Export these.
-; TODO: Use these.
 (define-imitation-simple-struct
   (selective-snippet-format-sys-endofunctor-sys?)
   selective-snippet-format-sys-endofunctor-sys
@@ -3056,7 +3043,7 @@
       (fn es sfs #/selective-snippet-format-sys sfs)
       (fn es ms #/selective-snippet-format-sys-morphism-sys ms))))
 
-; TODO: See if we should export this. The interface seems a little
+; TODO: See if this has a good design. The interface seems a little
 ; sloppy since `content-shape` is set up to take any snippet system,
 ; but we only supply it with some specific snippet systems.
 (define (selective-snippet-shape ss s content-shape)
@@ -3092,7 +3079,8 @@
 
 ; TODO: Consider rearranging everything in this file, but especially
 ; the things below. Currently the file is in three parts: The things
-; needed for `selective-snippet-sys?`, the things needed for
+; needed for `selective-snippet-sys?` (which we used to use to
+; implement `hypernest-snippet-sys?`), the things needed for
 ; `hypertee-snippet-sys?`, and the things needed for
 ; `hypernest-snippet-sys?`. Each time, some generic `snippet-sys?`
 ; utilities are added, but as we have more code that uses
@@ -3843,8 +3831,12 @@
 
 
 ; TODO: Find a better name for this.
+;
 ; TODO: Export this.
-; TODO: Use the things that use this.
+;
+; TODO: See if we'll ever use this. We used to use it to implement
+; `hypernest-snippet-sys?`.
+;
 (define
   (make-snippet-sys-impl-from-conversions
     snippet-sys-snippet/c ss-> ->ds ->shape-ss degree-> ->degree
@@ -3928,13 +3920,6 @@
       #/fn snippet
         (->snippet ss snippet)))))
 
-
-; TODO: Export this.
-; TODO: Use the things that use this.
-(define (hypernest-extended-snippet-sys sfs uds)
-  (w- ffdstsss (snippet-format-sys-functor sfs)
-  #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
-  #/functor-sys-apply-to-object ffdstsss eds))
 
 ; TODO: Export these.
 ; TODO: Use these.
@@ -4724,11 +4709,6 @@
   attenuated-fn-hypernest-furl)
 
 
-; TODO: Export this.
-; TODO: Use the things that use this.
-(define (snippet-sys-snippet-select-nothing ss snippet)
-  (snippet-sys-snippet-select ss snippet #/fn hole data #f))
-
 ; TODO: Use these.
 (define-imitation-simple-struct
   (htb-labeled? htb-labeled-degree htb-labeled-data)
@@ -4930,260 +4910,10 @@
     err-name err-normalize-bracket ds degree brackets)
   (w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/dlog 'zc2
-;  #/snippet-sys-snippet-join hnss
-    (dlog 'zc3
-    #/explicit-hypernest-from-hyperstack-and-brackets
-      err-name err-normalize-bracket brackets ds
-      (make-hyperstack ds degree #/list #t #f)
-      degree #t brackets)))
-
-; TODO NOW: Remove this once we get the other one working.
-#;
-(define
-  (explicit-hypernest-from-brackets
-    err-name err-normalize-bracket ds degree brackets)
-  
-  (struct parent-same-part (should-annotate-as-nontrivial))
-  (struct parent-new-part ())
-  (struct parent-part (i should-annotate-as-trivial))
-  
-  (struct part-state
-    (
-      is-hypernest
-      first-nontrivial-degree
-      first-non-interpolation-degree
-      overall-degree
-      rev-brackets))
-  
-  (w- htss (hypertee-snippet-sys ds)
-  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-  #/w- opening-degree degree
-  #/if (dim-sys-dim=0? ds opening-degree)
-    (expect brackets (list)
-      (error "Expected brackets to be empty since degree was zero")
-    #/unguarded-hypernest-furl ds #/hypernest-coil-zero)
-  #/expect brackets (cons first-bracket brackets)
-    (error "Expected brackets to be nonempty since degree was nonzero")
-  #/w- root-i 'root
-  #/w- stack (make-hyperstack ds opening-degree #/parent-same-part #t)
-  #/dissect
-    (mat first-bracket (hnb-open bump-degree data)
-      (list
-        (fn root-part
-          (unguarded-hypernest-furl ds #/hypernest-coil-bump
-            opening-degree data bump-degree root-part))
-        (part-state #t (dim-sys-dim-zero ds) bump-degree
-          (dim-sys-dim-max ds opening-degree bump-degree)
-          (list))
-        (hyperstack-push bump-degree stack #/parent-new-part))
-    #/mat first-bracket (hnb-labeled hole-degree data)
-      (expect (dim-sys-dim<? ds hole-degree opening-degree) #t
-        (raise-arguments-error err-name
-          "encountered a closing bracket of degree too high for where it occurred, and it was the first bracket"
-          "overall-degree" opening-degree
-          "first-bracket" (err-normalize-bracket first-bracket)
-          "brackets" (map err-normalize-bracket brackets))
-      #/dissect (hyperstack-pop hole-degree stack #/parent-new-part)
-        (list (parent-same-part #t) stack)
-      #/list
-        (fn root-part
-          (unguarded-hypernest-furl ds #/attenuated-hypernest-coil-hole ds
-            opening-degree
-            (snippet-sys-snippet-map htss root-part #/fn hole tail
-              (trivial))
-            data
-            root-part))
-        (part-state
-          #f (dim-sys-dim-zero ds) hole-degree hole-degree (list))
-        stack)
-    #/error "Expected the first bracket of a hypernest to be annotated")
-    (list finish root-part stack)
-  #/w-loop next
-    brackets-remaining brackets
-    parts (hash-set (make-immutable-hasheq) root-i root-part)
-    stack stack
-    current-i root-i
-    new-i 0
-    (dissect (hash-ref parts current-i)
-      (part-state
-        current-is-hypernest
-        current-first-nontrivial-degree
-        current-first-non-interpolation-degree
-        current-overall-degree
-        current-rev-brackets)
-    #/w- current-d (hyperstack-dimension stack)
-    #/expect brackets-remaining (cons bracket brackets-remaining)
-      (expect (dim-sys-dim=0? ds current-d) #t
-        (error "Expected more closing brackets")
-      #/let ()
-        (define (get-part i)
-          (dissect (hash-ref parts i)
-            (part-state
-              is-hypernest
-              first-nontrivial-degree
-              first-non-interpolation-degree
-              overall-degree
-              rev-brackets)
-          #/w- get-subpart
-            (fn d data
-              (if
-                (and
-                  (dim-sys-dim<=? ds first-nontrivial-degree d)
-                  (dim-sys-dim<? ds d first-non-interpolation-degree))
-                (get-part data)
-                data))
-          #/if is-hypernest
-            (dlog 'p1
-            #/snippet-sys-snippet-map hnss
-              (dlog 'p1.1 ds overall-degree (reverse rev-brackets)
-              #/hypernest-from-brackets ds overall-degree
-                (reverse rev-brackets))
-              (fn hole data
-                (dlog 'p1.2
-                #/get-subpart
-                  (snippet-sys-snippet-degree htss hole)
-                  data)))
-            (dlog 'p2
-            #/snippet-sys-snippet-map htss
-              (hypertee-from-brackets ds overall-degree
-                (reverse #/list-map rev-brackets #/fn closing-bracket
-                  (mat closing-bracket (hnb-labeled d data)
-                    (htb-labeled d data)
-                  #/dissect closing-bracket (hnb-unlabeled d)
-                    (htb-unlabeled d))))
-              (fn hole data
-                (get-subpart
-                  (snippet-sys-snippet-degree htss hole)
-                  data)))))
-      #/finish #/get-part root-i)
-    
-    #/mat bracket (hnb-open bump-degree bump-value)
-      (expect current-is-hypernest #t
-        (error "Encountered a bump inside a hole")
-      #/next
-        brackets-remaining
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons bracket current-rev-brackets)))
-        (hyperstack-push bump-degree stack #/parent-same-part #f)
-        current-i
-        new-i)
-    #/dissect
-      (mat bracket (hnb-labeled hole-degree hole-value)
-        (list hole-degree hole-value)
-      #/dissect bracket (hnb-unlabeled hole-degree)
-        (list hole-degree (trivial)))
-      (list hole-degree hole-value)
-    #/expect (dim-sys-dim<? ds hole-degree current-d) #t
-      (raise-arguments-error err-name
-        "encountered a closing bracket of degree too high for where it occurred"
-        "current-d" current-d
-        "bracket" (err-normalize-bracket bracket)
-        "brackets-remaining"
-        (map err-normalize-bracket brackets-remaining)
-        "brackets" (map err-normalize-bracket brackets))
-    #/w- parent (hyperstack-peek stack hole-degree)
-    #/begin
-      (mat bracket (hnb-labeled hole-degree hole-value)
-        (expect parent (parent-same-part #t)
-          (raise-arguments-error err-name
-            "encountered an annotated closing bracket of degree too low for where it occurred"
-            "current-d" current-d
-            "bracket" (err-normalize-bracket bracket)
-            "brackets-remaining"
-            (map err-normalize-bracket brackets-remaining)
-            "brackets" (map err-normalize-bracket brackets))
-        #/void)
-        (mat parent (parent-same-part #t)
-          (raise-arguments-error err-name
-            "encountered an unannotated closing bracket of degree too high for where it occurred"
-            "current-d" current-d
-            "bracket" (err-normalize-bracket bracket)
-            "brackets-remaining"
-            (map err-normalize-bracket brackets-remaining)
-            "brackets" (map err-normalize-bracket brackets))
-        #/void))
-    #/mat parent (parent-same-part should-annotate-as-nontrivial)
-      (dissect
-        (hyperstack-pop hole-degree stack #/parent-same-part #f)
-        (list _ updated-stack)
-      #/dissect
-        (eq? should-annotate-as-nontrivial
-          (mat bracket (hnb-labeled hole-degree hole-value)
-            #t
-            #f))
-        #t
-      #/w- parts
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons bracket current-rev-brackets)))
-      #/next brackets-remaining parts updated-stack current-i new-i)
-    #/mat parent (parent-new-part)
-      (dissect
-        (hyperstack-pop hole-degree stack #/parent-part current-i #t)
-        (list _ updated-stack)
-      #/mat bracket (hnb-labeled hole-degree hole-value)
-        ; TODO: Is this really an internal error, or is there some way
-        ; to cause it with an incorrect sequence of input brackets?
-        (error "Internal error: Expected the beginning of an interpolation to be unannotated")
-      #/w- parent-i new-i
-      #/w- new-i (add1 new-i)
-      #/w- parts
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons (hnb-labeled hole-degree parent-i)
-              current-rev-brackets)))
-      #/w- parts
-        (hash-set parts parent-i
-          (part-state #t hole-degree hole-degree
-            (dim-sys-dim-max ds opening-degree hole-degree)
-            (list)))
-      #/next brackets-remaining parts updated-stack parent-i new-i)
-    #/dissect parent (parent-part parent-i should-annotate-as-trivial)
-      (dissect hole-value (trivial)
-      #/dissect
-        (hyperstack-pop hole-degree stack #/parent-part current-i #f)
-        (list _ updated-stack)
-      #/dissect (hash-ref parts parent-i)
-        (part-state
-          parent-is-hypernest
-          parent-first-nontrivial-degree
-          parent-first-non-interpolation-degree
-          parent-overall-degree
-          parent-rev-brackets)
-      #/w- parts
-        (hash-set parts current-i
-          (part-state
-            current-is-hypernest
-            current-first-nontrivial-degree
-            current-first-non-interpolation-degree
-            current-overall-degree
-            (cons
-              (if should-annotate-as-trivial
-                (hnb-labeled hole-degree (trivial))
-                (hnb-unlabeled hole-degree))
-              current-rev-brackets)))
-      #/w- parts
-        (hash-set parts parent-i
-          (part-state
-            parent-is-hypernest
-            parent-first-nontrivial-degree
-            parent-first-non-interpolation-degree
-            parent-overall-degree
-            (cons (hnb-unlabeled hole-degree) parent-rev-brackets)))
-      #/next brackets-remaining parts updated-stack parent-i new-i))))
+  #/explicit-hypernest-from-hyperstack-and-brackets
+    err-name err-normalize-bracket brackets ds
+    (make-hyperstack ds degree #/list #t #f)
+    degree #t brackets))
 
 ; TODO: Use this.
 (define (hypernest-from-brackets ds degree brackets)
@@ -5293,147 +5023,6 @@
   #/hyperstack-and-hypernest-get-brackets
     (make-hyperstack ds degree #/list #t #f)
     degree #t hn))
-
-; TODO: Export this.
-; TODO: Use this.
-; TODO NOW: Remove this once we get the other one working.
-#;
-(define (hypernest-get-brackets hn)
-  ; TODO NOW: Replace uses of `hypertee-furl` here with
-  ; `unguarded-hypertee-furl`.
-  (2:dlog 'zf1 hn
-  #/dissect hn (hypernest-unchecked hn-selective)
-  #/mat hn-selective (selective-snippet-zero ht) (list)
-  #/dissect hn-selective (selective-snippet-nonzero _ ht)
-  #/dissect ht (unguarded-hypertee-furl emds _)
-  #/dissect emds (extended-with-top-dim-sys mds)
-  #/dissect mds (fin-multiplied-dim-sys 2 uds)
-  #/2:dlog 'zf2
-  #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) uds)
-  #/w- emhtss (hypertee-snippet-sys emds)
-  #/w- prepend-nil
-    (hypertee-from-brackets emds (extended-with-top-dim-infinite)
-      (list #/htb-labeled (dim-sys-dim-zero emds) #/trivial))
-  #/2:dlog 'zf3
-  #/w- prepend-cons
-    (fn hnb rest
-      (snippet-sys-snippet-join-selective-prefix emhtss
-        (hypertee-from-brackets emds
-          (extended-with-top-dim-infinite)
-          (list
-            (htb-labeled
-              (extended-with-top-dim-finite
-                (fin-multiplied-dim 1 #/dim-sys-dim-zero uds))
-              (unselected hnb))
-            (htb-unlabeled #/dim-sys-dim-zero emds)
-            (htb-labeled (dim-sys-dim-zero emds) #/selected rest)))))
-  #/w- ht->list
-    (fn ht
-      (w-loop next ht ht rev-result (list)
-        (dissect ht
-          (unguarded-hypertee-furl _
-            (hypertee-coil-hole
-              (extended-with-top-dim-infinite)
-              hole
-              data
-              (unguarded-hypertee-furl _ tails-coil)))
-        #/mat tails-coil (hypertee-coil-zero)
-          (dissect data (trivial)
-          #/reverse rev-result)
-        #/dissect tails-coil
-          (hypertee-coil-hole
-            (extended-with-top-dim-finite #/fin-multiplied-dim 1 d)
-            tails-hole
-            tail
-            (hypertee-furl _ #/hypertee-coil-zero))
-        #/dissect (dim-sys-dim=0? uds d) #t
-        #/next tail #/cons data rev-result)))
-  #/ht->list #/dlog 'f1 #/snippet-sys-snippet-bind-selective emhtss
-    (w-loop next ht ht
-      ; TODO: See if this can use `hypernest-get-coil` somehow, since
-      ; it duplicates some of its behavior (particularly the
-      ; `snippet-sys-snippet-undone` call and some of the surrounding
-      ; code).
-      (2:dlog 'zf4
-      #/dissect ht
-        (unguarded-hypertee-furl _
-          (hypertee-coil-hole (extended-with-top-dim-infinite)
-            hole data tails))
-      #/dissect (snippet-sys-snippet-degree emhtss tails)
-        (extended-with-top-dim-finite d)
-      #/2:dlog 'zf5
-      #/mat d (fin-multiplied-dim 1 d)
-        (dissect (dlog 'i6 #/attenuated-snippet-sys-snippet-undone emhtss tails)
-          (just #/list
-            (extended-with-top-dim-finite
-              (fin-multiplied-dim 1 d-again))
-            tails
-            interior)
-        #/dissect (dlog 'h1 #/dim-sys-dim=? uds d d-again) #t
-        #/dissect (snippet-sys-snippet-degree emhtss tails)
-          (extended-with-top-dim-finite
-            (fin-multiplied-dim 0 d-again))
-        #/dissect (dlog 'h2 #/dim-sys-dim=? uds d d-again) #t
-        #/dissect data (unselected data)
-        #/prepend-cons (unselected #/hnb-open d data)
-          (dlog 'k2
-          #/snippet-sys-snippet-join-selective emhtss
-            (snippet-sys-snippet-zip-map-selective emhtss
-              tails
-              (snippet-sys-snippet-select emhtss (next interior)
-                (fn hole data
-                  (selected? data)))
-            #/fn hole tail data
-              (dissect data (selected #/trivial)
-              #/dissect (snippet-sys-snippet-degree emhtss hole)
-                (extended-with-top-dim-finite
-                  (fin-multiplied-dim 0 d))
-              #/just
-                (selected
-                  (prepend-cons
-                    (unselected #/hnb-unlabeled d)
-                    (next tail)))))))
-      #/2:dlog 'zf6
-      #/dissect d (fin-multiplied-dim 0 d)
-        
-        ; TODO NOW: Remove this line, and figure out what we really
-        ; need to do about this.
-        (w- data (mat data (trivial) (selected data) data)
-        
-        #/dissect data (selected data)
-        #/2:dlog 'zf7 hole
-        #/2:dlog 'zf8 tails
-        #/hypertee-furl emds #/attenuated-hypertee-coil-hole emds
-          (extended-with-top-dim-infinite)
-          hole
-          (selected data)
-          (snippet-sys-snippet-map emhtss tails #/fn hole tail
-            (dlogr 'j1 hole tail
-            #/dissect (snippet-sys-snippet-degree emhtss hole)
-              (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
-            #/prepend-cons (unselected #/hnb-unlabeled d)
-              (next tail))))))
-    (fn hole selectable-data
-      (dlogr 'f1.1 hole
-      #/dissect (snippet-sys-snippet-degree emhtss hole)
-        (extended-with-top-dim-finite d)
-      #/mat d (fin-multiplied-dim 1 d)
-        (dissect selectable-data (unselected data)
-        #/unselected data)
-      #/dissect d (fin-multiplied-dim 0 d)
-        (dissect selectable-data (selected data)
-        #/dlog 'c1 emhtss hole
-        #/selected #/prepend-cons (unselected #/hnb-labeled d data)
-          (snippet-sys-snippet-select-if-degree< emhtss
-            (extended-with-top-dim-finite #/fin-multiplied-dim 0 d)
-            (if (dim-sys-dim=0? uds d)
-              prepend-nil
-            #/dissect
-              (snippet-sys-snippet-set-degree-maybe emhtss
-                (extended-with-top-dim-infinite)
-                hole)
-              (just rest)
-              rest)))))))
 
 ; TODO: Export this.
 ; TODO: Use this.
