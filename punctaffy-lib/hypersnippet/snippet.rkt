@@ -3279,8 +3279,9 @@
   ; we currently rename this from `unguarded-hypertee-furl` to
   ; `unguarded-hypertee-furl-orig` and define
   ; `unguarded-hypertee-furl` to be either the guarded version or the
-  ; unguarded version (according to whichever definition is not
-  ; commented out below). Change it back when the tests pass.
+  ; unguarded version (according to the
+  ; `debugging-with-expensive-hypertee-furl-contract` branch below).
+  ; Change it back when the tests pass.
   unguarded-hypertee-furl-orig
   'hypertee (current-inspector) (auto-write) (auto-equal))
 ; TODO: We have a dilemma. The `define/contract` version of
@@ -4409,13 +4410,9 @@
       (and/c
         (match/c hypernest-coil-hole
           (dim-sys-0<dim/c ds)
-        ; TODO NOW: Uncomment this.
-;        any/c #;
           (snippet-sys-snippetof shape-ss #/fn hole trivial?)
           any/c
           any/c)
-        ; TODO NOW: Uncomment this.
-;        any/c #;
         (by-own-method/c
           (hypernest-coil-hole
             overall-degree hole data tails-hypertee)
@@ -4918,32 +4915,11 @@
         err-name err-normalize-bracket orig-brackets ds stack orig-d
         bumps-allowed brackets-remaining)
     #/dlog 'ze1 brackets-remaining brackets recursive-result
-    ; TODO NOW: Use `unguarded-hypernest-furl` here instead of
-    ; `hypernest-furl`.
-    #/hypernest-furl ds #/hypernest-coil-bump
-      current-d
-      data
-      bump-degree
-      (dlog 'ze2
-      #/snippet-sys-snippet-map hnss recursive-result #/fn hole data
-        (dlog 'ze3
-        #/dissect
-          (hyperstack-peek stack
-            (snippet-sys-snippet-degree htss hole))
-          (list should-be-labeled bumps-allowed)
-        ; TODO: See what we should do if these are ever not equal.
-        #/dissect (equal? should-be-labeled (not bumps-allowed)) #t
-        #/if
-          #;
-          (not should-be-labeled)
-          ; TODO NOW: Remove this condition if we're not using it.
-          #;
-          (dim-sys-dim<? ds (snippet-sys-snippet-degree htss hole)
-            bump-degree)
-;          #f
-          #t
-          data
-          (snippet-sys-snippet-done hnss current-d hole data))))
+    ; TODO NOW: Remove this commented-out version that uses
+    ; `hypernest-furl` instead of `unguarded-hypernest-furl`.
+;    #/hypernest-furl ds #/hypernest-coil-bump
+    #/unguarded-hypernest-furl ds #/hypernest-coil-bump
+      current-d data bump-degree recursive-result)
   #/mat bracket (hnb-labeled hole-degree data)
     (process-hole hole-degree data #t)
   #/dissect bracket (hnb-unlabeled hole-degree)
@@ -5303,39 +5279,10 @@
     (hypernest-coil-bump current-d data bump-degree tails-hypernest)
     (w- stack
       (hyperstack-push bump-degree stack #/list #f bumps-allowed)
-;    #/w- updated-d (hyperstack-dimension stack)
     #/w- recursive-result
       (2:dlog 'zh4 current-d (hyperstack-dimension stack) (build-list (hyperstack-dimension stack) #/fn i #/hyperstack-peek stack i)
       #/hyperstack-and-hypernest-get-brackets
-        stack orig-d bumps-allowed
-        tails-hypernest
-        #;
-        (snippet-sys-snippet-join hnss tails-hypernest)
-        #;
-        (snippet-sys-snippet-join-selective-prefix hnss
-          (snippet-sys-snippet-select hnss tails-hypernest
-            (fn hole data
-              (dissect
-                (hyperstack-peek stack
-                  (snippet-sys-snippet-degree htss hole))
-                (list should-be-labeled bumps-allowed)
-              ; TODO: See what we should do if these are ever not
-              ; equal.
-              #/dissect (equal? should-be-labeled (not bumps-allowed))
-                #t
-              #/begin
-                ; TODO NOW: Remove this.
-                (when should-be-labeled
-                  (mat data (trivial)
-                    (error "hmm")
-                    (void)))
-                should-be-labeled))))
-        ; TODO NOW: Remove this.
-        #;
-        (2:dlog 'zh4 current-d (hyperstack-dimension stack)
-        #/snippet-sys-snippet-join-selective-prefix hnss
-          (snippet-sys-snippet-select-if-degree< hnss bump-degree
-            tails-hypernest)))
+        stack orig-d bumps-allowed tails-hypernest)
     #/cons (hnb-open bump-degree data) recursive-result)))
 
 (define (hypernest-get-brackets hn)
