@@ -3089,11 +3089,6 @@
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
 
 ; NOTE DEBUGGABILITY: This is here for debugging.
-;
-; TODO NOW: Remove the `extended-with-top-dim-infinite` error check.
-; It's not a good check to make in general, but it was helpful once
-; for diagnosing a particular bug we came across in the tests.
-;
 (define/contract
   (attenuated-fn-hypertee-coil-hole ds overall-degree hole data tails)
   (ifc debugging-with-contracts
@@ -3135,11 +3130,7 @@
                   (fn hole shape-data subject-data trivial?)))))])
       [_ any/c])
     any/c)
-  (mat hole
-    (unguarded-hypertee-furl _
-      (hypertee-coil-hole (extended-with-top-dim-infinite) _ _ _))
-    (error "Did not expect a hypertee with infinite degree")
-  #/hypertee-coil-hole overall-degree hole data tails))
+  (hypertee-coil-hole overall-degree hole data tails))
 (define-syntax (attenuated-hypertee-coil-hole stx)
   (syntax-case stx () #/ (_ ds overall-degree hole data tails)
     #`(dlog 'm2 #,(~a stx)
