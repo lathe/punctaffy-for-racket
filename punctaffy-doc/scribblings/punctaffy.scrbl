@@ -25,6 +25,9 @@
   -> </c and/c any/c contract?)
 @(require #/for-label #/only-in racket/math natural?)
 
+@(require #/for-label punctaffy/hypersnippet/dim)
+@(require #/for-label punctaffy/hypersnippet/snippet)
+
 
 @title{Punctaffy}
 
@@ -110,7 +113,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   (dim-sys-dim=?
     [ds dim-sys?]
     [a (dim-sys-dim/c ds)]
-    [b (dim-sys-sim/c ds)])
+    [b (dim-sys-dim/c ds)])
   boolean?
 ]{
   Returns whether the two given @tech{dimension numbers} are equal.
