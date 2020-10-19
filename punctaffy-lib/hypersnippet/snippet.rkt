@@ -1458,11 +1458,12 @@
     (fn v
       (and (contract-first-order-passes? snippet-contract v)
       
-      ; TODO: Extend the `snippet-sys?` interface with a method that
-      ; can perform a `snippet-sys-snippet-all?` like this, but that
-      ; gracefully returns `#f` if its input isn't a valid
-      ; hypersnippet, as long as its input passes the first-order
-      ; check of the hypersnippet contract. Then use that method here.
+      ; TODO CONTRACT ROBUSTNESS: Extend the `snippet-sys?` interface
+      ; with a method that can perform a `snippet-sys-snippet-all?`
+      ; like this, but that gracefully returns `#f` if its input isn't
+      ; a valid hypersnippet, as long as its input passes the
+      ; first-order check of the hypersnippet contract. Then use that
+      ; method here.
       ;
       #/snippet-sys-snippet-all? ss v #/fn hole data
         (dlog 'zr1 h-to-value/c hole
@@ -1505,8 +1506,8 @@
       (dlogr 'zg1
       #/and (contract-first-order-passes? snippet-contract v)
       
-      ; TODO: Extend the `snippet-sys?` interface with a method that
-      ; can perform a combination of
+      ; TODO CONTRACT ROBUSTNESS: Extend the `snippet-sys?` interface
+      ; with a method that can perform a combination of
       ; `snippet-sys-snippet-zip-all-selective?` and
       ; `snippet-sys-snippet-select` like this, but that gracefully
       ; returns `#f` if its input isn't a valid hypersnippet, as long

@@ -97,10 +97,10 @@
       [_ boolean?])]
   [dim-sys-dim</c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ flat-contract?])]
+      [_ contract?])]
   [dim-sys-dim=/c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ flat-contract?])]
+      [_ contract?])]
   [dim-sys-dim=0?
     (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
   [dim-sys-0<dim/c (-> dim-sys? contract?)]
@@ -151,15 +151,15 @@
   [dim-sys-morphism-sys-chain-two
     (->i
       (
-        [a dim-sys-morphism-sys?]
-        [b (a)
+        [ab dim-sys-morphism-sys?]
+        [bc (ab)
           (dim-sys-morphism-sys/c
-            (ok/c #/dim-sys-morphism-sys-target a)
+            (ok/c #/dim-sys-morphism-sys-target ab)
             any/c)])
-      [_ (a b)
+      [_ (ab bc)
         (dim-sys-morphism-sys/c
-          (ok/c #/dim-sys-morphism-sys-source a)
-          (ok/c #/dim-sys-morphism-sys-target b))])])
+          (ok/c #/dim-sys-morphism-sys-source ab)
+          (ok/c #/dim-sys-morphism-sys-target bc))])])
 
 (provide
   dim-sys-category-sys)
@@ -280,7 +280,11 @@
   [extended-with-top-dim? (-> any/c boolean?)]
   [extended-with-top-dim/c (-> contract? contract?)]
   [extended-with-top-dim=?
-    (-> (-> any/c any/c boolean?) any/c any/c boolean?)])
+    (->
+      (-> any/c any/c boolean?)
+      extended-with-top-dim?
+      extended-with-top-dim?
+      boolean?)])
 (provide
   extended-with-top-dim-sys)
 (provide #/contract-out
@@ -408,11 +412,31 @@
   (and (not #/dim-sys-dim=? ds a b) (dim-sys-dim<=? ds a b)))
 
 (define (dim-sys-dim</c ds bound)
-  (rename-contract (fn v #/dim-sys-dim<? ds v bound)
+  (rename-contract
+    
+    ; TODO CONTRACT ROBUSTNESS: Extend the `dim-sys?` interface with a
+    ; method that can perform `dim-sys-dim<?` like this, but that
+    ; gracefully returns `#f` if its first dimension number input
+    ; isn't a valid dimension number, as long as its input passes the
+    ; first-order check of the dimension number contract. Then use
+    ; that method here.
+    ;
+    (and/c (dim-sys-dim/c ds) (fn v #/dim-sys-dim<? ds v bound))
+    
     `(dim-sys-dim</c ,ds ,bound)))
 
 (define (dim-sys-dim=/c ds bound)
-  (rename-contract (fn v #/dim-sys-dim=? ds v bound)
+  (rename-contract
+    
+    ; TODO CONTRACT ROBUSTNESS: Extend the `dim-sys?` interface with a
+    ; method that can perform `dim-sys-dim=?` like this, but that
+    ; gracefully returns `#f` if its first dimension number input
+    ; isn't a valid dimension number, as long as its input passes the
+    ; first-order check of the dimension number contract. Then use
+    ; that method here.
+    ;
+    (and/c (dim-sys-dim/c ds) (fn v #/dim-sys-dim=? ds v bound))
+    
     `(dim-sys-dim=/c ,ds ,bound)))
 
 (define (dim-sys-dim=0? ds d)
@@ -420,7 +444,15 @@
 
 (define (dim-sys-0<dim/c ds)
   (rename-contract
+    
+    ; TODO CONTRACT ROBUSTNESS: Extend the `dim-sys?` interface with a
+    ; method that can perform `dim-sys-dim=0?` like this, but that
+    ; gracefully returns `#f` if its input isn't a valid dimension
+    ; number, as long as its input passes the first-order check of the
+    ; dimension number contract. Then use that method here.
+    ;
     (and/c (dim-sys-dim/c ds) (fn v #/not #/dim-sys-dim=0? ds v))
+    
     `(dim-sys-0<dim/c ,ds)))
 
 
@@ -529,36 +561,38 @@
   (#:prop prop:atomic-set-element-sys
     (make-atomic-set-element-sys-impl-from-contract
       ; atomic-set-element-sys-accepts/c
-      (dissectfn (chain-two-dim-sys-morphism-sys a b)
-        (match/c chain-two-dim-sys-morphism-sys (ok/c a) (ok/c b)))))
+      (dissectfn (chain-two-dim-sys-morphism-sys ab bc)
+        (match/c chain-two-dim-sys-morphism-sys
+          (ok/c ab)
+          (ok/c bc)))))
   (#:prop prop:dim-sys-morphism-sys
     (make-dim-sys-morphism-sys-impl-from-morph
       ; dim-sys-morphism-sys-source
-      (dissectfn (chain-two-dim-sys-morphism-sys a b)
-        (dim-sys-morphism-sys-source a))
+      (dissectfn (chain-two-dim-sys-morphism-sys ab bc)
+        (dim-sys-morphism-sys-source ab))
       ; dim-sys-morphism-sys-replace-source
       (fn ms new-s
-        (dissect ms (chain-two-dim-sys-morphism-sys a b)
+        (dissect ms (chain-two-dim-sys-morphism-sys ab bc)
         #/chain-two-dim-sys-morphism-sys
-          (dim-sys-morphism-sys-replace-source a new-s)
-          b))
+          (dim-sys-morphism-sys-replace-source ab new-s)
+          bc))
       ; dim-sys-morphism-sys-target
-      (dissectfn (chain-two-dim-sys-morphism-sys a b)
-        (dim-sys-morphism-sys-target b))
+      (dissectfn (chain-two-dim-sys-morphism-sys ab bc)
+        (dim-sys-morphism-sys-target bc))
       ; dim-sys-morphism-sys-replace-target
       (fn ms new-t
-        (dissect ms (chain-two-dim-sys-morphism-sys a b)
+        (dissect ms (chain-two-dim-sys-morphism-sys ab bc)
         #/chain-two-dim-sys-morphism-sys
-          a
-          (dim-sys-morphism-sys-replace-target b new-t)))
+          ab
+          (dim-sys-morphism-sys-replace-target bc new-t)))
       ; dim-sys-morphism-sys-morph-dim
       (fn ms d
-        (dissect ms (chain-two-dim-sys-morphism-sys a b)
-        #/dim-sys-morphism-sys-morph-dim b
-          (dim-sys-morphism-sys-morph-dim a d))))))
+        (dissect ms (chain-two-dim-sys-morphism-sys ab bc)
+        #/dim-sys-morphism-sys-morph-dim bc
+          (dim-sys-morphism-sys-morph-dim ab d))))))
 
-(define (dim-sys-morphism-sys-chain-two a b)
-  (chain-two-dim-sys-morphism-sys a b))
+(define (dim-sys-morphism-sys-chain-two ab bc)
+  (chain-two-dim-sys-morphism-sys ab bc))
 
 
 (define-imitation-simple-struct
