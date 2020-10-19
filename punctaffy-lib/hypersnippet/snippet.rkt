@@ -4866,9 +4866,7 @@
         (htb-unlabeled closing-bracket)))))
 
 
-(define
-  (hyperstack-and-hypernest-get-brackets
-    stack orig-d bumps-allowed hn)
+(define (hyperstack-and-hypernest-get-brackets stack orig-d hn)
   (dlog 'zh0 hn
   #/w- ds (hypernest-get-dim-sys hn)
   #/dlog 'zh0.0.1
@@ -4881,15 +4879,13 @@
   #/mat coil (hypernest-coil-hole current-d shape data tails)
     (w- hole-degree (snippet-sys-snippet-degree htss shape)
     #/dlog 'zh1
-    #/dissect
-      (hyperstack-pop hole-degree stack #/list #f bumps-allowed)
-      (list (list should-be-labeled bumps-now-allowed) stack)
+    #/dissect (hyperstack-pop hole-degree stack #f)
+      (list should-be-labeled stack)
     #/w- updated-d (hyperstack-dimension stack)
     #/dlog 'zh1.1
     #/w- recursive-result
       (dlog 'zh1.2
-      #/hyperstack-and-hypernest-get-brackets
-        stack orig-d bumps-now-allowed
+      #/hyperstack-and-hypernest-get-brackets stack orig-d
         (if should-be-labeled
           (dlog 'zh1.3
           #/snippet-sys-shape->snippet hnss
@@ -4917,12 +4913,11 @@
   #/dlog 'zh3
   #/dissect coil
     (hypernest-coil-bump current-d data bump-degree tails-hypernest)
-    (w- stack
-      (hyperstack-push bump-degree stack #/list #f bumps-allowed)
+    (w- stack (hyperstack-push bump-degree stack #f)
     #/w- recursive-result
       (2:dlog 'zh4 current-d (hyperstack-dimension stack) (build-list (hyperstack-dimension stack) #/fn i #/hyperstack-peek stack i)
       #/hyperstack-and-hypernest-get-brackets
-        stack orig-d bumps-allowed tails-hypernest)
+        stack orig-d tails-hypernest)
     #/cons (hnb-open bump-degree data) recursive-result)))
 
 (define (hypernest-get-brackets hn)
@@ -4931,8 +4926,8 @@
   #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- degree (snippet-sys-snippet-degree hnss hn)
   #/hyperstack-and-hypernest-get-brackets
-    (make-hyperstack ds degree #/list #t #f)
-    degree #t hn))
+    (make-hyperstack ds degree #t)
+    degree hn))
 
 ; TODO: Export this.
 ; TODO: Use this.
