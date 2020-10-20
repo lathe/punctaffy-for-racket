@@ -193,14 +193,14 @@ Higher-dimensional geometric shapes often have quite a number of component verti
           [_a (_ds) (dim-sys-dim/c _ds)]
           [_b (_ds) (dim-sys-dim/c _ds)])
         [_ boolean?])]
-    [max-of-list
+    [dim-max-of-list
       (->i ([_ds dim-sys?] [_lsts (_ds) (listof #/dim-sys-dim/c _ds)])
         [_ (_ds) (dim-sys-dim/c _ds)])])
   dim-sys-impl?
 ]{
   Given implementations for @racket[dim-sys-dim/c], @racket[dim-sys-dim=?], and a list-taking variation of @racket[dim-sys-dim-max], returns something a struct can use to implement the @racket[prop:dim-sys] interface.
   
-  The given method implementations should observe some algebraic laws. Namely, the @racket[dim=?] operation should be the decision procedure of some decidable equivalence relation, and the @racket[max-of-list] operation should be associative and commutative.
+  The given method implementations should observe some algebraic laws. Namely, the @racket[dim=?] operation should be a decision procedure for equality of @tech{dimension numbers}, the @racket[dim-max-of-list] operation should be associative, commutative, and idempotent. (As a particularly notable consequence of idempotence, the maximum of a list of one dimension number should be that number itself.)
   
   So far, we've only tried @racket[flat-contract?] values for @racket[dim/c]. It's possible that the implementation of some Punctaffy operations like @racket[dim-sys-dim</c] relies on the @racket[dim/c] contract being flat in order to avoid breaking contracts itself when it passes the value to another operation. (TODO: Investigate this further.)
 }
