@@ -90,15 +90,15 @@
   [hyperstack/c (-> dim-sys? contract?)]
   [hyperstack-dim-sys (-> hyperstack? dim-sys?)]
   [hyperstack-dimension
-    (->i ([h hyperstack?])
-      [_ (h) (dim-sys-dim/c #/hyperstack-dim-sys h)])]
+    (->i ([stack hyperstack?])
+      [_ (stack) (dim-sys-dim/c #/hyperstack-dim-sys stack)])]
   [hyperstack-peek
     (->i
       (
-        [h hyperstack?]
-        [i (h)
-          (w- ds (hyperstack-dim-sys h)
-          #/dim-sys-dim</c ds #/hyperstack-dimension h)])
+        [stack hyperstack?]
+        [i (stack)
+          (w- ds (hyperstack-dim-sys stack)
+          #/dim-sys-dim</c ds #/hyperstack-dimension stack)])
       [_ any/c])]
   
   ; TODO: If we ever need these exports, document and uncomment them.
@@ -112,25 +112,26 @@
   [hyperstack-push-dimlist
     (->i
       (
-        [h hyperstack?]
-        [elems-to-push (h)
-          (dim-sys-dimlist/c #/hyperstack-dim-sys h)])
-      [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
+        [stack hyperstack?]
+        [elems-to-push (stack)
+          (dim-sys-dimlist/c #/hyperstack-dim-sys stack)])
+      [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])]
   #;
   [hyperstack-pop-dimlist
     (->i
       (
-        [h hyperstack?]
-        [elems-to-push (h)
-          (dim-sys-dimlist/c #/hyperstack-dim-sys h)])
+        [stack hyperstack?]
+        [elems-to-push (stack)
+          (dim-sys-dimlist/c #/hyperstack-dim-sys stack)])
       
-      #:pre (h elems-to-push)
-      (w- ds (hyperstack-dim-sys h)
+      #:pre (stack elems-to-push)
+      (w- ds (hyperstack-dim-sys stack)
       #/dim-sys-dim<? ds
         (dim-sys-dimlist-length ds elems-to-push)
-        (hyperstack-dimension h))
+        (hyperstack-dimension stack))
       
-      [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
+      [_ (stack)
+        (list/c any/c (hyperstack/c #/hyperstack-dim-sys stack))])]
   
   [make-hyperstack
     (->i
@@ -139,30 +140,32 @@
   [hyperstack-push
     (->i
       (
-        [bump-degree (h) (dim-sys-dim/c #/hyperstack-dim-sys h)]
-        [h hyperstack?]
+        [bump-degree (stack)
+          (dim-sys-dim/c #/hyperstack-dim-sys stack)]
+        [stack hyperstack?]
         [elem any/c])
-      [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
+      [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])]
   [hyperstack-pop
     (->i
       (
-        [i (h)
-          (w- ds (hyperstack-dim-sys h)
-          #/dim-sys-dim</c ds #/hyperstack-dimension h)]
-        [h hyperstack?]
+        [i (stack)
+          (w- ds (hyperstack-dim-sys stack)
+          #/dim-sys-dim</c ds #/hyperstack-dimension stack)]
+        [stack hyperstack?]
         [elem any/c])
-      [_ (h) (list/c any/c (hyperstack/c #/hyperstack-dim-sys h))])]
+      [_ (stack)
+        (list/c any/c (hyperstack/c #/hyperstack-dim-sys stack))])]
   [make-hyperstack-trivial
     (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
       [_ (ds) (hyperstack/c ds)])]
   [hyperstack-pop-trivial
     (->i
       (
-        [i (h)
-          (w- ds (hyperstack-dim-sys h)
-          #/dim-sys-dim</c ds #/hyperstack-dimension h)]
-        [h hyperstack?])
-      [_ (h) (hyperstack/c #/hyperstack-dim-sys h)])]
+        [i (stack)
+          (w- ds (hyperstack-dim-sys stack)
+          #/dim-sys-dim</c ds #/hyperstack-dimension stack)]
+        [stack hyperstack?])
+      [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])]
   
   )
 
@@ -248,12 +251,12 @@
   (rename-contract (match/c hyperstack (ok/c ds) any/c)
     `(hyperstack/c ,ds)))
 
-(define (hyperstack-dimension h)
-  (dissect h (hyperstack ds rep)
+(define (hyperstack-dimension stack)
+  (dissect stack (hyperstack ds rep)
   #/dim-sys-dimlist-length ds rep))
 
-(define (hyperstack-peek h i)
-  (dissect h (hyperstack ds rep)
+(define (hyperstack-peek stack i)
+  (dissect stack (hyperstack ds rep)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
     (list elem suspended-chevron)
     elem))
@@ -263,8 +266,8 @@
   (hyperstack ds #/dim-sys-dimlist-map ds elems #/fn elem
     (list elem #/dim-sys-dimlist-zero ds)))
 
-(define (hyperstack-push-dimlist h elems-to-push)
-  (dissect h (hyperstack ds rep)
+(define (hyperstack-push-dimlist stack elems-to-push)
+  (dissect stack (hyperstack ds rep)
   #/hyperstack ds #/dim-sys-dimlist-shadow ds
     (dim-sys-dimlist-zip-map ds
       elems-to-push
@@ -273,8 +276,8 @@
         (list elem rep-chevron)))
     rep))
 
-(define (hyperstack-pop-dimlist h elems-to-push)
-  (dissect h (hyperstack ds rep)
+(define (hyperstack-pop-dimlist stack elems-to-push)
+  (dissect stack (hyperstack ds rep)
   #/w- i (dim-sys-dimlist-length ds elems-to-push)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
     (list elem suspended-chevron)
@@ -292,22 +295,22 @@
   (make-hyperstack-dimlist ds
   #/dim-sys-dimlist-uniform ds dimension elem))
 
-(define (hyperstack-push bump-degree h elem)
-  (w- ds (hyperstack-dim-sys h)
-  #/hyperstack-push-dimlist h
+(define (hyperstack-push bump-degree stack elem)
+  (w- ds (hyperstack-dim-sys stack)
+  #/hyperstack-push-dimlist stack
   #/dim-sys-dimlist-uniform ds bump-degree elem))
 
-(define (hyperstack-pop i h elem)
-  (w- ds (hyperstack-dim-sys h)
-  #/hyperstack-pop-dimlist h #/dim-sys-dimlist-uniform ds i elem))
+(define (hyperstack-pop i stack elem)
+  (w- ds (hyperstack-dim-sys stack)
+  #/hyperstack-pop-dimlist stack #/dim-sys-dimlist-uniform ds i elem))
 
 
 (define (make-hyperstack-trivial ds dimension)
   (make-hyperstack ds dimension #/trivial))
 
-(define (hyperstack-pop-trivial i h)
-  (w- ds (hyperstack-dim-sys h)
-  #/dissect (hyperstack-pop i h #/trivial) (list elem rest)
+(define (hyperstack-pop-trivial i stack)
+  (w- ds (hyperstack-dim-sys stack)
+  #/dissect (hyperstack-pop i stack #/trivial) (list elem rest)
   #/expect elem (trivial)
     (raise-arguments-error 'hyperstack-pop-trivial
       "expected the popped element to be a trivial value"
