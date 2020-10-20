@@ -27,9 +27,18 @@
   -> </c and/c any/c contract? flat-contract? ->i list/c)
 @(require #/for-label #/only-in racket/math natural?)
 
-@; TODO: Use `only-in` for this import.
-@(require #/for-label lathe-morphisms/in-fp/category)
-@(require #/for-label #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
+@(require #/for-label #/only-in lathe-morphisms/in-fp/category
+  category-sys? category-sys-morphism/c functor-sys?
+  functor-sys-apply-to-morphism functor-sys-apply-to-object
+  functor-sys/c functor-sys-impl? functor-sys-target
+  make-functor-sys-impl-from-apply
+  natural-transformation-sys-apply-to-morphism
+  natural-transformation-sys/c
+  natural-transformation-sys-endpoint-target
+  natural-transformation-sys-source natural-transformation-sys-target
+  prop:functor-sys)
+@(require #/for-label #/only-in lathe-morphisms/in-fp/mediary/set
+  ok/c)
 
 @(require #/for-label punctaffy/hypersnippet/dim)
 @(require #/for-label punctaffy/hypersnippet/hyperstack)
@@ -40,9 +49,9 @@
 
 Punctaffy is a library implementing and exploring hypersnippets, a higher-dimensional generalization of lexical hierarchical structure. For instance, theoretically, Punctaffy can be good for manipulating data that contains expanded macro bodies whose internal details should be independent from both the surrounding code and the code they interpolate. Structural recursion using Punctaffy's data representations makes it easy to keep these local details local, just as traditional forms of structural recursion make it easy to keep branches of a tree data structure from interfering with unrelated branches.
 
-How does this make any sense? We can think of the macro bodies as being @emph{more deeply nested}, despite the fact that the code they interpolate still appears in a nested position as far as the tree structure of the code is concerned. In this sense, the tree structure is not the full story of the nesting of the code.
+So how does this make any sense? We can think of the macro bodies as being @emph{more deeply nested}, despite the fact that the code they interpolate still appears in a nested position as far as the tree structure of the code is concerned. In this sense, the tree structure is not the full story of the nesting of the code.
 
-This is a matter of @emph{dimension}, and we can find a fully analogous situation one one dimension down: The content between two parentheses is typically be regarded as further into the traversal of the tree structure of the code, despite the fact that the content following the closing parenthesis is still further into the traversal of the code's text stream structure. The text stream is not the full story of how the code is meant to be traversed.
+This is a matter of @emph{dimension}, and we can find an analogous situation one dimension down: The content between two parentheses is typically regarded as further into the traversal of the tree structure of the code, despite the fact that the content following the closing parenthesis is still further into the traversal of the code's text stream structure. The text stream is not the full story of how the code is meant to be traversed.
 
 Punctaffy has a few particular data structures that it revolves around.
 
@@ -55,6 +64,8 @@ The idea of a hypersnippet is specific enough to suggest quite a few operations,
 Snippets don't identify their own snippet nature. Instead, each hypersnippet operation takes a @deftech{hypersnippet system} (aka a @deftech{snippet system}) argument, and it uses that to look up the appropriate hypersnippet functionality.
 
 A @deftech{dimension system} is a collection of implementations of the arithmetic operations we need on dimension numbers. (A @deftech{dimension number} is the "3" in the phrase "degree-3 hypersnippet." It generally represents the set of smaller dimension numbers that are allowed for a snippet's @tech{holes}.) For what we're doing so far, it turns out we only need to compare dimension numbers and take their maximum. For some purposes, it may be useful to use dimension numbers that aren't quite numbers in the usual sense, such as dimensions that are infinite or symbolic.
+
+@; TODO: See if we should mention hyperstacks right here. It seems like they can be skipped in this high-level overview since they're more of an implementation aid.
 
 A hypersnippet system always has some specific dimension system it's specialized for. We tend to find that notions of hypersnippet make sense independently of a specific dimension system, so we sometimes represent these notions abstractly as a kind of functor from a dimesion system to a snippet system. In practical terms, a functor like this lets us convert between two snippet systems that vary only in their choice of dimension system, as long as we have some way to convert between the dimension systems in question.
 
@@ -194,7 +205,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
           [_b (_ds) (dim-sys-dim/c _ds)])
         [_ boolean?])]
     [dim-max-of-list
-      (->i ([_ds dim-sys?] [_lsts (_ds) (listof #/dim-sys-dim/c _ds)])
+      (->i ([_ds dim-sys?] [_dims (_ds) (listof #/dim-sys-dim/c _ds)])
         [_ (_ds) (dim-sys-dim/c _ds)])])
   dim-sys-impl?
 ]{
@@ -276,7 +287,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
       (->i
         (
           [_ms dim-sys-morphism-sys?]
-          [object (_ms)
+          [_object (_ms)
             (dim-sys-dim/c (dim-sys-morphism-sys-source _ms))])
         [_ (_ms) (dim-sys-dim/c (dim-sys-morphism-sys-target _ms))])])
   dim-sys-morphism-sys-impl?

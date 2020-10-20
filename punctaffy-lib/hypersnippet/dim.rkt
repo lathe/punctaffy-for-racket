@@ -49,16 +49,15 @@
 (require #/only-in lathe-morphisms/in-fp/set
   makeshift-set-sys-from-contract)
 (require #/only-in lathe-morphisms/in-fp/category
-  category-sys-morphism/c functor-sys-apply-to-object
-  functor-sys-apply-to-morphism functor-sys/c functor-sys-impl?
+  category-sys-morphism/c functor-sys-apply-to-morphism
+  functor-sys-apply-to-object functor-sys/c functor-sys-impl?
   functor-sys-target make-category-sys-impl-from-chain-two
   make-functor-sys-impl-from-apply
   natural-transformation-sys-apply-to-morphism
   natural-transformation-sys/c
   natural-transformation-sys-endpoint-target
-  natural-transformation-sys-source
-  natural-transformation-sys-target prop:category-sys
-  prop:functor-sys)
+  natural-transformation-sys-source natural-transformation-sys-target
+  prop:category-sys prop:functor-sys)
 (require #/only-in lathe-morphisms/in-fp/mediary/set
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
@@ -114,7 +113,7 @@
           [a (ds) (dim-sys-dim/c ds)]
           [b (ds) (dim-sys-dim/c ds)])
         [_ boolean?])
-      (->i ([ds dim-sys?] [lsts (ds) (listof #/dim-sys-dim/c ds)])
+      (->i ([ds dim-sys?] [dims (ds) (listof #/dim-sys-dim/c ds)])
         [_ (ds) (dim-sys-dim/c ds)])
       dim-sys-impl?)]
   
