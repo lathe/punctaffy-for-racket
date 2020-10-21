@@ -28,7 +28,7 @@
 @(require #/for-label #/only-in racket/math natural?)
 
 @(require #/for-label #/only-in lathe-comforts fn)
-@(require #/for-label #/only-in lathe-comforts/maybe maybe/c)
+@(require #/for-label #/only-in lathe-comforts/maybe maybe/c nothing)
 @(require #/for-label #/only-in lathe-comforts/trivial trivial?)
 @(require #/for-label #/only-in lathe-morphisms/in-fp/category
   category-sys? category-sys-morphism/c functor-sys?
@@ -1088,4 +1088,60 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Returns a @tech{hypersnippet} like the given one, but where the data value carried in each @tech{hole} has been selected for traversal in the sense of @racket[selectable?].
   
   @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
+}
+
+@defproc[
+  (snippet-sys-snippet-splice
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [hv-to-splice
+      (let
+        (
+          [_ds (snippet-sys-dim-sys ss)]
+          [_shape-ss (snippet-sys-shape-snippet-sys ss)]
+          [_d (snippet-sys-snippet-degree ss snippet)])
+        (->i
+          (
+            [_prefix-hole
+              (snippet-sys-snippetof
+                (snippet-sys-shape-snippet-sys ss)
+                (fn _hole trivial?))]
+            [_data any/c])
+          [_ (_prefix-hole)
+            (let
+              (
+                [_prefix-hole-d
+                  (snippet-sys-snippet-degree
+                    _shape-ss _prefix-hole)])
+              (maybe/c
+                (selectable/c any/c
+                  (and/c
+                    (snippet-sys-snippet-with-degree=/c ss _d)
+                    (snippet-sys-snippet-zip-selective/c ss
+                      _prefix-hole
+                      (fn _suffix-hole _subject-data
+                        (let
+                          (
+                            [_suffix-hole-d
+                              (snippet-sys-snippet-degree
+                                _shape-ss _suffix-hole)])
+                          (dim-sys-dim<?
+                            _ds _suffix-hole-d _prefix-hole-d)))
+                      (fn _hole _shape-data _subject-data
+                        trivial?))))))]))])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet)))
+]{
+  Attempts to concatenate the given "prefix" @tech{hypersnippet} @racket[snippet] to any selected "suffix" hypersnippets computed from the @tech{hole} data by the given selection-attempting data-transforming procedure @racket[hv-to-splice].
+  
+  The @racket[hv-to-splice] procedure is invoked with the @tech{shape} and data value of each hole of the prefix, possibly stopping partway through if at least one of the invocations returns @racket[(nothing)]. If any invocation returns @racket[(nothing)], the overall result is @racket[(nothing)]. Otherwise, the concatenation proceeds successfully.
+  
+  When an invocation of @racket[hv-to-splice] is successful for some hole of degree N, the result is expected to be a @racket[selectable?] value. If it's @racket[unselected?], a corresponding hole with the @racket[unselected-value] appears verbatim in the concatenation result (without the value being concatenated to the prefix hypersnippet). If it's @racket[selected?], its @racket[selected-value] is expected to be a "suffix" hypersnippet, and it's concatenated into the prefix hypersnippet along the hole it's carried by in the prefix. For this concatenation to work, the suffix hypersnippet is expected to have the same degree as the prefix, and its holes of degree less than N are expected to contain @racket[trivial?] values and correspond to the holes of the prefix's hole. Any holes of degree not less than N become holes in the concatenated result.
+  
+  This operation obeys higher-dimensional algebraic laws. We haven't really figured out how to express these laws yet, but they seem to correspond to the category-theoretic notion that this operation performs whiskering of higher-dimensional cells along various dimensions at once. (TODO: Do at least a little better. This could be an ongoing effort, but ideally we would have something to show in the @racket[#:should-be-equal] DSL that we use for other documentation of algebraic laws.)
+  
+  Some of the lawfulness is a kind of associativity: If we first concatenate along some selected holes and then concatenate along some other holes that weren't selected the first time, that's the same as concatenating along all those holes at once. If a hole's suffix is itself a concatenation of some suffix-prefix to some suffix-suffix, then it doesn't matter whether we concatenate those two parts to form the suffix first or if we concatenate the prefix to the suffix-prefix and then concatenate the suffix-suffix last.
+  
+  Some of the lawfulness is a kind of unitality: If the concatenation is being performed along a hole where either the prefix or the suffix is an identity element produced by @racket[snippet-sys-snippet-done] for that hole shape, then the result resembles the other snippet. (When the prefix is the identity, the result is equal to the suffix. When the suffix is the identity, the result is the prefix, but with its data value in that hole replaced with the data value that would have been passed to @racket[snippet-sys-snippet-done] when creating the suffix.)
 }
