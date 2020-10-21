@@ -273,10 +273,10 @@
             (snippet-sys-shape-snippet-sys ss)
           #/snippet-sys-snippet-degree ss snippet))])]
   ; TODO: See if the result contract should be more specific. The
-  ; result should always exist if the given degree is equal to the
-  ; degree returned by `snippet-sys-snippet-undone`, and it should
-  ; always exist if the given degree is greater than that degree and
-  ; that degree is nonzero.
+  ; result should always exist if the snippet already has the given
+  ; degree, and it should always exist if the given degree is greater
+  ; than that degree and that degree is nonzero. Moreover, the result
+  ; should always have the same shape as the input.
   [snippet-sys-snippet-set-degree-maybe
     (->i
       (

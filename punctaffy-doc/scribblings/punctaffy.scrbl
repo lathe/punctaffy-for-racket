@@ -27,6 +27,9 @@
   -> </c and/c any/c contract? flat-contract? ->i list/c)
 @(require #/for-label #/only-in racket/math natural?)
 
+@(require #/for-label #/only-in lathe-comforts fn)
+@(require #/for-label #/only-in lathe-comforts/maybe maybe/c)
+@(require #/for-label #/only-in lathe-comforts/trivial trivial?)
 @(require #/for-label #/only-in lathe-morphisms/in-fp/category
   category-sys? category-sys-morphism/c functor-sys?
   functor-sys-apply-to-morphism functor-sys-apply-to-object
@@ -69,7 +72,7 @@ A @deftech{dimension system} is a collection of implementations of the arithmeti
 
 A hypersnippet system always has some specific dimension system it's specialized for. We tend to find that notions of hypersnippet make sense independently of a specific dimension system, so we sometimes represent these notions abstractly as a kind of functor from a dimesion system to a snippet system. In practical terms, a functor like this lets us convert between two snippet systems that vary only in their choice of dimension system, as long as we have some way to convert between the dimension systems in question.
 
-A @deftech{hypertee} is a kind of hypersnippet data structure that represents a region of code that doesn't contain content of any sort at all. A hypertee may not have content, but it still has a boundary, and hypertees tend to arise as the description of the @emph{shape} of a hypersnippet. For instance, when we try to graft a snippet into the hole of another snippet, it needs to have a shape that's compatible with the shape of that hole.
+A @deftech{hypertee} is a kind of hypersnippet data structure that represents a region of code that doesn't contain content of any sort at all. A hypertee may not have content, but it still has a boundary, and hypertees tend to arise as the description of the @tech{shape} of a hypersnippet. For instance, when we try to graft a snippet into the hole of another snippet, it needs to have a shape that's compatible with the shape of that hole.
 
 A @deftech{hypernest} is a kind of hypersnippet data structure that generalizes some other kind of hypersnippet (typically hypertees) by adding @deftech{bumps}. Bumps are like @tech{holes} that are already filled in, but with a seam showing. The filling, called the bump's @deftech{interior}, is considered to be nested deeper than the surrounding content. A bump can contain other bumps. A bump can also contain holes of degree equal to or greater than the bump's degree.
 
@@ -119,6 +122,8 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 
 @defproc[(dim-sys-dim/c [ds dim-sys?]) contract?]{
   Returns a contract which recognizes any @tech{dimension number} of the given @tech{dimension system}.
+  
+  For some dimension systems, this may be relied upon to be a flat contract or a chaperone contract.
 }
 
 @defproc[
@@ -205,7 +210,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
           [_b (_ds) (dim-sys-dim/c _ds)])
         [_ boolean?])]
     [dim-max-of-list
-      (->i ([_ds dim-sys?] [_dims (_ds) (listof #/dim-sys-dim/c _ds)])
+      (->i ([_ds dim-sys?] [_dims (_ds) (listof (dim-sys-dim/c _ds))])
         [_ (_ds) (dim-sys-dim/c _ds)])])
   dim-sys-impl?
 ]{
@@ -474,6 +479,8 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 )]{
   Struct-like operations which construct and deconstruct a @tech{dimension system} (@racket[dim-sys?]) where the @tech{dimension numbers} are the @racket[natural?] numbers and the @racket[dim-sys-dim-max] operation is @racket[max].
   
+  The @racket[dim-sys-dim/c] of a @racket[nat-dim-sys] is a flat contract.
+  
   Every two @tt{nat-dim-sys} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
 }
 
@@ -522,7 +529,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 ]{
   Returns a contract that recognizes an @racket[extended-with-top-dim?] value where the unextended @tech{dimension system}'s corresponding @tech{dimension number}, if any, abides by the given contract.
   
-  @; TODO: See if we guarantee a flat contract or chaperone contract under certain circumstances.
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
 @defproc[
@@ -559,6 +566,8 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   Struct-like operations which construct and deconstruct a @tech{dimension system} (@racket[dim-sys?]) where the @tech{dimension numbers} are @racket[(extended-with-top-dim/c (dim-sys-dim/c original))] values. That is to say, the dimension numbers are all the dimension numbers of the @racket[original] dimension system (wrapped in @racket[extended-with-top-dim-finite]) and one more dimension number greater than the rest (@racket[extended-with-top-dim-infinite]).
   
   The resulting dimension system's @racket[dim-sys-dim-max] operation corresponds with the original operation on the @racket[extended-with-top-dim-finite?] dimension numbers, and it treats the @racket[extended-with-top-dim-infinite?] dimension number as being greater than the rest.
+  
+  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] to be a flat contract or chaperone contract under certain circumstances.
   
   Two @tt{extended-with-top-dim-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's element is @racket[ok/c] for the second's.
 }
@@ -664,6 +673,8 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   Struct-like operations which construct and deconstruct a @tech{dimension system} (@racket[dim-sys?]) where the @tech{dimension numbers} are all the dimension numbers of the @racket[original] dimension system wrapped in @racket[extended-with-top-dim-finite], and where the action on those dimension numbers is the same as the original action. That is to say, this is a dimension system that @emph{represents} its dimension numbers the same way @racket[extended-with-top-dim-sys] does, but which doesn't actually include the additional @racket[extended-with-top-dim-infinite] dimension number.
   
   This is primarily used as the source of @racket[unextend-with-top-dim-sys], which otherwise would have to have an error-handling case if it encountered the @racket[extended-with-top-dim-infinite] value. (TODO: Consider passing an error handler to @racket[unextend-with-top-dim-sys-morphism-sys]. Perhaps that would be a better approach than this, since we would be encouraged to write errors where the error messages make the most sense, not rely indirectly on the error messages of the contracts of the behaviors we invoke. On the other hand, perhaps that error-handling should take place in a morphism (or natural transformation) from @racket[extended-with-top-dim-sys] to @racket[extended-with-top-finite-dim-sys].)
+  
+  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] to be a flat contract or chaperone contract under certain circumstances.
   
   Two @tt{extended-with-top-finite-dim-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's element is @racket[ok/c] for the second's.
 }
@@ -799,6 +810,282 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 (TODO: Document a lot more things.)
 
 
-@defproc[(snippet-sys? [v any/c]) boolean?]{
-  Returns whether the given value is a @tech{snippet system}.
+@deftogether[(
+  @defidform[unselected]
+  @defform[#:link-target? #f (unselected value)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (unselected value)
+  ]
+  @defproc[(unselected? [v any/c]) boolean?]
+  @defproc[(unselected-value [u unselected?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[selectable?] value that represents a value that has not been selected to be processed as part of a collection traveral.
+  
+  Two @tt{unselected} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@deftogether[(
+  @defidform[selected]
+  @defform[#:link-target? #f (selected value)]
+  @defform[#:kind "match expander" #:link-target? #f (selected value)]
+  @defproc[(selected? [v any/c]) boolean?]
+  @defproc[(selected-value [s selected?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[selectable?] value that represents a value that has indeed been selected to be processed as part of a collection traveral.
+  
+  Two @tt{selected} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@defproc[(selectable? [v any/c]) boolean?]{
+  Returns whether the given value is a possibly-selected value, which is an arbitrary value that may or may not have been selected to be processed as part of a collection traversal. A possibly-selected value is represented by either an @racket[unselected?] value or a @racket[selected?] value.
+  
+  (TODO: Consider renaming @tt{selectable?} to @tt{possibly-selected?}.)
+}
+
+@defproc[
+  (selectable/c [unselected/c contract?] [selected/c contract?])
+  contract?
+]{
+  Returns a contract that recognizes a @racket[selectable?] value where the value abides by @racket[unselected/c] if it's unselected or by @racket[selected/c] if it's selected.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@deftogether[(
+  @defproc[(snippet-sys? [v any/c]) boolean?]
+  @defproc[(snippet-sys-impl? [v any/c]) boolean?]
+  @defthing[
+    prop:snippet-sys
+    (struct-type-property/c snippet-sys-impl?)
+  ]
+)]{
+  Structure type property operations for @tech{hypersnippet systems} (aka @tech{snippet systems}). These are systems of traversal and concatenation operations over some form of @tech{hypersnippet} data, where the @tech{degrees} of the hypersnippets range over some decided-upon @tech{dimension system}.
+  
+  @; TODO: Once the link works, add "See @racket[snippet-format-sys?] for a similar bundle of operations which allows the dimension system to be decided upon by the caller."
+}
+
+@defproc[(snippet-sys-snippet/c [ss snippet-sys?]) contract?]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system}.
+  
+  For some snippet systems, this may be relied upon to be a flat contract or a chaperone contract.
+}
+
+@defproc[(snippet-sys-dim-sys [ss snippet-sys?]) dim-sys?]{
+  Returns the @tech{dimension system} that operates on the @tech{degree} numbers of the given @tech{snippet system}'s @tech{hypersnippets}.
+}
+
+@defproc[
+  (snippet-sys-shape-snippet-sys [ss snippet-sys?])
+  snippet-sys?
+]{
+  Returns the @tech{snippet system} that operates on the @deftech{shapes} of the given @tech{snippet system}'s @tech{hypersnippets}. These shapes are hypersnippets of their own, and they have the same arrangement of @tech{holes} as the hypersnippets they're the shapes of, but they don't contain any content. They're good for representing content-free areas where a hypersnippet's content can be inserted, such as the holes of a fellow hypersnippet.
+  
+  @; TODO: See if this is really the best place to do @deftech{shapes}. Perhaps we should describe shapes in more detail in the introduction.
+}
+
+@defproc[
+  (snippet-sys-snippet-degree
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)])
+  (dim-sys-dim/c (snippet-sys-dim-sys ss))
+]{
+  Returns the @tech{degree} (or dimension) of the given @tech{hypersnippet}.
+}
+
+@defproc[
+  (snippet-sys-snippet-with-degree/c
+    [ss snippet-sys?]
+    [degree/c flat-contract?])
+  contract?
+]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} satisfies the given flat contract.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@deftogether[(
+  @defproc[
+    (snippet-sys-snippet-with-degree</c
+      [ss snippet-sys?]
+      [degree (dim-sys-dim/c (snippet-sys-dim-sys ss))])
+    contract?
+  ]
+  @defproc[
+    (snippet-sys-snippet-with-degree=/c
+      [ss snippet-sys?]
+      [degree (dim-sys-dim/c (snippet-sys-dim-sys ss))])
+    contract?
+  ]
+)]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly less than the given one, or if its degree is equal to the given one.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-snippetof
+    [ss snippet-sys?]
+    [h-to-value/c
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        contract?)])
+  contract?
+]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if the values in its @tech{holes} abide by the given contracts. The contracts are given by a function @racket[h-to-value/c] that takes the hypersnippet @tech{shape} of the hole and returns a contract for values residing in that hole.
+  
+  This design allows us to require the values in the holes to somehow @emph{fit} the shapes of the holes they're carried in. It's rather common for the value contracts to depend on at least the @tech{degree} of the hole, if not on its complete shape.
+  
+  This operation appears in its own contract. This usage refers to the fact that the hole shape supplied to @racket[h-to-value/c] will have @racket[trivial?] values in its holes.
+  
+  @; TODO: See if we should have a `(snippet-sys-unlabeled-shape/c ss)` that abbreviates this common `(snippet-sys-snippetof ... trivial? ...)` combination. That might be especially helpful here, just in case `snippet-sys-snippetof` appearing in its own contract turns out to confuse someone.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-snippet-zip-selective/c
+    [ss snippet-sys?]
+    [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
+    [check-subject-hv?
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        boolean?)]
+    [hvv-to-subject-v/c
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        any/c
+        contract?)])
+  contract?
+]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if some of its @tech{holes} correspond with the holes of the given @tech{shape} hypersnippet @racket[shape] and if the values in those holes are somehow compatible with the values held in @racket[shape]'s holes.
+  
+  To determine which holes from the subject will be compared to those in @racket[shape], the given @racket[check-subject-hv?] is called for each of the subject's holes, passing it the hole's shape and the data value it carries. It's expected to return a boolean indicating whether this hole should correspond to some hole in @racket[shape].
+  
+  To determine if a value in the subject's holes is compatible with a corresponding (same-shaped) hole in @racket[shape], the @racket[hvv-to-subject-v/c] procedure is called, passing it the hole's shape, the value carried in @racket[shape]'s hole, and the value carried in the subject's hole. It's expected to return a contract, and the value in the subject's hole is expected to abide by that contract.
+  
+  In our experience so far, it seems the @racket[check-subject-hv?] function always takes on a certain form: It always selects every hole that has @tech{degree} lower than @racket[shape]'s degree. (TODO: Consider updating the design of @tt{snippet-sys-snippet-zip-selective/c} to reflect that, or at least designing an alternative that's simpler for this common case.)
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-shape->snippet
+    [ss snippet-sys?]
+    [shape
+      (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))])
+  (snippet-sys-snippet-with-degree=/c ss
+    (snippet-sys-snippet-degree (snippet-sys-shape-snippet-sys ss)
+      shape))
+]{
+  Given a @tech{hypersnippet} @tech{shape}, returns an content-free hypersnippet which has that shape. The result has carries all the same values in its @tech{holes}.
+  
+  This operation can be inverted using @racket[snippet-sys-snippet->maybe-shape].
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the input shape.
+}
+
+@defproc[
+  (snippet-sys-snippet->maybe-shape
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c
+      (snippet-sys-shape-snippet-sys ss)
+      (snippet-sys-snippet-degree ss snippet)))
+]{
+  Checks whether a @tech{hypersnippet} is content-free, and if it is, computes the hypersnippet's @tech{shape}.
+  
+  The resulting shape, if any, carries all the same values in its @tech{holes}.
+  
+  This operation is invertible when it succeeds. The resulting shape, if any, can be converted back into a content-free hypersnippet by using @racket[snippet-sys-shape->snippet].
+  
+  @; TODO: See if the result contract should be more specific. The resulting shape should always be of the same shape as the input snippet.
+}
+
+@defproc[
+  (snippet-sys-snippet-set-degree-maybe
+    [ss snippet-sys?]
+    [degree (dim-sys-dim/c (snippet-sys-dim-sys ss))]
+    [snippet (snippet-sys-snippet/c ss)])
+  (maybe/c (snippet-sys-snippet-with-degree=/c ss degree))
+]{
+  If possible, returns a @tech{hypersnippet} just like the given one but modified to have the given @tech{degree}.
+  
+  The resulting hypersnippet, if any, has all the same content as the original and carries all the same values in its @tech{holes}.
+  
+  If the given degree is already the same as the given snippet's degree, this operation succeeds (and returns a snippet equivalent to the original).
+  
+  If the original snippet has nonzero degree, and if the given degree is greater than the snippet's existing degree, this operation succeeds.
+  
+  This operation is invertible when it succeeds. The resulting snippet, if any, can be converted back by calling @tt{snippet-sys-snippet-set-degree-maybe} again with the snippet's original degree.
+  
+  @; TODO: See if the result contract should be more specific. The result should always exist if the snippet already has the given degree, and it should always exist if the given degree is greater than that degree and that degree is nonzero. Moreover, the result should always have the same shape as the input.
+}
+
+@defproc[
+  (snippet-sys-snippet-done
+    [ss snippet-sys?]
+    [degree (dim-sys-dim/c (snippet-sys-dim-sys ss))]
+    [shape
+      (snippet-sys-snippet-with-degree</c
+        (snippet-sys-shape-snippet-sys ss)
+        degree)]
+    [data any/c])
+  (snippet-sys-snippet-with-degree=/c ss degree)
+]{
+  Given a @tech{hypersnippet} @tech{shape}, returns a content-free hypersnippet that fits into a @tech{hole} of that shape and has its own hole of the same shape. The resulting snippet has the given @tech{degree}, which must be high enough that a hole of shape @racket[shape] is allowed. The resulting snippet's @racket[shape]-shaped hole carries the given data value, and its lower-degree holes carry the same data values carried by @racket[shape]'s holes.
+  
+  The results of this operation are the identity elements of hypersnippet concatenation. It's the identity on both sides: Filling a hypersnippet's hole with one of these hypersnippets and concatenating has no effect, and filling this one's @racket[shape]-shaped hole with another hypersnippet and concatenating has no effect either.
+  
+  @; TODO: Once the link works, add a mention of @racket[ypersnippet-join] to the above paragraph.
+  
+  This operation can be inverted using @racket[snippet-sys-snippet-undone].
+  
+  The results of this operation are always content-free, so they can be successfully converted to shapes by @racket[snippet-sys-snippet->maybe-shape].
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given shape in its low-degree holes.
+}
+
+@defproc[
+  (snippet-sys-snippet-undone
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)])
+  (maybe/c
+    (list/c
+      (dim-sys-dim=/c (snippet-sys-dim-sys ss)
+        (snippet-sys-snippet-degree ss snippet))
+      (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))
+      any/c))
+]{
+  Checks whether a @tech{hypersnippet} is an identity element of hypersnippet concatenation, and if it is, obtains three values: Its @tech{degree}, the @tech{shape} of @tech{hole} it interacts with in its role as an identity element, and the data value contained in its own hole of that shape.
+  
+  The resulting hole shape, if any, carries all the same values in its holes that @racket[snippet] carries in its low-degree holes.
+  
+  This operation is invertible when it succeeds. The resulting shape, if any, can be converted back into a content-free hypersnippet by using @racket[snippet-sys-snippet-done].
+  
+  (TODO: Consider renaming this to have "maybe" in the name, bringing it closer to @racket[snippet-sys-snippet->maybe-shape] and @racket[snippet-sys-snippet-set-degree-maybe].)
+  
+  @; TODO: See if the result contract should be more specific. The resulting shape should always be of the same shape as the given snippet's low-degree holes.
+}
+
+@; TODO: Reconsider where to arrange this relative to the other operations here.
+@defproc[
+  (snippet-sys-snippet-select-everything
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)])
+  (and/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet))
+    (snippet-sys-snippetof ss (fn _hole selected?)))
+]{
+  Returns a @tech{hypersnippet} like the given one, but where the data value carried in each @tech{hole} has been selected for traversal in the sense of @racket[selectable?].
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
