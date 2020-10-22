@@ -343,9 +343,7 @@
           #/->i
             (
               [prefix-hole
-                (snippet-sys-snippetof
-                  (snippet-sys-shape-snippet-sys ss)
-                  (fn hole trivial?))]
+                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -373,14 +371,15 @@
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
           #/snippet-sys-snippet-degree ss snippet))])]
+  ; TODO: See if the result contract should be more specific. The
+  ; resulting snippet should always be of the same shape as the given
+  ; one.
   [snippet-sys-snippet-zip-map-selective
     (->i
       (
         [ss snippet-sys?]
         [shape (ss)
-          (snippet-sys-snippetof
-            (snippet-sys-shape-snippet-sys ss)
-            (fn hole any/c))]
+          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [snippet (ss)
           (snippet-sys-snippetof ss #/fn hole selectable?)]
         [hvv-to-maybe-v (ss)
@@ -391,7 +390,10 @@
             any/c
             any/c
             maybe?)])
-      [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])]
+      [_ (ss snippet)
+        (maybe/c
+          (snippet-sys-snippet-with-degree=/c ss
+          #/snippet-sys-snippet-degree ss snippet))])]
   [snippet-sys-snippet-any?
     (->i
       (
@@ -453,7 +455,7 @@
           (snippet-sys-snippet-degree ss snippet))])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
-  ; one.
+  ; one, and it should have `selectable?` values in its holes.
   [snippet-sys-snippet-select
     (->i
       (
@@ -470,7 +472,7 @@
           (snippet-sys-snippet-degree ss snippet))])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
-  ; one.
+  ; one, and it should have `selectable?` values in its holes.
   [snippet-sys-snippet-select-if-degree
     (->i
       (
@@ -483,7 +485,7 @@
           (snippet-sys-snippet-degree ss snippet))])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
-  ; one.
+  ; one, and it should have `selectable?` values in its holes.
   [snippet-sys-snippet-select-if-degree<
     (->i
       (
@@ -545,7 +547,6 @@
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (w- prefix-hole-d
               (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/by-own-method/c data
             #/selectable/c any/c
               
               ; What this means is that this should be a snippet whose
@@ -619,7 +620,6 @@
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (w- prefix-hole-d
               (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/by-own-method/c data
             
             ; What this means is that this should be a snippet whose
             ; low-degree holes correspond to the holes of
@@ -757,9 +757,8 @@
         (
           [ss snippet-sys?]
           [shape (ss)
-            (snippet-sys-snippetof
-              (snippet-sys-shape-snippet-sys ss)
-              (fn hole any/c))]
+            (snippet-sys-snippet/c
+              (snippet-sys-shape-snippet-sys ss))]
           [snippet (ss)
             (snippet-sys-snippetof ss #/fn hole selectable?)]
           [hvv-to-maybe-v (ss)
@@ -770,7 +769,10 @@
               any/c
               any/c
               maybe?)])
-        [_ (ss) (maybe/c #/snippet-sys-snippet/c ss)])
+        [_ (ss snippet)
+          (maybe/c
+            (snippet-sys-snippet-with-degree=/c ss
+            #/snippet-sys-snippet-degree ss snippet))])
       snippet-sys-impl?)]
   
   [snippet-sys-morphism-sys? (-> any/c boolean?)]
@@ -1280,9 +1282,7 @@
           #/->i
             (
               [prefix-hole
-                (snippet-sys-snippetof
-                  (snippet-sys-shape-snippet-sys ss)
-                  (fn hole trivial?))]
+                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -1636,7 +1636,6 @@
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (w- prefix-hole-d
               (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/by-own-method/c data
             #/selectable/c any/c
               
               ; What this means is that this should be a snippet whose
@@ -1723,7 +1722,6 @@
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (w- prefix-hole-d
               (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/by-own-method/c data
             
             ; What this means is that this should be a snippet whose
             ; low-degree holes correspond to the holes of

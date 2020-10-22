@@ -28,7 +28,10 @@
 @(require #/for-label #/only-in racket/math natural?)
 
 @(require #/for-label #/only-in lathe-comforts fn)
-@(require #/for-label #/only-in lathe-comforts/maybe maybe/c nothing)
+@(require #/for-label #/only-in lathe-comforts/contract
+  by-own-method/c)
+@(require #/for-label #/only-in lathe-comforts/maybe
+  just? maybe/c nothing)
 @(require #/for-label #/only-in lathe-comforts/trivial trivial?)
 @(require #/for-label #/only-in lathe-morphisms/in-fp/category
   category-sys? category-sys-morphism/c functor-sys?
@@ -1102,15 +1105,15 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_d (snippet-sys-snippet-degree ss snippet)])
         (->i
           (
-            [_prefix-hole
-              (snippet-sys-snippetof
-                (snippet-sys-shape-snippet-sys ss)
-                (fn _hole trivial?))]
+            [
+              _prefix-hole
+              (snippet-sys-snippetof _shape-ss (fn _hole trivial?))]
             [_data any/c])
           [_ (_prefix-hole)
             (let
               (
-                [_prefix-hole-d
+                [
+                  _prefix-hole-d
                   (snippet-sys-snippet-degree
                     _shape-ss _prefix-hole)])
               (maybe/c
@@ -1122,7 +1125,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
                       (fn _suffix-hole _subject-data
                         (let
                           (
-                            [_suffix-hole-d
+                            [
+                              _suffix-hole-d
                               (snippet-sys-snippet-degree
                                 _shape-ss _suffix-hole)])
                           (dim-sys-dim<?
@@ -1144,4 +1148,246 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Some of the lawfulness is a kind of associativity: If we first concatenate along some selected holes and then concatenate along some other holes that weren't selected the first time, that's the same as concatenating along all those holes at once. If a hole's suffix is itself a concatenation of some suffix-prefix to some suffix-suffix, then it doesn't matter whether we concatenate those two parts to form the suffix first or if we concatenate the prefix to the suffix-prefix and then concatenate the suffix-suffix last.
   
   Some of the lawfulness is a kind of unitality: If the concatenation is being performed along a hole where either the prefix or the suffix is an identity element produced by @racket[snippet-sys-snippet-done] for that hole shape, then the result resembles the other snippet. (When the prefix is the identity, the result is equal to the suffix. When the suffix is the identity, the result is the prefix, but with its data value in that hole replaced with the data value that would have been passed to @racket[snippet-sys-snippet-done] when creating the suffix.)
+  
+  Some of the lawfulness is associativity in a bird's-eye-view form: If all the @racket[hv-to-splice] results are selected suffixes, and if the prefix is content-free (in the sense that it can be converted to a shape by @racket[snippet-sys-snippet->maybe-shape]), then the result is the same as performing multiple concatenations to concatenate the suffixes with each other. In this sense, content-free hypersnippets are like concatenation operations in their own right, possibly like the composition cells of an opetopic higher-dimensional weak category in category theory.
+}
+
+@defproc[
+  (snippet-sys-snippet-zip-map-selective
+    [ss snippet-sys?]
+    [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
+    [snippet (snippet-sys-snippetof ss (fn _hole selectable?))]
+    [hvv-to-maybe-v
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        any/c
+        maybe?)])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet)))
+]{
+  Attempts to use the data carried in the given @tech{hypersnippet} @tech{shape} to create a snippet like @racket[snippet], but with all its @racket[unselected?] @tech{hole} data values unwrapped and all its @racket[selected?] values replaced by using @racket[hvv-to-maybe-v] to combine @racket[shape]'s data and @racket[snippet]'s data.
+  
+  The @racket[hvv-to-maybe-v] function is invoked with the shape of each hole to be combined, the data value from that hole in @racket[shape], and the data value from that hole in @racket[snippet].
+  
+  The traversal may stop partway through with a result of @racket[(nothing)] if it proves to be impossible to align all the holes in @racket[shape] with all the @racket[selected?] holes in @racket[snippet], or if at least one of the @racket[hvv-to-maybe-v] invocations returns @racket[(nothing)].
+  
+  This operation serves as a way to compare the shape of a snippet with a known shape. For example, when this operation is used with content-free snippets (those which correspond to shapes via @racket[snippet-sys-shape->snippet] and by @racket[snippet-sys-snippet->maybe-shape]), and when those snippets have all their data values selected, it effectively serves as a way to compare two shapes for equality. It can also serve as a way to compute whether a given snippet is a compatible fit for a given hole (even if the snippet has some high-@tech{degree} holes beyond those accounted for in the hole's shape).
+  
+  When the "comparison" is successful, that means the shape and snippet have sufficiently similar layouts to combine their data values. That allows this comparison to double as a sort of zipping operation.
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
+}
+
+@defproc[
+  (snippet-sys-snippet-any?
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [check-hv?
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        boolean?)])
+  boolean?
+]{
+  Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[#t]. If any of these invocations of the function returns @racket[#t], the result is @racket[#t]. Otherwise, the result is @racket[#f].
+  
+  This essentially does for hypersnippets what Racket's @racket[ormap] does for lists.
+}
+
+@defproc[
+  (snippet-sys-snippet-all?
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [check-hv?
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        boolean?)])
+  boolean?
+]{
+  Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[#f]. If any of these invocations of the function returns @racket[#f], the result is @racket[#f]. Otherwise, the result is @racket[#t].
+  
+  This essentially does for hypersnippets what Racket's @racket[andmap] does for lists.
+}
+
+@defproc[
+  (snippet-sys-snippet-map-maybe
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [hv-to-maybe-v
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        maybe?)])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet)))
+]{
+  Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[(nothing)]. If any of these invocations of the function returns @racket[(nothing)], the result is @racket[(nothing)]. Otherwise, the result is a @racket[just?] of a hypersnippet where the values have been replaced with the corresponding @racket[hv-to-maybe-v] function results.
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
+}
+
+@defproc[
+  (snippet-sys-snippet-map
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [hv-to-v
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        any/c)])
+  (snippet-sys-snippet-with-degree=/c ss
+    (snippet-sys-snippet-degree ss snippet))
+]{
+  Transforms the given @tech{hypersnippet}'s @tech{hole} data values by calling the given function on each one.
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
+}
+
+@defproc[
+  (snippet-sys-snippet-select
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [check-hv?
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        boolean?)])
+  (snippet-sys-snippet-with-degree=/c ss
+    (snippet-sys-snippet-degree ss snippet))
+]{
+  Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by calling the given function to decide whether each one should be @racket[selected?].
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one, and it should have `selectable?` values in its holes.
+}
+
+@defproc[
+  (snippet-sys-snippet-select-if-degree
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [check-degree?
+      (-> (dim-sys-dim/c (snippet-sys-dim-sys ss)) boolean?)])
+  (snippet-sys-snippet-with-degree=/c ss
+    (snippet-sys-snippet-degree ss snippet))
+]{
+  Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by calling the given function on each hole's @tech{degree} decide whether the value should be @racket[selected?].
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one, and it should have `selectable?` values in its holes.
+}
+
+@defproc[
+  (snippet-sys-snippet-select-if-degree<
+    [ss snippet-sys?]
+    [degreee (dim-sys-dim/c (snippet-sys-dim-sys ss))]
+    [snippet (snippet-sys-snippet/c ss)])
+  (snippet-sys-snippet-with-degree=/c ss
+    (snippet-sys-snippet-degree ss snippet))
+]{
+  Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by selecting the values whose holes' @tech{degrees} are strictly less than the given one.
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one, and it should have `selectable?` values in its holes.
+}
+
+@defproc[
+  (snippet-sys-snippet-bind-selective
+    [ss snippet-sys?]
+    [prefix (snippet-sys-snippet/c ss)]
+    [hv-to-suffix
+      (let
+        (
+          [_ds (snippet-sys-dim-sys ss)]
+          [_shape-ss (snippet-sys-shape-snippet-sys ss)]
+          [_d (snippet-sys-snippet-degree ss prefix)])
+        (->i
+          (
+            [
+              _prefix-hole
+              (snippet-sys-snippetof _shape-ss (fn _hole trivial?))]
+            [_data any/c])
+          [_ (_prefix-hole)
+            (let
+              (
+                [
+                  _prefix-hole-d
+                  (snippet-sys-snippet-degree
+                    _shape-ss _prefix-hole)])
+              (selectable/c any/c
+                (and/c
+                  (snippet-sys-snippet-with-degree=/c ss _d)
+                  (snippet-sys-snippet-zip-selective/c ss _prefix-hole
+                    (fn _suffix-hole _subject-data
+                      (let
+                        (
+                          [
+                            _suffix-hole-d
+                            (snippet-sys-snippet-degree
+                              _shape-ss _suffix-hole)])
+                        (dim-sys-dim<?
+                          _ds _suffix-hole-d _prefix-hole-d)))
+                    (fn _hole _shape-data _subject-data
+                      trivial?)))))]))])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss prefix)))
+]{
+  Concatenates the given "prefix" @tech{hypersnippet} @racket[prefix] to any selected "suffix" hypersnippets computed from the @tech{hole} data by the given selection procedure @racket[hv-to-suffix].
+  
+  When @racket[hv-to-suffix] is invoked for some hole of degree N, the result is expected to be a @racket[selectable?] value. If it's @racket[unselected?], a corresponding hole with the @racket[unselected-value] appears verbatim in the concatenation result (without the value being concatenated to the prefix hypersnippet). If it's @racket[selected?], its @racket[selected-value] is expected to be a "suffix" hypersnippet, and it's concatenated into the prefix hypersnippet along the hole it's carried by in the prefix. For this concatenation to work, the suffix hypersnippet is expected to have the same degree as the prefix, and its holes of degree less than N are expected to contain @racket[trivial?] values and correspond to the holes of the prefix's hole. Any holes of degree not less than N become holes in the concatenated result.
+  
+  This operation is a specialization of @racket[snippet-sys-snippet-splice] to the case where the concatenation is always successful. It obeys similar higher-dimensional algebraic laws.
+}
+
+@defproc[
+  (snippet-sys-snippet-join-selective
+    [ss snippet-sys?]
+    [snippet
+      (let
+        (
+          [_ds (snippet-sys-dim-sys ss)]
+          [_shape-ss (snippet-sys-shape-snippet-sys ss)])
+        (and/c (snippet-sys-snippet/c ss)
+          (by-own-method/c _snippet
+            (let ([_d (snippet-sys-snippet-degree ss _snippet)])
+              (snippet-sys-snippetof ss
+                (fn _prefix-hole
+                  (let
+                    (
+                      [
+                        _prefix-hole-d
+                        (snippet-sys-snippet-degree
+                          _shape-ss _prefix-hole)])
+                    (selectable/c any/c
+                      (and/c
+                        (snippet-sys-snippet-with-degree=/c ss _d)
+                        (snippet-sys-snippet-zip-selective/c ss
+                          _prefix-hole
+                          (fn _suffix-hole _subject-data
+                            (let
+                              (
+                                [
+                                  _suffix-hole-d
+                                  (snippet-sys-snippet-degree
+                                    _shape-ss _suffix-hole)])
+                              (dim-sys-dim<?
+                                _ds _suffix-hole-d _prefix-hole-d)))
+                          (fn _hole _shape-data _subject-data
+                            trivial?)))))))))))])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet)))
+]{
+  Concatenates the given "prefix" @tech{hypersnippet} @racket[snippet] to any selected "suffix" hypersnippets in its @tech{hole} data values.
+  
+  Each hole data value is expected to be a @racket[selectable?] value. If it's @racket[unselected?], a corresponding hole with the @racket[unselected-value] appears verbatim in the concatenation result (without the value being concatenated to the prefix hypersnippet). If it's @racket[selected?], its @racket[selected-value] is expected to be a "suffix" hypersnippet, and it's concatenated into the prefix hypersnippet along the hole it's carried by in the prefix. For this concatenation to work, the suffix hypersnippet is expected to have the same degree as the prefix, and its holes of degree less than N are expected to contain @racket[trivial?] values and correspond to the holes of the prefix's hole. Any holes of degree not less than N become holes in the concatenated result.
+  
+  This operation is a specialization of @racket[snippet-sys-snippet-splice] to the case where the concatenation is always successful and the transformation function is always the identity. It obeys higher-dimensional algebraic laws similar to those @racket[snippet-sys-snippet-splice] obeys.
 }
