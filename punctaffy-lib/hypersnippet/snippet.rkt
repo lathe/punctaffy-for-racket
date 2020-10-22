@@ -719,9 +719,7 @@
             #/->i
               (
                 [prefix-hole
-                  (snippet-sys-snippetof
-                    (snippet-sys-shape-snippet-sys ss)
-                    (fn hole trivial?))]
+                  (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
                 [data any/c])
               [_ (prefix-hole)
                 (w- prefix-hole-d
@@ -3097,18 +3095,16 @@
         [overall-degree (ds) (dim-sys-0<dim/c ds)]
         [hole (ds overall-degree)
           (w- ss (hypertee-snippet-sys ds)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/and/c
             (snippet-sys-snippetof ss #/fn hole trivial?)
             (snippet-sys-snippet-with-degree</c ss overall-degree))]
         [data any/c]
         [tails (ds overall-degree hole)
           (w- ss (hypertee-snippet-sys ds)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/snippet-sys-snippet-zip-selective/c ss hole
             (fn hole subject-data #t)
             (fn hole shape-data subject-data
-              (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+              (w- hole-d (snippet-sys-snippet-degree ss hole)
               
               ; What this means is that this should be a snippet whose
               ; low-degree holes correspond to the holes of `hole` and
@@ -3123,8 +3119,7 @@
                 (snippet-sys-snippet-zip-selective/c ss hole
                   (fn tail-hole subject-data
                     (w- tail-hole-d
-                      (snippet-sys-snippet-degree
-                        shape-ss tail-hole)
+                      (snippet-sys-snippet-degree ss tail-hole)
                     #/dim-sys-dim<? ds tail-hole-d hole-d))
                   (fn hole shape-data subject-data trivial?)))))])
       [_ any/c])
