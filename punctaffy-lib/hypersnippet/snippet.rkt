@@ -866,32 +866,6 @@
                 (dim-sys-morphism-sys-target ms))))])
       functor-sys-impl?)]
   
-  ; TODO:
-  ;
-  ; A `snippet-format-sys?` is a wrapped functor from the `dim-sys?`
-  ; category to the `snippet-sys?` category that guarantees the
-  ; resulting `snippet-sys` systems and morphisms make use of the same
-  ; `dym-sys` systems and functors that were given. That is, when we
-  ; compose an extension's functor with the functor represented by the
-  ; combination of `snippet-sys-dim-sys` and
-  ; `snippet-sys-morphism-sys-dim-sys-morphism-sys`, we get an
-  ; identity functor.
-  ;
-  ; When we document the `snippet-format-sys?` type, make sure to
-  ; explain this.
-  ;
-  [snippet-format-sys? (-> any/c boolean?)]
-  [snippet-format-sys-impl? (-> any/c boolean?)]
-  [snippet-format-sys-functor
-    (-> snippet-format-sys? functor-from-dim-sys-to-snippet-sys-sys?)]
-  [prop:snippet-format-sys
-    (struct-type-property/c snippet-format-sys-impl?)]
-  [make-snippet-format-sys-impl-from-functor
-    (->
-      (-> snippet-format-sys?
-        functor-from-dim-sys-to-snippet-sys-sys?)
-      snippet-format-sys-impl?)]
-  
   [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
     (-> any/c boolean?)]
   [make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
@@ -921,6 +895,32 @@
               (natural-transformation-sys-target ms)
               (dim-sys-morphism-sys-target dsms)))])
       natural-transformation-sys-impl?)]
+  
+  ; TODO:
+  ;
+  ; A `snippet-format-sys?` is a wrapped functor from the `dim-sys?`
+  ; category to the `snippet-sys?` category that guarantees the
+  ; resulting `snippet-sys` systems and morphisms make use of the same
+  ; `dym-sys` systems and functors that were given. That is, when we
+  ; compose an extension's functor with the functor represented by the
+  ; combination of `snippet-sys-dim-sys` and
+  ; `snippet-sys-morphism-sys-dim-sys-morphism-sys`, we get an
+  ; identity functor.
+  ;
+  ; When we document the `snippet-format-sys?` type, make sure to
+  ; explain this.
+  ;
+  [snippet-format-sys? (-> any/c boolean?)]
+  [snippet-format-sys-impl? (-> any/c boolean?)]
+  [snippet-format-sys-functor
+    (-> snippet-format-sys? functor-from-dim-sys-to-snippet-sys-sys?)]
+  [prop:snippet-format-sys
+    (struct-type-property/c snippet-format-sys-impl?)]
+  [make-snippet-format-sys-impl-from-functor
+    (->
+      (-> snippet-format-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?)
+      snippet-format-sys-impl?)]
   
   [snippet-format-sys-morphism-sys? (-> any/c boolean?)]
   [snippet-format-sys-morphism-sys-impl? (-> any/c boolean?)]
@@ -1981,15 +1981,6 @@
     (fn fs a b ms #/apply-to-dim-sys-morphism-sys fs ms)))
 
 
-(define-imitation-simple-generics
-  snippet-format-sys?
-  snippet-format-sys-impl?
-  (#:method snippet-format-sys-functor (#:this))
-  prop:snippet-format-sys
-  make-snippet-format-sys-impl-from-functor
-  'snippet-format-sys 'snippet-format-sys-impl (list))
-
-
 (define (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
   (
     (flat-contract-predicate
@@ -2039,6 +2030,15 @@
     (fn nts new-t #/replace-target nts new-t)
     ; functor-sys-apply-to-morphism
     (fn nts a b ms #/apply-to-dim-sys-morphism-sys nts ms)))
+
+
+(define-imitation-simple-generics
+  snippet-format-sys?
+  snippet-format-sys-impl?
+  (#:method snippet-format-sys-functor (#:this))
+  prop:snippet-format-sys
+  make-snippet-format-sys-impl-from-functor
+  'snippet-format-sys 'snippet-format-sys-impl (list))
 
 
 (define-imitation-simple-generics
