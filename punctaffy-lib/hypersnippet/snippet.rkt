@@ -896,8 +896,6 @@
               (dim-sys-morphism-sys-target dsms)))])
       natural-transformation-sys-impl?)]
   
-  ; TODO:
-  ;
   ; A `snippet-format-sys?` is a wrapped functor from the `dim-sys?`
   ; category to the `snippet-sys?` category that guarantees the
   ; resulting `snippet-sys` systems and morphisms make use of the same
@@ -907,8 +905,8 @@
   ; `snippet-sys-morphism-sys-dim-sys-morphism-sys`, we get an
   ; identity functor.
   ;
-  ; When we document the `snippet-format-sys?` type, make sure to
-  ; explain this.
+  ; We've already mentioned this in the docs, but we mention it again
+  ; here as a reminder.
   ;
   [snippet-format-sys? (-> any/c boolean?)]
   [snippet-format-sys-impl? (-> any/c boolean?)]

@@ -38,9 +38,12 @@
   functor-sys-apply-to-morphism functor-sys-apply-to-object
   functor-sys/c functor-sys-impl? functor-sys-target
   make-functor-sys-impl-from-apply
+  make-natural-transformation-sys-impl-from-apply
   natural-transformation-sys-apply-to-morphism
   natural-transformation-sys/c
   natural-transformation-sys-endpoint-target
+  natural-transformation-sys-replace-source
+  natural-transformation-sys-replace-target
   natural-transformation-sys-source natural-transformation-sys-target
   prop:functor-sys)
 @(require #/for-label #/only-in lathe-morphisms/in-fp/mediary/set
@@ -282,15 +285,15 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 }
 
 @defproc[
-  (make-dim-sys-morphism-sys-sys-impl-from-apply
+  (make-dim-sys-morphism-sys-impl-from-morph
     [source
       (-> dim-sys-morphism-sys? dim-sys?)]
     [replace-source
-      (-> dim-sys-morphism-sys? dim-sys? functor-sys?)]
+      (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
     [target
       (-> dim-sys-morphism-sys? dim-sys?)]
     [replace-target
-      (-> dim-sys-morphism-sys? dim-sys? functor-sys?)]
+      (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
     [morph-dim
       (->i
         (
@@ -312,7 +315,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   
   When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The result of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
   
-  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[functor-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
+  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[dim-sys-morphism-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
   
   The other given method implementation (@racket[dim-sys-morphism-sys-morph-dim]) should observe some algebraic laws. Namely, it should preserve the relatedness of @tech{dimension numbers} by the @racket[dim-sys-dim=?] and @racket[dim-sys-dim-max] operations (not to mention operations like @racket[dim-sys-dim-zero], which are derived from those). In more symbolic terms (using a pseudocode DSL):
   
@@ -381,7 +384,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
     (ok/c (dim-sys-morphism-sys-source ab))
     (ok/c (dim-sys-morphism-sys-target bc)))
 ]{
-  Returns the composition of the two given @racket[dim-sys-morphism-sys?] values. This is a transformation that goes from the first transformation's source @tech{dimension system} to the second functor's target dimension system, transforming every @tech{dimension number} by applying the first transformation and then the second. The target of the first transformation should match the source of the second.
+  Returns the composition of the two given @racket[dim-sys-morphism-sys?] values. This is a transformation that goes from the first transformation's source @tech{dimension system} to the second transformation's target dimension system, transforming every @tech{dimension number} by applying the first transformation and then the second. The target of the first transformation should match the source of the second.
   
   This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each transformation. Composition is often written with its arguments the other way around (e.g. in Racket's @racket[compose] operation).
 }
@@ -465,10 +468,14 @@ Higher-dimensional geometric shapes often have quite a number of component verti
     @item{@racket[functor-sys-apply-to-morphism]}
   ]
   
-  These method implementations should observe the same algebraic laws as required by @racket[make-functor-sys-impl-from-apply].
+  These method implementations should observe the same algebraic laws as those required by @racket[make-functor-sys-impl-from-apply].
   
   This is essentially a shorthand for calling @racket[make-functor-sys-impl-from-apply] and supplying the appropriate source- and target-determining method implementations.
 }
+
+@; TODO: Consider having `dim-sys-endofunctor-sys-morphism-sys?`, similar to `functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?`.
+
+@; TODO: Consider having `make-dim-sys-endofunctor-sys-morphism-sys-impl-from-apply`, similar to `make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply`.
 
 
 @subsection[#:tag "dim-sys-examples"]{Commonly Used Dimension Systems}
@@ -1681,7 +1688,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 }
 
 @defproc[
-  (snippet-sys-morphism-sys-source [dsms snippet-sys-morphism-sys?])
+  (snippet-sys-morphism-sys-source [ssms snippet-sys-morphism-sys?])
   snippet-sys?
 ]{
   Returns a @racket[snippet-sys-morphism-sys?] value's source @tech{snippet system}.
@@ -1689,7 +1696,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @defproc[
   (snippet-sys-morphism-sys-replace-source
-    [dsms snippet-sys-morphism-sys?]
+    [ssms snippet-sys-morphism-sys?]
     [new-s snippet-sys?])
   snippet-sys-morphism-sys?
 ]{
@@ -1697,7 +1704,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 }
 
 @defproc[
-  (snippet-sys-morphism-sys-target [dsms snippet-sys-morphism-sys?])
+  (snippet-sys-morphism-sys-target [ssms snippet-sys-morphism-sys?])
   snippet-sys?
 ]{
   Returns a @racket[snippet-sys-morphism-sys?] value's target @tech{snippet system}.
@@ -1705,7 +1712,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @defproc[
   (snippet-sys-morphism-sys-replace-target
-    [dsms snippet-sys-morphism-sys?]
+    [ssms snippet-sys-morphism-sys?]
     [new-s snippet-sys?])
   snippet-sys-morphism-sys?
 ]{
@@ -1742,15 +1749,17 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 }
 
 @defproc[
-  (make-snippet-sys-morphism-sys-sys-impl-from-apply
+  (make-snippet-sys-morphism-sys-impl-from-morph
     [source
       (-> snippet-sys-morphism-sys? snippet-sys?)]
     [replace-source
-      (-> snippet-sys-morphism-sys? snippet-sys? functor-sys?)]
+      (-> snippet-sys-morphism-sys? snippet-sys?
+        snippet-sys-morphism-sys?)]
     [target
       (-> snippet-sys-morphism-sys? snippet-sys?)]
     [replace-target
-      (-> snippet-sys-morphism-sys? snippet-sys? functor-sys?)]
+      (-> snippet-sys-morphism-sys? snippet-sys?
+        snippet-sys-morphism-sys?)]
     [dim-sys-morphism-sys
       (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?)]
     [shape-snippet-sys-morphism-sys
@@ -1781,7 +1790,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The result of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
   
-  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[functor-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
+  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[snippet-sys-morphism-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
   
   The other given method implementations should observe some algebraic laws. As with the laws described in @racket[make-snippet-sys-impl-from-various-1], we're not quite sure what these laws should be yet (TODO), but here's an inexhaustive description:
   
@@ -1825,7 +1834,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     (ok/c (snippet-sys-morphism-sys-source ab))
     (ok/c (snippet-sys-morphism-sys-target bc)))
 ]{
-  Returns the composition of the two given @racket[snippet-sys-morphism-sys?] values. This is a transformation that goes from the first transformation's source @tech{snippet system} to the second functor's target snippet system, transforming every @tech{dimension number}, hypersnippet @tech{shape}, and @tech{hypersnippet} by applying the first transformation and then the second. The target of the first transformation should match the source of the second.
+  Returns the composition of the two given @racket[snippet-sys-morphism-sys?] values. This is a transformation that goes from the first transformation's source @tech{snippet system} to the second transformation's target snippet system, transforming every @tech{dimension number}, hypersnippet @tech{shape}, and @tech{hypersnippet} by applying the first transformation and then the second. The target of the first transformation should match the source of the second.
   
   This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each transformation. Composition is often written with its arguments the other way around (e.g. in Racket's @racket[compose] operation).
 }
@@ -1848,16 +1857,16 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 @defproc[
   (functor-from-snippet-sys-sys-apply-to-morphism
     [fs (functor-sys/c snippet-sys-category-sys? any/c)]
-    [dsms snippet-sys-morphism-sys?])
+    [ssms snippet-sys-morphism-sys?])
   (category-sys-morphism/c (functor-sys-target fs)
     (functor-sys-apply-to-object fs
-      (snippet-sys-morphism-sys-source dsms))
+      (snippet-sys-morphism-sys-source ssms))
     (functor-sys-apply-to-object fs
-      (snippet-sys-morphism-sys-target dsms)))
+      (snippet-sys-morphism-sys-target ssms)))
 ]{
   Uses the given @racketmodname[lathe-morphisms/in-fp/category] functor to transform a @racket[snippet-sys-morphism-sys?] value.
   
-  This is equivalent to @racket[(functor-sys-apply-to-morphism fs (snippet-sys-morphism-sys-source dsms) (snippet-sys-morphism-sys-target dsms) dsms)].
+  This is equivalent to @racket[(functor-sys-apply-to-morphism fs (snippet-sys-morphism-sys-source ssms) (snippet-sys-morphism-sys-target ssms) ssms)].
 }
 
 @defproc[
@@ -1865,24 +1874,28 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [nts
       (natural-transformation-sys/c
         snippet-sys-category-sys? any/c any/c any/c)]
-    [dsms snippet-sys-morphism-sys?])
+    [ssms snippet-sys-morphism-sys?])
   (category-sys-morphism/c
     (natural-transformation-sys-endpoint-target nts)
     (functor-sys-apply-to-object
       (natural-transformation-sys-source nts)
-      (snippet-sys-morphism-sys-source dsms))
+      (snippet-sys-morphism-sys-source ssms))
     (functor-sys-apply-to-object
       (natural-transformation-sys-target nts)
-      (snippet-sys-morphism-sys-target dsms)))
+      (snippet-sys-morphism-sys-target ssms)))
 ]{
   Uses the given @racketmodname[lathe-morphisms/in-fp/category] natural transformation to transform a @racket[snippet-sys-morphism-sys?] value.
   
-  This is equivalent to @racket[(natural-transformation-sys-apply-to-morphism fs (snippet-sys-morphism-sys-source dsms) (snippet-sys-morphism-sys-target dsms) dsms)].
+  This is equivalent to @racket[(natural-transformation-sys-apply-to-morphism fs (snippet-sys-morphism-sys-source ssms) (snippet-sys-morphism-sys-target ssms) ssms)].
 }
 
 @; TODO: Consider having `snippet-sys-endofunctor-sys?`, similar to `dim-sys-endofunctor-sys?`.
 
 @; TODO: Consider having `make-snippet-sys-endofunctor-sys-impl-from-apply`, similar to `make-dim-sys-endofunctor-sys-impl-from-apply`.
+
+@; TODO: Consider having `snippet-sys-endofunctor-sys-morphism-sys?`, similar to `functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?`.
+
+@; TODO: Consider having `make-snippet-sys-endofunctor-sys-morphism-sys-impl-from-apply`, similar to `make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply`.
 
 @defproc[(functor-from-dim-sys-to-snippet-sys-sys? [v any/c]) boolean?]{
   Returns whether the given value is a @racketmodname[lathe-morphisms/in-fp/category] functor from the category @racket[(dim-sys-category-sys)] to the category @racket[(snippet-sys-category-sys)].
@@ -1915,7 +1928,317 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     @item{@racket[functor-sys-apply-to-morphism]}
   ]
   
-  These method implementations should observe the same algebraic laws as required by @racket[make-functor-sys-impl-from-apply].
+  These method implementations should observe the same algebraic laws as those required by @racket[make-functor-sys-impl-from-apply].
   
   This is essentially a shorthand for calling @racket[make-functor-sys-impl-from-apply] and supplying the appropriate source- and target-determining method implementations.
 }
+
+@defproc[
+  (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? [v any/c])
+  boolean?
+]{
+  Returns whether the given value is a @racketmodname[lathe-morphisms/in-fp/category] natural transformation between two functors which each go from the category @racket[(dim-sys-category-sys)] to the category @racket[(snippet-sys-category-sys)].
+  
+  This could be called `natural-transformation-from-from-dim-sys-to-to-snippet-sys-sys?`, but that would be even more verbose.
+}
+
+@defproc[
+  (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
+    [source
+      (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?)]
+    [replace-source
+      (->
+        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?
+        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
+    [target
+      (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?)]
+    [replace-target
+      (->
+        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?
+        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
+    [apply-to-morphism
+      (->i
+        (
+          [_ms functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
+          [_dsms dim-sys-morphism-sys?])
+        [_ (_ms _dsms)
+          (snippet-sys-morphism-sys/c
+            (functor-sys-apply-to-object
+              (natural-transformation-sys-source _ms)
+              (dim-sys-morphism-sys-source _dsms))
+            (functor-sys-apply-to-object
+              (natural-transformation-sys-target _ms)
+              (dim-sys-morphism-sys-target _dsms)))])])
+  natural-transformation-sys-impl?
+]{
+  Given implementations for the following methods, returns something a struct can use to implement the @racket[prop:natural-transformation-sys] interface in a way that makes it satisfy @racket[functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?].
+  
+  @itemlist[
+    @item{@racket[natural-transformation-sys-source]}
+    @item{@racket[natural-transformation-sys-replace-source]}
+    @item{@racket[natural-transformation-sys-target]}
+    @item{@racket[natural-transformation-sys-replace-target]}
+    @item{@racket[natural-transformation-sys-apply-to-morphism]}
+  ]
+  
+  These method implementations should observe the same algebraic laws as those required by @racket[make-natural-transformation-sys-impl-from-apply].
+  
+  This is essentially a shorthand for calling @racket[make-natural-transformation-sys-impl-from-apply] and supplying the appropriate endpoint-source- and endpoint-target-determining method implementations.
+}
+
+
+@subsection[#:tag "snippet-format-sys-in-general"]{Snippet Format Systems in General}
+
+@deftogether[(
+  @defproc[(snippet-format-sys? [v any/c]) boolean?]
+  @defproc[(snippet-format-sys-impl? [v any/c]) boolean?]
+  @defthing[
+    prop:snippet-format-sys
+    (struct-type-property/c snippet-format-sys-impl?)
+  ]
+)]{
+  Structure type property operations for @deftech{snippet format systems}. These are like @tech{snippet systems} in that they determine operations over hypersnippet @tech{shapes} and @tech{hypersnippets}, but the @tech{dimension system} is left undetermined until the caller chooses it.
+}
+
+@defproc[
+  (snippet-format-sys-functor [sfs snippet-format-sys?])
+  functor-from-dim-sys-to-snippet-sys-sys?
+]{
+  Returns the @racketmodname[lathe-morphisms/in-fp/category] functor associated with the given @tech{snippet format system}.
+  
+  This functor takes @tech{dimension systems} to @tech{snippet systems} that use them. It also takes @racket[dim-sys-morphism-sys?] values to @racket[snippet-sys-morphism-sys?] values, which facilitates the conversion of @tech{hypersnippets} between two snippet systems that differ only in their choice of dimension system.
+}
+
+@defproc[
+  (make-snippet-format-sys-impl-from-functor
+    [functor
+      (-> snippet-format-sys?
+        functor-from-dim-sys-to-snippet-sys-sys?)])
+  snippet-format-sys-impl?
+]{
+  Given an implementation for @racket[snippet-format-sys-functor], returns something a struct can use to implement the @racket[prop:snippet-format-sys] interface.
+  
+  The given method implementations should observe some algebraic laws. Namely, the result of applying the functor to a @tech{dimension system} should be a @tech{snippet system} that uses it as its @racket[snippet-sys-dim-sys]. Likewise, the result of applying the functor to a @racket[dim-sys-morphism-sys?] should be a @racket[snippet-sys-morphism-sys?] that uses it as its @racket[snippet-sys-morphism-sys-dim-sys-morphism-sys]. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _sfs snippet-format-sys?
+      #:let _ffdstsss (snippet-format-sys-functor _sfs)
+      _dms dim-sys-morphism-sys?
+      
+      (#:should-be-equal
+        (snippet-sys-morphism-sys-dim-sys-morphism-sys
+          (functor-from-dim-sys-sys-apply-to-morphism _ffdstsss _dms))
+        _dms))
+  ]
+}
+
+
+@subsection[#:tag "snippet-format-sys-category-theory"]{Category-Theoretic Snippet Format System Manipulations}
+
+@deftogether[(
+  @defproc[(snippet-format-sys-morphism-sys? [v any/c]) boolean?]
+  @defproc[(snippet-format-sys-morphism-sys-impl? [v any/c]) boolean?]
+  @defthing[
+    prop:snippet-format-sys-morphism-sys
+    (struct-type-property/c snippet-format-sys-morphism-sys-impl?)
+  ]
+)]{
+  Structure type property operations for structure-preserving transformations from one @tech{snippet format system} to another. In practical terms, these are ways to transform one kind of @tech{hypersnippet} to another kind of hypersnippet without caring about what @tech{dimension system} is in use.
+  
+  In terms of category theory, these are based on natural transformations which go beteween the respective @racket[snippet-format-sys-functor] values, which means they're transformations of @racket[dim-sys-morphism-sys?] values to @racket[snippet-sys-morphism-sys?] values which don't necessarily take each identity morphism to an identity morphism. Unlike just any natural transformations, these also respect the fact that a snippet format system always produces a @tech{snippet system} that uses the given dimension system. To respect this, this natural transformation takes a @racket[dim-sys-morphism-sys?] value to a @racket[snippet-sys-morphism-sys?] value which has it as its @racket[snippet-sys-morphism-sys-dim-sys-morphism-sys].
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys-source
+    [sfsms snippet-format-sys-morphism-sys?])
+  snippet-format-sys?
+]{
+  Returns a @racket[snippet-format-sys-morphism-sys?] value's source @tech{snippet format system}.
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys-replace-source
+    [sfsms snippet-format-sys-morphism-sys?]
+    [new-s snippet-format-sys?])
+  snippet-format-sys-morphism-sys?
+]{
+  Returns a @racket[snippet-format-sys-morphism-sys?] value like the given one, but with its source @tech{snippet format system} replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[snippet-format-sys-morphism-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys-target
+    [sfsms snippet-format-sys-morphism-sys?])
+  snippet-format-sys?
+]{
+  Returns a @racket[snippet-format-sys-morphism-sys?] value's target @tech{snippet format system}.
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys-replace-target
+    [sfsms snippet-format-sys-morphism-sys?]
+    [new-s snippet-format-sys?])
+  snippet-format-sys-morphism-sys?
+]{
+  Returns a @racket[snippet-format-sys-morphism-sys?] value like the given one, but with its target @tech{snippet format system} replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[snippet-format-sys-morphism-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys-functor-morphism
+    [sfsms snippet-format-sys-morphism-sys?])
+  functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+]{
+  Returns the @racketmodname[lathe-morphisms/in-fp/category] natural transformation associated with the given @tech{snippet format system} morphism.
+  
+  This natural transformation takes @racket[dim-sys-morphism-sys?] values to @racket[snippet-sys-morphism-sys?] values that use them as their @racket[snippet-sys-morphism-sys-dim-sys-morphism-sys] values.
+}
+
+@defproc[
+  (make-snippet-format-sys-morphism-sys-impl-from-morph
+    [source
+      (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
+    [replace-source
+      (-> snippet-format-sys-morphism-sys? snippet-format-sys?
+        snippet-format-sys-morphism-sys?)]
+    [target
+      (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
+    [replace-target
+      (-> snippet-format-sys-morphism-sys? snippet-format-sys?
+        snippet-format-sys-morphism-sys?)]
+    [functor-morphism
+      (-> snippet-format-sys-morphism-sys?
+        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)])
+  snippet-format-sys-morphism-sys-impl?
+]{
+  Given implementations for the following methods, returns something a struct can use to implement the @racket[prop:snippet-format-sys-morphism-sys] interface.
+  
+  @itemlist[
+    @item{@racket[snippet-format-sys-morphism-sys-source]}
+    @item{@racket[snippet-format-sys-morphism-sys-replace-source]}
+    @item{@racket[snippet-format-sys-morphism-sys-target]}
+    @item{@racket[snippet-format-sys-morphism-sys-replace-target]}
+    @item{@racket[snippet-format-sys-morphism-sys-functor-morphism]}
+  ]
+  
+  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The result of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
+  
+  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[snippet-format-sys-morphism-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
+  
+  The other given method implementation (@racket[snippet-format-sys-morphism-sys-functor-morphism]) should observe some algebraic laws. Namely, when its resulting natural transformation is applied to a @racket[dim-sys-morphism-sys?] value, it should result in a @racket[snippet-sys-morphism-sys?] value that uses that value as its @racket[snippet-sys-morphism-sys-dim-sys-morphism-sys]. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _sfsms snippet-format-sys-morphism-sys?
+      
+      #:let _ffdstsssms
+      (snippet-format-sys-morphism-sys-functor-morphism _sfsms)
+      
+      _dms dim-sys-morphism-sys?
+      
+      (#:should-be-equal
+        (snippet-sys-morphism-sys-dim-sys-morphism-sys
+          (natural-transformation-from-from-dim-sys-sys-apply-to-morphism
+            _ffdstsssms _dms))
+        _dms))
+  ]
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys/c
+    [source/c contract?]
+    [target/c contract?])
+  contract?
+]{
+  Returns a contract that recognizes any @racket[snippet-format-sys-morphism-sys?] value whose source and target @tech{snippet format systems} are recognized by the given contracts.
+  
+  The result is a flat contract as long as the given contracts are flat.
+}
+
+@; TODO: Consider having a `makeshift-snippet-format-sys-morphism-sys`, similar to `makeshift-functor-sys`.
+
+@defproc[
+  (snippet-format-sys-morphism-sys-identity
+    [endpoint snippet-format-sys?])
+  (snippet-format-sys-morphism-sys/c (ok/c endpoint) (ok/c endpoint))
+]{
+  Returns the identity @racket[snippet-format-sys-morphism-sys?] value on the given @tech{snippet format system}. This is a transformation that goes from the given snippet format system to itself, taking every @racket[dim-sys-morphism-sys?] value to whatever @racket[snippet-sys-morphism-sys?] value the snippet format system's @racket[snippet-format-sys-functor] takes it to.
+}
+
+@defproc[
+  (snippet-format-sys-morphism-sys-chain-two
+    [ab snippet-format-sys-morphism-sys?]
+    [bc
+      (snippet-format-sys-morphism-sys/c
+        (ok/c (snippet-format-sys-morphism-sys-target ab))
+        any/c)])
+  (snippet-format-sys-morphism-sys/c
+    (ok/c (snippet-format-sys-morphism-sys-source ab))
+    (ok/c (snippet-format-sys-morphism-sys-target bc)))
+]{
+  Returns the composition of the two given @racket[snippet-format-sys-morphism-sys?] values. This is a transformation that goes from the first transformation's source @tech{snippet format system} to the second transformation's target snippet format system, transforming a @racket[dim-sys-morphism-sys?] value by applying one of the @racket[snippet-format-sys-morphism-sys?] values to it, applying the other to an identity @racket[dim-sys-morphism-sys?] value, and composing the two results. The target of the first transformation should match the source of the second.
+  
+  This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each transformation. Composition is often written with its arguments the other way around (e.g. in Racket's @racket[compose] operation).
+}
+
+@deftogether[(
+  @defidform[snippet-format-sys-category-sys]
+  @defform[#:link-target? #f (snippet-format-sys-category-sys)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (snippet-format-sys-category-sys)
+  ]
+  @defproc[(snippet-format-sys-category-sys? [v any/c]) boolean?]
+)]{
+  Struct-like operations which construct and deconstruct a @racketmodname[lathe-morphisms/in-fp/category] category (@racket[category-sys?]) where the objects are @tech{snippet format systems} and the morphisms are structure-preserving transformations between them (namely, @racket[snippet-format-sys-morphism-sys?] values).
+  
+  Every two @tt{snippet-format-sys-category-sys} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
+}
+
+@; TODO: Consider having `functor-from-snippet-format-sys-sys-apply-to-morphism`, similar to `functor-from-dim-sys-sys-apply-to-morphism`.
+
+@; TODO: Consider having `natural-transformation-from-from-snippet-format-sys-sys-apply-to-morphism`, similar to `natural-transformation-from-from-dim-sys-sys-apply-to-morphism`.
+
+@defproc[(snippet-format-sys-endofunctor-sys? [v any/c]) boolean?]{
+  Returns whether the given value is a @racketmodname[lathe-morphisms/in-fp/category] functor from the category @racket[(snippet-format-sys-category-sys)] to itself.
+}
+
+@defproc[
+  (make-snippet-format-sys-endofunctor-sys-impl-from-apply
+    [apply-to-snippet-format-sys
+      (-> snippet-format-sys-endofunctor-sys? snippet-format-sys?
+        snippet-format-sys?)]
+    [apply-to-snippet-format-sys-morphism-sys
+      (->i
+        (
+          [_es snippet-format-sys-endofunctor-sys?]
+          [_ms snippet-format-sys-morphism-sys?])
+        [_ (_es _ms)
+          (snippet-format-sys-morphism-sys/c
+            (ok/c
+              (functor-sys-apply-to-object _es
+                (snippet-format-sys-morphism-sys-source _ms)))
+            (ok/c
+              (functor-sys-apply-to-object _es
+                (snippet-format-sys-morphism-sys-target _ms))))])])
+  functor-sys-impl?
+]{
+  Given implementations for the following methods, returns something a struct can use to implement the @racket[prop:functor-sys] interface in a way that makes it satisfy @racket[snippet-format-sys-endofunctor-sys?].
+  
+  @itemlist[
+    @item{@racket[functor-sys-apply-to-object]}
+    @item{@racket[functor-sys-apply-to-morphism]}
+  ]
+  
+  These method implementations should observe the same algebraic laws as those required by @racket[make-functor-sys-impl-from-apply].
+  
+  This is essentially a shorthand for calling @racket[make-functor-sys-impl-from-apply] and supplying the appropriate source- and target-determining method implementations.
+}
+
+@; TODO: Consider having `snippet-format-sys-endofunctor-sys-morphism-sys?`, similar to `functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?`.
+
+@; TODO: Consider having `make-snippet-format-sys-endofunctor-sys-morphism-sys-impl-from-apply`, similar to `make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply`.
