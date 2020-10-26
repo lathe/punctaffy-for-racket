@@ -24,7 +24,7 @@
 @(require #/for-label #/only-in racket/contract
   struct-type-property/c)
 @(require #/for-label #/only-in racket/contract/base
-  -> </c and/c any/c contract? flat-contract? ->i list/c)
+  -> </c and/c any/c contract? flat-contract? ->i list/c listof)
 @(require #/for-label #/only-in racket/math natural?)
 
 @(require #/for-label #/only-in lathe-comforts fn)
@@ -2257,7 +2257,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 (TODO: Document a lot more things.)
 
 
-@subsection[#:tag "hypertee-coil"]{Hypertee coils}
+@subsection[#:tag "hypertee-coil"]{Hypertee Coils}
 
 @deftogether[(
   @defidform[hypertee-coil-zero]
@@ -2269,7 +2269,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   ]
   @defproc[(hypertee-coil-zero? [v any/c]) boolean?]
 )]{
-  Struct-like operations which construct and deconstruct a @racket[hypertee-coil?] value that represents one layer of recursion in a @tech{hypertee} of @tech{degree} 0 (in the sense of @racket[dim-sys-dim-zero]).
+  Struct-like operations which construct and deconstruct a @racket[hypertee-coil/c] value that represents one layer of recursion in a @tech{hypertee} of @tech{degree} 0 (in the sense of @racket[dim-sys-dim-zero]).
   
   Every two @tt{hypertee-coil-zero} values are @racket[equal?].
 }
@@ -2297,18 +2297,20 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     any/c
   ]
 )]{
-  Struct-like operations which construct and deconstruct a @racket[hypertee-coil?] value that represents one layer of recursion in a @tech{hypertee} that would start with a @tech{hole} in its bracket representation. Every hypertee of nonzero @tech{degree} (in the sense of @racket[dim-sys-dim-zero]) has at least one hole, and there's nothing it can begin with other than a hole, so this is the most common case.
+  Struct-like operations which construct and deconstruct a @racket[hypertee-coil/c] value that represents one layer of recursion in a @tech{hypertee} that would start with a @tech{hole} in its bracket representation. Every hypertee of nonzero @tech{degree} (in the sense of @racket[dim-sys-dim-zero]) has at least one hole, and there's nothing it can begin with other than a hole, so this is the most common case.
   
   This has four parts: The @racket[overall-degree] is the degree of the hypertee, the @racket[hole] is the @tech{shape} of the hole (carrying @racket[trivial?] data in its own holes), the @racket[data] is the data value carried in the hole, and the @racket[tails] is a hypertee of the same shape as @racket[hole], but where the data values are hypertees representing the rest of the structure. In a hole of degree N, the tail hypertee is expected to have @racket[trivial?] data in its holes of degree less than N, but holes of degree not less than N can carry any data; they represent additional holes in the overall hypertee.
   
   Note that the @racket[hole] is basically redundant here; it's just the same as @racket[tails] but with the data values trivialized. Most of our traversal operations make use of values of this form, and some of the places we would construct a typertee already have values of this form readily available, so we save ourselves some redundant computation by keeping it separate. (TODO: Offer an alternative way to create a @tt{hypertee-coil-hole} without specifying its @racket[hole] shape.)
   
-  On the other hand, we save ourselves some verbosity and some repetitive contract-checking by leaving out the @tech{dimension system}. If we stored a dimension system alongside the rest of the fields in a @tt{hypertee-coil-hole}, we could enforce far more precise contracts on the field values, but instead we allow any value to be stored in any of the fields and rely on @racket[hypertee-coil/c] for . (TODO: Reconsider this choice. In most places, we pass a coil to something that associates it with a dimension system as soon as we create it, so we're effectively passing in the dimension system at the same time anyway. But for the sake of people doing a lot of computation at the coil level, perhaps enforcing contracts is too costly. We'll probably need more practical experience before we understand the tradeoffs.)
+  On the other hand, we save ourselves some verbosity and some repetitive contract-checking by leaving out the @tech{dimension system}. If we stored a dimension system alongside the rest of the fields in a @tt{hypertee-coil-hole}, we could enforce far more precise contracts on the field values, but instead we allow any value to be stored in any of the fields and rely on @racket[hypertee-coil/c] in the contract of any operation that needs to enforce the structure. (TODO: Reconsider this choice. In most places, we pass a coil to something that associates it with a dimension system as soon as we create it, so we're effectively passing in the dimension system at the same time anyway. But for the sake of people doing a lot of computation at the coil level, perhaps enforcing contracts is too costly. We'll probably need more practical experience before we understand the tradeoffs.)
   
   A hypertee based on this kind of coil is essentially created from a @racket[snippet-sys-snippet-done] in the shape of the hole, concatenated with the tail hypertees using @racket[snippet-sys-snippet-join]. Considering this, it might be tempting to work with hypertees using only the generic @tech{snippet system} operations, but even though that interface supplies a way to put together this kind of hypertee, it doesn't supply a way to take it apart again to work with its details. Pattern-matching on the coils allows the details to be traversed.
   
   Two @tt{hypertee-coil-hole} values are @racket[equal?] if they contain @racket[equal?] elements.
 }
+
+@; TODO: Consider having a `hypertee-coil?`.
 
 @defproc[(hypertee-coil/c [ds dim-sys?]) contract?]{
   Returns a contract that recognizes a well-formed @tech{hypertee} coil for the given @tech{dimension system}. For a value to be suitable, it must either be a @racket[hypertee-coil-zero?] value or be a @racket[hypertee-coil-hole?] value which abides by stricter expectations.
@@ -2316,4 +2318,192 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Namely: The @tech{degree} must be a @tech{dimension number} in the given dimension system. The @tech{hole} @tech{shape} must be a hypertee (of any degree) with the given dimension system and with @racket[trivial?] values in its holes. The tails hypertee must be is a hypertee similar to the hole shape, but with hypertees (the tails) in its holes. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and they must be in the same arrangement as the hole's holes.
   
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+
+@subsection[#:tag "hypertee-bracket"]{Hypertee Brackets}
+
+@deftogether[(
+  @defidform[htb-labeled]
+  @defform[#:link-target? #f (htb-labeled degree data)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (htb-labeled degree data)
+  ]
+  @defproc[(htb-labeled? [v any/c]) boolean?]
+  @defproc[(htb-labeled-degree [b htb-labeled?]) any/c]
+  @defproc[(htb-labeled-data [b htb-labeled?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypertee-bracket?] value that represents one of the brackets of a @tech{hole} in a @tech{hypertee}, and in particular the bracket that appears first in the hypertee's bracket representation.
+  
+  The given @racket[degree] is the @tech{degree} of the hole, and the given @racket[data] is the data value to be carried in the hole.
+  
+  The data has to be placed somewhere among the hole's brackets, and we place it at the first bracket as a stylistic choice for readability: This way, the placement of data values is comparable to the placement of @emph{section headings} in a document or @emph{prefix operators} in a Racket program.
+  
+  Two @tt{htb-labeled} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@deftogether[(
+  @defidform[htb-unlabeled]
+  @defform[#:link-target? #f (htb-unlabeled degree)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (htb-unlabeled degree)
+  ]
+  @defproc[(htb-unlabeled? [v any/c]) boolean?]
+  @defproc[(htb-unlabeled-degree [b htb-unlabeled?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypertee-bracket?] value that represents any non-first bracket of a @tech{hole} in a @tech{hypertee}, as it appears in the hypertee's bracket representation.
+  
+  The given @racket[degree] is the @tech{degree} of the hole that's being initiated by this bracket. Even though this bracket isn't the first bracket of a hole of the hypertee, it's still the first bracket of @emph{some} hole. It could be the first bracket of a hole of a hole of the hypertee; the first bracket of a hole of a hole of a hole of the hypertee; etc.
+  
+  Two @tt{htb-unlabeled} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@defproc[(hypertee-bracket? [v any/c]) boolean?]{
+  Returns whether the given value is a @tech{hypertee} bracket. That is, it checks that the value is either an @racket[htb-labeled?] value or an @racket[htb-unlabeled?] value.
+}
+
+@defproc[(hypertee-bracket/c [dim/c contract?]) contract?]{
+  Returns a contract that recognizes a @racket[hypertee-bracket?] value where the @tech{degree} abides by the given contract.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+
+@subsection[#:tag "hypertee-operations"]{Hypertee Constructors and Operations}
+
+@defproc[(hypertee? [v any/c]) boolean?]{
+  Returns whether the given value is a @tech{hypertee}. A hypertee is a specific data structure representing @tech{hypersnippets} of a content-free stream. While a hypertee does not have content, it does still have a multidimensional boundary. Hypertees tend to arise as the description of the @tech{shape} of another kind of hypersnippet.
+}
+
+@defproc[(hypertee-get-dim-sys [ht hypertee?]) dim-sys?]{
+  Returns the @tech{dimension system} the given @tech{hypertee}'s @tech{degrees} abide by.
+}
+
+@deftogether[(
+  @defidform[hypertee-furl]
+  @defform[
+    #:link-target? #f
+    (hypertee-furl dim-sys coil)
+    #:contracts ([dim-sys dim-sys?] [coil (hypertee-coil/c dim-sys)])
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypertee-furl dim-sys coil)
+  ]
+)]{
+  Constructs or deconstructs a @tech{hypertee} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypertee-coil/c] value.
+  
+  Two @tech{hypertees} are @racket[equal?] if they contain @racket[equal?] elements when seen this way. Note that this isn't the only way to understand their representation; they can also be seen as being constructed by @racket[hypertee-from-brackets].
+}
+
+@defproc[
+  (hypertee-get-coil [ht hypertee?])
+  (hypertee-coil/c (hypertee-get-dim-sys ht))
+]{
+  Given a @tech{hypertee}, computes the @racket[hypertee-coil/c] value that would need to be passed to @racket[hypertee-furl] to construct it.
+}
+
+@defproc[
+  (hypertee-from-brackets
+    [ds dim-sys?]
+    [degree (dim-sys-dim/c ds)]
+    [brackets (listof (hypertee-bracket/c (dim-sys-dim/c ds)))])
+  (hypertee/c ds)
+]{
+  Constructs a @tech{hypertee} value, regarding it as being made up of a @tech{dimension system}, a @tech{degree}, and a properly nested sequence of @racket[hypertee-bracket?] values.
+  
+  If the brackets aren't properly nested, the @racket[exn:fail:contract] exception is raised.
+  
+  Proper nesting of hypertee brackets is a rather intricate matter which is probably easiest to approach by thinking of it as a series of @tech{hyperstack} pop operations. The hyperstack starts out with a dimension of @racket[degree] and data of @racket[#t] at every dimension, and each bracket in the list performs a @racket[hyperstack-pop] with data of @racket[#f]. (A @racket[hyperstack-pop] in some sense simultaneously "pushes" that data value onto every lower dimension. See the hyperstack documentation for more information.) If the pop reveals the data @racket[#t], the bracket should have been @racket[htb-labeled?]; otherwise, it should have been @racket[htb-unlabeled?]. Once we reach the end of the list, the hyperstack should have a dimension of 0 (in the sense of @racket[dim-sys-dim-zero]).
+  
+  Two @tech{hypertees} are @racket[equal?] if they're constructed with @racket[equal?] elements this way. Note that this isn't the only way to understand their representation; they can also be seen as being constructed by @racket[hypertee-furl].
+  
+  (TODO: Write some examples.)
+}
+
+@defproc[
+  (ht-bracs
+    [ds dim-sys?]
+    [degree (dim-sys-dim/c ds)]
+    [bracket
+      (let ([_dim/c (dim-sys-dim/c ds)])
+        (or/c (hypertee-bracket/c _dim/c) _dim/c))]
+    ...)
+  (hypertee/c ds)
+]{
+  Constructs a @tech{hypertee} value, regarding it as being made up of a @tech{dimension system}, a @tech{degree}, and a properly nested sequence of @racket[hypertee-bracket?] values (some of which may be expressed as raw @tech{dimension numbers}, which are understood as being implicitly wrapped in @racket[htb-unlabeled]).
+  
+  If the brackets aren't properly nested, the @racket[exn:fail:contract] exception is raised.
+  
+  Rarely, some @tech{dimension system} might represent its dimension numbers as @racket[hypertee-bracket?] values. If that's the case, then those values must be explicitly wrapped in @racket[htb-unlabeled]. Otherwise, this will understand them as brackets instead of as dimension numbers.
+  
+  This is simply a more concise alternative to @racket[hypertee-from-brackets]. See that documentation for more information about what it takes for hypertee brackets to be "properly nested."
+  
+  (TODO: Write some examples.)
+}
+
+@defproc[
+  (hypertee-get-brackets [ht hypertee?])
+  (listof (hypertee-bracket/c (dim-sys-dim/c ds)))
+]{
+  Given a @tech{hypertee}, computes the list of @racket[hypertee-bracket?] values that would need to be passed to @racket[hypertee-from-brackets] to construct it.
+}
+
+@defproc[(hypertee/c [ds dim-sys?]) contract?]{
+  Returns a contract that recognizes a @racket[hypertee?] value where the @tech{dimension system} is an @racket[ok/c] match for the given one.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@deftogether[(
+  @defidform[hypertee-snippet-sys]
+  @defform[
+    #:link-target? #f
+    (hypertee-snippet-sys dim-sys)
+    #:contracts ([dim-sys dim-sys?])
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypertee-snippet-sys dim-sys)
+  ]
+  @defproc[(hypertee-snippet-sys? [v any/c]) boolean?]
+  @defproc[
+    (hypertee-snippet-sys-dim-sys [ds hypertee-snippet-sys?])
+    dim-sys?
+  ]
+)]{
+  Struct-like operations which construct and deconstruct a @tech{snippet system} (@racket[snippet-sys?]) where the @tech{dimension numbers} are those of the given @tech{dimension system} and the hypersnippet @tech{shapes} and @tech{hypersnippets} are @tech{hypertees} which use that dimension system.
+  
+  The resulting snippet system's operations have behavior which corresponds to the sense in which we've described hypertees as being higher-dimensional snippets snipped out of content-free streams. Consider the @racket[snippet-sys-snippet-splice] and @racket[snippet-sys-snippet-zip-map-selective] operations, which iterate over all the @tech{holes} of a hypersnippet. In the case of a hypertee, they iterate over each of the @racket[hypertee-coil-hole]/@racket[htb-labeled] nodes exactly once (notwithstanding early exits and the skipping of @racket[unselected?] data values), so indeed each of these nodes legitimately represents one of the hypertee's holes. We've chosen to directly describe operations like @racket[hypertee-coil-hole] in terms of hypersnippet holes, largely because the very purpose of hypertees is tied to the functionality they have as hypersnippets. Because of this, "@racket[hypertee-coil-hole] nodes really do correspond to holes" may sound tautological, but in fact the behavior of this snippet system is the reason we've been able to describe those nodes in terms of holes in the first place.
+  
+  (TODO: This isn't really a complete specification of the behavior. A complete specification might get very exhaustive or technical, but let's see if we can at least improve this description over time. Perhaps we should go through and hedge some of the ways we describe hypertees so that they specifically appeal to @tt{hypertee-snippet-sys} as the basis for their use of terms like "hypersnippet," "@tech{degree}," and "hole.")
+  
+  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
+  
+  Two @tt{hypertee-snippet-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's element is @racket[ok/c] for the second's.
+}
+
+@deftogether[(
+  @defidform[hypertee-snippet-format-sys]
+  @defform[#:link-target? #f (hypertee-snippet-format-sys)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypertee-snippet-format-sys)
+  ]
+  @defproc[(hypertee-snippet-format-sys? [v any/c]) boolean?]
+)]{
+  Struct-like operations which construct and deconstruct a @tech{snippet format system} (@racket[snippet-format-sys?]) where, given any particular @tech{dimension system},  the hypersnippet @tech{shapes} and @tech{hypersnippets} are @tech{hypertees} which use that dimension system.
+  
+  The shapes and snippets are related according to the same behavior as @racket[hypertee-snippet-sys]. In some sense, this is a generalization of @racket[hypertee-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypertee while leaving the rest of the structure alone.
+  
+  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
+  
+  Every two @tt{hypertee-snippet-format-sys} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
 }
