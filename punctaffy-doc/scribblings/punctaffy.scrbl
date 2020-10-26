@@ -24,7 +24,7 @@
 @(require #/for-label #/only-in racket/contract
   struct-type-property/c)
 @(require #/for-label #/only-in racket/contract/base
-  -> </c and/c any/c contract? flat-contract? ->i list/c listof)
+  -> </c and/c any/c contract? flat-contract? ->i list/c listof or/c)
 @(require #/for-label #/only-in racket/math natural?)
 
 @(require #/for-label #/only-in lathe-comforts fn)
@@ -51,6 +51,7 @@
 
 @(require #/for-label punctaffy/hypersnippet/dim)
 @(require #/for-label punctaffy/hypersnippet/hyperstack)
+@(require #/for-label punctaffy/hypersnippet/hypernest-2)
 @(require #/for-label punctaffy/hypersnippet/hypertee-2)
 @(require #/for-label punctaffy/hypersnippet/snippet)
 
@@ -816,9 +817,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 
 @subsection[#:tag "snippet-sys-in-general"]{Snippet Systems in General}
-
-(TODO: Document a lot more things.)
-
 
 @deftogether[(
   @defidform[unselected]
@@ -2254,8 +2252,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 (TODO: Move this module to @tt{punctaffy/hypersnippet/hypertee}.)
 
-(TODO: Document a lot more things.)
-
 
 @subsection[#:tag "hypertee-coil"]{Hypertee Coils}
 
@@ -2299,7 +2295,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 )]{
   Struct-like operations which construct and deconstruct a @racket[hypertee-coil/c] value that represents one layer of recursion in a @tech{hypertee} that would start with a @tech{hole} in its bracket representation. Every hypertee of nonzero @tech{degree} (in the sense of @racket[dim-sys-dim-zero]) has at least one hole, and there's nothing it can begin with other than a hole, so this is the most common case.
   
-  This has four parts: The @racket[overall-degree] is the degree of the hypertee, the @racket[hole] is the @tech{shape} of the hole (carrying @racket[trivial?] data in its own holes), the @racket[data] is the data value carried in the hole, and the @racket[tails] is a hypertee of the same shape as @racket[hole], but where the data values are hypertees representing the rest of the structure. In a hole of degree N, the tail hypertee is expected to have @racket[trivial?] data in its holes of degree less than N, but holes of degree not less than N can carry any data; they represent additional holes in the overall hypertee.
+  This has four parts: The @racket[overall-degree] is the degree of the hypertee, the @racket[hole] is the @tech{shape} of the hole (carrying @racket[trivial?] data in its own holes), the @racket[data] is the data value carried in the hole, and the @racket[tails] is a hypertee of the same shape as @racket[hole], but where the data values are hypertees representing the rest of the structure. The tail hypertee carried in a hole of degree N is expected to have @racket[trivial?] data in its holes of degree less than N. Its holes of degree not less than N can carry any data; they represent additional holes in the overall hypertee.
   
   Note that the @racket[hole] is basically redundant here; it's just the same as @racket[tails] but with the data values trivialized. Most of our traversal operations make use of values of this form, and some of the places we would construct a typertee already have values of this form readily available, so we save ourselves some redundant computation by keeping it separate. (TODO: Offer an alternative way to create a @tt{hypertee-coil-hole} without specifying its @racket[hole] shape.)
   
@@ -2315,7 +2311,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 @defproc[(hypertee-coil/c [ds dim-sys?]) contract?]{
   Returns a contract that recognizes a well-formed @tech{hypertee} coil for the given @tech{dimension system}. For a value to be suitable, it must either be a @racket[hypertee-coil-zero?] value or be a @racket[hypertee-coil-hole?] value which abides by stricter expectations.
   
-  Namely: The @tech{degree} must be a @tech{dimension number} in the given dimension system. The @tech{hole} @tech{shape} must be a hypertee (of any degree) with the given dimension system and with @racket[trivial?] values in its holes. The tails hypertee must be is a hypertee similar to the hole shape, but with hypertees (the tails) in its holes. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and they must be in the same arrangement as the hole's holes.
+  Namely: The overall @tech{degree} (@racket[hypertee-coil-hole-overall-degree]) must be a nonzero @tech{dimension number} in the given dimension system. The @tech{hole} @tech{shape} must be a hypertee (of any degree) with the given dimension system and with @racket[trivial?] values in its holes. The tails hypertee must be a hypertee similar to the hole shape, but with hypertees (the tails) in its holes. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and those holes must be in the same arrangement as the hole's holes.
   
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
@@ -2474,7 +2470,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   ]
   @defproc[(hypertee-snippet-sys? [v any/c]) boolean?]
   @defproc[
-    (hypertee-snippet-sys-dim-sys [ds hypertee-snippet-sys?])
+    (hypertee-snippet-sys-dim-sys [ss hypertee-snippet-sys?])
     dim-sys?
   ]
 )]{
@@ -2507,3 +2503,388 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   Every two @tt{hypertee-snippet-format-sys} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
 }
+
+
+
+@section[#:tag "hypernest"]{Hypernests}
+
+@defmodule[punctaffy/hypersnippet/hypernest-2]
+
+(TODO: Move this module to @tt{punctaffy/hypersnippet/hypernest}.)
+
+
+@subsection[#:tag "hypernest-coil"]{Hypernest Coils}
+
+@deftogether[(
+  @defidform[hypernest-coil-zero]
+  @defform[#:link-target? #f (hypernest-coil-zero)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypernest-coil-zero)
+  ]
+  @defproc[(hypernest-coil-zero? [v any/c]) boolean?]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypernest-coil/c] value that represents one layer of recursion in a @tech{hypernest} of @tech{degree} 0 (in the sense of @racket[dim-sys-dim-zero]).
+  
+  Every two @tt{hypernest-coil-zero} values are @racket[equal?].
+}
+
+@deftogether[(
+  @defidform[hypernest-coil-hole]
+  @defform[
+    #:link-target? #f
+    (hypernest-coil-hole overall-degree hole data tails-hypertee)
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypernest-coil-hole overall-degree hole data tails-hypertee)
+  ]
+  @defproc[(hypernest-coil-hole? [v any/c]) boolean?]
+  @defproc[
+    (hypernest-coil-hole-overall-degree [coil hypernest-coil-hole?])
+    any/c
+  ]
+  @defproc[
+    (hypernest-coil-hole-hole [coil hypernest-coil-hole?])
+    any/c
+  ]
+  @defproc[
+    (hypernest-coil-hole-data [coil hypernest-coil-hole?])
+    any/c
+  ]
+  @defproc[
+    (hypernest-coil-hole-tails-hypertee [coil hypernest-coil-hole?])
+    any/c
+  ]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypernest-coil/c] value that represents one layer of recursion in a @tech{hypernest} that would start with a @tech{hole} in its bracket representation. Every hypernest of nonzero @tech{degree} (in the sense of @racket[dim-sys-dim-zero]) has at least one hole, and there's nothing it can begin with other than a hole, so this is the most common case.
+  
+  This has four parts: The @racket[overall-degree] is the degree of the hypernest, the @racket[hole] is the @tech{shape} of the hole (carrying @racket[trivial?] data in its own holes), the @racket[data] is the data value carried in the hole, and the @racket[tails-hypertee] is a @tech{hypertee} of the same shape as @racket[hole], but where the data values are hypernests representing the rest of the structure. The tail hypernest carried in a hole of degree N is expected to have @racket[trivial?] data in its holes of degree less than N. Its holes of degree not less than N can carry any data; they represent additional holes in the overall hypernest.
+  
+  Note that the @racket[hole] is basically redundant here; it's just the same as @racket[tails-hypertee] but with the data values trivialized. Most of our traversal operations make use of values of this form, and some of the places we would construct a typernest already have values of this form readily available, so we save ourselves some redundant computation by keeping it separate. (TODO: Offer an alternative way to create a @tt{hypernest-coil-hole} without specifying its @racket[hole] shape.)
+  
+  On the other hand, we save ourselves some verbosity and some repetitive contract-checking by leaving out the @tech{dimension system}. If we stored a dimension system alongside the rest of the fields in a @tt{hypernest-coil-hole}, we could enforce far more precise contracts on the field values, but instead we allow any value to be stored in any of the fields and rely on @racket[hypernest-coil/c] in the contract of any operation that needs to enforce the structure. (TODO: Reconsider this choice. In most places, we pass a coil to something that associates it with a dimension system as soon as we create it, so we're effectively passing in the dimension system at the same time anyway. But for the sake of people doing a lot of computation at the coil level, perhaps enforcing contracts is too costly. We'll probably need more practical experience before we understand the tradeoffs.)
+  
+  A hypernest based on this kind of coil is essentially created from a @racket[snippet-sys-snippet-done] in the shape of the hole, concatenated with the tail hypernests using @racket[snippet-sys-snippet-join].
+  
+  Two @tt{hypernest-coil-hole} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@deftogether[(
+  @defidform[hypernest-coil-bump]
+  @defform[
+    #:link-target? #f
+    (hypernest-coil-bump
+      overall-degree data bump-degree tails-hypernest)
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypernest-coil-bump
+      overall-degree data bump-degree tails-hypernest)
+  ]
+  @defproc[(hypernest-coil-bump? [v any/c]) boolean?]
+  @defproc[
+    (hypernest-coil-bump-overall-degree [coil hypernest-coil-bump?])
+    any/c
+  ]
+  @defproc[
+    (hypernest-coil-bump-data [coil hypernest-coil-bump?])
+    any/c
+  ]
+  @defproc[
+    (hypernest-coil-bump-bump-degree [coil hypernest-coil-bump?])
+    any/c
+  ]
+  @defproc[
+    (hypernest-coil-bump-tails-hypernest [coil hypernest-coil-bump?])
+    any/c
+  ]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypernest-coil/c] value that represents one layer of recursion in a @tech{hypernest} that would start with a @tech{bump} in its bracket representation.
+  
+  This has four parts: The @racket[overall-degree] is the degree of the hypernest, the @racket[data] is the data value carried on the bump, the @racket[bump-degree] is the degree of the bump, and the @racket[tails-hypernest] is a @tech{hypernest} of degree equal to the max of @racket[overall-degree] and @racket[bump-degree], where the data values of holes of degree lower than @racket[bump-degree] are hypernests representing the rest of the structure. The tail hypernest carried in a hole of degree N is expected to have @racket[trivial?] data in its holes of degree less than N. Its holes of degree not less than N can carry any data; they represent additional holes in the overall hypernest.
+  
+  Note that the @racket[bump-degree] may be higher than the @racket[overall-degree].
+  
+  We save ourselves some verbosity and some repetitive contract-checking by leaving out the @tech{dimension system}. If we stored a dimension system alongside the rest of the fields in a @tt{hypernest-coil-bump}, we could enforce far more precise contracts on the field values, but instead we allow any value to be stored in any of the fields and rely on @racket[hypernest-coil/c] in the contract of any operation that needs to enforce the structure. (TODO: Reconsider this choice. In most places, we pass a coil to something that associates it with a dimension system as soon as we create it, so we're effectively passing in the dimension system at the same time anyway. But for the sake of people doing a lot of computation at the coil level, perhaps enforcing contracts is too costly. We'll probably need more practical experience before we understand the tradeoffs.)
+  
+  Two @tt{hypernest-coil-bump} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@; TODO: Consider having a `hypernest-coil?`.
+
+@defproc[(hypernest-coil/c [ds dim-sys?]) contract?]{
+  Returns a contract that recognizes a well-formed @tech{hypernest} coil for the given @tech{dimension system}. For a value to be suitable, it must fall into one of the following cases:
+  
+  @itemlist[
+    
+    @item{A @racket[hypernest-coil-zero?] value.}
+    
+    @item{A @racket[hypernest-coil-hole?] value which abides by stricter expectations. Namely: The overall @tech{degree} (@racket[hypernest-coil-hole-overall-degree]) must be a nonzero @tech{dimension number} in the given dimension system. The @tech{hole} @tech{shape} must be a hypernest (of any degree) with the given dimension system and with @racket[trivial?] values in its holes. The tails @tech{hypertee} must be a hypertee similar to the hole shape, but with hypernests (the tails) in its holes. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and those holes must be in the same arrangement as the hole's holes.}
+    
+    @item{A @racket[hypernest-coil-bump?] value which abides by stricter expectations. Namely: The overall degree (@racket[hypernest-coil-bump-overall-degree]) and the bump degree (@racket[hypernest-coil-bump-bump-degree]) must be @tech{dimension numbers} in the given dimension system, and the overall degree must be nonzero. The tails hypernest must be a hypernest of degree equal to the max of the overall degree and the bump degree, and it must have hypernests (the tails) in its holes of degree lower than the bump degree. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and those holes must be in the same arrangement as the hole's holes.}
+    
+  ]
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@; TODO: Consider having a `hypertee-coil->hypernest-coil`, similar to `hypertee-bracket->hypernest-bracket`. This would probably need to take a callback that could recursively convert the tails.
+
+@; TODO: Consider having a `compatiable-hypernext-coil->hypertee-coil`, similar to `compatible-hypernest-bracket->hypertee-bracket`. This would probably need to take a callback that could recursively convert the tails.
+
+
+@subsection[#:tag "hypernest-bracket"]{Hypernest Brackets}
+
+@deftogether[(
+  @defidform[hnb-open]
+  @defform[#:link-target? #f (hnb-open degree data)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hnb-open degree data)
+  ]
+  @defproc[(hnb-open? [v any/c]) boolean?]
+  @defproc[(hnb-open-degree [b hnb-open?]) any/c]
+  @defproc[(hnb-open-data [b hnb-open?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypernest-bracket?] value that represents one of the brackets of a @tech{bump} in a @tech{hypernest}, and in particular the bracket that appears first in the hypernest's bracket representation.
+  
+  The given @racket[degree] is the @tech{degree} of the bump, and the given @racket[data] is the data value to be carried on the bump.
+  
+  The data has to be placed somewhere among the bump's brackets, and we place it at the first bracket as a stylistic choice for readability: This way, the placement of data values is comparable to the placement of @emph{section headings} in a document or @emph{prefix operators} in a Racket program.
+  
+  Two @tt{hnb-open} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@deftogether[(
+  @defidform[hnb-labeled]
+  @defform[#:link-target? #f (hnb-labeled degree data)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hnb-labeled degree data)
+  ]
+  @defproc[(hnb-labeled? [v any/c]) boolean?]
+  @defproc[(hnb-labeled-degree [b hnb-labeled?]) any/c]
+  @defproc[(hnb-labeled-data [b hnb-labeled?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypernest-bracket?] value that represents one of the brackets of a @tech{hole} in a @tech{hypernest}, and in particular the bracket that appears first in the hypernest's bracket representation.
+  
+  The given @racket[degree] is the @tech{degree} of the hole, and the given @racket[data] is the data value to be carried in the hole.
+  
+  The data has to be placed somewhere among the hole's brackets, and we place it at the first bracket as a stylistic choice for readability: This way, the placement of data values is comparable to the placement of @emph{section headings} in a document or @emph{prefix operators} in a Racket program.
+  
+  Two @tt{hnb-labeled} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@deftogether[(
+  @defidform[hnb-unlabeled]
+  @defform[#:link-target? #f (hnb-unlabeled degree)]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hnb-unlabeled degree)
+  ]
+  @defproc[(hnb-unlabeled? [v any/c]) boolean?]
+  @defproc[(hnb-unlabeled-degree [b hnb-unlabeled?]) any/c]
+)]{
+  Struct-like operations which construct and deconstruct a @racket[hypernest-bracket?] value that represents any non-first bracket of a @tech{bump} or @tech{hole} in a @tech{hypernest}, as it appears in the hypernest's bracket representation.
+  
+  The given @racket[degree] is the @tech{degree} of the hole that's being initiated by this bracket. Even though this bracket isn't the first bracket of a hole of the hypernest, it's still the first bracket of @emph{some} hole. It could be
+  
+  @itemlist[
+    @item{The first bracket of a hole of a bump of the hypernest;}
+    @item{The first bracket of a hole of a hole of the hypernest;}
+    @item{The first bracket of a hole of a hole of a bump of the hypernest;}
+    @item{The first bracket of a hole of a hole of a hole of the hypernest; and}
+    @item{Generally, the first bracket of @tt{(}a hole of@tt{)+} a @tt{(}hole@tt{|}bump@tt{)} of the hypernest.}
+  ]
+  
+  Two @tt{hnb-unlabeled} values are @racket[equal?] if they contain @racket[equal?] elements.
+}
+
+@defproc[(hypernest-bracket? [v any/c]) boolean?]{
+  Returns whether the given value is a @tech{hypernest} bracket. That is, it checks that the value is either an @racket[hnb-open?] value, an @racket[hnb-labeled?] value, or an @racket[hnb-unlabeled?] value.
+}
+
+@defproc[(hypernest-bracket/c [dim/c contract?]) contract?]{
+  Returns a contract that recognizes a @racket[hypernest-bracket?] value where the @tech{degree} abides by the given contract.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (hypertee-bracket->hypernest-bracket [bracket hypertee-bracket?])
+  (or/c hnb-labeled? hnb-unlabeled?)
+]{
+  Given a @tech{hypertee} bracket, returns a similar @tech{hypernest} bracket.
+}
+
+@defproc[
+  (compatible-hypernest-bracket->hypertee-bracket
+    [bracket (or/c hnb-labeled? hnb-unlabeled?)])
+  hypertee-bracket?
+]{
+  Given a suitable @tech{hypernest} bracket, returns a similar @tech{hypertee} bracket. This only works for hypernest brackets that are @racket[hnb-labeled?] or @racket[hnb-unlabeled?], not those that are @racket[hnb-open?].
+}
+
+
+@subsection[#:tag "hypernest-operations"]{Hypernest Constructors and Operations}
+
+@defproc[(hypernest? [v any/c]) boolean?]{
+  Returns whether the given value is a @deftech{generalized hypernest}, such as a (non-generalized) @tech{hypernest}.
+  
+  A (non-generalized) hypernest is a specific data structure representing @tech{hypersnippets} of a stream that contain fully matched-up arrangements (@tech{bumps}) of brackets.
+  
+  This is sufficient to represent, for instance, hypersnippets of character or token streams; each miscellaneous token in the stream can be treated as a bump-opening bracket (@racket[hnb-open?]) of @tech{degree} 0, which matches up with itself.
+  
+  A generalized hypernest is a less specific data structure, one which might be based on an arbitrary @tech{snippet format system} rather than just the kind that represents higher-dimensional snippets of streams (namely, @racket[(hypertee-snippet-format-sys)]). For instance, if a certain snippet format system represents polygon-bounded snippets of a 2D Euclidean plane, the appropriate notion of "hypernest" would be a similar kind of snippet that could additionally contain some number of unbroken arrangements of matched-up polygon boundaries.
+  
+  A generalized hypernest can be represented by a snippet in the underlying snippet format system. In this approach, each @tech{hole} is represented with a hole that has the same shape, and each bump is represented with an infinite-degree hole that has a @racket[snippet-sys-snippet-done] shape.
+  
+  We don't currently offer tools to construct or pull apart generalized hypersnippets (TODO), so (non-generalized) hypernests are the only particularly useful ones for now. Whenever we do supply better support for them, or whenever we decide the support we already have isn't worth enough to keep around, we might make substantial changes to the hypernest utilities described here.
+  
+  If a hypernest utility described here doesn't mention the phrase "generalized hypersnippet," then the hypersnippets it refers to are the ones based on @racket[(hypertee-snippet-format-sys)]. For instance, all the @racket[hypernest-coil/c] and @racket[hypernest-bracket?] values are specialized to hypertee-based hypernests.
+  
+  @; TODO: See if this really is the right place to go into this long explanation of an issue that pervades the Punctaffy docs.
+}
+
+@defproc[(hypernest-get-dim-sys [hn hypernest?]) dim-sys?]{
+  Returns the @tech{dimension system} the given @tech{hypernest}'s @tech{degrees} abide by. The hypernest can be a @tech{generalized hypernest}.
+}
+
+@deftogether[(
+  @defidform[hypernest-furl]
+  @defform[
+    #:link-target? #f
+    (hypernest-furl dim-sys coil)
+    #:contracts ([dim-sys dim-sys?] [coil (hypernest-coil/c dim-sys)])
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypernest-furl dim-sys coil)
+  ]
+)]{
+  Constructs or deconstructs a @tech{hypernest} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypernest-coil/c] value.
+  
+  Two @tech{hypernests} are @racket[equal?] if they contain @racket[equal?] elements when seen this way. Note that this isn't the only way to understand their representation; they can also be seen as being constructed by @racket[hypernest-from-brackets].
+}
+
+@defproc[
+  (hypernest-get-coil [hn hypernest?])
+  (hypernest-coil/c (hypernest-get-dim-sys hn))
+]{
+  Given a @tech{hypernest}, computes the @racket[hypernest-coil/c] value that would need to be passed to @racket[hypernest-furl] to construct it.
+}
+
+@defproc[
+  (hypernest-from-brackets
+    [ds dim-sys?]
+    [degree (dim-sys-dim/c ds)]
+    [brackets (listof (hypernest-bracket/c (dim-sys-dim/c ds)))])
+  (hypernest/c (hypertee-snippet-format-sys) ds)
+]{
+  Constructs a @tech{hypernest} value, regarding it as being made up of a @tech{dimension system}, a @tech{degree}, and a properly nested sequence of @racket[hypernest-bracket?] values.
+  
+  If the brackets aren't properly nested, the @racket[exn:fail:contract] exception is raised.
+  
+  Proper nesting of hypernest brackets is a rather intricate matter which is probably easiest to approach by thinking of it as a series of @tech{hyperstack} push and pop operations, along with tracking some state about whether bumps are allowed. (The @racket[hypertee-from-brackets] situation is similar, but in that case it's just a series of pop operations, and bumps are never allowed.)
+  
+  Thinking about it this way, the hyperstack starts out with a dimension of @racket[degree] and data of @racket[(hash 'should-be-labeled #t 'bumps-allowed #f)] at every dimension. Bumps start out as being allowed, and this status updates each time we update the hyperstack by becoming whatever @racket['bumps-allowed] entry was revealed (not whichever entry was pushed or popped). We iterate through the list of brackets. An @racket[hnb-open?] bracket may only be encountered while bumps are allowed, and it performs a @racket[hyperstack-push] with data of @racket[(hash 'should-be-labeled #f 'bumps-allowed #t)]. Each @racket[hnb-labeled?] or @racket[hnb-unlabeled?] bracket performs a @racket[hyperstack-pop] with data of @racket[(hash 'should-be-labeled #f 'bumps-allowed  _ba)], where @racket[_ba] is the existing bumps-allowed state. (A @racket[hyperstack-pop] in some sense simultaneously "pushes" that data value onto every lower dimension. See the hyperstack documentation for more information.) If the pop reveals a @racket['should-be-labeled] entry of @racket[#t], the bracket should have been @racket[hnb-labeled?]; otherwise, it should have been @racket[hnb-unlabeled?]. Once we reach the end of the list, the hyperstack should have a dimension of 0 (in the sense of @racket[dim-sys-dim-zero]).
+  
+  Two @tech{hypernests} are @racket[equal?] if they're constructed with @racket[equal?] elements this way. Note that this isn't the only way to understand their representation; they can also be seen as being constructed by @racket[hypernest-furl].
+  
+  (TODO: Write some examples.)
+}
+
+@defproc[
+  (hn-bracs
+    [ds dim-sys?]
+    [degree (dim-sys-dim/c ds)]
+    [bracket
+      (let ([_dim/c (dim-sys-dim/c ds)])
+        (or/c (hypernest-bracket/c _dim/c) _dim/c))]
+    ...)
+  (hypernest/c (hypertee-snippet-format-sys) ds)
+]{
+  Constructs a @tech{hypernest} value, regarding it as being made up of a @tech{dimension system}, a @tech{degree}, and a properly nested sequence of @racket[hypernest-bracket?] values (some of which may be expressed as raw @tech{dimension numbers}, which are understood as being implicitly wrapped in @racket[hnb-unlabeled]).
+  
+  If the brackets aren't properly nested, the @racket[exn:fail:contract] exception is raised.
+  
+  Rarely, some @tech{dimension system} might represent its dimension numbers as @racket[hypernest-bracket?] values. If that's the case, then those values must be explicitly wrapped in @racket[hnb-unlabeled]. Otherwise, this will understand them as brackets instead of as dimension numbers.
+  
+  This is simply a more concise alternative to @racket[hypernest-from-brackets]. See that documentation for more information about what it takes for hypernest brackets to be "properly nested."
+  
+  (TODO: Write some examples.)
+}
+
+@defproc[
+  (hypernest-get-brackets [hn hypernest?])
+  (listof (hypernest-bracket/c (dim-sys-dim/c ds)))
+]{
+  Given a @tech{hypernest}, computes the list of @racket[hypernest-bracket?] values that would need to be passed to @racket[hypernest-from-brackets] to construct it.
+}
+
+@defproc[
+  (hypernest/c [sfs snippet-format-sys?] [ds dim-sys?])
+  contract?
+]{
+  Returns a contract that recognizes a @tech{generalized hypernest} (@racket[hypernest?]) value where the @tech{snippet format system} and the @tech{dimension system} are @racket[ok/c] matches for the given ones.
+  
+  In particular, this can be used to recognize a (non-generalized) @tech{hypernest} if the given snippet format system is @racket[(hypertee-snippet-format-sys)].
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (hypernest-shape
+    [ss hypernest-snippet-sys?]
+    [hn (snippet-sys-snippet/c ss)])
+  (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))
+]{
+  Given a @tech{generalized hypernest} (such as a (non-generalized) @tech{hypernest}), returns a hypersnippet @tech{shape} that has the same @tech{degree} and all the same @tech{holes} carrying the same data values.
+  
+  (TODO: Not all @tech{snippet systems} necessarily support an operation like this, but all the ones we've defined so far do. It may turn out that we'll want to add this to the snippet system interface.)
+}
+
+@deftogether[(
+  @defidform[hypernest-snippet-sys]
+  @defform[
+    #:link-target? #f
+    (hypernest-snippet-sys snippet-format-sys dim-sys)
+    #:contracts
+    ([snippet-format-sys snippet-format-sys?] [dim-sys dim-sys?])
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypernest-snippet-sys snippet-format-sys dim-sys)
+  ]
+  @defproc[(hypernest-snippet-sys? [v any/c]) boolean?]
+  @defproc[
+    (hypernest-snippet-sys-snippet-format-sys
+      [ss hypernest-snippet-sys?])
+    snippet-format-sys?
+  ]
+  @defproc[
+    (hypernest-snippet-sys-dim-sys [ss hypernest-snippet-sys?])
+    dim-sys?
+  ]
+)]{
+  Struct-like operations which construct and deconstruct a @tech{snippet system} (@racket[snippet-sys?]) where the @tech{dimension numbers} are those of the given @tech{dimension system}, the hypersnippet @tech{shapes} are the same as those of the given @tech{snippet format system} instantiated at that dimension system, and the @tech{hypersnippets} are @tech{generalized hypernests} which are based on that snippet format system and that dimension system. (In particular, when the snippet format system is @racket[(hypertee-snippet-format-sys)], the generalized hypernests are just (non-generalized) @tech{hypernests}.)
+  
+  The resulting snippet system's operations have behavior which corresponds to the sense in which we've described hypernests as hypersnippets throughout the documentation. Consider the @racket[snippet-sys-snippet-splice] and @racket[snippet-sys-snippet-zip-map-selective] operations, which iterate over all the @tech{holes} of a hypersnippet. In the case of a hypernest, they iterate over each of the @racket[hypernest-coil-hole]/@racket[hnb-labeled] nodes exactly once (notwithstanding early exits and the skipping of @racket[unselected?] data values), so indeed each of these nodes legitimately represents one of the hypernest's holes. We've chosen to directly describe operations like @racket[hypernest-coil-hole] in terms of hypersnippet holes, largely because the very purpose of hypernests is tied to the functionality they have as hypersnippets. Because of this, "@racket[hypernest-coil-hole] nodes really do correspond to holes" may sound tautological, but in fact the behavior of this snippet system is the reason we've been able to describe those nodes in terms of holes in the first place.
+  
+  (TODO: This isn't really a complete specification of the behavior. A complete specification might get very exhaustive or technical, but let's see if we can at least improve this description over time. Perhaps we should go through and hedge some of the ways we describe hypernests so that they specifically appeal to @tt{hypernest-snippet-sys} as the basis for their use of terms like "hypersnippet," "@tech{degree}," and "hole.")
+  
+  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
+  
+  Two @tt{hypernest-snippet-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's elements are @racket[ok/c] for the second's.
+}
+
+@; TODO: Consider having a `hypernest-snippet-format-sys`, similar to `hypertee-snippet-format-sys`.

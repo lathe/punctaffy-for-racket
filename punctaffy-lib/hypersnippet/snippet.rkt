@@ -1102,9 +1102,9 @@
   [hypernest-coil-bump? (-> any/c boolean?)]
   [hypernest-coil-bump-overall-degree (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-bump-degree (-> hypernest-coil-hole? any/c)]
+  [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-tails-hypernest
-    (-> hypernest-coil-hole? any/c)])
+    (-> hypernest-coil-bump? any/c)])
 (module+ private/hypernest #/provide #/contract-out
   [hypernest-coil/c (-> dim-sys? contract?)])
 (module+ private/hypernest #/provide
