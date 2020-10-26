@@ -84,7 +84,8 @@
 (provide #/recontract-out
   hypernest-bracket?
   hypernest-bracket/c
-  hypernest-bracket-degree
+  ; TODO: Uncomment this export if we ever need it.
+;  hypernest-bracket-degree
   hypertee-bracket->hypernest-bracket
   compatible-hypernest-bracket->hypertee-bracket
   hypernest-from-brackets

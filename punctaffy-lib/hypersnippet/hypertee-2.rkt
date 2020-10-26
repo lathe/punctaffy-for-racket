@@ -70,7 +70,8 @@
 (provide #/recontract-out
   hypertee-bracket?
   hypertee-bracket/c
-  hypertee-bracket-degree
+  ; TODO: Uncomment this export if we ever need it.
+;  hypertee-bracket-degree
   hypertee-from-brackets
   ht-bracs
   hypertee-get-brackets)

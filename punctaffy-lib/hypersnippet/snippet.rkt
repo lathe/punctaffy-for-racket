@@ -148,9 +148,7 @@
   dim-sys-morphism-sys-target extended-with-top-dim-sys
   extended-with-top-dim-sys-morphism-sys extended-with-top-dim-finite
   extended-with-top-dim-infinite extended-with-top-finite-dim-sys
-  extend-with-top-dim-sys-morphism-sys fin-multiplied-dim
-  fin-multiplied-dim-sys fin-times-dim-sys-morphism-sys
-  fin-untimes-dim-sys-morphism-sys
+  extend-with-top-dim-sys-morphism-sys
   functor-from-dim-sys-sys-apply-to-morphism
   natural-transformation-from-from-dim-sys-sys-apply-to-morphism
   unextend-with-top-dim-sys-morphism-sys)
@@ -158,7 +156,6 @@
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
 
-; TODO: Document all of these exports.
 (provide
   unselected)
 (provide #/contract-out
@@ -1041,7 +1038,8 @@
 (module+ private/hypertee #/provide #/contract-out
   [hypertee-bracket? (-> any/c boolean?)]
   [hypertee-bracket/c (-> contract? contract?)]
-  [hypertee-bracket-degree (-> hypertee-bracket? any/c)]
+  ; TODO: Uncomment this export if we ever need it.
+;  [hypertee-bracket-degree (-> hypertee-bracket? any/c)]
   [hypertee-from-brackets
     (->i
       (
@@ -1134,7 +1132,8 @@
 (module+ private/hypernest #/provide #/contract-out
   [hypernest-bracket? (-> any/c boolean?)]
   [hypernest-bracket/c (-> contract? contract?)]
-  [hypernest-bracket-degree (-> hypernest-bracket? any/c)]
+  ; TODO: Uncomment this export if we ever need it.
+;  [hypernest-bracket-degree (-> hypernest-bracket? any/c)]
   [hypertee-bracket->hypernest-bracket
     (-> hypertee-bracket? (or/c hnb-labeled? hnb-unlabeled?))]
   [compatible-hypernest-bracket->hypertee-bracket

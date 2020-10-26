@@ -62,7 +62,6 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
-; TODO: Document all of these exports.
 (provide #/contract-out
   
   [dim-sys? (-> any/c boolean?)]
@@ -209,6 +208,9 @@
                 (dim-sys-morphism-sys-target ms))))])
       functor-sys-impl?)])
 
+; TODO: Document these exports if we ever need them. We would comment
+; them out, but they're currently in use by some internal experiments.
+;#;
 (provide #/contract-out
   [dim-successors-sys? (-> any/c boolean?)]
   [dim-successors-sys-impl? (-> any/c boolean?)]
@@ -252,8 +254,7 @@
   
   )
 
-; TODO: Document and uncomment the `successorless-...` exports if we
-; ever need them.
+; TODO: Uncomment these exports if we ever need them.
 ;(provide successorless-dim-successors-sys)
 ;(provide #/contract-out
 ;  [successorless-dim-successors-sys? (-> any/c boolean?)])
@@ -261,10 +262,14 @@
   nat-dim-sys)
 (provide #/contract-out
   [nat-dim-sys? (-> any/c boolean?)])
+; TODO: Document this export if we ever need it. We would comment it
+; out, but it's currently in use by some internal experiments.
+;#;
 (provide
   nat-dim-successors-sys)
-(provide #/contract-out
-  [nat-dim-successors-sys? (-> any/c boolean?)])
+; TODO: Uncomment this export if we ever need it.
+;(provide #/contract-out
+;  [nat-dim-successors-sys? (-> any/c boolean?)])
 (provide
   extended-with-top-dim-finite)
 (provide #/contract-out
@@ -325,6 +330,8 @@
   [extended-with-top-dim-successors-sys? (-> any/c boolean?)]
   [extended-with-top-dim-successors-sys-original
     (-> extended-with-top-dim-successors-sys? dim-successors-sys?)])
+; TODO: Uncomment these exports if we ever need them.
+#|
 (provide
   fin-multiplied-dim)
 (provide #/contract-out
@@ -389,6 +396,7 @@
     (-> fin-multiplied-dim-successors-sys? exact-positive-integer?)]
   [fin-multiplied-dim-successors-sys-original
     (-> fin-multiplied-dim-successors-sys? dim-successors-sys?)])
+|#
 
 
 (define-imitation-simple-generics dim-sys? dim-sys-impl?
