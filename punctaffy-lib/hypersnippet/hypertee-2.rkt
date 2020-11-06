@@ -21,6 +21,18 @@
 
 
 (require #/only-in racket/contract/base recontract-out)
+; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
+; section. Should we provide `.../with-placebo-contracts/...` modules?
+; For now, we have this here for testing. Note that if we enable this
+; code, we also need to comment out the `recontract-out` import above.
+#;
+(begin
+  (require #/for-syntax
+    racket/base racket/provide-transform syntax/parse lathe-comforts)
+  (define-syntax recontract-out
+    (make-provide-transformer #/fn stx modes
+      (syntax-parse stx #/ (_ var:id ...)
+      #/expand-export #'(combine-out var ...) modes))))
 
 (require #/submod punctaffy/hypersnippet/snippet private/hypertee)
 

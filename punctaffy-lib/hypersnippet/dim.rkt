@@ -5,7 +5,7 @@
 ; Interfaces to represent numbers that represent the dimensionality of
 ; hypersnippets.
 
-;   Copyright 2019 The Lathe Authors
+;   Copyright 2019, 2020 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -29,6 +29,18 @@
 (require #/only-in racket/contract/base
   -> ->i </c =/c and/c any/c contract? contract-name contract-out
   flat-contract? flat-contract-predicate listof or/c rename-contract)
+; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
+; section. Should we provide `.../with-placebo-contracts/...` modules?
+; For now, we have this here for testing. Note that if we enable this
+; code, we also need to comment out the `contract-out` import above.
+#;
+(begin
+  (require #/for-syntax
+    racket/base racket/provide-transform syntax/parse lathe-comforts)
+  (define-syntax contract-out
+    (make-provide-transformer #/fn stx modes
+      (syntax-parse stx #/ (_ [var:id contract:expr] ...)
+      #/expand-export #'(combine-out var ...) modes))))
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract)
