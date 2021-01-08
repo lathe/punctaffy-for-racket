@@ -5,7 +5,7 @@
 ; A data structure for encoding hypersnippet notations that can nest
 ; with themselves.
 
-;   Copyright 2018-2020 The Lathe Authors
+;   Copyright 2018-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -46,8 +46,15 @@
 (provide #/recontract-out
   hypernest-snippet-sys?
   hypernest-snippet-sys-snippet-format-sys
-  hypernest-snippet-sys-dim-sys
-  hypernest-shape)
+  hypernest-snippet-sys-dim-sys)
+(provide
+  hypernest-snippet-format-sys)
+(provide #/recontract-out
+  hypernest-snippet-format-sys?
+  hypernest-snippet-format-sys-original
+  hypernest-shape
+  hypernest-get-hole-zero-maybe
+  hypernest-join-list-and-tail-along-0)
 
 (provide
   hypernest-coil-zero)

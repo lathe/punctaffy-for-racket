@@ -5,7 +5,7 @@
 ; A baseline syntax for opening and closing brackets for
 ; hypersnippet-shaped code regions.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -22,30 +22,36 @@
 
 (require #/for-syntax racket/base)
 
+(require #/for-syntax #/only-in racket/math natural?)
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
 (require #/for-syntax #/only-in lathe-comforts
-  dissect expect fn mat w- w-loop)
+  dissect dissectfn expect fn mat w- w-loop)
 (require #/for-syntax #/only-in lathe-comforts/list list-map)
-(require #/for-syntax #/only-in lathe-comforts/maybe just just-value)
+(require #/for-syntax #/only-in lathe-comforts/maybe
+  just just-value maybe-bind maybe-if)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys-dim-from-int dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim-sys dim-sys-dim<? dim-sys-dim<=?
-  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-max nat-dim-successors-sys)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero
-  hypernest-coil-bump hypernest-coil-hole hypernest-contour
-  hypernest-degree hypernest-dv-map-all-degrees
-  hypernest-filter-to-hypertee hypernest-furl
-  hypernest-increase-degree-to hypernest-join-all-degrees
-  hypernest-join-one-degree hypernest->maybe-hypertee
-  hypernest-unfurl)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
-  hypertee-contour hypertee-degree hypertee-dv-map-all-degrees
-  hypertee-uncontour)
+  dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys
+  dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
+  dim-sys-dim-max nat-dim-successors-sys)
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest-2
+  hnb-labeled hn-bracs hnb-open hnb-unlabeled hypernest-coil-bump
+  hypernest-coil-hole hypernest-from-brackets hypernest-furl
+  hypernest-join-list-and-tail-along-0 hypernest-shape
+  hypernest-snippet-sys)
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee-2
+  hypertee-snippet-format-sys)
+(require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
+  selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
+  snippet-sys-snippet-done snippet-sys-snippet-join
+  snippet-sys-snippet-join-selective snippet-sys-snippet-map
+  snippet-sys-snippet->maybe-shape
+  snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
+  unselected)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
   hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-nest
@@ -55,6 +61,37 @@
 
 (provide ^< ^>)
 
+
+
+(define-for-syntax (snippet-sys-snippet-uncontour dss ss snippet)
+  (w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/maybe-bind (snippet-sys-snippet-undone ss snippet)
+  #/dissectfn (list original-degree hole data)
+  #/w- d (snippet-sys-snippet-degree shape-ss hole)
+  #/maybe-if
+    (dim-successors-sys-dim=plus-int? dss original-degree d 1)
+    (list hole data)))
+
+(define-for-syntax (hypernest-join-0 ds n-d d elems)
+  (hypernest-join-list-and-tail-along-0 ds elems
+    (hn-bracs ds (n-d d) #/hnb-labeled (n-d 0) #/trivial)))
+
+(define-for-syntax (hn-bracs-dss dss degree . brackets)
+  (w- ds (dim-successors-sys-dim-sys dss)
+  #/w- n-d
+    (fn n
+      (expect (natural? n) #t n
+      #/mat (dim-successors-sys-dim-from-int dss n) (just d) d
+      #/raise-arguments-error 'hn-bracs-dss
+        "expected the given number of successors to exist for the zero dimension"
+        "n" n
+        "dss" dss))
+  #/hypernest-from-brackets ds (n-d degree)
+    (list-map brackets #/fn bracket
+      (mat bracket (hnb-open d data) (hnb-open (n-d d) data)
+      #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d d) data)
+      #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d d))
+      #/hnb-unlabeled (n-d bracket)))))
 
 
 ; This takes a degree-1 hypernest which may contain
@@ -77,10 +114,13 @@
 (define-for-syntax
   (unmatched-brackets->holes dss opening-degree hn-expr)
   (w- ds (dim-successors-sys-dim-sys dss)
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/expect (dim-successors-sys-dim-from-int dss 1) (just _)
     (error "Expected at least 1 successor to exist for the zero dimension")
   #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
-  #/expect (dim-sys-dim=? ds (hypernest-degree hn-expr) (n-d 1))
+  #/expect
+    (dim-sys-dim=? ds (snippet-sys-snippet-degree ss hn-expr) (n-d 1))
     #t
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w- first-d-not-to-process opening-degree
@@ -89,12 +129,15 @@
     target-d opening-degree
     first-d-to-process (n-d 1)
     
-    (w- dropped (hypernest-unfurl hn-expr)
-    #/mat dropped (hypernest-coil-hole d data tails)
-      (hypernest-furl ds #/hypernest-coil-hole target-d data
-      #/hypertee-dv-map-all-degrees tails #/fn d tail
-        (next tail target-d
-          (dim-sys-dim-max ds first-d-to-process d)))
+    (dissect hn-expr (hypernest-furl _ dropped)
+    #/mat dropped (hypernest-coil-hole d tails-shape data tails)
+      (hypernest-furl ds #/hypernest-coil-hole target-d
+        tails-shape
+        data
+        (snippet-sys-snippet-map shape-ss tails #/fn hole tail
+          (w- d (snippet-sys-snippet-degree shape-ss hole)
+          #/next tail target-d
+            (dim-sys-dim-max ds first-d-to-process d))))
     #/dissect dropped
       (hypernest-coil-bump overall-degree data bracket-degree-plus-two
         interior-and-bracket-and-tails)
@@ -105,9 +148,10 @@
           data
           bracket-degree-plus-two
         #/next
-          (hypernest-dv-map-all-degrees interior-and-bracket-and-tails
-          #/fn d tail
-            (if
+          (snippet-sys-snippet-map ss interior-and-bracket-and-tails
+          #/fn hole tail
+            (w- d (snippet-sys-snippet-degree shape-ss hole)
+            #/if
               (and
                 (dim-sys-dim<=? ds bracket-degree-plus-two d)
                 (dim-sys-dim<? ds d first-d-to-process))
@@ -147,26 +191,35 @@
       (just bracket-degree)
       (error "Encountered a matching hn-tag-unmatched-closing-bracket bump of a degree that did not have two predecessors (but did have one)")
     #/expect
-      (hypernest->maybe-hypertee interior-and-bracket-and-tails)
+      (snippet-sys-snippet->maybe-shape ss
+        interior-and-bracket-and-tails)
       (just bracket-and-tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump with a bump in it")
-    #/expect (hypertee-uncontour dss bracket-and-tails)
-      (just #/list bracket-syntax bracket-interior-and-tails)
+    #/expect
+      (snippet-sys-snippet-uncontour dss shape-ss bracket-and-tails)
+      (just #/list bracket-interior-and-tails bracket-syntax)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour")
-    #/expect (hypertee-uncontour dss bracket-interior-and-tails)
-      (just #/list bracket-interior tails)
+    #/expect
+      (snippet-sys-snippet-uncontour dss shape-ss
+        bracket-interior-and-tails)
+      (just #/list tails bracket-interior)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump which wasn't a contour of a contour")
     #/hypernest-furl ds #/hypernest-coil-hole target-d
+      (snippet-sys-snippet-map shape-ss tails #/fn hole tail
+        (trivial))
       (list bracket-syntax bracket-interior)
-    #/hypertee-dv-map-all-degrees tails #/fn d tail
-      (next tail target-d
-        (dim-sys-dim-max ds first-d-to-process d)))))
+      (snippet-sys-snippet-map shape-ss tails #/fn hole tail
+        (w- d (snippet-sys-snippet-degree shape-ss hole)
+        #/next tail target-d
+          (dim-sys-dim-max ds first-d-to-process d))))))
 
 
 
 (define-for-syntax (helper-for-^<-and-^> stx bump-value)
   (w- dss (nat-dim-successors-sys)
   #/w- ds (dim-successors-sys-dim-sys dss)
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
   #/syntax-parse stx
     [op:id
@@ -184,16 +237,31 @@
   #/w- degree-plus-two (+ degree 2)
   #/w- interior-and-closing-brackets
     (unmatched-brackets->holes dss degree
-    #/hypernest-append-zero ds (n-d 1)
+    #/hypernest-join-0 ds n-d 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (s-expr-stx->hn-expr dss interpolation))
+      (s-expr-stx->hn-expr ds n-d interpolation))
   #/w- closing-brackets
-    (hypernest-filter-to-hypertee interior-and-closing-brackets)
+    (hypernest-shape interior-and-closing-brackets)
   #/hypernest-furl ds
   #/hypernest-coil-bump (n-d 1) bump-value degree-plus-two
-  #/hypernest-contour dss
+  #/snippet-sys-snippet-done ss degree-plus-two
+    (snippet-sys-snippet-done shape-ss degree-plus-one
+      ; This is everything after the bracket's closing brackets. These
+      ; things are outside of the bracket.
+      (snippet-sys-snippet-map shape-ss closing-brackets
+      #/fn hole data
+        (w- d (snippet-sys-snippet-degree shape-ss hole)
+        #/if (dim-sys-dim=0? ds d)
+          (dissect data (trivial)
+          #/hn-bracs-dss dss 1 #/hnb-labeled 0 #/trivial)
+        #/dissect data (list bracket-syntax tail)
+          tail))
+      ; This is everything inside of the bracket.
+      (snippet-sys-snippet-map ss interior-and-closing-brackets
+      #/fn hole data
+        (trivial)))
     ; This is the syntax for the bracket itself.
-    (hypernest-join-one-degree (n-d 1)
+    (snippet-sys-snippet-join-selective ss
     #/hn-bracs-dss dss degree-plus-one
       (hnb-open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
       
@@ -201,38 +269,33 @@
       (hnb-open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
       
       (hnb-labeled 1
-      #/hypernest-join-all-degrees
-      #/hypernest-contour dss
-        (hypernest-contour dss (trivial)
-        #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
-          (trivial))
-      #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
-        (if (dim-sys-dim=0? ds d)
-          (dissect data (trivial)
-          #/hn-bracs-dss dss degree-plus-one
-          #/hnb-labeled 0 #/trivial)
-        #/dissect data (list bracket-syntax tail)
-        ; TODO: See if we need this `hypernest-increase-degree-to`
-        ; call.
-        #/hypernest-increase-degree-to degree-plus-one
-          bracket-syntax))
+      #/selected
+      #/snippet-sys-snippet-join ss
+      #/snippet-sys-snippet-done ss degree-plus-one
+        (snippet-sys-snippet-map shape-ss closing-brackets
+        #/fn hole data
+          (w- d (snippet-sys-snippet-degree shape-ss hole)
+          #/if (dim-sys-dim=0? ds d)
+            (dissect data (trivial)
+            #/hn-bracs-dss dss degree-plus-one
+            #/hnb-labeled 0 #/trivial)
+          #/dissect data (list bracket-syntax tail)
+          ; TODO: See if we need this
+          ; `snippet-sys-snippet-set-degree-maybe` call.
+          #/dissect
+            (snippet-sys-snippet-set-degree-maybe ss degree-plus-one
+              bracket-syntax)
+            (just bracket-syntax)
+            bracket-syntax))
+        (snippet-sys-snippet-done ss degree-plus-one
+          (snippet-sys-snippet-map shape-ss closing-brackets
+            (fn hole data
+              (trivial)))
+          (trivial)))
       0
       
       0
-    #/hnb-labeled 0 #/trivial)
-  #/hypertee-contour dss
-    ; This is everything inside of the bracket.
-    (hypernest-dv-map-all-degrees interior-and-closing-brackets
-    #/fn d data
-      (trivial))
-  ; This is everything after the bracket's closing brackets. These
-  ; things are outside of the bracket.
-  #/hypertee-dv-map-all-degrees closing-brackets #/fn d data
-    (if (dim-sys-dim=0? ds d)
-      (dissect data (trivial)
-      #/hn-bracs-dss dss 1 #/hnb-labeled 0 #/trivial)
-    #/dissect data (list bracket-syntax tail)
-      tail)))
+    #/hnb-labeled 0 #/unselected #/trivial)))
 
 (define-syntax ^< #/simple-hn-builder-syntax #/fn stx
   (helper-for-^<-and-^> stx #/hn-tag-nest))
