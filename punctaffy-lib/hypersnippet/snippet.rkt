@@ -186,7 +186,10 @@
   selected)
 (provide #/contract-out
   [selected? (-> any/c boolean?)]
-  [selected-value (-> selected? any/c)])
+  [selected-value (-> selected? any/c)]
+  [selectable? (-> any/c boolean?)]
+  [selectable/c (-> contract? contract? contract?)]
+  [selectable-map (-> selectable? (-> any/c any/c) selectable?)])
 ; TODO DEBUGGABILITY: Provide a contract-protected version instead.
 ; We're currently defining this as a macro instead of a function, to
 ; help with debugging this file, but when the debug scaffolding is
@@ -202,8 +205,6 @@
 (provide
   snippet-sys-snippet-splice)
 (provide #/contract-out
-  [selectable? (-> any/c boolean?)]
-  [selectable/c (-> contract? contract? contract?)]
   [snippet-sys? (-> any/c boolean?)]
   [snippet-sys-impl? (-> any/c boolean?)]
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
@@ -1184,7 +1185,7 @@
           #/w- d (snippet-sys-snippet-degree ss last-snippet)
           #/listof #/and/c
             (snippet-sys-snippet-with-degree=/c ss d)
-            (snippet-sys-snippetof shape-ss #/fn hole
+            (snippet-sys-snippetof ss #/fn hole
               (if
                 (dim-sys-dim=0? ds
                   (snippet-sys-snippet-degree shape-ss hole))
@@ -1307,7 +1308,6 @@
        ,(contract-name unselected/c)
        ,(contract-name selected/c))))
 
-; TODO: See if we should export this.
 (define (selectable-map s v-to-v)
   (mat s (unselected v) (unselected v)
   #/dissect s (selected v) (selected #/v-to-v v)))
@@ -1908,7 +1908,7 @@
   #/w- unextend-one-snippet
     (fn snippet
       (dissect
-        (snippet-sys-snippet-set-degree-maybe ess original-degree
+        (snippet-sys-snippet-set-degree-maybe uss original-degree
           (snippet-sys-morphism-sys-morph-snippet unextend snippet))
         (just unextended-snippet)
         unextended-snippet))
@@ -4482,7 +4482,7 @@
       (fn ms s
         (dissect ms
           (hypernest-map-dim-snippet-sys-morphism-sys sfs dsms)
-        #/hypernest-map-dim dsms s)))))
+        #/hypernest-map-dim sfs dsms s)))))
 
 ; TODO: Export these.
 ; TODO: Use these.
@@ -4593,7 +4593,7 @@
     (fn eds overall-d hole-d extended-past-snippet tail
       (w- ess (functor-sys-apply-to-object ffdstsss eds)
       #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
-      #/snippet-sys-snippet-bind-selective ess
+      #/snippet-sys-snippet-join-selective ess
         (snippet-sys-snippet-done ess overall-d
           (snippet-sys-snippet-done shape-ess hole-d (shape-zero eds)
             (selected tail))
@@ -4827,28 +4827,20 @@
           (snippet-sys-snippet-filter-maybe ehtss
             (snippet-sys-snippet-select-if-degree< ehtss
               (extended-with-top-dim-finite
-                (extended-with-top-dim-infinite))
+                (extended-with-top-dim-finite bump-degree))
               tails-extended))
         #/fn tails-shape
         #/dlog 'l1.7 bump-degree tails-shape
         #/snippet-sys-snippet-set-degree-maybe ehtss
           (extended-with-top-dim-finite
-            (extended-with-top-dim-finite
-              ; TODO NOW: There's currently a bug that doesn't get us
-              ; to 'l1.8 during the test-hypernest-qq.rkt tests.
-              ; Instead of this, we should probably be using the
-              ; commented-out code below. First, write a test case in
-              ; test-hypernest.rkt that resembles the offending
-              ; `ht-bracs` call in hypernest-macro.rkt.
-              bump-degree
-              #;
-              (dim-sys-dim-max uds overall-degree bump-degree)))
+            (extended-with-top-dim-finite bump-degree))
           tails-shape))
       (just truncated-tails-shape)
     #/dlog 'l1.8
     #/3:dlog 'zo1 data
     #/w- interior
-      (snippet-sys-snippet-map-selective ehtss
+      (4:dlog 'hqq-e1
+      #/snippet-sys-snippet-map-selective ehtss
         ; TODO: We're computing this once already, during the
         ; computation of `truncated-tails-shape`. Let's deduplicate
         ; this effort.
@@ -4859,21 +4851,26 @@
         (fn hole tail
           (trivial)))
     #/w- tails-assembled
-      (snippet-sys-snippet-done ehtss
+      (4:dlog 'hqq-e2
+      #/snippet-sys-snippet-done ehtss
         (extended-with-top-dim-finite
           (extended-with-top-dim-infinite))
-        (snippet-sys-snippet-map ehtss truncated-tails-shape
+        (4:dlog 'hqq-e3
+        #/snippet-sys-snippet-map ehtss truncated-tails-shape
           (fn hole tail
-            (dissect tail
+            (4:dlog 'hqq-e4 overall-degree bump-degree (snippet-sys-snippet-degree ehtss hole)
+            #/dissect tail
               (hypernest-nonzero-unchecked _ tail-extended)
               tail-extended)))
         interior)
     #/dlog 'l1.9 data
     #/3:dlog 'zo4
     #/hypernest-nonzero-unchecked overall-degree
-      (hypertee-furl eds #/attenuated-hypertee-coil-hole eds
+      (4:dlog 'hqq-e5
+      #/hypertee-furl eds #/4:dlog 'hqq-e6 #/attenuated-hypertee-coil-hole eds
         (extended-with-top-dim-infinite)
-        (snippet-sys-snippet-map ehtss tails-assembled #/fn hole tail
+        (4:dlog 'hqq-e7
+        #/snippet-sys-snippet-map ehtss tails-assembled #/fn hole tail
           (trivial))
         data
         tails-assembled))))
@@ -4952,7 +4949,10 @@
           (dlog 'n2.0.7.1 overall-degree
           #/dissect interior-data (trivial)
           #/dlog 'n2.0.7.2 tail
-          #/just #/hypernest-nonzero-unchecked overall-degree tail)))
+          #/just #/hypernest-nonzero-unchecked
+            (dim-sys-dim-max uds overall-degree
+              (snippet-sys-snippet-degree htss hole))
+            tail)))
       (just tails-hypernest)
     #/dlog 'n2.0.8 overall-degree bump-degree tails tails-hypernest
     #/hypernest-coil-bump

@@ -32,14 +32,15 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<? dim-sys-dim/c)
+  dim-sys? dim-sys-dim<=? dim-sys-dim/c)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hn-bracs hypernest-join-list-and-tail-along-0
   hypernest/c hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  snippet-sys-snippet-bind-selective
+  selectable-map snippet-sys-dim-sys
+  snippet-sys-snippet-bind-selective snippet-sys-snippet-degree
   snippet-sys-snippet-select-if-degree
   snippet-sys-snippet-set-degree-maybe)
 
@@ -167,13 +168,22 @@
 
 (define
   (snippet-sys-snippet-set-degree-and-bind-highest-degrees
-    ss d hn hv-to-suffix)
-  (dissect
+    ss d snippet hv-to-suffix)
+  (w- ds (snippet-sys-dim-sys ss)
+  #/w- intermediate-d (snippet-sys-snippet-degree ss snippet)
+  #/dissect
     (snippet-sys-snippet-set-degree-maybe ss d
       (snippet-sys-snippet-bind-selective ss
-        (snippet-sys-snippet-select-if-degree ss hn #/fn candidate
-          (dim-sys-dim<? d candidate))
-        hv-to-suffix))
+        (snippet-sys-snippet-select-if-degree ss snippet
+        #/fn candidate
+          (dim-sys-dim<=? ds d candidate))
+      #/fn hole data
+        (selectable-map data #/fn data
+          (dissect
+            (snippet-sys-snippet-set-degree-maybe ss intermediate-d
+              (hv-to-suffix hole data))
+            (just suffix)
+            suffix))))
     (just result)
     result))
 
@@ -284,11 +294,13 @@
   #/mat
     (syntax-parse stx
       [ (op:id arg ...)
-        (maybe-bind (syntax-local-maybe #'op) #/fn op
+        (dlog 'hqq-b1.1 #'op
+        #/maybe-bind (syntax-local-maybe #'op) #/fn op
         #/maybe-map (hn-builder-syntax-maybe op) #/fn proc
         #/list op proc)]
       [op:id
-        (maybe-bind (syntax-local-maybe #'op) #/fn op
+        (dlog 'hqq-b1.2
+        #/maybe-bind (syntax-local-maybe #'op) #/fn op
         #/maybe-map (hn-builder-syntax-maybe op) #/fn proc
         #/list op proc)]
       [_ (nothing)])
@@ -320,7 +332,8 @@
     ; then `s-expr-stx->hn-expr` reports that it has broken its own
     ; contract.
     ;
-    (proc op stx)
+    (dlog 'hqq-b1.3 op
+    #/proc op stx)
   #/dlog 'hqq-b2
   #/w- process-list
     (fn elems

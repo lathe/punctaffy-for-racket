@@ -861,6 +861,13 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
+@defproc[
+  (selectable-map [s selectable?] [v-to-v (-> any/c any/c)])
+  selectable?
+]{
+  Returns a @racket[selectable?] value similar to the given one, but with its selected element (if any) transformed by the given function.
+}
+
 @deftogether[(
   @defproc[(snippet-sys? [v any/c]) boolean?]
   @defproc[(snippet-sys-impl? [v any/c]) boolean?]
@@ -2963,7 +2970,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
         (listof
           (and/c
             (snippet-sys-snippet-with-degree=/c _ss _d)
-            (snippet-sys-snippetof _shape-ss
+            (snippet-sys-snippetof _ss
               (fn _hole
                 (if
                   (dim-sys-dim=0? ds

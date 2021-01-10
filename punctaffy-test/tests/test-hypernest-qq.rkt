@@ -94,7 +94,7 @@
 ; Time with assertions:           19.899s
 ; Time without assertions:        11.987s
 ;
-#;
+;#;
 (possibly-suppress-assertions
 #/check-equal?
   (my-quasiquote #/^< 2

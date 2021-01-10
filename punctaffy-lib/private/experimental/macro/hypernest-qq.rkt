@@ -134,7 +134,7 @@
   #/w- d (snippet-sys-snippet-degree shape-ss hole)
   #/maybe-if
     (dim-successors-sys-dim=plus-int? dss original-degree d 1)
-    (list hole data)))
+    (fn #/list hole data)))
 
 (define-for-syntax (hypernest-join-0 ds n-d d elems)
   (hypernest-join-list-and-tail-along-0 ds elems
@@ -459,7 +459,7 @@
   #/begin
     (snippet-sys-snippet-each shape-ss tails #/fn hole tail
       (w- d (snippet-sys-snippet-degree shape-ss hole)
-      #/expect (dim-sys-dim=0? d) #t
+      #/expect (dim-sys-dim=0? ds d) #t
         (void)
       ; TODO: See if there's a good way to differentiate these error
       ; messages.
@@ -475,7 +475,8 @@
       #/void))
   #/dlog 'hqq-a4
   #/dissect
-    (snippet-sys-snippet-zip-map ss tails
+    (dlog 'hqq-a4.1
+    #/snippet-sys-snippet-zip-map ss tails
       (hn-expr-2->s-expr-generator dss quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
@@ -486,6 +487,7 @@
         #t
         tail))
     (just zipped)
+  #/dlog 'hqq-a4.2
   #/expect
     (hn-expr->s-expr-stx-list dss
       (dissect
