@@ -57,8 +57,9 @@
   debugging-in-inexpensive-ways)
 (define-for-syntax debugging-with-prints-for-hypernest-furl
   debugging-in-inexpensive-ways)
+; TODO NOW: Make this `debugging-in-inexpensive-ways`.
 (define-for-syntax debugging-with-prints-for-hypernest-qq
-  debugging-in-inexpensive-ways)
+  #t)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)
@@ -3935,11 +3936,15 @@
         (hypertee-functor-from-dim-sys-to-snippet-sys-sys)))))
 
 (define (hypertee-get-hole-zero-maybe ht)
-  (dissect ht (unguarded-hypertee-furl _ coil)
+  (4:dlog 'hqq-j4
+  #/dissect ht (unguarded-hypertee-furl ds coil)
+  #/w- ss (hypertee-snippet-sys ds)
   #/mat coil (hypertee-coil-zero)
     (nothing)
   #/dissect coil (hypertee-coil-hole d hole data tails)
-    (maybe-bind (hypertee-get-hole-zero-maybe tails) #/fn tail-zero
+    (if (dim-sys-dim=0? ds (snippet-sys-snippet-degree ss tails))
+      (just data)
+    #/maybe-bind (hypertee-get-hole-zero-maybe tails) #/fn tail-zero
     #/hypertee-get-hole-zero-maybe tail-zero)))
 
 
@@ -4016,16 +4021,16 @@
         (->snippet ss snippet)))
     ; snippet-sys-snippet-zip-map-selective
     (fn ss shape snippet hvv-to-maybe-v
-      (dlog 'n2.0.7.0.3
+      (dlog 'n18
       #/maybe-map
-        (dlog 'n2.0.7.0.3.0.1
+        (dlog 'n19
         #/snippet-sys-snippet-zip-map-selective (ss-> ss)
-          (dlog 'n2.0.7.0.3.1
+          (dlog 'n20
           #/shape-> ss shape)
-          (dlog 'n2.0.7.0.3.2
+          (dlog 'n21
           #/snippet-> ss snippet)
           (fn hole shape-data snippet-data
-            (dlog 'n2.0.7.0.3.3
+            (dlog 'n22
             #/hvv-to-maybe-v
               (->shape ss hole)
               shape-data
@@ -4577,10 +4582,13 @@
     shape))
 
 (define (hypernest-get-hole-zero-maybe hn)
-  (mat hn (hypernest-zero-unchecked content)
+  (4:dlog 'hqq-j1
+  #/mat hn (hypernest-zero-unchecked content)
     (nothing)
+  #/4:dlog 'hqq-j2
   #/dissect hn (hypernest-nonzero-unchecked d hn-extended)
-    (hypertee-get-hole-zero-maybe hn-extended)))
+    (4:dlog 'hqq-j3
+    #/hypertee-get-hole-zero-maybe hn-extended)))
 
 (define
   (hypernest-join-list-and-tail-along-0 ds past-snippets last-snippet)
@@ -4881,18 +4889,24 @@
     (->i ([hn hypernest?])
       [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])
     any/c)
-  (dlog 'n2 hn (hypernest-get-dim-sys hn)
+  (let-syntax
+    (
+      [dlog
+        (if debugging-with-prints-for-hypernest-qq
+          (syntax-local-value #'4:dlog)
+          (syntax-local-value #'dlog))])
+  #/dlog 'n2 hn (hypernest-get-dim-sys hn)
   #/mat hn (hypernest-zero-unchecked content)
     (dissect content (unguarded-hypertee-furl _ #/hypertee-coil-zero)
     #/hypernest-coil-zero)
   #/dissect hn
     (hypernest-nonzero-unchecked overall-degree
       (unguarded-hypertee-furl eds hn-extended-coil))
-  #/dlog 'n2.0.1
+  #/dlog 'n3
   #/dissect hn-extended-coil
     (hypertee-coil-hole (extended-with-top-dim-infinite)
       hole data tails)
-  #/dlog 'n2.0.3
+  #/dlog 'n4
   #/dissect eds
     (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- htss (hypertee-snippet-sys uds)
@@ -4903,13 +4917,13 @@
       (unextend-with-top-dim-sys-morphism-sys
         (extended-with-top-finite-dim-sys uds))
       (unextend-with-top-dim-sys-morphism-sys uds))
-  #/dlog 'n2.0.4
+  #/dlog 'n5
   #/dissect (snippet-sys-snippet-degree ehtss tails)
     (extended-with-top-dim-finite half-extended-hole-degree)
-  #/dlog 'n2.0.5
+  #/dlog 'n6
   #/mat half-extended-hole-degree
     (extended-with-top-dim-finite hole-degree)
-    (dlog 'n2.0.1
+    (dlog 'n7
     #/attenuated-hypernest-coil-hole uds
       overall-degree
       (hypertee-map-dim unextend-dim hole)
@@ -4917,44 +4931,46 @@
       (snippet-sys-snippet-map htss
         (hypertee-map-dim unextend-dim tails)
         (fn hole tail
-          (dlog 'n2.1
+          (dlog 'n8
           #/hypernest-nonzero-unchecked overall-degree tail))))
   #/dissect half-extended-hole-degree (extended-with-top-dim-infinite)
-    (dlog 'n2.0.2 tails
+    (dlog 'n9 tails
     #/dissect (dlog 'i5 #/attenuated-snippet-sys-snippet-undone ehtss tails)
       (just #/list
         (extended-with-top-dim-finite
           (extended-with-top-dim-infinite))
         tails
         interior)
-    #/dlog 'n2.0.3
+    #/dlog 'n10
     #/dissect (snippet-sys-snippet-degree ehtss tails)
       (extended-with-top-dim-finite
         (extended-with-top-dim-finite bump-degree))
-    #/dlog 'n2.0.5
+    #/dlog 'n11
     #/w- interior-hypernest
-      (dlogr 'n2.0.7.0.2 bump-degree interior
+      (dlogr 'n12 bump-degree interior
       #/hypernest-nonzero-unchecked
         (dim-sys-dim-max uds overall-degree bump-degree)
         interior)
+    #/dlog 'n11.1 (hypertee-map-dim unextend-dim tails) interior-hypernest
     #/dissect
-      (dlog 'n2.0.7 hnss ; interior-hypernest
+      (dlog 'n13 hnss ; interior-hypernest
       #/if (dim-sys-dim=0? uds bump-degree)
         (just interior-hypernest)
-      #/snippet-sys-snippet-zip-map hnss
-        (dlogr 'n2.0.7.0.1 tails
+      #/snippet-sys-snippet-zip-map-selective hnss
+        (dlogr 'n14 tails
         #/hypertee-map-dim unextend-dim tails)
-        interior-hypernest
+        (snippet-sys-snippet-select-if-degree<
+          hnss bump-degree interior-hypernest)
         (fn hole tail interior-data
-          (dlog 'n2.0.7.1 overall-degree
+          (dlog 'n15 overall-degree
           #/dissect interior-data (trivial)
-          #/dlog 'n2.0.7.2 tail
+          #/dlog 'n16 tail
           #/just #/hypernest-nonzero-unchecked
             (dim-sys-dim-max uds overall-degree
               (snippet-sys-snippet-degree htss hole))
             tail)))
       (just tails-hypernest)
-    #/dlog 'n2.0.8 overall-degree bump-degree tails tails-hypernest
+    #/dlog 'n17 overall-degree bump-degree tails tails-hypernest
     #/hypernest-coil-bump
       overall-degree data bump-degree tails-hypernest)))
 
@@ -4968,8 +4984,10 @@
   #/syntax-parse stx #/ (_ ds:expr coil:expr)
     #'(app
         (fn v
-          (maybe-if (hypernest? v) #/fn
-          #/list (hypernest-get-dim-sys v) (dlog 'n1 #/hypernest-get-coil v)))
+          (4:dlog 'hqq-i1
+          #/maybe-if (hypernest? v) #/fn
+          #/4:dlog 'hqq-i2
+          #/list (4:dlog 'hqq-i3 #/hypernest-get-dim-sys v) (4:dlog 'hqq-i4 #/dlog 'n1 #/hypernest-get-coil v)))
         (just #/list ds coil))))
 
 (define-match-expander-from-match-and-make

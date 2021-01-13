@@ -189,7 +189,7 @@
         (snippet-sys-snippet-map-selective ss
           (snippet-sys-snippet-select-if-degree ss tails #/fn d
             (dim-sys-dim=0? ds d))
-        #/fn tail
+        #/fn hole tail
           (trivial))
       #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
       #/cons
@@ -217,8 +217,10 @@
     #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
+(require #/for-syntax lathe-debugging punctaffy/hypersnippet/hypernest-2)
 (define-for-syntax (hn-expr-2->s-expr-generator dss hn)
-  (w- ds (dim-successors-sys-dim-sys dss)
+  (dlog 'hqq-h1
+  #/w- ds (dim-successors-sys-dim-sys dss)
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/expect (dim-successors-sys-dim-from-int dss 2) (just _)
@@ -228,7 +230,9 @@
     (dim-sys-dim=? ds (snippet-sys-snippet-degree ss hn) (n-d 2))
     #t
     (error "Expected an hn-expr of degree 2")
+  #/dlog 'hqq-h2 (hypernest? hn) hn
   #/dissect hn (hypernest-furl _ dropped)
+  #/dlog 'hqq-h3
   #/w- process-tails
     (fn tails
       (snippet-sys-snippet-map shape-ss tails #/fn d tail
@@ -236,7 +240,9 @@
   #/mat dropped (hypernest-coil-hole _ tails-shape data tails)
     (hypernest-furl ds #/hypernest-coil-hole (n-d 2) tails-shape data
     #/process-tails tails)
+  #/dlog 'hqq-h4
   #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
+  #/dlog 'hqq-h5
   #/mat data (hn-tag-0-s-expr-stx stx)
     (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
@@ -248,14 +254,18 @@
     (fn stx-example list-beginnings
       (expect (dim-sys-dim=? ds bump-degree (n-d 1)) #t
         (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
+      #/dlog 'hqq-h5.1
       #/w- elems
         (snippet-sys-snippet-map-selective ss
           (snippet-sys-snippet-select-if-degree ss tails #/fn d
             (dim-sys-dim=0? ds d))
-        #/fn tail
+        #/fn hole tail
           (trivial))
+      #/dlog 'hqq-h5.2 tails
       #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
+      #/dlog 'hqq-h5.3
       #/snippet-sys-snippet-join ss
+      #/dlog 'hqq-h5.4
       #/hn-bracs-dss dss 2
         (hnb-open 1 #/hn-tag-1-list stx-example)
         
@@ -307,10 +317,12 @@
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
+    #/dlog 'hqq-h6
     #/dissect
       (snippet-sys-snippet-set-degree-maybe ss (n-d 2)
         (snippet-sys-shape->snippet ss tails))
       (just tails)
+    #/dlog 'hqq-h7
     #/snippet-sys-snippet-join ss tails)
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
@@ -349,7 +361,7 @@
         (snippet-sys-snippet-map-selective ss
           (snippet-sys-snippet-select-if-degree ss tails #/fn d
             (dim-sys-dim=0? ds d))
-        #/fn tail
+        #/fn hole tail
           (trivial))
       #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
       #/snippet-sys-snippet-join ss
@@ -419,7 +431,6 @@
     #/snippet-sys-snippet-join ss tails)
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
 
-(require #/for-syntax lathe-debugging)
 (define-syntax (my-quasiquote stx)
   (syntax-parse stx #/ (_ quotation)
   #/dlog 'hqq-a1
@@ -477,23 +488,28 @@
   #/dissect
     (dlog 'hqq-a4.1
     #/snippet-sys-snippet-zip-map ss tails
-      (hn-expr-2->s-expr-generator dss quotation)
+      (dlog 'hqq-a4.1.1 #/hn-expr-2->s-expr-generator dss quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
       #/dissect
-        (dim-sys-dim=? ds
-          (snippet-sys-snippet-degree ss tail)
-          (n-d 1))
+        (dim-sys-dim=? ds (n-d 1)
+          (snippet-sys-snippet-degree ss tail))
         #t
-        tail))
+      #/dissect (snippet-sys-snippet-set-degree-maybe ss (n-d 2) tail)
+        (just tail)
+      #/just tail))
     (just zipped)
   #/dlog 'hqq-a4.2
+  #/w- joined (snippet-sys-snippet-join ss zipped)
   #/expect
-    (hn-expr->s-expr-stx-list dss
+    (dlog 'hqq-a4.3
+    #/hn-expr->s-expr-stx-list dss
       (dissect
-        (snippet-sys-snippet-set-degree-maybe ss (n-d 1) zipped)
-        (just zipped)
-      #/snippet-sys-snippet-join ss zipped))
+        (dlog 'hqq-a4.4
+        #/snippet-sys-snippet-set-degree-maybe ss (n-d 1) joined)
+        (just joined)
+      #/dlog 'hqq-a4.5
+        joined))
     (list result)
     (error "Encountered more than one s-expression in a quasiquotation")
   #/dlog 'hqq-a5
