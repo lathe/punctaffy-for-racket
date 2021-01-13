@@ -43,8 +43,6 @@
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
 (require #/for-syntax #/only-in racket/syntax syntax-local-eval)
-; TODO NOW: Make this #t for testing and #f once the tests are
-; passing.
 (define-for-syntax debugging-in-inexpensive-ways #f)
 (define-for-syntax debugging-with-contracts
   debugging-in-inexpensive-ways)
@@ -57,9 +55,8 @@
   debugging-in-inexpensive-ways)
 (define-for-syntax debugging-with-prints-for-hypernest-furl
   debugging-in-inexpensive-ways)
-; TODO NOW: Make this `debugging-in-inexpensive-ways`.
 (define-for-syntax debugging-with-prints-for-hypernest-qq
-  #t)
+  debugging-in-inexpensive-ways)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)

@@ -19,6 +19,34 @@
 ;   language governing permissions and limitations under the License.
 
 
+; NOTE DEBUGGABILITY: These are here for debugging.
+(require #/for-syntax racket/base)
+(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
+(define-for-syntax debugging-with-prints #f)
+(define-syntax (ifc stx)
+  (syntax-protect
+  #/syntax-case stx () #/ (_ condition then else)
+  #/if (syntax-local-eval #'condition)
+    #'then
+    #'else))
+
+; NOTE DEBUGGABILITY: These are here for debugging, as are all the
+; `dlog` and `dlogr` calls throughout this file.
+;
+; NOTE DEBUGGABILITY: We could also do
+; `(require lathe-debugging/placebo)` instead of defining this
+; submodule, but that would introduce a package dependency on
+; `lathe-debugging`, which at this point still isn't a published
+; package.
+;
+(module private/lathe-debugging/placebo racket/base
+  (provide #/all-defined-out)
+  (define-syntax-rule (dlog value ... body) body)
+  (define-syntax-rule (dlogr value ... body) body))
+(ifc debugging-with-prints
+  (require lathe-debugging)
+  (require 'private/lathe-debugging/placebo))
+
 (require #/only-in racket/contract/base -> ->i any/c list/c)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
@@ -281,7 +309,6 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(require lathe-debugging)
 (define/contract (s-expr-stx->hn-expr ds n-d stx)
   (->i
     (

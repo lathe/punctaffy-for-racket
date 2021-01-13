@@ -47,9 +47,9 @@
   hypertee-snippet-format-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
   selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
-  snippet-sys-snippet-done snippet-sys-snippet-join
-  snippet-sys-snippet-join-selective snippet-sys-snippet-map
-  snippet-sys-snippet->maybe-shape
+  snippet-sys-snippet-done snippet-sys-snippet-each
+  snippet-sys-snippet-join snippet-sys-snippet-join-selective
+  snippet-sys-snippet-map snippet-sys-snippet->maybe-shape
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
   unselected)
 (require #/for-syntax #/only-in
@@ -58,9 +58,66 @@
   hn-tag-unmatched-closing-bracket s-expr-stx->hn-expr
   simple-hn-builder-syntax)
 
+; NOTE DEBUGGABILITY: These are here for debugging.
+(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
+(define-for-syntax debugging-in-inexpensive-ways #f)
+(define-for-syntax debugging-with-prints
+  debugging-in-inexpensive-ways)
+(define-syntax (ifc stx)
+  (syntax-protect
+  #/syntax-case stx () #/ (_ condition then else)
+  #/if (syntax-local-eval #'condition)
+    #'then
+    #'else))
+
+; NOTE DEBUGGABILITY: These are here for debugging, as are all the
+; `dlog` and `dlogr` calls throughout this file.
+;
+; NOTE DEBUGGABILITY: We could also do
+; `(require lathe-debugging/placebo)` instead of defining this
+; submodule, but that would introduce a package dependency on
+; `lathe-debugging`, which at this point still isn't a published
+; package.
+;
+(module private/lathe-debugging/placebo racket/base
+  (provide #/all-defined-out)
+  (define-syntax-rule (dlog value ... body) body)
+  (define-syntax-rule (dlogr value ... body) body))
+(ifc debugging-with-prints
+  (require #/for-syntax lathe-debugging)
+  (require #/for-syntax 'private/lathe-debugging/placebo))
+
 
 (provide ^< ^>)
 
+
+
+; NOTE DEBUGGABILITY: These are here for debugging.
+(ifc debugging-in-inexpensive-ways
+  (begin
+    ; TODO: Make these use `only-in`.
+    (require #/for-syntax racket/contract)
+    (require #/for-syntax lathe-comforts/contract)
+    (require #/for-syntax punctaffy/hypersnippet/hypernest-2)
+    (require #/for-syntax punctaffy/hypersnippet/hypertee-2)
+    (require #/for-syntax punctaffy/hypersnippet/snippet)
+    (begin-for-syntax #/define/contract (verify-ht ht)
+      (->
+        (and/c hypertee?
+          (by-own-method/c ht #/hypertee/c #/hypertee-get-dim-sys ht))
+        any/c)
+      ht)
+    (begin-for-syntax #/define/contract (verify-hn hn)
+      (->
+        (and/c hypernest?
+          (by-own-method/c hn
+            (hypernest/c (hypertee-snippet-format-sys)
+              (hypernest-get-dim-sys hn))))
+        any/c)
+      hn))
+  (begin
+    (begin-for-syntax #/define-syntax-rule (verify-ht ht) ht)
+    (begin-for-syntax #/define-syntax-rule (verify-hn hn) hn)))
 
 
 (define-for-syntax (snippet-sys-snippet-uncontour dss ss snippet)
@@ -94,29 +151,6 @@
       #/hnb-unlabeled (n-d bracket)))))
 
 
-; TODO NOW: Remove this.
-(require #/for-syntax racket/contract)
-(require #/for-syntax lathe-comforts/contract)
-(require #/for-syntax punctaffy/hypersnippet/hypernest-2)
-(require #/for-syntax punctaffy/hypersnippet/hypertee-2)
-(require #/for-syntax punctaffy/hypersnippet/snippet)
-(begin-for-syntax #/define/contract (verify-ht ht)
-  (->
-    (and/c hypertee?
-      (by-own-method/c ht #/hypertee/c #/hypertee-get-dim-sys ht))
-    any/c)
-  ht)
-(begin-for-syntax #/define/contract (verify-hn hn)
-  (->
-    (and/c hypernest?
-      (by-own-method/c hn
-        (hypernest/c (hypertee-snippet-format-sys)
-          (hypernest-get-dim-sys hn))))
-    any/c)
-  hn)
-
-; TODO NOW: Remove this.
-(require #/for-syntax lathe-debugging)
 ; This takes a degree-1 hypernest which may contain
 ; `hn-tag-unmatched-closing-bracket` values at certain
 ; degree-3-or-greater bumps, and it returns a

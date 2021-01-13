@@ -112,9 +112,6 @@
 ; Time without assertions:        18.119s
 ;
 ;#;
-; TODO NOW: Figure out what's causing the above to have an error at
-; compile time, fix it, and then uncomment the rest of this file.
-#|
 (possibly-suppress-assertions
 #/check-equal?
   (my-quasiquote #/^< 2
@@ -218,4 +215,3 @@
             i j))
         k l))
   "The new quasiquote supports nesting and splicing")
-|#

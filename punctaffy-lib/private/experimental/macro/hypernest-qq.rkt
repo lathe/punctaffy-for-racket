@@ -46,9 +46,9 @@
   hypertee-snippet-format-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
   snippet-sys-shape->snippet snippet-sys-shape-snippet-sys
-  snippet-sys-snippet-degree snippet-sys-snippet-each
-  snippet-sys-snippet-join snippet-sys-snippet-map
-  snippet-sys-snippet-map-selective
+  snippet-sys-snippet-bind snippet-sys-snippet-degree
+  snippet-sys-snippet-each snippet-sys-snippet-join
+  snippet-sys-snippet-map snippet-sys-snippet-map-selective
   snippet-sys-snippet->maybe-shape
   snippet-sys-snippet-select-if-degree
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
@@ -57,6 +57,33 @@
   punctaffy/private/experimental/macro/hypernest-macro
   hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-1-list* hn-tag-1-prefab
   hn-tag-1-vector hn-tag-nest s-expr-stx->hn-expr)
+
+; NOTE DEBUGGABILITY: These are here for debugging.
+(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
+(define-for-syntax debugging-with-prints #f)
+(define-syntax (ifc stx)
+  (syntax-protect
+  #/syntax-case stx () #/ (_ condition then else)
+  #/if (syntax-local-eval #'condition)
+    #'then
+    #'else))
+
+; NOTE DEBUGGABILITY: These are here for debugging, as are all the
+; `dlog` and `dlogr` calls throughout this file.
+;
+; NOTE DEBUGGABILITY: We could also do
+; `(require lathe-debugging/placebo)` instead of defining this
+; submodule, but that would introduce a package dependency on
+; `lathe-debugging`, which at this point still isn't a published
+; package.
+;
+(module private/lathe-debugging/placebo racket/base
+  (provide #/all-defined-out)
+  (define-syntax-rule (dlog value ... body) body)
+  (define-syntax-rule (dlogr value ... body) body))
+(ifc debugging-with-prints
+  (require #/for-syntax lathe-debugging)
+  (require #/for-syntax 'private/lathe-debugging/placebo))
 
 (require #/only-in lathe-comforts expect w-)
 
@@ -217,7 +244,6 @@
     #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
-(require #/for-syntax lathe-debugging punctaffy/hypersnippet/hypernest-2)
 (define-for-syntax (hn-expr-2->s-expr-generator dss hn)
   (dlog 'hqq-h1
   #/w- ds (dim-successors-sys-dim-sys dss)
@@ -230,7 +256,7 @@
     (dim-sys-dim=? ds (snippet-sys-snippet-degree ss hn) (n-d 2))
     #t
     (error "Expected an hn-expr of degree 2")
-  #/dlog 'hqq-h2 (hypernest? hn) hn
+  #/dlog 'hqq-h2  ; (hypernest? hn) hn
   #/dissect hn (hypernest-furl _ dropped)
   #/dlog 'hqq-h3
   #/w- process-tails
@@ -305,9 +331,10 @@
     (process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
   #/mat data (hn-tag-nest)
-    (expect (snippet-sys-snippet->maybe-shape ss tails) (just tails)
+    (expect (snippet-sys-snippet->maybe-shape ss tails)
+      (just tails-shape)
       (error "Encountered an hn-tag-nest bump with bumps in it")
-    #/expect (snippet-sys-snippet-uncontour dss shape-ss tails)
+    #/expect (snippet-sys-snippet-uncontour dss shape-ss tails-shape)
       (just #/list tails-tails bracket-syntax)
       (error "Encountered an hn-tag-nest bump which wasn't a contour")
     #/expect (snippet-sys-snippet-uncontour dss shape-ss tails-tails)
@@ -318,12 +345,16 @@
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
     #/dlog 'hqq-h6
-    #/dissect
-      (snippet-sys-snippet-set-degree-maybe ss (n-d 2)
-        (snippet-sys-shape->snippet ss tails))
-      (just tails)
+    #/w- joined
+      (snippet-sys-snippet-bind ss tails #/fn hole tail
+        (dissect
+          (snippet-sys-snippet-set-degree-maybe ss (n-d 4) tail)
+          (just tail)
+          tail))
     #/dlog 'hqq-h7
-    #/snippet-sys-snippet-join ss tails)
+    #/dissect (snippet-sys-snippet-set-degree-maybe ss (n-d 2) joined)
+      (just tails)
+      tails)
   #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
 
 (define-for-syntax (hn-expr-2->s-expr-stx-generator dss hn)
