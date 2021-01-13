@@ -4,7 +4,7 @@
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -19,8 +19,37 @@
 ;   language governing permissions and limitations under the License.
 
 
+; NOTE DEBUGGABILITY: These are here for debugging.
+(require #/for-syntax racket/base)
+(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
+(define-for-syntax debugging-with-prints #f)
+(define-syntax (ifc stx)
+  (syntax-protect
+  #/syntax-case stx () #/ (_ condition then else)
+  #/if (syntax-local-eval #'condition)
+    #'then
+    #'else))
+
+; NOTE DEBUGGABILITY: These are here for debugging, as are all the
+; `dlog` and `dlogr` calls throughout this file.
+;
+; NOTE DEBUGGABILITY: We could also do
+; `(require lathe-debugging/placebo)` instead of defining this
+; submodule, but that would introduce a package dependency on
+; `lathe-debugging`, which at this point still isn't a published
+; package.
+;
+(module private/lathe-debugging/placebo racket/base
+  (provide #/all-defined-out)
+  (define-syntax-rule (dlog value ... body) body)
+  (define-syntax-rule (dlogr value ... body) body))
+(ifc debugging-with-prints
+  (require lathe-debugging)
+  (require 'private/lathe-debugging/placebo))
+
 (require #/only-in racket/contract/base -> ->i any/c list/c)
 (require #/only-in racket/contract/region define/contract)
+(require #/only-in racket/math natural?)
 (require #/only-in syntax/parse id syntax-parse)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
@@ -31,11 +60,17 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-successors-sys? dim-successors-sys-dim-from-int
-  dim-successors-sys-dim-sys)
-(require #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hn-bracs-dss hypernest-append-zero hypernest/c
-  hypernest-set-degree-and-bind-highest-degrees)
+  dim-sys? dim-sys-dim<=? dim-sys-dim/c)
+(require #/only-in punctaffy/hypersnippet/hypernest-2
+  hnb-labeled hnb-open hn-bracs hypernest-join-list-and-tail-along-0
+  hypernest/c hypernest-snippet-sys)
+(require #/only-in punctaffy/hypersnippet/hypertee-2
+  hypertee-snippet-format-sys)
+(require #/only-in punctaffy/hypersnippet/snippet
+  selectable-map snippet-sys-dim-sys
+  snippet-sys-snippet-bind-selective snippet-sys-snippet-degree
+  snippet-sys-snippet-select-if-degree
+  snippet-sys-snippet-set-degree-maybe)
 
 (provide
   (struct-out hn-tag-0-s-expr-stx)
@@ -155,6 +190,31 @@
       (just local))
     (nothing)))
 
+(define (hypernest-join-0 ds n-d d elems)
+  (hypernest-join-list-and-tail-along-0 ds elems
+    (hn-bracs ds (n-d d) #/hnb-labeled (n-d 0) #/trivial)))
+
+(define
+  (snippet-sys-snippet-set-degree-and-bind-highest-degrees
+    ss d snippet hv-to-suffix)
+  (w- ds (snippet-sys-dim-sys ss)
+  #/w- intermediate-d (snippet-sys-snippet-degree ss snippet)
+  #/dissect
+    (snippet-sys-snippet-set-degree-maybe ss d
+      (snippet-sys-snippet-bind-selective ss
+        (snippet-sys-snippet-select-if-degree ss snippet
+        #/fn candidate
+          (dim-sys-dim<=? ds d candidate))
+      #/fn hole data
+        (selectable-map data #/fn data
+          (dissect
+            (snippet-sys-snippet-set-degree-maybe ss intermediate-d
+              (hv-to-suffix hole data))
+            (just suffix)
+            suffix))))
+    (just result)
+    result))
+
 
 
 ; This struct property indicates a syntax's behavior as the kind of
@@ -249,24 +309,25 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(define/contract (s-expr-stx->hn-expr dss stx)
+(define/contract (s-expr-stx->hn-expr ds n-d stx)
   (->i
     (
-      [dss dim-successors-sys?]
+      [ds dim-sys?]
+      [n-d (ds) (-> natural? #/dim-sys-dim/c ds)]
       [stx syntax?])
-    [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
-  (w- ds (dim-successors-sys-dim-sys dss)
-  #/expect (dim-successors-sys-dim-from-int dss 2) (just _)
-    (error "Expected at least 2 successors to exist for the zero dimension")
-  #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
+    [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
+  (dlog 'hqq-b1
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/mat
     (syntax-parse stx
       [ (op:id arg ...)
-        (maybe-bind (syntax-local-maybe #'op) #/fn op
+        (dlog 'hqq-b1.1 #'op
+        #/maybe-bind (syntax-local-maybe #'op) #/fn op
         #/maybe-map (hn-builder-syntax-maybe op) #/fn proc
         #/list op proc)]
       [op:id
-        (maybe-bind (syntax-local-maybe #'op) #/fn op
+        (dlog 'hqq-b1.2
+        #/maybe-bind (syntax-local-maybe #'op) #/fn op
         #/maybe-map (hn-builder-syntax-maybe op) #/fn proc
         #/list op proc)]
       [_ (nothing)])
@@ -298,10 +359,12 @@
     ; then `s-expr-stx->hn-expr` reports that it has broken its own
     ; contract.
     ;
-    (proc op stx)
+    (dlog 'hqq-b1.3 op
+    #/proc op stx)
+  #/dlog 'hqq-b2
   #/w- process-list
     (fn elems
-      (list-map elems #/fn elem #/s-expr-stx->hn-expr dss elem))
+      (list-map elems #/fn elem #/s-expr-stx->hn-expr ds n-d elem))
   ; NOTE: We go to some trouble to detect improper lists here. This is
   ; so we can preserve the metadata of syntax objects occurring in
   ; tail positions partway through the list, which we would lose track
@@ -309,6 +372,7 @@
   ; pattern of `(elem ...)` or `(elem ... . tail)`.
   #/w- s (syntax-e stx)
   #/w- stx-example (datum->syntax stx #/list)
+  #/dlog 'hqq-b3
   #/w- make-list-layer
     (fn metadata elems
       ; When we call this, `elems` is a list of degree-1 hypernests,
@@ -316,32 +380,42 @@
       ; degree-0-concatenate them, and then we degree-1-concatenate a
       ; degree-1 bump around that, holding the given metadata. We
       ; return the degree-1 hypernest that results.
-      (hypernest-set-degree-and-bind-highest-degrees (n-d 1)
-        (hn-bracs-dss dss 2
+      (dlog 'hqq-c1
+      #/snippet-sys-snippet-set-degree-and-bind-highest-degrees ss
+        (n-d 1)
+        (dlog 'hqq-c2
+        #/hn-bracs ds 2
           (hnb-open 1 metadata)
           (hnb-labeled 1 #/trivial)
           0
           0
         #/hnb-labeled 0 #/trivial)
       #/fn hole data
-        (hypernest-append-zero ds (n-d 1) elems)))
+        (dlog 'hqq-c3
+        #/hypernest-join-0 ds n-d 1 elems)))
   
   ; We traverse into proper and improper lists.
+  #/dlog 'hqq-b3.1
   #/if (pair? s)
-    (dissect (improper-list->list-and-tail s) (list elems tail)
+    (dlog 'hqq-b3.2
+    #/dissect (improper-list->list-and-tail s) (list elems tail)
+    #/dlog 'hqq-b3.3
     #/w- elems (process-list elems)
+    #/dlog 'hqq-b3.4
     #/mat tail (list)
       ; The metadata we pass in here represents the `list` operation,
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypernest-based encoding of this Racket syntax
       ; can recover this layer of information about it.
-      (make-list-layer (hn-tag-1-list stx-example) elems)
+      (dlog 'hqq-b3.5
+      #/make-list-layer (dlog 'hqq-b3.5.1 #/hn-tag-1-list stx-example) elems)
     ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped.
     ; Usually it'll be wrapped up as an atom. However, it could still
     ; be expanded as a identifier syntax or processed as a vector or
     ; as a prefab struct.
-    #/w- tail (s-expr-stx->hn-expr dss tail)
+    #/dlog 'hqq-b3.6
+    #/w- tail (s-expr-stx->hn-expr ds n-d tail)
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
@@ -349,11 +423,13 @@
       #/append elems #/list tail))
   
   ; We traverse into prefab structs.
+  #/dlog 'hqq-b4
   #/w- key (prefab-struct-key s)
   #/if key
     (make-list-layer (hn-tag-1-prefab key stx-example)
     #/process-list #/cdr #/vector->list #/struct->vector s)
   
+  #/dlog 'hqq-b5
   #/syntax-parse stx
     ; We traverse into vectors.
     [ #(elem ...)
@@ -369,7 +445,7 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (hn-bracs-dss dss 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      (hn-bracs ds 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
       #/hnb-labeled 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
@@ -382,19 +458,16 @@
 ; reminder that hn-expressions aren't quite "expressions" so much as
 ; snippets of expression-like data.
 ;
-(define/contract (splicing-s-expr-stx->hn-expr dss stx)
+(define/contract (splicing-s-expr-stx->hn-expr ds n-d stx)
   (->i
     (
-      [dss dim-successors-sys?]
+      [ds dim-sys?]
+      [n-d (ds) (-> natural? #/dim-sys-dim/c ds)]
       [stx syntax?])
-    [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])
-  (w- ds (dim-successors-sys-dim-sys dss)
-  #/expect (dim-successors-sys-dim-from-int dss 2) (just _)
-    (error "Expected at least 2 successors to exist for the zero dimension")
-  #/hypernest-append-zero ds
-    (just-value #/dim-successors-sys-dim-from-int dss 1)
+    [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
+  (hypernest-join-0 ds n-d 1
   #/list-map (syntax->list stx) #/fn elem
-    (s-expr-stx->hn-expr dss elem)))
+    (s-expr-stx->hn-expr ds n-d elem)))
 
 
 (struct-easy (simple-hn-builder-syntax impl)

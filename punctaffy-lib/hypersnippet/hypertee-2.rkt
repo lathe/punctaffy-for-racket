@@ -5,7 +5,7 @@
 ; A data structure for encoding the kind of higher-order structure
 ; that occurs in higher quasiquotation.
 
-;   Copyright 2017-2020 The Lathe Authors
+;   Copyright 2017-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -66,7 +66,8 @@
 (provide
   hypertee-snippet-format-sys)
 (provide #/recontract-out
-  hypertee-snippet-format-sys?)
+  hypertee-snippet-format-sys?
+  hypertee-get-hole-zero-maybe)
 
 (provide
   htb-labeled)

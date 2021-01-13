@@ -5,7 +5,7 @@
 @; A library implementing and exploring hypersnippets, a
 @; higher-dimensional generalization of syntax with holes.
 
-@;   Copyright 2020 The Lathe Authors
+@;   Copyright 2020, 2021 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -861,6 +861,13 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
+@defproc[
+  (selectable-map [s selectable?] [v-to-v (-> any/c any/c)])
+  selectable?
+]{
+  Returns a @racket[selectable?] value similar to the given one, but with its selected element (if any) transformed by the given function.
+}
+
 @deftogether[(
   @defproc[(snippet-sys? [v any/c]) boolean?]
   @defproc[(snippet-sys-impl? [v any/c]) boolean?]
@@ -928,6 +935,15 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   ]
 )]{
   Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly less than the given one, or if its degree is equal to the given one.
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-snippet-with-0<degree/c [ss snippet-sys?])
+  contract?
+]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly greater than 0 (in the sense of @racket[dim-sys-dim-zero]).
   
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
@@ -1185,6 +1201,35 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 }
 
 @defproc[
+  (snippet-sys-snippet-zip-map
+    [ss snippet-sys?]
+    [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
+    [snippet (snippet-sys-snippet/c ss)]
+    [hvv-to-maybe-v
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        any/c
+        maybe?)])
+  (maybe/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet)))
+]{
+  Attempts to use the data carried in the given @tech{hypersnippet} @tech{shape} to create a snippet like @racket[snippet], but with all its @tech{hole} data values replaced by using @racket[hvv-to-maybe-v] to combine @racket[shape]'s data and @racket[snippet]'s data.
+  
+  The @racket[hvv-to-maybe-v] function is invoked with the shape of each hole to be combined, the data value from that hole in @racket[shape], and the data value from that hole in @racket[snippet].
+  
+  The traversal may stop partway through with a result of @racket[(nothing)] if it proves to be impossible to align all the holes in @racket[shape] with all the @racket[selected?] holes in @racket[snippet], or if at least one of the @racket[hvv-to-maybe-v] invocations returns @racket[(nothing)].
+  
+  This operation serves as a way to compare the shape of a snippet with a known shape. For example, when this operation is used with content-free snippets (those which correspond to shapes via @racket[snippet-sys-shape->snippet] and by @racket[snippet-sys-snippet->maybe-shape]), it effectively serves as a way to compare two shapes for equality.
+  
+  When the "comparison" is successful, that means the shape and snippet have sufficiently similar layouts to combine their data values. That allows this comparison to double as a sort of zipping operation.
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
+}
+
+@defproc[
   (snippet-sys-snippet-any?
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
@@ -1216,6 +1261,23 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[#f]. If any of these invocations of the function returns @racket[#f], the result is @racket[#f]. Otherwise, the result is @racket[#t].
   
   This essentially does for hypersnippets what Racket's @racket[andmap] does for lists.
+}
+
+@defproc[
+  (snippet-sys-snippet-each
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippet/c ss)]
+    [visit-hv
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        void?)])
+  void?
+]{
+  Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given procedure on each one. The procedure is called only for its side effects and must return @racket[(void)]. The overall result of this call is also @racket[(void)].
+  
+  This essentially does for hypersnippets what Racket's @racket[for-each] does for lists.
 }
 
 @defproc[
@@ -1251,6 +1313,24 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     (snippet-sys-snippet-degree ss snippet))
 ]{
   Transforms the given @tech{hypersnippet}'s @tech{hole} data values by calling the given function on each one.
+  
+  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
+}
+
+@defproc[
+  (snippet-sys-snippet-map-selective
+    [ss snippet-sys?]
+    [snippet (snippet-sys-snippetof ss (fn _hole selectable?))]
+    [hv-to-v
+      (->
+        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+          (fn _hole trivial?))
+        any/c
+        any/c)])
+  (snippet-sys-snippet-with-degree=/c ss
+    (snippet-sys-snippet-degree ss snippet))
+]{
+  Transforms the given @tech{hypersnippet}'s @tech{hole} data values by calling the given function on each @racket[selected?] one.
   
   @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
@@ -2504,6 +2584,16 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Every two @tt{hypertee-snippet-format-sys} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
 }
 
+@defproc[
+  (hypertee-get-hole-zero-maybe
+    [ht (and/c hypertee? (hypertee/c (hypertee-get-dim-sys ht)))])
+  maybe?
+]{
+  Given a @tech{hypertee}, returns a @racket[maybe?] value containing the value associated with its hole of degree 0, if such a hole exists.
+  
+  (TODO: Not all @tech{snippet systems} necessarily support an operation like this, but all the ones we've defined so far do. It may turn out that we'll want to add this to the snippet system interface.)
+}
+
 
 
 @section[#:tag "hypernest"]{Hypernests}
@@ -2852,6 +2942,58 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (TODO: Not all @tech{snippet systems} necessarily support an operation like this, but all the ones we've defined so far do. It may turn out that we'll want to add this to the snippet system interface.)
 }
 
+@defproc[
+  (hypernest-get-hole-zero-maybe
+    [hn
+      (and/c hypernest?
+        (hypernest/c (hypertee-snippet-format-sys)
+          (hypernest-get-dim-sys hn)))])
+  maybe?
+]{
+  Given a non-generalized @tech{hypernest}, returns a @racket[maybe?] value containing the value associated with its hole of degree 0, if such a hole exists.
+  
+  (TODO: Not all @tech{snippet systems} necessarily support an operation like this, but all the ones we've defined so far do. It may turn out that we'll want to add this to the snippet system interface.)
+  
+  (TODO: We may want to change the design of this to support @tech{generalized hypernests}.)
+}
+
+@defproc[
+  (hypernest-join-list-and-tail-along-0
+    [ds dim-sys?]
+    [past-snippets
+      (let*
+        (
+          [_ss
+            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)]
+          [_shape-ss (snippet-sys-shape-snippet-sys _ss)]
+          [_d (snippet-sys-snippet-degree _ss last-snippet)])
+        (listof
+          (and/c
+            (snippet-sys-snippet-with-degree=/c _ss _d)
+            (snippet-sys-snippetof _ss
+              (fn _hole
+                (if
+                  (dim-sys-dim=0? ds
+                    (snippet-sys-snippet-degree _shape-ss _hole))
+                  trivial?
+                  any/c))))))]
+    [last-snippet
+      (let
+        (
+          [_ss
+            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)])
+        (snippet-sys-snippet-with-0<degree/c _ss))])
+  (let*
+    (
+      [_ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)]
+      [_d (snippet-sys-snippet-degree _ss last-snippet)])
+    (snippet-sys-snippet-with-degree=/c _ss _d))
+]{
+  Given a list of non-generalized @tech{hypernests} and a final hypernest of the same @tech{degree}, returns a concatenation of them all along their degree-0 holes. Every snippet but the last must have a @racket[trivial?] value in its degree-0 hole, reflecting the fact that that hole will be filled in in the result. The degree of the hypernests must be greater than 0 so as to accommodate these degree-0 holes.
+  
+  In general, @tech{snippet} concatenations like @racket[snippet-sys-snippet-join] aren't list-shaped. However, list-shaped concatenations do make sense when each operand has exactly one designated hole and the shapes of the operands are compatible with each other's holes. Since each hypernest of degree greater than 0 has exactly one degree-0 hole, and since every hypernest fits into every degree-0 hole, it's particularly simple to designate concatenations of this form, and we supply this specialized function for it.
+}
+
 @deftogether[(
   @defidform[hypernest-snippet-sys]
   @defform[
@@ -2887,4 +3029,30 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Two @tt{hypernest-snippet-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's elements are @racket[ok/c] for the second's.
 }
 
-@; TODO: Consider having a `hypernest-snippet-format-sys`, similar to `hypertee-snippet-format-sys`.
+@deftogether[(
+  @defidform[hypernest-snippet-format-sys]
+  @defform[
+    #:link-target? #f
+    (hypernest-snippet-format-sys original)
+    #:contracts ([original snippet-format-sys?])
+  ]
+  @defform[
+    #:kind "match expander"
+    #:link-target? #f
+    (hypernest-snippet-format-sys original)
+  ]
+  @defproc[(hypernest-snippet-format-sys? [v any/c]) boolean?]
+  @defproc[
+    (hypernest-snippet-format-sys-original
+      [sfs hypernest-snippet-format-sys?])
+    snippet-format-sys?
+  ]
+)]{
+  Struct-like operations which construct and deconstruct a @tech{snippet format system} (@racket[snippet-format-sys?]) where, given any particular @tech{dimension system}, the hypersnippet @tech{shapes} are the same as those of the given @tech{snippet format system} (@racket[original]) instantiated at that dimension system, and the @tech{hypersnippets} are @tech{generalized hypernests} which are based on that snippet format system and that dimension system. (In particular, when @racket[original] is @racket[(hypertee-snippet-format-sys)], the generalized hypernests are just (non-generalized) @tech{hypernests}, and the shapes are @tech{hypertees}.)
+  
+  The shapes and snippets are related according to the same behavior as @racket[hypernest-snippet-sys]. In some sense, this is a generalization of @racket[hypernest-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypernest while leaving the rest of the structure alone.
+  
+  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
+  
+  Two @tt{hypernest-snippet-format-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's elements are @racket[ok/c] for the second's.
+}

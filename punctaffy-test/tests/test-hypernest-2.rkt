@@ -5,7 +5,7 @@
 ; Unit tests of the hypernest data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2018-2020 The Lathe Authors
+;   Copyright 2018-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -782,3 +782,19 @@
     0
     (htb-labeled 0 'a))
   "Truncating a degree-2 hypernest with a degree-2 bump to a hypertee")
+
+; NOTE: This uses an `hn-bracs` call that resembles one in
+; `punctaffy/private/experimental/macro/hypernest-macro`. This test
+; was introduced because that call was failing.
+(check-equal?
+  (hypernest-shape hnss #/hn-bracs ds 2
+    (hnb-open 1 'a)
+    (hnb-labeled 1 'a)
+    0
+    0
+    (hnb-labeled 0 'a))
+  (ht-bracs ds 2
+    (htb-labeled 1 'a)
+    0
+    (htb-labeled 0 'a))
+  "Truncating a degree-2 hypernest with a degree-1 bump surrounding a degree-1 hole to a hypertee")
