@@ -151,6 +151,9 @@
       #/hnb-unlabeled (n-d bracket)))))
 
 
+; TODO NOW: Store `hn-tag-unmatched-closing-bracket` and `hn-tag-nest`
+; in degree-infinity holes instead of degree-(N + 2) holes.
+
 ; This takes a degree-1 hypernest which may contain
 ; `hn-tag-unmatched-closing-bracket` values at certain
 ; degree-3-or-greater bumps, and it returns a

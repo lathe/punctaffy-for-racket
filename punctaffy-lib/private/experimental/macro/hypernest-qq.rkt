@@ -185,6 +185,9 @@
       #/hnb-unlabeled (n-d bracket)))))
 
 
+; TODO NOW: Store `hn-tag-nest` in degree-infinity holes instead of
+; degree-(N + 2) holes.
+
 (define-for-syntax (hn-expr->s-expr-stx-list dss hn)
   (w- ds (dim-successors-sys-dim-sys dss)
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)

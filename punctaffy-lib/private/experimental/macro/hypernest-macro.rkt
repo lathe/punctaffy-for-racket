@@ -92,15 +92,15 @@
 ; built up from a sequential encoding. That is, the program's syntax
 ; is an arrangement of bumps and holes, and each of the bumps can have
 ; its own bumps and holes, and each of the holes can have its own
-; holes (but not bumps). Bumps can be of any nonzero degree, and holes
-; can be of any degree less than the degree of their containing bump
-; (or at the outermost level, less than the degree of the overall
-; degree-1 hypernest, so only degree 0). These conditions ensure that
-; the bumps and holes can always be flattened into a sequence of
-; degree-annotated opening and closing brackets. Each bump will be
-; associated with a data value, and the only overall hole in the
-; hypernest -- the degree-0 one -- will essentially represent
-; "end of file" and will only be associated with a trivial data value.
+; holes (but not bumps). Bumps can be of any degree, and holes can be
+; of any degree less than the degree of their containing bump (if any)
+; or of any degree less than the degree of the overall degree-1
+; hypernest (so degree 0). These conditions ensure that the bumps and
+; holes can always be flattened into a sequence of degree-annotated
+; opening and closing brackets. Each bump will be associated with a
+; data value. The only overall hole in the hypernest -- the degree-0
+; one -- will essentially represent "end of file" and will only be
+; associated with a trivial data value.
 ;
 ; Since we're in Racket, our syntax transformers will take
 ; s-expression-shaped syntax objects as input like usual. When we
@@ -110,37 +110,48 @@
 ; procedure called `s-expr-stx->hn-expr`. We call the degree-1
 ; hypernests "hn-expressions" when we use them for syntax this way.
 ; (Note that s-expressions have a degree-1 hypersnippet shape already,
-; so there is no need to explicitly represent the degree-0 hole with a
-; bracket.)
+; so the business with the degree-0 hole -- the fact that it will only
+; contain a trivial value -- can be kept implicit.)
 ;
-; This conversion is a kind of macroexpansion only because we don't
-; hardcode particular symbols for the higher-dimensional brackets that
-; this conversion process handles. Instead of hardcoding those
-; symbols, we allow users to define their own
-; syntax-object-to-hn-expression transformers. These are a lot like
-; reader extensions, since they create higher-dimensional syntax out
-; of a lower-dimensional encoding.
+; We could design `s-expr-stx->hn-expr` to understand specific
+; syntaxes as higher-dimensional brackets, but we don't do that.
+; Instead, we perform a kind of macroexpansion, allowing users to
+; define their own syntax-object-to-hn-expression transformers. These
+; are a lot like reader extensions, since they create
+; higher-dimensional syntax out of a lower-dimensional encoding.
 ;
 ;
 ; Of all the Racket syntax transformers that will invoke
 ; `s-expr-stx->hn-expr`, the most familiar will be ones that imitate
-; `quasiquote` or `quasisyntax`. However, these aren't necessarily the
-; easiest examples to deal with because they introduce two other
-; problems: Problem one is, the `quasiquote` and `quasisyntax`
-; operators have degree-2 hypersnippet syntax, but they still create
-; s-expression-shaped data. Problem two is, since `quasiquote` and
-; `quasisyntax` are operations that are useful in Racket code, and
-; since they're operations that are meant for quoting Racket code,
-; they should be able to quote themselves.
+; `quasiquote` or `quasisyntax`. Unfortunately, these aren't
+; necessarily the easiest examples to talk about because they run up
+; against some additional concerns:
 ;
-; Quoting themselves isn't a problem with hypernests, but hypernests
-; aren't the kind of s-expression-shaped data these operations should
-; return.
+;   - While the `quasiquote` and `quasisyntax` operators have degree-2
+;     hypersnippet syntax as the literal part of their input, their
+;     completed result values are still degree-1 s-expression-shaped
+;     data. When trying to understand the concept of a degree-2
+;     hypersnippet, the degree-1 result data may be a red herring.
 ;
-; So what we're going to use is a hypernest-based representation
-; format that *preserves* the s-expressions we built it up out of;
-; this way operators like `quasiquote` and `quasisyntax` can
-; round-trip it back to s-expressions.
+;   - Since `quasiquote` and `quasisyntax` are operations that are
+;     useful in Racket code, and since they're operations that are
+;     meant for quoting Racket code, they should be able to quote
+;     themselves. This confronts us with the need to nest hypernests,
+;     which hypernests are capable of, but it also confronts us with
+;     the need to preserve the exact syntax that was used to specify
+;     the nested operation's brackets, since that syntax needs to be
+;     incorporated verbatim into the degree-1 result data. After all,
+;     it is being *quoted*.
+;
+; If we could pick another operation to focus on instead, we might be
+; able to take a more straightforward path. However, `quasiquote` and
+; `quasisyntax` really are the main motivating examples, so we're
+; facing these issues head-on.
+;
+; For the quotation to work, our hn-expressions' higher-dimensional
+; structure is going to *preserve* the s-expressions we built it up
+; out of. This way, operators like `quasiquote` and `quasisyntax` can
+; round-trip them back to s-expressions.
 ;
 ; It's not just `quasiquote` and `quasisyntax` that will benefit from
 ; this round-tripping. The Racket compiler and just about all existing
@@ -151,26 +162,36 @@
 ; To incorporate that round-tripping data into our hypernest format,
 ; we will treat occurrences of opening brackets as bumps just like we
 ; would otherwise, but the data we associate with a degree-N bump will
-; generally include a degree-(N+1) hypernest with a single degree-N
+; generally include a degree-infinity hypernest with a single degree-N
 ; hole shaped like the bump, and with each hole of that hole
 ; containing a single hole of the same shape. This is just the right
 ; shape to be degree-N-concatenated in between the bump's interior and
 ; the surrounding hypernest data in order to flatten the bumps back
 ; into s-expression-shaped data.
 ;
+; (The notion of infinity we're using here is that of
+; `extended-with-top-dim-sys`.)
+;
 ; When we interpret an s-expression as a hypernest, the data we can
 ; usually encode in an s-expression also remains. Our hypernest-based
 ; encoding has analogues for:
 ;
 ;   - Embedded datums. We represent these with another kind of
-;     degree-1 bump.
+;     degree-0 bump.
 ;
 ;   - Brackets introducing lists, improper lists, vectors, and
 ;     prefabricated structs. We represent these with other kinds of
-;     degree-2 bump.
+;     degree-1 bump.
 ;
 ; These bumps have interiors like any other bumps, but they're empty
 ; and can be safely ignored; they contan no bumps of their own.
+
+; TODO NOW: Propagate to the implementation the following changes,
+; which have already been described in the documentation above:
+;
+;   - Instead of associating a degree-N bump with a degree-(N + 1)
+;     bracket syntax hypernest, associate it with a degree-infinity
+;     bracket syntax hypernest.
 
 
 
@@ -295,6 +316,14 @@
 ; both regions of data in the same way, as contoured holes in the
 ; bump. This may help clarify how the two regions are related.
 
+; TODO NOW: Change the documentation and usage sites of
+; `hn-tag-unmatched-closing-bracket` and `hn-tag-nest` so they occur
+; in degree-infinity bumps (meaning an hn-expression hypersnippet
+; must have `(extended-with-top-dim-sys (nat-dim-sys))` as its
+; dimension system, but can still be merely degree-1 in the sense of
+; degree-`(extended-with-top-dim-finite 1)`). Change NOTE CONTOURS to
+; account for this (likely deleting it altogether).
+
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a
 ; hole of any degree.
@@ -412,8 +441,8 @@
     ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
     ; operation here, we already know `#'tail` can't be cons-shaped.
     ; Usually it'll be wrapped up as an atom. However, it could still
-    ; be expanded as a identifier syntax or processed as a vector or
-    ; as a prefab struct.
+    ; be expanded as an identifier syntax, processed as a vector, or
+    ; processed as a prefab struct.
     #/dlog 'hqq-b3.6
     #/w- tail (s-expr-stx->hn-expr ds n-d tail)
       ; This is like the proper list case, but this time the metadata
