@@ -47,7 +47,8 @@
   (require lathe-debugging)
   (require 'private/lathe-debugging/placebo))
 
-(require #/only-in racket/contract/base -> ->i any/c list/c)
+(require #/only-in racket/contract/base
+  -> ->i any/c contract-out list/c)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 (require #/only-in syntax/parse id syntax-parse)
@@ -56,14 +57,15 @@
 (require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/maybe
   just just-value maybe? maybe-bind maybe-map nothing)
-(require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-comforts/struct
+  auto-equal auto-write define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-dim<=? dim-sys-dim/c)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hn-bracs hypernest-join-list-and-tail-along-0
-  hypernest/c hypernest-snippet-sys)
+  hypernest? hypernest/c hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
@@ -73,16 +75,72 @@
   snippet-sys-snippet-set-degree-maybe)
 
 (provide
-  (struct-out hn-tag-0-s-expr-stx)
-  (struct-out hn-tag-1-list)
-  (struct-out hn-tag-1-list*)
-  (struct-out hn-tag-1-vector)
-  (struct-out hn-tag-1-prefab)
-  (struct-out hn-tag-unmatched-closing-bracket)
-  (struct-out hn-tag-nest)
-  (struct-out hn-tag-other)
-  s-expr-stx->hn-expr
-  simple-hn-builder-syntax)
+  hn-tag-0-s-expr-stx)
+(provide #/contract-out
+  [hn-tag-0-s-expr-stx? (-> any/c boolean?)]
+  [hn-tag-0-s-expr-stx-stx (-> hn-tag-0-s-expr-stx? syntax?)])
+(provide
+  hn-tag-1-list)
+(provide #/contract-out
+  [hn-tag-1-list? (-> any/c boolean?)]
+  [hn-tag-1-list-stx-example (-> hn-tag-1-list? syntax?)])
+(provide
+  hn-tag-1-list*)
+(provide #/contract-out
+  [hn-tag-1-list*? (-> any/c boolean?)]
+  [hn-tag-1-list*-stx-example (-> hn-tag-1-list*? syntax?)])
+(provide
+  hn-tag-1-vector)
+(provide #/contract-out
+  [hn-tag-1-vector? (-> any/c boolean?)]
+  [hn-tag-1-vector-stx-example (-> hn-tag-1-vector? syntax?)])
+(provide
+  hn-tag-1-prefab)
+(provide #/contract-out
+  [hn-tag-1-prefab? (-> any/c boolean?)]
+  [hn-tag-1-prefab-key (-> hn-tag-1-prefab? prefab-key?)]
+  [hn-tag-1-prefab-stx-example (-> hn-tag-1-prefab? syntax?)])
+(provide
+  hn-tag-unmatched-closing-bracket)
+(provide #/contract-out
+  [hn-tag-unmatched-closing-bracket? (-> any/c boolean?)])
+(provide
+  hn-tag-nest)
+(provide #/contract-out
+  [hn-tag-nest? (-> any/c boolean?)])
+(provide
+  hn-tag-other)
+(provide #/contract-out
+  [hn-tag-other? (-> any/c boolean?)]
+  [hn-tag-other-val (-> hn-tag-other? any/c)]
+  [s-expr-stx->hn-expr
+    (->i
+      (
+        [ds dim-sys?]
+        ; TODO NOW: Instead of just a function here, use a
+        ; `dim-sys-morphism-sys?`. That way, we'll make it clear that
+        ; 0 should map to `dim-sys-dim-zero` and greater natural
+        ; numbers should map to greater dimension numbers.
+        [n-d (ds) (-> natural? #/dim-sys-dim/c ds)]
+        [stx syntax?])
+      ; TODO NOW: Use a more specific contract for the result here.
+      ; In particular, use a contract `(hn-expr/c ds n-d)` that
+      ; guarantees that the snippet has degree
+      ; `(extended-with-top-dim-finite #/n-d 1)`, a dimension system
+      ; of `(extended-with-top-dim-sys ds)`, and `hn-tag-...` values
+      ; in only their expected places.
+      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
+  [simple-hn-builder-syntax
+    (->
+      ; TODO NOW: Use a more specific contract in place of
+      ; `hypernest?` here, namely
+      ; `(hn-expr/c (nat-dim-sys) #/fn n n)`. Actually, we should
+      ; probably add `ds` and `n-d` arguments to this function
+      ; alongside the `syntax?` argument, so that an hn-builder macro
+      ; call can return an hn-expr appropriate for the return value of
+      ; `s-expr-stx->hn-expr`.
+      (-> syntax? hypernest?)
+      hn-builder-syntax?)])
 
 
 ; We're taking this approach:
@@ -260,11 +318,26 @@
 ; an `hn-tag-0-s-expr-syntax` is usually used just for miscellaneous
 ; atomic values occurring in the syntax, like symbols and datums.
 ;
-(struct-easy (hn-tag-0-s-expr-stx stx) #:equal)
-(struct-easy (hn-tag-1-list stx-example) #:equal)
-(struct-easy (hn-tag-1-list* stx-example) #:equal)
-(struct-easy (hn-tag-1-vector stx-example) #:equal)
-(struct-easy (hn-tag-1-prefab key stx-example) #:equal)
+(define-imitation-simple-struct
+  (hn-tag-0-s-expr-stx? hn-tag-0-s-expr-stx-stx)
+  hn-tag-0-s-expr-stx
+  'hn-tag-0-s-expr-stx (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hn-tag-1-list? hn-tag-1-list-stx-example)
+  hn-tag-1-list
+  'hn-tag-1-list (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hn-tag-1-list*? hn-tag-1-list*-stx-example)
+  hn-tag-1-list*
+  'hn-tag-1-list* (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hn-tag-1-vector? hn-tag-1-vector-stx-example)
+  hn-tag-1-vector
+  'hn-tag-1-vector (current-inspector) (auto-write) (auto-equal))
+(define-imitation-simple-struct
+  (hn-tag-1-prefab? hn-tag-1-prefab-key hn-tag-1-prefab-stx-example)
+  hn-tag-1-prefab
+  'hn-tag-1-prefab (current-inspector) (auto-write) (auto-equal))
 
 ; The `hn-tag-unmatched-closing-bracket` tag can occur as a bump of
 ; degree (N + 2) for any nonzero N. It represents a closing bracket of
@@ -280,7 +353,12 @@
 ;
 ; NOTE: See "NOTE COUNTOURS".
 ;
-(struct-easy (hn-tag-unmatched-closing-bracket) #:equal)
+(define-imitation-simple-struct
+  (hn-tag-unmatched-closing-bracket?)
+  hn-tag-unmatched-closing-bracket
+  'hn-tag-unmatched-closing-bracket (current-inspector)
+  (auto-write)
+  (auto-equal))
 
 ; The `hn-tag-nest` tag can occur as a bump of degree (N + 2) for any
 ; nonzero N. It represents an unlabeled nested region of degree N. It
@@ -302,7 +380,10 @@
 ;
 ; NOTE: See "NOTE COUNTOURS".
 ;
-(struct-easy (hn-tag-nest) #:equal)
+(define-imitation-simple-struct
+  (hn-tag-nest?)
+  hn-tag-nest
+  'hn-tag-nest (current-inspector) (auto-write) (auto-equal))
 
 ; NOTE CONTOURS: Although we could represent
 ; `hn-tag-unmatched-closing-bracket` or `hn-tag-nest` bumps by using a
@@ -327,7 +408,10 @@
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a
 ; hole of any degree.
-(struct-easy (hn-tag-other val) #:equal)
+(define-imitation-simple-struct
+  (hn-tag-other? hn-tag-other-val)
+  hn-tag-other
+  'hn-tag-other (current-inspector) (auto-write) (auto-equal))
 
 
 ; This recursively converts the given Racket syntax object into a
@@ -338,13 +422,7 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(define/contract (s-expr-stx->hn-expr ds n-d stx)
-  (->i
-    (
-      [ds dim-sys?]
-      [n-d (ds) (-> natural? #/dim-sys-dim/c ds)]
-      [stx syntax?])
-    [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
+(define (s-expr-stx->hn-expr ds n-d stx)
   (dlog 'hqq-b1
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/mat
@@ -499,31 +577,34 @@
     (s-expr-stx->hn-expr ds n-d elem)))
 
 
-(struct-easy (simple-hn-builder-syntax impl)
-  #:other
-  #:property prop:hn-builder-syntax
-  (fn this stx
+(define-imitation-simple-struct
+  (simple-hn-builder-syntax? simple-hn-builder-syntax-impl)
+  simple-hn-builder-syntax
+  'simple-hn-builder-syntax (current-inspector) (auto-write)
+  (#:prop prop:hn-builder-syntax #/fn this stx
     (expect this (simple-hn-builder-syntax impl)
       (error "Expected this to be a simple-hn-builder-syntax")
     #/impl stx)))
 
-(struct-easy
-  (syntax-and-hn-builder-syntax syntax-impl hn-builder-syntax-impl)
-  #:other
+(define-imitation-simple-struct
+  (syntax-and-hn-builder-syntax?
+    syntax-and-hn-builder-syntax-syntax-impl
+    syntax-and-hn-builder-syntax-hn-builder-syntax-impl)
+  syntax-and-hn-builder-syntax
+  'syntax-and-hn-builder-syntax (current-inspector) (auto-write)
   
-  #:property prop:procedure
-  (fn this stx
+  (#:prop prop:procedure #/fn this stx
     (expect this
       (syntax-and-hn-builder-syntax
         syntax-impl hn-builder-syntax-impl)
       (error "Expected this to be a syntax-and-hn-builder-syntax")
     #/syntax-impl stx))
   
-  #:property prop:hn-builder-syntax
-  (fn this stx
+  (#:prop prop:hn-builder-syntax #/fn this stx
     (expect this
       (syntax-and-hn-builder-syntax
         syntax-impl hn-builder-syntax-impl)
       (error "Expected this to be a syntax-and-hn-builder-syntax")
     #/hn-builder-syntax-impl stx))
-)
+  
+  )
