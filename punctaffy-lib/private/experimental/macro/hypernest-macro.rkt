@@ -55,6 +55,9 @@
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-map)
+(require #/only-in lathe-comforts/match
+  define-match-expander-attenuated
+  define-match-expander-from-match-and-make)
 (require #/only-in lathe-comforts/maybe
   just just-value maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct
@@ -320,24 +323,75 @@
 ;
 (define-imitation-simple-struct
   (hn-tag-0-s-expr-stx? hn-tag-0-s-expr-stx-stx)
-  hn-tag-0-s-expr-stx
+  unguarded-hn-tag-0-s-expr-stx
   'hn-tag-0-s-expr-stx (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-0-s-expr-stx
+  unguarded-hn-tag-0-s-expr-stx
+  [stx syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-0-s-expr-stx
+  unguarded-hn-tag-0-s-expr-stx
+  attenuated-hn-tag-0-s-expr-stx
+  attenuated-hn-tag-0-s-expr-stx)
 (define-imitation-simple-struct
   (hn-tag-1-list? hn-tag-1-list-stx-example)
-  hn-tag-1-list
+  unguarded-hn-tag-1-list
   'hn-tag-1-list (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-1-list
+  unguarded-hn-tag-1-list
+  [stx-example syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-1-list
+  unguarded-hn-tag-1-list
+  attenuated-hn-tag-1-list
+  attenuated-hn-tag-1-list)
 (define-imitation-simple-struct
   (hn-tag-1-list*? hn-tag-1-list*-stx-example)
-  hn-tag-1-list*
+  unguarded-hn-tag-1-list*
   'hn-tag-1-list* (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-1-list*
+  unguarded-hn-tag-1-list*
+  [stx-example syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-1-list*
+  unguarded-hn-tag-1-list*
+  attenuated-hn-tag-1-list*
+  attenuated-hn-tag-1-list*)
 (define-imitation-simple-struct
   (hn-tag-1-vector? hn-tag-1-vector-stx-example)
-  hn-tag-1-vector
+  unguarded-hn-tag-1-vector
   'hn-tag-1-vector (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-1-vector
+  unguarded-hn-tag-1-vector
+  [stx-example syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-1-vector
+  unguarded-hn-tag-1-vector
+  attenuated-hn-tag-1-vector
+  attenuated-hn-tag-1-vector)
 (define-imitation-simple-struct
   (hn-tag-1-prefab? hn-tag-1-prefab-key hn-tag-1-prefab-stx-example)
-  hn-tag-1-prefab
+  unguarded-hn-tag-1-prefab
   'hn-tag-1-prefab (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-1-prefab
+  unguarded-hn-tag-1-prefab
+  [key prefab-key?]
+  [stx-example syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-1-prefab
+  unguarded-hn-tag-1-prefab
+  attenuated-hn-tag-1-prefab
+  attenuated-hn-tag-1-prefab)
 
 ; The `hn-tag-unmatched-closing-bracket` tag can occur as a bump of
 ; degree (N + 2) for any nonzero N. It represents a closing bracket of
