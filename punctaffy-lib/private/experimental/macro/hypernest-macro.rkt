@@ -48,7 +48,7 @@
   (require 'private/lathe-debugging/placebo))
 
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-out list/c none/c
+  -> ->i and/c any/c contract? contract-out list/c none/c or/c
   rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
@@ -66,10 +66,10 @@
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<=? dim-sys-dim=0? dim-sys-dim/c
-  dim-sys-morphism-sys-morph-dim extended-with-top-dim-successors-sys
-  extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
-  nat-dim-sys)
+  dim-sys? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
+  dim-sys-morphism-sys-morph-dim extended-with-top-dim-infinite
+  extended-with-top-dim-successors-sys extended-with-top-dim-sys
+  extend-with-top-dim-sys-morphism-sys nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof
@@ -80,7 +80,7 @@
   selectable-map snippet-sys-dim-sys snippet-sys-shape-snippet-sys
   snippet-sys-snippet-bind-selective snippet-sys-snippet-degree
   snippet-sys-snippet-select-if-degree
-  snippet-sys-snippet-set-degree-maybe
+  snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
   snippet-sys-snippet-with-degree=/c)
 
 (provide
@@ -451,10 +451,41 @@
         (dim-sys-morphism-sys-morph-dim n-d 1))
       (hypernestof sfs ds
         (fn bump-interior-shape
-          ; TODO NOW: Use a more specific contract here. In
-          ; particular, guarantee that the `hn-tag-...` values occur
-          ; only on bumps of the expected degrees and shapes.
-          any/c)
+          (w- d
+            (snippet-sys-snippet-degree shape-ss bump-interior-shape)
+          #/or/c hn-tag-other?
+            
+            ; TODO NOW: Remove these. For now, we put these on
+            ; degree-(N + 2) bumps, but soon we'll put these on
+            ; degree-infinity bumps instead.
+            hn-tag-unmatched-closing-bracket?
+            hn-tag-nest?
+            
+            (if (dim-sys-dim=0? ds d)
+              hn-tag-0-s-expr-stx?
+            #/if
+              (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
+                d)
+              (or/c
+                hn-tag-1-list?
+                hn-tag-1-list*?
+                hn-tag-1-vector?
+                hn-tag-1-prefab?)
+            #/if (dim-sys-dim=? ds (extended-with-top-dim-infinite) d)
+              (expect
+                (snippet-sys-snippet-undone shape-ss
+                  bump-interior-shape)
+                (just undone)
+                none/c
+              #/dissect undone
+                (list
+                  (extended-with-top-dim-infinite)
+                  represented-bump-interior-shape
+                  (trivial))
+              #/or/c
+                hn-tag-unmatched-closing-bracket?
+                hn-tag-nest?)
+              none/c)))
         (fn hole
           (if
             (dim-sys-dim=0? ds
