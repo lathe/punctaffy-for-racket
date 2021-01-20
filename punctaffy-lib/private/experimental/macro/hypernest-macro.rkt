@@ -48,7 +48,8 @@
   (require 'private/lathe-debugging/placebo))
 
 (require #/only-in racket/contract/base
-  -> ->i any/c contract? contract-out list/c rename-contract)
+  -> ->i and/c any/c contract? contract-out list/c none/c
+  rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 (require #/only-in syntax/parse id syntax-parse)
@@ -62,24 +63,25 @@
   just just-value maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-struct)
-(require #/only-in lathe-comforts/trivial trivial)
+(require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<=? dim-sys-dim/c
+  dim-sys? dim-sys-dim<=? dim-sys-dim=0? dim-sys-dim/c
   dim-sys-morphism-sys-morph-dim extended-with-top-dim-successors-sys
   extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
   nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
-  hypernest-join-list-and-tail-along-0 hypernest? hypernest/c
+  hypernest-join-list-and-tail-along-0 hypernest?
   hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  selectable-map snippet-sys-dim-sys
+  selectable-map snippet-sys-dim-sys snippet-sys-shape-snippet-sys
   snippet-sys-snippet-bind-selective snippet-sys-snippet-degree
   snippet-sys-snippet-select-if-degree
-  snippet-sys-snippet-set-degree-maybe)
+  snippet-sys-snippet-set-degree-maybe snippet-sys-snippetof
+  snippet-sys-snippet-with-degree=/c)
 
 (provide
   hn-tag-0-s-expr-stx)
@@ -438,13 +440,23 @@
   'hn-tag-other (current-inspector) (auto-write) (auto-equal))
 
 (define (hn-expr/c)
-  (rename-contract
+  (w- ds en-ds
+  #/w- n-d en-n-d
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/rename-contract
     ; TODO NOW: Use a more specific contract here. In particular,
-    ; guarantees that the snippet has degree
-    ; `(extended-with-top-dim-finite 1)` and `hn-tag-...` values in
-    ; only the expected places.
-    (hypernest/c (hypertee-snippet-format-sys)
-      (extended-with-top-dim-sys #/nat-dim-sys))
+    ; guarantee that the `hn-tag-...` values occur only on bumps of
+    ; the expected degrees and shapes.
+    (and/c
+      (snippet-sys-snippet-with-degree=/c ss
+        (dim-sys-morphism-sys-morph-dim n-d 1))
+      (snippet-sys-snippetof ss #/fn hole
+        (if
+          (dim-sys-dim=0? ds
+            (snippet-sys-snippet-degree shape-ss hole))
+          trivial?
+          none/c)))
     '(hn-expr/c)))
 
 
