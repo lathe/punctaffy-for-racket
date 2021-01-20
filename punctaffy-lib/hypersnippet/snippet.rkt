@@ -1142,6 +1142,27 @@
 (module+ private/hypernest #/provide #/contract-out
   [hypernest? (-> any/c boolean?)]
   [hypernest/c (-> snippet-format-sys? dim-sys? contract?)]
+  [hypernestof
+    (->i
+      (
+        [sfs snippet-format-sys?]
+        [ds dim-sys?]
+        [b-to-value/c (sfs ds)
+          (w- ffdstsss (snippet-format-sys-functor sfs)
+          #/w- ss (functor-sys-apply-to-object ffdstsss ds)
+          #/->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            contract?)]
+        [h-to-value/c (sfs ds)
+          (w- ffdstsss (snippet-format-sys-functor sfs)
+          #/w- ss (functor-sys-apply-to-object ffdstsss ds)
+          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+          #/->
+            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
+              (fn hole trivial?))
+            contract?)])
+      [_ contract?])]
   [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
 (module+ private/hypernest #/provide
   hypernest-snippet-sys)
@@ -4067,14 +4088,24 @@
     (hypernest-zero? v)
     (hypernest-nonzero? v)))
 
-; TODO: Export this.
+; TODO: See if we should export this.
 ; TODO: Use the things that use this.
-(define (hypernest/c sfs uds)
+(define (hypernestof-lazy sfs uds b-to-value/c h-to-value/c)
   (w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- uss (functor-sys-apply-to-object ffdstsss uds)
   #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+  #/w- unextend-dim
+    (dim-sys-morphism-sys-chain-two
+      (unextend-with-top-dim-sys-morphism-sys
+        (extended-with-top-finite-dim-sys uds))
+      (unextend-with-top-dim-sys-morphism-sys uds))
+  #/w- unextend-snippet
+    (functor-from-dim-sys-sys-apply-to-morphism ffdstsss unextend-dim)
+  #/w- unextend-shape
+    (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+      unextend-snippet)
   #/rename-contract
     (or/c
       (match/c hypernest-zero-unchecked
@@ -4095,7 +4126,10 @@
               (extended-with-top-dim-finite
                 (extended-with-top-dim-finite hole-d))
               (if (dim-sys-dim<? uds hole-d d)
-                any/c
+                (h-to-value/c #/fn
+                  (snippet-sys-morphism-sys-morph-snippet
+                    unextend-shape
+                    hole))
                 none/c)
             #/expect (attenuated-snippet-sys-snippet-undone ess hole)
               (just undone-result)
@@ -4104,10 +4138,29 @@
               (list
                 (extended-with-top-dim-finite
                   (extended-with-top-dim-infinite))
-                interior-shape
+                bump-interior-shape
                 (trivial))
-              any/c)))))
+              (b-to-value/c #/fn
+                (snippet-sys-morphism-sys-morph-snippet unextend-shape
+                  bump-interior-shape)))))))
+    `(hypernestof-lazy ,sfs ,uds ,b-to-value/c ,h-to-value/c)))
+
+; TODO: Use the things that use this.
+(define (hypernest/c sfs uds)
+  (rename-contract
+    (hypernestof-lazy sfs uds
+      (fn get-bump-interior-shape any/c)
+      (fn get-hole any/c))
     `(hypernest/c ,sfs ,uds)))
+
+; TODO: Use the things that use this.
+(define (hypernestof sfs uds b-to-value/c h-to-value/c)
+  (rename-contract
+    (hypernestof-lazy sfs uds
+      (fn get-bump-interior-shape
+        (b-to-value/c #/get-bump-interior-shape))
+      (fn get-hole #/h-to-value/c #/get-hole))
+    `(hypernestof ,sfs ,uds ,b-to-value/c ,h-to-value/c)))
 
 (define (hypernest-get-dim-sys hn)
   (dlog 'zk1 hn

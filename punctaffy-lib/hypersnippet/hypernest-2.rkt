@@ -40,6 +40,7 @@
 (provide #/recontract-out
   hypernest?
   hypernest/c
+  hypernestof
   hypernest-get-dim-sys)
 (provide
   hypernest-snippet-sys)

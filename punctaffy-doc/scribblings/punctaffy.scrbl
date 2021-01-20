@@ -958,7 +958,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
         contract?)])
   contract?
 ]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if the values in its @tech{holes} abide by the given contracts. The contracts are given by a function @racket[h-to-value/c] that takes the hypersnippet @tech{shape} of the hole and returns a contract for values residing in that hole.
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if the values in its @tech{holes} abide by the given contracts. The contracts are given by a function @racket[h-to-value/c] that takes the hypersnippet @tech{shape} of a hole and returns a contract for values residing in that hole.
   
   This design allows us to require the values in the holes to somehow @emph{fit} the shapes of the holes they're carried in. It's rather common for the value contracts to depend on at least the @tech{degree} of the hole, if not on its complete shape.
   
@@ -2927,6 +2927,39 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Returns a contract that recognizes a @tech{generalized hypernest} (@racket[hypernest?]) value where the @tech{snippet format system} and the @tech{dimension system} are @racket[ok/c] matches for the given ones.
   
   In particular, this can be used to recognize a (non-generalized) @tech{hypernest} if the given snippet format system is @racket[(hypertee-snippet-format-sys)].
+  
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (hypernestof
+    [sfs snippet-format-sys?]
+    [ds dim-sys?]
+    [b-to-value/c
+      (let*
+        (
+          [_ffdstsss (snippet-format-sys-functor sfs)]
+          [_ss (functor-sys-apply-to-object _ffdstsss ds)])
+        (->
+          (snippet-sys-snippetof (snippet-sys-shape-snippet-sys _ss)
+            (fn _hole trivial?))
+          contract?))]
+    [h-to-value/c
+      (let*
+        (
+          [_ffdstsss (snippet-format-sys-functor sfs)]
+          [_ss (functor-sys-apply-to-object _ffdstsss ds)])
+        (->
+          (snippet-sys-snippetof (snippet-sys-shape-snippet-sys _ss)
+            (fn _hole trivial?))
+          contract?))])
+  contract?
+]{
+  Returns a contract that recognizes any @tech{generalized hypernest} (@racket[hypernest?]) value if its @tech{snippet format system} and its @tech{dimension system} are @racket[ok/c] matches for the given ones and if the values carried by its @tech{bumps} and @tech{holes} abide by the given contracts. The contracts for the bumps are given by a function @racket[b-to-value/c] that takes the hypersnippet @tech{shape} of a bump's @tech{interior} and returns a contract for values residing on that bump. The contracts for the holes are given by a function @racket[h-to-value/c] that takes the shape of a hole and returns a contract for values residing in that hole.
+  
+  As a special case, this can be used to recognize a (non-generalized) @tech{hypernest} if the given snippet format system is @racket[(hypertee-snippet-format-sys)].
+  
+  The ability for the contracts to depend on the shapes of the bumps and holes they apply to allows us to require the values to somehow @emph{fit} those shapes. It's rather common for the value contracts to depend on at least the @tech{degree} of the hole, if not on its complete shape.
   
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
