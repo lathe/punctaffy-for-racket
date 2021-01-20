@@ -48,7 +48,7 @@
   (require 'private/lathe-debugging/placebo))
 
 (require #/only-in racket/contract/base
-  -> ->i any/c contract-out list/c)
+  -> ->i any/c contract? contract-out list/c rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 (require #/only-in syntax/parse id syntax-parse)
@@ -65,10 +65,14 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<=? dim-sys-dim/c)
+  dim-sys? dim-sys-dim<=? dim-sys-dim/c
+  dim-sys-morphism-sys-morph-dim extended-with-top-dim-successors-sys
+  extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
+  nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
-  hnb-labeled hnb-open hn-bracs hypernest-join-list-and-tail-along-0
-  hypernest? hypernest/c hypernest-snippet-sys)
+  hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
+  hypernest-join-list-and-tail-along-0 hypernest? hypernest/c
+  hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
@@ -116,34 +120,10 @@
 (provide #/contract-out
   [hn-tag-other? (-> any/c boolean?)]
   [hn-tag-other-val (-> hn-tag-other? any/c)]
-  [s-expr-stx->hn-expr
-    (->i
-      (
-        [ds dim-sys?]
-        ; TODO NOW: Instead of just a function here, use a
-        ; `dim-sys-morphism-sys?`. That way, we'll make it clear that
-        ; 0 should map to `dim-sys-dim-zero` and greater natural
-        ; numbers should map to greater dimension numbers.
-        [n-d (ds) (-> natural? #/dim-sys-dim/c ds)]
-        [stx syntax?])
-      ; TODO NOW: Use a more specific contract for the result here.
-      ; In particular, use a contract `(hn-expr/c ds n-d)` that
-      ; guarantees that the snippet has degree
-      ; `(extended-with-top-dim-finite #/n-d 1)`, a dimension system
-      ; of `(extended-with-top-dim-sys ds)`, and `hn-tag-...` values
-      ; in only their expected places.
-      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
+  [hn-expr/c (-> contract?)]
+  [s-expr-stx->hn-expr (-> syntax? #/hn-expr/c)]
   [simple-hn-builder-syntax
-    (->
-      ; TODO NOW: Use a more specific contract in place of
-      ; `hypernest?` here, namely
-      ; `(hn-expr/c (nat-dim-sys) #/fn n n)`. Actually, we should
-      ; probably add `ds` and `n-d` arguments to this function
-      ; alongside the `syntax?` argument, so that an hn-builder macro
-      ; call can return an hn-expr appropriate for the return value of
-      ; `s-expr-stx->hn-expr`.
-      (-> syntax? hypernest?)
-      hn-builder-syntax?)])
+    (-> (-> syntax? #/hn-expr/c) hn-builder-syntax?)])
 
 
 ; We're taking this approach:
@@ -247,13 +227,6 @@
 ; These bumps have interiors like any other bumps, but they're empty
 ; and can be safely ignored; they contan no bumps of their own.
 
-; TODO NOW: Propagate to the implementation the following changes,
-; which have already been described in the documentation above:
-;
-;   - Instead of associating a degree-N bump with a degree-(N + 1)
-;     bracket syntax hypernest, associate it with a degree-infinity
-;     bracket syntax hypernest.
-
 
 
 (define/contract (improper-list->list-and-tail lst)
@@ -272,9 +245,18 @@
       (just local))
     (nothing)))
 
+(define (hn-bracs-n-d ds n-d degree . brackets)
+  (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
+  #/hypernest-from-brackets ds (n-d degree)
+    (list-map brackets #/fn bracket
+      (mat bracket (hnb-open d data) (hnb-open (n-d d) data)
+      #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d d) data)
+      #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d d))
+      #/hnb-unlabeled (n-d bracket)))))
+
 (define (hypernest-join-0 ds n-d d elems)
   (hypernest-join-list-and-tail-along-0 ds elems
-    (hn-bracs ds (n-d d) #/hnb-labeled (n-d 0) #/trivial)))
+    (hn-bracs-n-d ds n-d d #/hnb-labeled 0 #/trivial)))
 
 (define
   (snippet-sys-snippet-set-degree-and-bind-highest-degrees
@@ -297,6 +279,10 @@
     (just result)
     result))
 
+
+
+(define en-ds (extended-with-top-dim-sys #/nat-dim-sys))
+(define en-n-d (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
 
 ; This struct property indicates a syntax's behavior as the kind of
@@ -394,18 +380,19 @@
   attenuated-hn-tag-1-prefab)
 
 ; The `hn-tag-unmatched-closing-bracket` tag can occur as a bump of
-; degree (N + 2) for any nonzero N. It represents a closing bracket of
-; degree N. It should be an empty contour of a single degree-(N + 1)
-; hole, which should contain the syntax that was parsed to create this
-; closing bracket. If that hole is removed, it should be an empty
-; contour of a single degree-N hole, which should contain the syntax
-; that lies beyond this closing bracket.
+; degree infinity (in the sense of `(extended-with-top-dim-infinite)`
+; in the system `(extended-with-top-dim-sys (nat-dim-sys))`). It
+; represents a closing bracket of some degree N. The bump should
+; contain the syntax that was parsed to create this closing bracket.
+; Its shape (filtering out the content) should be a
+; `snippet-sys-snippet-done` for a degree-N hole, and beyond that hole
+; should be the syntax that lies beyond this closing bracket.
 ;
-; These tags usually signify there's an unmatched bracket error, but
-; opening bracket syntaxes can specifically look for them and process
-; them to build things like `hn-tag-nest` values.
-;
-; NOTE: See "NOTE COUNTOURS".
+; These tags usually only appear in the intermediate stages of
+; expanding an hn-expression. A successful expansion will eventually
+; replace them all with `hn-tag-nest` bumps. If any
+; `hn-tag-unmatched-closing-bracket` bump remains after that, that's
+; an indication that there's an unmatched bracket error.
 ;
 (define-imitation-simple-struct
   (hn-tag-unmatched-closing-bracket?)
@@ -414,50 +401,33 @@
   (auto-write)
   (auto-equal))
 
-; The `hn-tag-nest` tag can occur as a bump of degree (N + 2) for any
-; nonzero N. It represents an unlabeled nested region of degree N. It
-; should be an empty contour of a single degree-(N + 1) hole, which
-; should contain the syntax that was parsed to create the brackets
-; around this nested region. If that hole is removed, it should be an
-; empty contour of a single degree-N hole, which should contain the
-; syntax that lies in the interior of this region.
+; The `hn-tag-nest` tag can occur as a bump of degree infinity
+; (in the sense of `(extended-with-top-dim-infinite)` in the system
+; `(extended-with-top-dim-sys (nat-dim-sys))`). It represents an
+; unlabeled nested region of some degree N. The bump should contain
+; the syntax that was parsed to create the brackets around this nested
+; region. Its shape (filtering out that content) should be a
+; `snippet-sys-snippet-dine` for a degree-N hole, and beyond that hole
+; should be the syntax that lies in the interior of this region.
 ;
 ; These are essentially supposed to represent bumps in the hypernest,
 ; but they're represented in a slightly higher-dimensional format to
 ; let us round-trip the bracket syntax back to s-expressions when
-; desired. If the preserved s-expression syntax (the degree-(N + 1)
-; hole and everything inside it) is removed from all of these, they
-; can be replaced with degree-N hypernest bumps. The value of these
-; bumps is something trivial; if we actually represented them as
-; bumps, we would probably use `(hn-tag-nest)` as the label for the
-; bumps themselves so that they could coexist with user-defined bumps.
-;
-; NOTE: See "NOTE COUNTOURS".
+; desired. If the preserved s-expression syntax (the interior of the
+; bump) is removed from all of these, they can be replaced with
+; degree-N hypernest bumps.
 ;
 (define-imitation-simple-struct
   (hn-tag-nest?)
   hn-tag-nest
   'hn-tag-nest (current-inspector) (auto-write) (auto-equal))
 
-; NOTE CONTOURS: Although we could represent
-; `hn-tag-unmatched-closing-bracket` or `hn-tag-nest` bumps by using a
-; bump where the interior of the bump contains the syntax of the
-; bracket (and a hole in the bump still contains the interior of the
-; bracket), or by using a bump where the interior of the bump contains
-; the interior of the bracket (and the data annotation on the bump
-; contains a hypernest containing the syntax of the bracket), neither
-; of those seems like a particularly consistent choice. By
-; representing this using a bump with a trivial interior, we represent
-; both regions of data in the same way, as contoured holes in the
-; bump. This may help clarify how the two regions are related.
-
-; TODO NOW: Change the documentation and usage sites of
-; `hn-tag-unmatched-closing-bracket` and `hn-tag-nest` so they occur
-; in degree-infinity bumps (meaning an hn-expression hypersnippet
-; must have `(extended-with-top-dim-sys (nat-dim-sys))` as its
-; dimension system, but can still be merely degree-1 in the sense of
-; degree-`(extended-with-top-dim-finite 1)`). Change NOTE CONTOURS to
-; account for this (likely deleting it altogether).
+; TODO NOW: In hypernest-bracket.rkt and hypernest-qq.rkt, we
+; currently use `hn-tag-unmatched-closing-bracket` and  `hn-tag-nest`
+; in ways that don't put them into a bump of degree infinity with
+; the preserved syntax in its interior, but instead into a
+; content-free bump of degree (N + 2) with the preserved syntax beyond
+; a degree-(N + 1) hole. Change these usage sites.
 
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a
@@ -466,6 +436,16 @@
   (hn-tag-other? hn-tag-other-val)
   hn-tag-other
   'hn-tag-other (current-inspector) (auto-write) (auto-equal))
+
+(define (hn-expr/c)
+  (rename-contract
+    ; TODO NOW: Use a more specific contract here. In particular,
+    ; guarantees that the snippet has degree
+    ; `(extended-with-top-dim-finite 1)` and `hn-tag-...` values in
+    ; only the expected places.
+    (hypernest/c (hypertee-snippet-format-sys)
+      (extended-with-top-dim-sys #/nat-dim-sys))
+    '(hn-expr/c)))
 
 
 ; This recursively converts the given Racket syntax object into a
@@ -476,8 +456,10 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(define (s-expr-stx->hn-expr ds n-d stx)
+(define (s-expr-stx->hn-expr stx)
   (dlog 'hqq-b1
+  #/w- ds en-ds
+  #/w- n-d en-n-d
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/mat
     (syntax-parse stx
@@ -515,17 +497,12 @@
     ;     peers of each other, as well as several bumps that have
     ;     nothing to do with this encoding of Racket syntax objects.
     ;
-    ; TODO: Use a contract to enforce that `proc` returns a single
-    ; value matching `(hypernest/c ds)`. Currently, if it doesn't,
-    ; then `s-expr-stx->hn-expr` reports that it has broken its own
-    ; contract.
-    ;
     (dlog 'hqq-b1.3 op
     #/proc op stx)
   #/dlog 'hqq-b2
   #/w- process-list
     (fn elems
-      (list-map elems #/fn elem #/s-expr-stx->hn-expr ds n-d elem))
+      (list-map elems #/fn elem #/s-expr-stx->hn-expr elem))
   ; NOTE: We go to some trouble to detect improper lists here. This is
   ; so we can preserve the metadata of syntax objects occurring in
   ; tail positions partway through the list, which we would lose track
@@ -543,9 +520,9 @@
       ; return the degree-1 hypernest that results.
       (dlog 'hqq-c1
       #/snippet-sys-snippet-set-degree-and-bind-highest-degrees ss
-        (n-d 1)
+        (dim-sys-morphism-sys-morph-dim n-d 1)
         (dlog 'hqq-c2
-        #/hn-bracs ds 2
+        #/hn-bracs-n-d ds n-d 2
           (hnb-open 1 metadata)
           (hnb-labeled 1 #/trivial)
           0
@@ -576,7 +553,7 @@
     ; be expanded as an identifier syntax, processed as a vector, or
     ; processed as a prefab struct.
     #/dlog 'hqq-b3.6
-    #/w- tail (s-expr-stx->hn-expr ds n-d tail)
+    #/w- tail (s-expr-stx->hn-expr tail)
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
@@ -606,7 +583,7 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (hn-bracs ds 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      (hn-bracs-n-d ds n-d 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
       #/hnb-labeled 0 #/trivial)]))
 
 ; This recursively converts the given Racket syntax object into an
@@ -619,16 +596,12 @@
 ; reminder that hn-expressions aren't quite "expressions" so much as
 ; snippets of expression-like data.
 ;
-(define/contract (splicing-s-expr-stx->hn-expr ds n-d stx)
-  (->i
-    (
-      [ds dim-sys?]
-      [n-d (ds) (-> natural? #/dim-sys-dim/c ds)]
-      [stx syntax?])
-    [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
-  (hypernest-join-0 ds n-d 1
-  #/list-map (syntax->list stx) #/fn elem
-    (s-expr-stx->hn-expr ds n-d elem)))
+(define/contract (splicing-s-expr-stx->hn-expr stx)
+  (-> syntax? #/hn-expr/c)
+  (w- ds en-ds
+  #/w- n-d en-n-d
+  #/hypernest-join-0 ds n-d 1
+  #/list-map (syntax->list stx) #/fn elem #/s-expr-stx->hn-expr elem))
 
 
 (define-imitation-simple-struct

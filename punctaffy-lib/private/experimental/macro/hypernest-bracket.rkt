@@ -22,7 +22,6 @@
 
 (require #/for-syntax racket/base)
 
-(require #/for-syntax #/only-in racket/math natural?)
 (require #/for-syntax #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
@@ -35,11 +34,13 @@
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys-dim-from-int dim-successors-sys-dim-plus-int
-  dim-successors-sys-dim=plus-int? dim-successors-sys-dim-sys
-  dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
-  dim-sys-dim-max nat-dim-successors-sys)
+  dim-successors-sys-dim=plus-int? dim-sys-dim<? dim-sys-dim<=?
+  dim-sys-dim=? dim-sys-dim=0? dim-sys-dim-max
+  dim-sys-morphism-sys-morph-dim extended-with-top-dim-successors-sys
+  extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
+  nat-dim-successors-sys nat-dim-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest-2
-  hnb-labeled hn-bracs hnb-open hnb-unlabeled hypernest-coil-bump
+  hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
   hypernest-coil-hole hypernest-from-brackets hypernest-furl
   hypernest-join-list-and-tail-along-0 hypernest-shape
   hypernest-snippet-sys)
@@ -129,26 +130,25 @@
     (dim-successors-sys-dim=plus-int? dss original-degree d 1)
     (fn #/list hole data)))
 
-(define-for-syntax (hypernest-join-0 ds n-d d elems)
-  (hypernest-join-list-and-tail-along-0 ds elems
-    (hn-bracs ds (n-d d) #/hnb-labeled (n-d 0) #/trivial)))
-
-(define-for-syntax (hn-bracs-dss dss degree . brackets)
-  (w- ds (dim-successors-sys-dim-sys dss)
-  #/w- n-d
-    (fn n
-      (expect (natural? n) #t n
-      #/mat (dim-successors-sys-dim-from-int dss n) (just d) d
-      #/raise-arguments-error 'hn-bracs-dss
-        "expected the given number of successors to exist for the zero dimension"
-        "n" n
-        "dss" dss))
+(define-for-syntax (hn-bracs-n-d ds n-d degree . brackets)
+  (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
   #/hypernest-from-brackets ds (n-d degree)
     (list-map brackets #/fn bracket
       (mat bracket (hnb-open d data) (hnb-open (n-d d) data)
       #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d d) data)
       #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d d))
       #/hnb-unlabeled (n-d bracket)))))
+
+(define-for-syntax (hypernest-join-0 ds n-d d elems)
+  (hypernest-join-list-and-tail-along-0 ds elems
+    (hn-bracs-n-d ds n-d d #/hnb-labeled 0 #/trivial)))
+
+
+(define-for-syntax en-dss
+  (extended-with-top-dim-successors-sys #/nat-dim-successors-sys))
+(define-for-syntax en-ds (extended-with-top-dim-sys #/nat-dim-sys))
+(define-for-syntax en-n-d
+  (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
 
 ; TODO NOW: Store `hn-tag-unmatched-closing-bracket` and `hn-tag-nest`
@@ -171,24 +171,25 @@
 ; will be preserved in the result, but we expect it to be a `trivial`
 ; value.
 ;
-(define-for-syntax
-  (unmatched-brackets->holes dss opening-degree hn-expr)
+(define-for-syntax (unmatched-brackets->holes opening-degree hn-expr)
   (dlog 'hqq-g1
-  #/w- ds (dim-successors-sys-dim-sys dss)
+  #/w- dss en-dss
+  #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/expect (dim-successors-sys-dim-from-int dss 1) (just _)
     (error "Expected at least 1 successor to exist for the zero dimension")
-  #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
+  #/w- n-d en-n-d
   #/expect
-    (dim-sys-dim=? ds (snippet-sys-snippet-degree ss hn-expr) (n-d 1))
+    (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
+      (snippet-sys-snippet-degree ss hn-expr))
     #t
     (error "Expected hn-expr to be a hypernest of degree 1")
   #/w- first-d-not-to-process opening-degree
   #/w-loop next
     hn-expr hn-expr
     target-d opening-degree
-    first-d-to-process (n-d 1)
+    first-d-to-process (dim-sys-morphism-sys-morph-dim n-d 1)
     
     (dlog 'hqq-g2
     #/begin (verify-hn hn-expr)
@@ -289,11 +290,10 @@
 
 (define-for-syntax (helper-for-^<-and-^> stx bump-value)
   (dlog 'hqq-f2
-  #/w- dss (nat-dim-successors-sys)
-  #/w- ds (dim-successors-sys-dim-sys dss)
+  #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/w- n-d (fn n #/just-value #/dim-successors-sys-dim-from-int dss n)
+  #/w- n-d en-n-d
   #/dlog 'hqq-f3
   #/syntax-parse stx
     [op:id
@@ -303,25 +303,33 @@
       ;
       ; TODO: See if we'll ever need to rely on this functionality.
       ;
-      (hn-bracs-dss dss 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      (hn-bracs-n-d ds n-d 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
       #/hnb-labeled 0 #/trivial)]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
-  #/w- degree (syntax-e #'degree-stx)
-  #/w- degree-plus-one (+ degree 1)
-  #/w- degree-plus-two (+ degree 2)
+  #/w- degree-as-nat (syntax-e #'degree-stx)
+  #/w- degree-as-nat-plus-one (+ degree-as-nat 1)
+  #/w- degree-as-nat-plus-two (+ degree-as-nat 2)
+  #/w- degree (dim-sys-morphism-sys-morph-dim n-d degree-as-nat)
+  #/w- degree-plus-one
+    (dim-sys-morphism-sys-morph-dim n-d degree-as-nat-plus-one)
+  #/w- degree-plus-two
+    (dim-sys-morphism-sys-morph-dim n-d degree-as-nat-plus-two)
   #/dlog 'hqq-f4
   #/w- interior-and-closing-brackets
-    (verify-hn #/unmatched-brackets->holes dss degree
+    (verify-hn #/unmatched-brackets->holes degree
     #/hypernest-join-0 ds n-d 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (verify-hn #/s-expr-stx->hn-expr ds n-d interpolation))
+      (verify-hn #/s-expr-stx->hn-expr interpolation))
   #/dlog 'hqq-f5
   #/w- closing-brackets
     (hypernest-shape ss interior-and-closing-brackets)
   #/dlog 'hqq-f6
   #/hypernest-furl ds
   #/dlog 'hqq-f7
-  #/hypernest-coil-bump (n-d 1) bump-value degree-plus-two
+  #/hypernest-coil-bump
+    (dim-sys-morphism-sys-morph-dim n-d 1)
+    bump-value
+    degree-plus-two
   #/dlog 'hqq-f8
   #/snippet-sys-snippet-done ss degree-plus-two
     (snippet-sys-snippet-done shape-ss degree-plus-one
@@ -332,7 +340,7 @@
         (w- d (snippet-sys-snippet-degree shape-ss hole)
         #/if (dim-sys-dim=0? ds d)
           (dissect data (trivial)
-          #/hn-bracs-dss dss 1 #/hnb-labeled 0 #/trivial)
+          #/hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)
         #/dissect data (list bracket-syntax tail)
           tail))
       ; This is everything inside of the bracket.
@@ -341,7 +349,7 @@
         (trivial)))
     ; This is the syntax for the bracket itself.
     (snippet-sys-snippet-join-selective ss
-    #/hn-bracs-dss dss degree-plus-one
+    #/hn-bracs-n-d ds n-d degree-as-nat-plus-one
       (hnb-open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
       
       (hnb-open 0 #/hn-tag-0-s-expr-stx #'op)
@@ -356,7 +364,7 @@
           (w- d (snippet-sys-snippet-degree shape-ss hole)
           #/if (dim-sys-dim=0? ds d)
             (dissect data (trivial)
-            #/hn-bracs-dss dss degree-plus-one
+            #/hn-bracs-n-d ds n-d degree-as-nat-plus-one
             #/hnb-labeled 0 #/trivial)
           #/dissect data (list bracket-syntax tail)
           ; TODO: See if we need this
