@@ -68,8 +68,8 @@
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
   dim-sys-morphism-sys-morph-dim extended-with-top-dim-infinite
-  extended-with-top-dim-successors-sys extended-with-top-dim-sys
-  extend-with-top-dim-sys-morphism-sys nat-dim-sys)
+  extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
+  nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof
@@ -424,13 +424,6 @@
   hn-tag-nest
   'hn-tag-nest (current-inspector) (auto-write) (auto-equal))
 
-; TODO NOW: In hypernest-bracket.rkt and hypernest-qq.rkt, we
-; currently use `hn-tag-unmatched-closing-bracket` and  `hn-tag-nest`
-; in ways that don't put them into a bump of degree infinity with
-; the preserved syntax in its interior, but instead into a
-; content-free bump of degree (N + 2) with the preserved syntax beyond
-; a degree-(N + 1) hole. Change these usage sites.
-
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a
 ; hole of any degree.
@@ -454,13 +447,6 @@
           (w- d
             (snippet-sys-snippet-degree shape-ss bump-interior-shape)
           #/or/c hn-tag-other?
-            
-            ; TODO NOW: Remove these. For now, we put these on
-            ; degree-(N + 2) bumps, but soon we'll put these on
-            ; degree-infinity bumps instead.
-            hn-tag-unmatched-closing-bracket?
-            hn-tag-nest?
-            
             (if (dim-sys-dim=0? ds d)
               hn-tag-0-s-expr-stx?
             #/if
