@@ -72,7 +72,7 @@
   nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest-2
   hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
-  hypernest-join-list-and-tail-along-0 hypernest?
+  hypernest-join-list-and-tail-along-0 hypernest? hypernestof
   hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee-2
   hypertee-snippet-format-sys)
@@ -80,7 +80,7 @@
   selectable-map snippet-sys-dim-sys snippet-sys-shape-snippet-sys
   snippet-sys-snippet-bind-selective snippet-sys-snippet-degree
   snippet-sys-snippet-select-if-degree
-  snippet-sys-snippet-set-degree-maybe snippet-sys-snippetof
+  snippet-sys-snippet-set-degree-maybe
   snippet-sys-snippet-with-degree=/c)
 
 (provide
@@ -442,21 +442,25 @@
 (define (hn-expr/c)
   (w- ds en-ds
   #/w- n-d en-n-d
-  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- sfs (hypertee-snippet-format-sys)
+  #/w- ss (hypernest-snippet-sys sfs ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/rename-contract
-    ; TODO NOW: Use a more specific contract here. In particular,
-    ; guarantee that the `hn-tag-...` values occur only on bumps of
-    ; the expected degrees and shapes.
     (and/c
       (snippet-sys-snippet-with-degree=/c ss
         (dim-sys-morphism-sys-morph-dim n-d 1))
-      (snippet-sys-snippetof ss #/fn hole
-        (if
-          (dim-sys-dim=0? ds
-            (snippet-sys-snippet-degree shape-ss hole))
-          trivial?
-          none/c)))
+      (hypernestof sfs ds
+        (fn bump-interior-shape
+          ; TODO NOW: Use a more specific contract here. In
+          ; particular, guarantee that the `hn-tag-...` values occur
+          ; only on bumps of the expected degrees and shapes.
+          any/c)
+        (fn hole
+          (if
+            (dim-sys-dim=0? ds
+              (snippet-sys-snippet-degree shape-ss hole))
+            trivial?
+            none/c))))
     '(hn-expr/c)))
 
 
