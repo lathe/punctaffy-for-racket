@@ -237,6 +237,12 @@
     (expect tail (cons elem tail) (list (reverse rev-elems) tail)
     #/next (cons elem rev-elems) tail)))
 
+(define (datum->syntax-with-everything stx-example datum)
+  (w- ctxt stx-example
+  #/w- srcloc stx-example
+  #/w- prop stx-example
+  #/datum->syntax ctxt datum srcloc prop))
+
 (define/contract (syntax-local-maybe identifier)
   (-> any/c maybe?)
   (if (identifier? identifier)
@@ -542,7 +548,7 @@
   ; of if we simply used `syntax->list` or `syntax-parse` with a
   ; pattern of `(elem ...)` or `(elem ... . tail)`.
   #/w- s (syntax-e stx)
-  #/w- stx-example (datum->syntax stx #/list)
+  #/w- stx-example (datum->syntax-with-everything stx #/list)
   #/dlog 'hqq-b3
   #/w- make-list-layer
     (fn metadata elems

@@ -89,68 +89,53 @@
 (provide my-quasiquote)
 
 
-; (TODO: Update this comment. We now define ^< and ^> in
-; hypernest-bracket.rkt.)
-;
-; TODO:
-;
-; Salvage anything from qq.rkt that makes sense to salvage for this
-; file.
-;
-; Compared to qq.rkt, this whole file's design needs to be rethought
-; now that we're using hypernests instead of hypertees. The syntax we
-; use for quasiquotation should no longer be this:
-;
-;   (my-quasiquote uq #/qq
-;     (a b
-;       (my-quasiquote uq #/qq
-;         (c d
-;           (uq
-;             (e f
-;               (uq
-;                 (+ 4 5))))))))
-;
-; Instead, it should be something like this, with new
-; operators ^< and ^> that signify opening brackets and closing
-; brackets of explicit degrees:
+; In this file, the syntax we define for quasiquotation looks
+; something like this, using operators ^< and ^> that signify
+; higher-dimensional opening brackets and closing brackets:
 ;
 ;   (my-quasiquote #/^< 2
 ;     (a b
 ;       (my-quasiquote #/^< 2
 ;         (c d
-;           (^> 1 #/my-unquote
+;           (^> 1 #/list
 ;             (e f
-;               (^> 1 #/my-unquote
+;               (^> 1 #/list
 ;                 (+ 4 5))))))))
 ;
-; The ^< and ^> syntaxes should be defined in and provided from some
-; module that makes them look as much like language builtins as
-; reasonably possible. (In particular, `(require punctaffy)` should
-; get them.) Most programmers will be able to treat them as
-; parentheses; like parentheses, they're a notation that most programs
-; don't need to extend or parse in custom ways.
+; The ^< and ^> syntaxes are defined in and provided from
+; hypernest-macro.rkt. (TODO: Ideally, we will make these look as
+; much like language builtins as reasonably possible. In particular,
+; `(require punctaffy)` should get them.) Like parentheses, this
+; higher-dimensional bracket notation is something that most programs
+; won't need to extend or parse in custom ways.
 ;
-; The `my-quasiquote` and `my-unquote` syntaxes should be defined only
-; in terms of `s-expr-stx->hn-expr`, the structs of the hn-expression
-; format, and the hypernest and hypertee utilities. Even these won't
-; need to extend or parse the higher-order paren notation in custom
-; ways.
+; The `my-quasiquote` syntax is defined without directly using all the
+; infrastructure underlying ^< and ^>. It's defined only in terms of
+; `s-expr-stx->hn-expr`, the structs of the hn-expression format, and
+; the hypernest and hypertee utilities.
 ;
-; Users of `my-quasiquote` and `my-unquote` will only need to import
-; those two operations and ^< and ^> but will not usually need to
-; understand them any more deeply than the traditional `quasiquote`
-; and `unquote`. Even if they define another quasiquotation syntax, it
-; will interoperate seamlessly with `my-quasiquote` and `my-unquote`
-; if it makes similar use of `s-expr-stx->hn-expr`.
+; Users of `my-quasiquote` will only need to import that operation and
+; ^< and ^> but will not usually need to understand them any more
+; deeply than the traditional `quasiquote` and `unquote`. Even if they
+; define another quasiquotation syntax, it will interoperate
+; seamlessly with `my-quasiquote` if it makes similar use of
+; `s-expr-stx->hn-expr`.
 ;
 ; If people define custom parentheses very often, quotation operators
 ; will typically fail to preserve their meaning since code generated
 ; for different lexical contexts could have different sets of custom
-; parentheses available. That's why we should decide on a minimalistic
-; set of operators like ^< and ^> that can express the full range of
-; hn-expressions and provide these as the baseline that other syntaxes
-; are typically built around.
+; parentheses available. That's why we focus on on a minimalistic set
+; of notations like ^< and ^> that can express the full range of
+; hn-expressions. These provide the higher-dimensional structural
+; encoding that other syntaxes can use as a common language rather
+; than reinventing their structural notations every time.
 
+
+(define (datum->syntax-with-everything stx-example datum)
+  (w- ctxt stx-example
+  #/w- srcloc stx-example
+  #/w- prop stx-example
+  #/datum->syntax ctxt datum srcloc prop))
 
 (define-for-syntax (hn-bracs-n-d ds n-d degree . brackets)
   (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
@@ -228,12 +213,17 @@
     #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
-(define-for-syntax (hn-expr-2->s-expr-generator hn)
+(define-for-syntax
+  (hn-expr-2->generator quote-expr datum->result-id err-phrase hn)
   (dlog 'hqq-h1
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/w- n-d en-n-d
+  #/w- recur
+    (fn hn
+      (hn-expr-2->generator
+        quote-expr datum->result-id err-phrase hn))
   #/expect
     (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
       (snippet-sys-snippet-degree ss hn))
@@ -245,7 +235,7 @@
   #/w- process-tails
     (fn tails
       (snippet-sys-snippet-map shape-ss tails #/fn d tail
-        (hn-expr-2->s-expr-generator tail)))
+        (recur tail)))
   #/mat dropped (hypernest-coil-hole _ tails-shape data tails)
     (hypernest-furl ds #/hypernest-coil-hole
       (dim-sys-morphism-sys-morph-dim n-d 2)
@@ -260,9 +250,9 @@
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
     #/hypernest-furl ds #/hypernest-coil-bump
       (dim-sys-morphism-sys-morph-dim n-d 2)
-      (hn-tag-0-s-expr-stx #`(list '#,stx))
+      (hn-tag-0-s-expr-stx #`(list #,(quote-expr stx)))
       (dim-sys-morphism-sys-morph-dim n-d 0)
-      (hn-expr-2->s-expr-generator tails))
+      (recur tails))
   #/w- process-listlike
     (fn stx-example list-beginnings
       (expect
@@ -289,6 +279,11 @@
         
         (hnb-open 1 #/hn-tag-1-list stx-example)
         
+        (hnb-open 0 #/hn-tag-0-s-expr-stx datum->result-id)
+        (hnb-open 0 #/hn-tag-0-s-expr-stx stx-example)
+        
+        (hnb-open 1 #/hn-tag-1-list stx-example)
+        
         (hnb-open 0 #/hn-tag-0-s-expr-stx #'apply)
         
         (hnb-labeled 1 #/hypernest-join-0 ds n-d 2
@@ -302,7 +297,7 @@
         
         (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
         
-        (hnb-labeled 1 #/hn-expr-2->s-expr-generator elems)
+        (hnb-labeled 1 #/recur elems)
         0
         
         0
@@ -310,7 +305,10 @@
         0
         
         0
-      #/hnb-labeled 0 #/hn-expr-2->s-expr-generator tail))
+        
+        0
+        
+        (hnb-labeled 0 #/recur tail)))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-list* stx-example)
@@ -325,7 +323,7 @@
       (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
       (just undone)
       (error "Encountered an hn-tag-nest bump whose interior wasn't shaped like a snippet system identity element")
-    #/hn-expr-2->s-expr-generator
+    #/recur
     ; We concatenate everything inside this `hn-tag-nest`, *including*
     ; the bracket syntax, so that the bracket syntax is included in
     ; the quoted part of the result.
@@ -345,133 +343,23 @@
         joined)
       (just tails)
       tails)
-  #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as an s-expression"))
+  #/error #/format "Encountered an unsupported bump value when making an hn-expression into code that generates it as ~a"
+    err-phrase))
 
-(define-for-syntax (hn-expr-2->s-expr-stx-generator hn)
-  (w- ds en-ds
-  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/w- n-d en-n-d
-  #/expect
-    (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
-      (snippet-sys-snippet-degree ss hn))
-    #t
-    (error "Expected an hn-expr of degree 2")
-  #/dissect hn (hypernest-furl _ dropped)
-  #/w- process-tails
-    (fn tails
-      (snippet-sys-snippet-map shape-ss tails #/fn d tail
-        (hn-expr-2->s-expr-stx-generator tail)))
-  #/mat dropped (hypernest-coil-hole _ tails-shape data tails)
-    (hypernest-furl ds #/hypernest-coil-hole
-      (dim-sys-morphism-sys-morph-dim n-d 2)
-      tails-shape
-      data
-      (process-tails tails))
-  #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
-  #/mat data (hn-tag-0-s-expr-stx stx)
-    (expect (dim-sys-dim=0? ds bump-degree) #t
-      (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/hypernest-furl ds #/hypernest-coil-bump
-      (dim-sys-morphism-sys-morph-dim n-d 2)
-      (hn-tag-0-s-expr-stx #`(list #'#,stx))
-      (dim-sys-morphism-sys-morph-dim n-d 0)
-      (hn-expr-2->s-expr-stx-generator tails))
-  #/w- process-listlike
-    (fn stx-example list-beginnings
-      (expect
-        (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
-          bump-degree)
-        #t
-        (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
-      #/w- elems
-        (snippet-sys-snippet-map-selective ss
-          (snippet-sys-snippet-select-if-degree ss tails #/fn d
-            (dim-sys-dim=0? ds d))
-        #/fn hole tail
-          (trivial))
-      #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
-      #/snippet-sys-snippet-join ss
-      #/hn-bracs-n-d ds n-d 2
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'list)
-        
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'datum->syntax)
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #`#'#,stx-example)
-        
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'apply)
-        
-        (hnb-labeled 1 #/hypernest-join-0 ds n-d 2
-        #/list-map list-beginnings #/fn list-beginning
-          (hn-bracs-n-d ds n-d 2
-            (hnb-open 0 #/hn-tag-0-s-expr-stx list-beginning)
-          #/hnb-labeled 0 #/trivial))
-        0
-        
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
-        
-        (hnb-labeled 1 #/hn-expr-2->s-expr-stx-generator elems)
-        0
-        
-        0
-        
-        0
-        
-        0
-        
-        0
-        
-      #/hnb-labeled 0 #/hn-expr-2->s-expr-stx-generator tail))
-  #/mat data (hn-tag-1-list stx-example)
-    (process-listlike stx-example #/list #'list)
-  #/mat data (hn-tag-1-list* stx-example)
-    (process-listlike stx-example #/list #'list*)
-  #/mat data (hn-tag-1-vector stx-example)
-    (process-listlike stx-example #/list #'vector)
-  #/mat data (hn-tag-1-prefab key stx-example)
-    (process-listlike stx-example
-    #/list #'make-prefab-struct #`'#,key)
-  #/mat data (hn-tag-nest)
-    (expect
-      (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
-      (just undone)
-      (error "Encountered an hn-tag-nest bump whose interior wasn't shaped like a snippet system identity element")
-    #/hn-expr-2->s-expr-stx-generator
-    ; We concatenate everything inside this `hn-tag-nest`, *including*
-    ; the bracket syntax, so that the bracket syntax is included in
-    ; the quoted part of the result.
-    #/w- joined
-      (snippet-sys-snippet-bind ss tails #/fn hole tail
-        (dissect
-          (snippet-sys-snippet-set-degree-maybe ss
-            (extended-with-top-dim-infinite)
-            tail)
-          (just tail)
-          tail))
-    #/dissect
-      (snippet-sys-snippet-set-degree-maybe ss
-        (dim-sys-morphism-sys-morph-dim n-d 2)
-        joined)
-      (just tails)
-      tails)
-  #/error "Encountered an unsupported bump value when making an hn-expression into code that generates it as a Racket syntax object"))
-
-(define-syntax (my-quasiquote stx)
-  (syntax-parse stx #/ (_ quotation)
-  #/dlog 'hqq-a1
+(define-for-syntax
+  (helper-for-quasiquote
+    hn-expr-2->result-generator
+    err-phrase-s-expression
+    err-phrase-quasiquotation
+    err-name
+    quotation)
+  (dlog 'hqq-a1
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/w- n-d en-n-d
   #/dlog 'hqq-a1.1
-  #/w- quotation (s-expr-stx->hn-expr #'quotation)
+  #/w- quotation (s-expr-stx->hn-expr quotation)
   #/dlog 'hqq-a1.2
   #/expect quotation
     (hypernest-furl _ #/hypernest-coil-bump
@@ -479,7 +367,9 @@
       (hn-tag-nest)
       (extended-with-top-dim-infinite)
       bracket-and-quotation-and-tails)
-    (error "Expected a quasiquotation to be of the form (my-quasiquote #/^< ...)")
+    (error #/format "Expected ~a to be of the form (~s #/^< ...)"
+      err-phrase-quasiquotation
+      err-name)
   #/dlog 'hqq-a2
   #/dissect
     (snippet-sys-snippet-undone shape-ss
@@ -491,7 +381,9 @@
     (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
       represented-bump-degree)
     #t
-    (error "Expected a quasiquotation to be of the form (my-quasiquote #/^< 2 ...)")
+    (error #/format "Expected ~a to be of the form (~s #/^< 2 ...)"
+      err-phrase-quasiquotation
+      err-name)
   #/dlog 'hqq-a3
   #/begin
     (snippet-sys-snippet-each shape-ss tails #/fn hole tail
@@ -502,19 +394,21 @@
       ; messages.
       #/expect tail
         (hypernest-furl _ #/hypernest-coil-hole _ _ data tail-tails)
-        (error "Encountered more than one degree-0-adjacent piece of data in the root of a quasiquotation")
+        (error #/format "Encountered more than one degree-0-adjacent piece of data in the root of ~a"
+          err-phrase-quasiquotation)
       #/expect
         (dim-sys-dim=0? ds
           (snippet-sys-snippet-degree shape-ss tail-tails))
         #t
-        (error "Encountered more than one degree-0-adjacent piece of data in the root of a quasiquotation")
+        (error #/format "Encountered more than one degree-0-adjacent piece of data in the root of ~a"
+          err-phrase-quasiquotation)
       #/dissect data (trivial)
       #/void))
   #/dlog 'hqq-a4
   #/dissect
     (dlog 'hqq-a4.1
     #/snippet-sys-snippet-zip-map ss tails
-      (dlog 'hqq-a4.1.1 #/hn-expr-2->s-expr-generator quotation)
+      (dlog 'hqq-a4.1.1 #/hn-expr-2->result-generator quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
       #/dissect
@@ -542,17 +436,78 @@
       #/dlog 'hqq-a4.5
         joined))
     (list result)
-    (error "Encountered more than one s-expression in a quasiquotation")
+    (error #/format "Encountered more than one ~a in ~a"
+      err-phrase-s-expression
+      err-phrase-quasiquotation)
   #/dlog 'hqq-a5
   #/syntax-protect
     ; TODO: See if we should use `quasisyntax/loc` here so the error
     ; message refers to the place `my-quasiquote` is used.
     #`(w- spliced-root #,result
       #/expect spliced-root (list root)
-        (raise-arguments-error 'my-quasiquote
-          "spliced a value other than a singleton list into the root of a my-quasiquote"
+        (raise-arguments-error '#,err-name
+          #,(format "spliced a value other than a singleton list into the root of a ~s"
+              err-name)
           "spliced-root" spliced-root)
         root)))
 
-; TODO: Define a corresponding `my-quasisyntax` based on
-; `hn-expr-2->s-expr-stx-generator`.
+
+(define-syntax-rule (datum->datum stx-example datum)
+  datum)
+
+(define-syntax (my-quasiquote stx)
+  (syntax-parse stx #/ (_ quotation)
+  #/helper-for-quasiquote
+    (fn hn
+      (hn-expr-2->generator
+        (fn expr #`'#,expr)
+        #'datum->datum
+        "an s-expression"
+        hn))
+    "s-expression"
+    "a quasiquotation"
+    'my-quasiquote
+    #'quotation))
+
+
+(define-syntax-rule (datum->quoted-syntax stx-example datum)
+  (datum->syntax-with-everything (quote-syntax stx-example) datum))
+
+(define-syntax-rule (datum->quoted-syntax-local stx-example datum)
+  (datum->syntax-with-everything (quote-syntax stx-example #:local)
+    datum))
+
+; TODO: Test this.
+(define-syntax (my-quasiquote-syntax stx)
+  (define (helper quote-expr datum->syntax-id quotation)
+    (helper-for-quasiquote
+      (fn hn
+        (hn-expr-2->generator
+          quote-expr
+          datum->syntax-id
+          "a Racket syntax object"
+          hn))
+      "syntax object"
+      "a syntax quasiquotation"
+      'my-quasiquote-syntax
+      quotation))
+  (syntax-parse stx
+    [
+      (_ quotation)
+      (helper
+        (fn expr #`(quote-syntax #,expr))
+        #'datum->quoted-syntax
+        #'quotation)]
+    [
+      (_ #:local quotation)
+      (helper
+        (fn expr #`(quote-syntax #,expr #:local))
+        #'datum->quoted-syntax-local
+        #'quotation)]))
+
+; TODO: Rename `my-quasiquote` to `taffyquote` and
+; `my-quasiquote-syntax` to `taffyquote-syntax`.
+;
+; TODO: Define `taffydatum` corresponding to `datum`/`quasidatum`,
+; `taffysyntax` corresponding to `syntax`/`quasisyntax`, and
+; `taffysyntax/loc` corresponding to `syntax/loc`/`quasisyntax/loc`.

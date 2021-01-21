@@ -118,6 +118,12 @@
     (begin-for-syntax #/define-syntax-rule (verify-hn hn) hn)))
 
 
+(define-for-syntax (datum->syntax-with-everything stx-example datum)
+  (w- ctxt stx-example
+  #/w- srcloc stx-example
+  #/w- prop stx-example
+  #/datum->syntax ctxt datum srcloc prop))
+
 (define-for-syntax
   (hypernest-from-brackets-n-d* ds n-d degree brackets)
   (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
@@ -310,7 +316,8 @@
     (dlog 'hqq-f8
     #/snippet-sys-snippet-join-selective ss
     #/hn-bracs-n-d* ds n-d (extended-with-top-dim-infinite)
-      (hnb-open 1 #/hn-tag-1-list #/datum->syntax stx #/list)
+      (hnb-open 1
+        (hn-tag-1-list #/datum->syntax-with-everything stx #/list))
       
       (hnb-open 0 #/hn-tag-0-s-expr-stx #'op)
       (hnb-open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
