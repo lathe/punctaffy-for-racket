@@ -36,12 +36,12 @@
   dim-sys-dim-max dim-sys-morphism-sys-morph-dim
   extended-with-top-dim-infinite extended-with-top-dim-sys
   extend-with-top-dim-sys-morphism-sys nat-dim-sys)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest-2
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
   hypernest-coil-hole hypernest-from-brackets hypernest-furl
   hypernest-join-list-and-tail-along-0 hypernest-shape
   hypernest-snippet-sys)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee-2
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-snippet-format-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
   selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
@@ -96,8 +96,8 @@
     ; TODO: Make these use `only-in`.
     (require #/for-syntax racket/contract)
     (require #/for-syntax lathe-comforts/contract)
-    (require #/for-syntax punctaffy/hypersnippet/hypernest-2)
-    (require #/for-syntax punctaffy/hypersnippet/hypertee-2)
+    (require #/for-syntax punctaffy/hypersnippet/hypernest)
+    (require #/for-syntax punctaffy/hypersnippet/hypertee)
     (require #/for-syntax punctaffy/hypersnippet/snippet)
     (begin-for-syntax #/define/contract (verify-ht ht)
       (->

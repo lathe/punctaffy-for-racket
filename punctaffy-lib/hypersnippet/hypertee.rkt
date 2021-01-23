@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; punctaffy/hypersnippet/hypertee-2
+; punctaffy/hypersnippet/hypertee
 ;
 ; A data structure for encoding the kind of higher-order structure
 ; that occurs in higher quasiquotation.

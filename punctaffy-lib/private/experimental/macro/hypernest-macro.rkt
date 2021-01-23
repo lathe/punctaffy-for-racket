@@ -70,11 +70,11 @@
   dim-sys-morphism-sys-morph-dim extended-with-top-dim-infinite
   extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
   nat-dim-sys)
-(require #/only-in punctaffy/hypersnippet/hypernest-2
+(require #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof
   hypernest-snippet-sys)
-(require #/only-in punctaffy/hypersnippet/hypertee-2
+(require #/only-in punctaffy/hypersnippet/hypertee
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
   selectable-map snippet-sys-dim-sys snippet-sys-shape-snippet-sys

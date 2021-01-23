@@ -28,12 +28,12 @@
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
-(require #/only-in punctaffy/hypersnippet/hypernest-2
+(require #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hn-bracs hnb-unlabeled hypernest-coil-bump
   hypernest-coil/c hypernest-coil-hole hypernest-coil-zero
   hypernest-from-brackets hypernest-furl hypernest-get-brackets
   hypernest-get-coil hypernest-shape hypernest-snippet-sys)
-(require #/only-in punctaffy/hypersnippet/hypertee-2
+(require #/only-in punctaffy/hypersnippet/hypertee
   ht-bracs htb-labeled hypertee-coil-zero hypertee-furl
   hypertee-get-dim-sys hypertee-snippet-format-sys
   hypertee-snippet-sys)

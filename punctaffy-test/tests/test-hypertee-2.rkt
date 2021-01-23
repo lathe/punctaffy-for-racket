@@ -28,7 +28,7 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
-(require #/only-in punctaffy/hypersnippet/hypertee-2
+(require #/only-in punctaffy/hypersnippet/hypertee
   ht-bracs htb-labeled hypertee-coil-hole hypertee-coil-zero
   hypertee-furl hypertee-get-coil hypertee-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/snippet

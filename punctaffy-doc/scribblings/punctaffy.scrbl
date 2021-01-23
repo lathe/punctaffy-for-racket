@@ -51,8 +51,8 @@
 
 @(require #/for-label punctaffy/hypersnippet/dim)
 @(require #/for-label punctaffy/hypersnippet/hyperstack)
-@(require #/for-label punctaffy/hypersnippet/hypernest-2)
-@(require #/for-label punctaffy/hypersnippet/hypertee-2)
+@(require #/for-label punctaffy/hypersnippet/hypernest)
+@(require #/for-label punctaffy/hypersnippet/hypertee)
 @(require #/for-label punctaffy/hypersnippet/snippet)
 
 
@@ -2328,9 +2328,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @section[#:tag "hypertee"]{Hypertees}
 
-@defmodule[punctaffy/hypersnippet/hypertee-2]
-
-(TODO: Move this module to @tt{punctaffy/hypersnippet/hypertee}.)
+@defmodule[punctaffy/hypersnippet/hypertee]
 
 
 @subsection[#:tag "hypertee-coil"]{Hypertee Coils}
@@ -2598,9 +2596,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @section[#:tag "hypernest"]{Hypernests}
 
-@defmodule[punctaffy/hypersnippet/hypernest-2]
-
-(TODO: Move this module to @tt{punctaffy/hypersnippet/hypernest}.)
+@defmodule[punctaffy/hypersnippet/hypernest]
 
 
 @subsection[#:tag "hypernest-coil"]{Hypernest Coils}

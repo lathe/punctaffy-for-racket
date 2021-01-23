@@ -35,12 +35,12 @@
   dim-sys-dim=? dim-sys-dim=0? dim-sys-morphism-sys-morph-dim
   extended-with-top-dim-infinite extended-with-top-dim-sys
   extend-with-top-dim-sys-morphism-sys nat-dim-sys)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest-2
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
   hypernest-coil-hole hypernest-from-brackets hypernest-furl
   hypernest-get-hole-zero-maybe hypernest-join-list-and-tail-along-0
   hypernest-shape hypernest-snippet-sys)
-(require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee-2
+(require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   hypertee-snippet-format-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
   snippet-sys-shape->snippet snippet-sys-shape-snippet-sys

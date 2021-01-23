@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; punctaffy/hypersnippet/hypernest-2
+; punctaffy/hypersnippet/hypernest
 ;
 ; A data structure for encoding hypersnippet notations that can nest
 ; with themselves.
