@@ -2,5 +2,5 @@
 
 (define collection 'multi)
 
-(define implies (list "punctaffy-lib"))
+(define implies (list "punctaffy-doc" "punctaffy-lib"))
 (define deps implies)

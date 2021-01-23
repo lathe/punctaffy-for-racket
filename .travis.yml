@@ -39,16 +39,14 @@ script:
   # sample .travis.yml at
   # <https://github.com/greghendershott/travis-racket>.
 
-  # TODO: Uncomment the "${PACKAGE}-doc" lines once we have docs.
-
   # We install each package directory as a linked package, and we
   # automatically fetch all the dependencies.
   - cd "${PACKAGE}-lib/"
   - raco pkg install --deps search-auto
   - cd ..
-  #- cd "${PACKAGE}-doc/"
-  #- raco pkg install --deps search-auto
-  #- cd ..
+  - cd "${PACKAGE}-doc/"
+  - raco pkg install --deps search-auto
+  - cd ..
   - cd "${PACKAGE}-test/"
   - raco pkg install --deps search-auto
   - cd ..
@@ -70,7 +68,7 @@ script:
   # system does. This imitates the settings used by the Racket package
   # index at <https://pkgs.racket-lang.org/>.
   - raco test --drdr --package "${PACKAGE}-lib"
-  #- raco test --drdr --package "${PACKAGE}-doc"
+  - raco test --drdr --package "${PACKAGE}-doc"
   - raco test --drdr --package "${PACKAGE}-test"
   - raco test --drdr --package "${PACKAGE}"
 
