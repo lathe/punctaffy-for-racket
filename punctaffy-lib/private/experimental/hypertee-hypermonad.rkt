@@ -4,7 +4,7 @@
 ;
 ; A hypermonad instance for hypertees.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 (require #/only-in lathe-comforts expect fn)
 (require #/only-in lathe-comforts/struct struct-easy)
 
-(require #/only-in punctaffy/hypersnippet/hypertee
+(require #/only-in punctaffy/private/hypertee-as-brackets
   hypertee-bind-all-degrees hypertee-degree hypertee-done
   hypertee-join-all-degrees hypertee-map-all-degrees)
 

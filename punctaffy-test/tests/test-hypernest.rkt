@@ -5,7 +5,7 @@
 ; Unit tests of the hypernest data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2018-2020 The Lathe Authors
+;   Copyright 2018-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
-(require punctaffy/hypersnippet/hypernest)
-(require punctaffy/hypersnippet/hypertee)
+(require punctaffy/private/hypernest-as-ast)
+(require punctaffy/private/hypertee-as-brackets)
 
 ; (We provide nothing from this module.)
 

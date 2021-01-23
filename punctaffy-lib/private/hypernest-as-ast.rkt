@@ -5,7 +5,7 @@
 ; A data structure for encoding hypersnippet notations that can nest
 ; with themselves (represented in an AST style).
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-peek hyperstack-pop hyperstack-push
   make-hyperstack)
-(require #/only-in punctaffy/hypersnippet/hypertee
+(require #/only-in punctaffy/private/hypertee-as-brackets
   htb-labeled htb-unlabeled hypertee? hypertee/c hypertee-coil-hole
   hypertee-coil-zero hypertee-contour hypertee-degree hypertee-dim-sys
   hypertee-done hypertee-dv-fold-map-any-all-degrees

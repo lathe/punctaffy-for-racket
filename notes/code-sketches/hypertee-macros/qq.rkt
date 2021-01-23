@@ -6,7 +6,7 @@
 ; sequences which can generalize unquotation and nested
 ; quasiquotation.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@
     dim-successors-sys-dim-sys dim-sys-dim<?)
   (require #/only-in "extended-nat-dim-sys.rkt"
     extended-nat-dim-sys omega)
-  (require #/only-in punctaffy/hypersnippet/hypertee
+  (require #/only-in punctaffy/private/hypertee-as-brackets
     htb-labeled ht-bracs hypertee-bind-one-degree hypertee-coil-hole
     hypertee-coil-zero hypertee-degree hypertee-done
     hypertee-filter-degree-to hypertee-fold

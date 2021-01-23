@@ -5,7 +5,7 @@
 ; Unit tests of the hyprid data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2017-2019 The Lathe Authors
+;   Copyright 2017-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
-(require punctaffy/hypersnippet/hypertee)
+(require punctaffy/private/hypertee-as-brackets)
 (require punctaffy/private/experimental/hyprid)
 
 ; (We provide nothing from this module.)

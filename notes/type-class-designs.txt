@@ -1,8 +1,8 @@
 
 These are the operations we implement or describe in TODOs in
 punctaffy-lib/punctaffy/multi-phase/private/trees2.rkt [note from the
-future: now module `punctaffy/hypersnippet/hypertee`] as of the time
-of writing this:
+future: now module `punctaffy/private/hypertee-as-brackets`] as of the
+time of writing this:
 
 converting hypertees and their representation details back and forth
 (define (hypertee-promote new-degree ht)
@@ -304,7 +304,7 @@ can implement `hypermonad-striped`.
 TODO: Consider the reversal operation again. Even if we don't
 implement it, we can at least update the design notes in the TODO in
 multi-phase/private/trees2.rkt [note from the future: now in module
-`punctaffy/hypersnippet/hypertee`].
+`punctaffy/private/hypertee-as-brackets`].
 
 
 ============

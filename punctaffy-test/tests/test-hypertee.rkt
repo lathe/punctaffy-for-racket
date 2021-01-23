@@ -5,7 +5,7 @@
 ; Unit tests of the hypertee data structure for hypersnippet-shaped
 ; data.
 
-;   Copyright 2017-2019 The Lathe Authors
+;   Copyright 2017-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/hypersnippet/dim)
-(require #/only-in punctaffy/hypersnippet/hypertee
+(require #/only-in punctaffy/private/hypertee-as-brackets
   ht-bracs htb-labeled hypertee-furl hypertee-unfurl
   hypertee-coil-hole hypertee-map-all-degrees hypertee-uncontour
   hypertee-contour hypertee-join-all-degrees hypertee-done

@@ -4,7 +4,7 @@
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
   dim-successors-sys-dim-sys)
 (require #/only-in "extended-nat-dim-sys.rkt"
   extended-nat-dim-sys omega)
-(require #/only-in punctaffy/hypersnippet/hypertee
+(require #/only-in punctaffy/private/hypertee-as-brackets
   htb-labeled ht-bracs htb-unlabeled hypertee? hypertee-append-zero
   hypertee-bind-one-degree hypertee-from-brackets)
 

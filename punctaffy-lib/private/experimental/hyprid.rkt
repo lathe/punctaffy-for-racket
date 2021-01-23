@@ -6,7 +6,7 @@
 ; hypersnippet-shaped data using "stripes" of low-dimensional
 ; hypertees.
 
-;   Copyright 2017-2019 The Lathe Authors
+;   Copyright 2017-2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@
 (require #/only-in punctaffy/hypersnippet/hyperstack
   hyperstack-dimension hyperstack-pop-trivial hyperstack-pop
   make-hyperstack-trivial make-hyperstack)
-(require #/only-in punctaffy/hypersnippet/hypertee
+(require #/only-in punctaffy/private/hypertee-as-brackets
   htb-labeled htb-unlabeled hypertee? hypertee-bind-pred-degree
   hypertee-bracket-degree hypertee-contour hypertee-degree
   hypertee-done hypertee-dv-each-all-degrees hypertee-from-brackets

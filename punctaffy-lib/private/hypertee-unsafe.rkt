@@ -1,10 +1,10 @@
 #lang parendown racket/base
 
-; punctaffy/hypersnippet/hypertee
+; punctaffy/private/hypertee-unsafe
 ;
 ; Unsafe operations for hypertees.
 
-;   Copyright 2019 The Lathe Authors
+;   Copyright 2019, 2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
