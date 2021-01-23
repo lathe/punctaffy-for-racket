@@ -57,6 +57,13 @@
   debugging-in-inexpensive-ways)
 (define-for-syntax debugging-with-prints-for-hypernest-qq
   debugging-in-inexpensive-ways)
+(define-for-syntax debugging-with-safe-mode-printing
+  ; NOTE: Generally, if we're debugging this module, the usual
+  ; `prop:custom-write` behavior of hypertees and hypernests is likely
+  ; to make our debug prints terribly recursive. To avoid that, we
+  ; activate a safer (if far less readable) printing behavior that
+  ; corresponds to the shapes of the underlying data structures.
+  debugging-in-inexpensive-ways)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)
@@ -125,6 +132,7 @@
   make-contract make-flat-contract raise-blame-error)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/match define-match-expander)
+(require #/only-in racket/struct make-constructor-style-printer)
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
@@ -3393,8 +3401,6 @@
     `(hypertee-coil/c ,(value-name-for-contract ds))))
 
 ; TODO: Use the things that use these.
-; TODO: Change the way a `hypertee?` is written using
-; `gen:custom-write`.
 (define-imitation-simple-struct
   (hypertee? hypertee-get-dim-sys hypertee-get-coil)
   ; NOTE DEBUGGABILITY: For debugging, we've set up a system where we
@@ -3404,7 +3410,24 @@
   ; unguarded version (according to the
   ; `debugging-with-expensive-hypertee-furl-contract` branch below).
   unguarded-hypertee-furl-orig
-  'hypertee (current-inspector) (auto-write) (auto-equal))
+  'hypertee (current-inspector) (auto-equal)
+  (#:prop prop:custom-write
+    (ifc debugging-with-safe-mode-printing
+      (make-constructor-style-printer
+        (fn ht 'hypertee)
+        (dissectfn (unguarded-hypertee-furl-orig ds coil)
+          (list ds coil)))
+      (make-constructor-style-printer
+        (fn ht 'ht-bracs)
+        (fn ht
+          (w- ds (hypertee-get-dim-sys ht)
+          #/list* ds (hypertee-degree ds ht)
+            (list-map (hypertee-get-brackets ht) #/fn bracket
+              (mat bracket (htb-labeled d data) (htb-labeled d data)
+              #/dissect bracket (htb-unlabeled d)
+                (if (hypertee-bracket? d)
+                  (htb-unlabeled d)
+                  d)))))))))
 ; TODO: We have a dilemma. The `define/contract` version of
 ; `attenuated-hypertee-furl` will give less precise source location
 ; information in its errors, and it won't catch applications with
@@ -3457,6 +3480,11 @@
 (define (hypertee/c ds)
   (rename-contract (match/c unguarded-hypertee-furl (ok/c ds) any/c)
     `(hypertee/c ,(value-name-for-contract ds))))
+
+(define (hypertee-degree ds ht)
+  (dissect ht (unguarded-hypertee-furl _ coil)
+  #/mat coil (hypertee-coil-zero) (dim-sys-dim-zero ds)
+  #/dissect coil (hypertee-coil-hole d hole data tails) d))
 
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
@@ -3605,9 +3633,7 @@
     (fn ss snippet
       (dlogr 'b2 snippet
       #/dissect ss (hypertee-snippet-sys ds)
-      #/dissect snippet (unguarded-hypertee-furl _ coil)
-      #/mat coil (hypertee-coil-zero) (dlogr 'b2.1 ds #/dim-sys-dim-zero ds)
-      #/dissect coil (hypertee-coil-hole d hole data tails) #/dlog 'b2.2 d))
+      #/hypertee-degree ds snippet))
     ; snippet-sys-shape->snippet
     (fn ss shape
       shape)
@@ -4057,29 +4083,52 @@
         (->snippet ss snippet)))))
 
 
+(define hn-printer
+  (make-constructor-style-printer
+    (fn hn 'hn-bracs)
+    (fn hn
+      (w- ds (hypernest-get-dim-sys hn)
+      #/list* ds (hypernest-degree ds hn)
+        (list-map (hypernest-get-brackets hn) #/fn bracket
+          (mat bracket (hnb-open d data) (hnb-open d data)
+          #/mat bracket (hnb-labeled d data) (hnb-labeled d data)
+          #/dissect bracket (hnb-unlabeled d)
+            (if (hypertee-bracket? d)
+              (hnb-unlabeled d)
+              d)))))))
+
 ; TODO: Export these.
 ; TODO: Use these.
 ; TODO: Define `hypernest-zero` in terms of
 ; `hypernest-zero-unchecked`.
-; TODO: Change the way a `hypernest-zero?` is written using
-; `gen:custom-write`.
 (define-imitation-simple-struct
   (hypernest-zero? hypernest-zero-content)
   hypernest-zero-unchecked
-  'hypernest-zero (current-inspector) (auto-write) (auto-equal))
+  'hypernest-zero (current-inspector) (auto-equal)
+  (#:prop prop:custom-write
+    (ifc debugging-with-safe-mode-printing
+      (make-constructor-style-printer
+        (fn hn 'hypernest-zero)
+        (dissectfn (hypernest-zero-unchecked content) #/list content))
+      hn-printer)))
 
 ; TODO: Export these.
 ; TODO: Use these.
 ; TODO: Define `hypernest-nonzero` in terms of
 ; `hypernest-zero-unchecked`.
-; TODO: Change the way a `hypernest-nonzero?` is written using
-; `gen:custom-write`.
 (define-imitation-simple-struct
   (hypernest-nonzero?
     hypernest-nonzero-degree
     hypernest-nonzero-content)
   hypernest-nonzero-unchecked
-  'hypernest-nonzero (current-inspector) (auto-write) (auto-equal))
+  'hypernest-nonzero (current-inspector) (auto-equal)
+  (#:prop prop:custom-write
+    (ifc debugging-with-safe-mode-printing
+      (make-constructor-style-printer
+        (fn hn 'hypernest-nonzero)
+        (dissectfn (hypernest-nonzero-unchecked d content)
+          (list d content)))
+      hn-printer)))
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
@@ -4173,6 +4222,10 @@
     (extended-with-top-dim-sys #/extended-with-top-dim-sys ds)
     ds))
 
+(define (hypernest-degree ds hn)
+  (mat hn (hypernest-zero-unchecked content) (dim-sys-dim-zero ds)
+  #/dissect hn (hypernest-nonzero-unchecked d hn-extended) d))
+
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
 (define (hypernest-map-dim sfs dsms hn)
@@ -4217,10 +4270,7 @@
     ; snippet-sys-snippet-degree
     (fn ss snippet
       (dissect ss (hypernest-snippet-sys sfs uds)
-      #/mat snippet (hypernest-zero-unchecked content)
-        (dim-sys-dim-zero uds)
-      #/dissect snippet (hypernest-nonzero-unchecked d hn-extended)
-        d))
+      #/hypernest-degree uds snippet))
     ; snippet-sys-shape->snippet
     (fn ss shape
       (dissect ss (hypernest-snippet-sys sfs uds)
