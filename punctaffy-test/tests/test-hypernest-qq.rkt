@@ -30,7 +30,7 @@
 
 (require #/only-in lathe-comforts w-)
 
-(require punctaffy/private/experimental/macro/hypernest-bracket)
+(require punctaffy)
 (require punctaffy/private/experimental/macro/hypernest-qq)
 
 ; (We provide nothing from this module.)
@@ -97,10 +97,10 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^< 2
+  (my-quasiquote #/^<d 2
     (a b
       (c d
-        (^> 1 #/list
+        (^>d 1 #/list
           (+ 4 5)))))
   `
     (a b
@@ -114,19 +114,19 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^< 2
+  (my-quasiquote #/^<d 2
     (a b
-      (my-quasiquote #/_^< 2
+      (my-quasiquote #/_^<d 2
         (c d
-          (_^> 1 #/list
+          (_^>d 1 #/list
             (e f
-              (^> 1 #/list
+              (^>d 1 #/list
                 (+ 4 5))))))))
   `
     (a b
-      (my-quasiquote #/_^< 2
+      (my-quasiquote #/_^<d 2
         (c d
-          (_^> 1 #/list
+          (_^>d 1 #/list
             (e f
               ,
                 (+ 4 5))))))
@@ -138,19 +138,19 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^< 2
+  (my-quasiquote #/^<d 2
     (a b
-      (my-quasiquote #/^< 2
+      (my-quasiquote #/^<d 2
         (c d
-          (^> 1 #/list
+          (^>d 1 #/list
             (e f
-              (^> 1 #/list
+              (^>d 1 #/list
                 (+ 4 5))))))))
   `
     (a b
-      (my-quasiquote #/^< 2
+      (my-quasiquote #/^<d 2
         (c d
-          (^> 1 #/list
+          (^>d 1 #/list
             (e f
               ,
                 (+ 4 5))))))
@@ -162,22 +162,22 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^< 2
+  (my-quasiquote #/^<d 2
     (a b
-      (my-quasiquote #/^< 2
+      (my-quasiquote #/^<d 2
         (c d
-          (^> 1 #/list
+          (^>d 1 #/list
             (e f
-              (^> 1 #/list
+              (^>d 1 #/list
                 (+ 4 5))
               g h))
           i j))
       k l))
   `
     (a b
-      (my-quasiquote #/^< 2
+      (my-quasiquote #/^<d 2
         (c d
-          (^> 1 #/list
+          (^>d 1 #/list
             (e f
               ,
                 (+ 4 5)
@@ -193,22 +193,22 @@
 (possibly-suppress-assertions
 #/check-equal?
   (w- list-to-splice (list 4 5)
-    (my-quasiquote #/^< 2
+    (my-quasiquote #/^<d 2
       (a b
-        (my-quasiquote #/^< 2
+        (my-quasiquote #/^<d 2
           (c d
-            (^> 1
+            (^>d 1
               (e f
-                (^> 1 list-to-splice)
+                (^>d 1 list-to-splice)
                 g h))
             i j))
         k l)))
   (w- list-to-splice (list 4 5)
     `
       (a b
-        (my-quasiquote #/^< 2
+        (my-quasiquote #/^<d 2
           (c d
-            (^> 1
+            (^>d 1
               (e f
                 ,@list-to-splice
                 g h))

@@ -22,7 +22,9 @@
 ; NOTE DEBUGGABILITY: These are here for debugging.
 (require #/for-syntax racket/base)
 (require #/for-syntax #/only-in racket/syntax syntax-local-eval)
-(define-for-syntax debugging-with-prints #f)
+(define-for-syntax debugging-in-inexpensive-ways #f)
+(define-for-syntax debugging-with-prints
+  debugging-in-inexpensive-ways)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)
@@ -52,7 +54,8 @@
   rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
-(require #/only-in syntax/parse id syntax-parse)
+(require #/only-in syntax/parse
+  exact-positive-integer id syntax-parse)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-map)
@@ -60,28 +63,39 @@
   define-match-expander-attenuated
   define-match-expander-from-match-and-make)
 (require #/only-in lathe-comforts/maybe
-  just just-value maybe? maybe-bind maybe-map nothing)
+  just just? just-value maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct
-  auto-equal auto-write define-imitation-simple-struct)
+  auto-equal auto-write define-imitation-simple-generics
+  define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
+(require #/only-in punctaffy/hyperbracket
+  hyperbracket-close-with-degree
+  hyperbracket-notation-prefix-expander?
+  hyperbracket-notation-prefix-expander-expand
+  hyperbracket-open-with-degree)
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
-  dim-sys-morphism-sys-morph-dim extended-with-top-dim-infinite
-  extended-with-top-dim-sys extend-with-top-dim-sys-morphism-sys
-  nat-dim-sys)
+  dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
+  dim-sys-dim/c dim-sys-dim-max dim-sys-morphism-sys-morph-dim
+  extended-with-top-dim-infinite extended-with-top-dim-sys
+  extend-with-top-dim-sys-morphism-sys nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hnb-unlabeled hypernest-from-brackets
+  hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
+  hypernest-coil-hole hypernest-from-brackets hypernest-furl
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof
-  hypernest-snippet-sys)
+  hypernest-shape hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  selectable-map snippet-sys-dim-sys snippet-sys-shape-snippet-sys
-  snippet-sys-snippet-bind-selective snippet-sys-snippet-degree
+  selectable-map selected snippet-sys-dim-sys
+  snippet-sys-shape-snippet-sys snippet-sys-snippet-bind-selective
+  snippet-sys-snippet-degree snippet-sys-snippet-done
+  snippet-sys-snippet-each snippet-sys-snippet-join-selective
+  snippet-sys-snippet-map snippet-sys-snippet-map-selective
   snippet-sys-snippet-select-if-degree
+  snippet-sys-snippet-select-if-degree<
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
-  snippet-sys-snippet-with-degree=/c)
+  snippet-sys-snippet-with-degree=/c unselected)
 
 (provide
   hn-tag-0-s-expr-stx)
@@ -123,9 +137,35 @@
   [hn-tag-other? (-> any/c boolean?)]
   [hn-tag-other-val (-> hn-tag-other? any/c)]
   [hn-expr/c (-> contract?)]
-  [s-expr-stx->hn-expr (-> syntax? #/hn-expr/c)]
-  [simple-hn-builder-syntax
-    (-> (-> syntax? #/hn-expr/c) hn-builder-syntax?)])
+  [s-expr-stx->hn-expr (-> syntax? #/hn-expr/c)])
+
+
+; NOTE DEBUGGABILITY: These are here for debugging.
+(ifc debugging-in-inexpensive-ways
+  (begin
+    ; TODO: Make these use `only-in`.
+    (require racket/contract)
+    (require lathe-comforts/contract)
+    (require punctaffy/hypersnippet/hypernest)
+    (require punctaffy/hypersnippet/hypertee)
+    (require punctaffy/hypersnippet/snippet)
+    (define/contract (verify-ht ht)
+      (->
+        (and/c hypertee?
+          (by-own-method/c ht #/hypertee/c #/hypertee-get-dim-sys ht))
+        any/c)
+      ht)
+    (define/contract (verify-hn hn)
+      (->
+        (and/c hypernest?
+          (by-own-method/c hn
+            (hypernest/c (hypertee-snippet-format-sys)
+              (hypernest-get-dim-sys hn))))
+        any/c)
+      hn))
+  (begin
+    (define-syntax-rule (verify-ht ht) ht)
+    (define-syntax-rule (verify-hn hn) hn)))
 
 
 ; We're taking this approach:
@@ -253,14 +293,22 @@
       (just local))
     (nothing)))
 
-(define (hn-bracs-n-d ds n-d degree . brackets)
+(define (hypernest-from-brackets-n-d* ds n-d degree brackets)
   (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
-  #/hypernest-from-brackets ds (n-d degree)
+  #/hypernest-from-brackets ds degree
     (list-map brackets #/fn bracket
       (mat bracket (hnb-open d data) (hnb-open (n-d d) data)
       #/mat bracket (hnb-labeled d data) (hnb-labeled (n-d d) data)
       #/mat bracket (hnb-unlabeled d) (hnb-unlabeled (n-d d))
       #/hnb-unlabeled (n-d bracket)))))
+
+(define (hn-bracs-n-d* ds n-d degree . brackets)
+  (hypernest-from-brackets-n-d* ds n-d degree brackets))
+
+(define (hn-bracs-n-d ds n-d degree . brackets)
+  (hypernest-from-brackets-n-d* ds n-d
+    (dim-sys-morphism-sys-morph-dim n-d degree)
+    brackets))
 
 (define (hypernest-join-0 ds n-d d elems)
   (hypernest-join-list-and-tail-along-0 ds elems
@@ -293,17 +341,17 @@
 (define en-n-d (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
 
-; This struct property indicates a syntax's behavior as the kind of
-; macro expected by `s-expr-stx->hn-expr`.
-(define-values
-  (prop:hn-builder-syntax hn-builder-syntax? hn-builder-syntax-ref)
-  (make-struct-type-property 'hn-builder-syntax))
-
-(define/contract (hn-builder-syntax-maybe x)
-  (-> any/c maybe?)
-  (if (hn-builder-syntax? x)
-    (just #/hn-builder-syntax-ref x)
-    (nothing)))
+; This structure type property indicates a syntax's behavior as the
+; kind of macro expected by `s-expr-stx->hn-expr`.
+(define-imitation-simple-generics
+  dedicated-hn-builder-syntax?
+  hn-builder-syntax-impl?
+  (#:method dedicated-hn-builder-syntax-expand (#:this) ())
+  prop:hn-builder-syntax
+  make-hn-builder-syntax-impl
+  'hn-builder-syntax
+  'hn-builder-syntax-impl
+  (list))
 
 
 ; Each of these tags can occur as a bump of the indicated degree. They
@@ -505,15 +553,13 @@
       [ (op:id arg ...)
         (dlog 'hqq-b1.1 #'op
         #/maybe-bind (syntax-local-maybe #'op) #/fn op
-        #/maybe-map (hn-builder-syntax-maybe op) #/fn proc
-        #/list op proc)]
+        #/hn-builder-syntax-maybe op)]
       [op:id
         (dlog 'hqq-b1.2
         #/maybe-bind (syntax-local-maybe #'op) #/fn op
-        #/maybe-map (hn-builder-syntax-maybe op) #/fn proc
-        #/list op proc)]
+        #/hn-builder-syntax-maybe op)]
       [_ (nothing)])
-    (just #/list op proc)
+    (just expand)
     
     ; If `stx` is shaped like `op` or `(op arg ...)` where `op` is
     ; bound to an `hn-builder-syntax?` syntax transformer according to
@@ -536,8 +582,8 @@
     ;     peers of each other, as well as several bumps that have
     ;     nothing to do with this encoding of Racket syntax objects.
     ;
-    (dlog 'hqq-b1.3 op
-    #/proc op stx)
+    (dlog 'hqq-b1.3
+    #/expand stx)
   #/dlog 'hqq-b2
   #/w- process-list
     (fn elems
@@ -643,34 +689,230 @@
   #/list-map (syntax->list stx) #/fn elem #/s-expr-stx->hn-expr elem))
 
 
-(define-imitation-simple-struct
-  (simple-hn-builder-syntax? simple-hn-builder-syntax-impl)
-  simple-hn-builder-syntax
-  'simple-hn-builder-syntax (current-inspector) (auto-write)
-  (#:prop prop:hn-builder-syntax #/fn this stx
-    (expect this (simple-hn-builder-syntax impl)
-      (error "Expected this to be a simple-hn-builder-syntax")
-    #/impl stx)))
+; This takes an hn-expression which may contain
+; `hn-tag-unmatched-closing-bracket` values on some of its bumps
+; (which, by the structure of an hn-expression, must have interiors
+; shaped like `snippet-sys-snippet-done` snippets for holes of various
+; degrees N), and it returns a degree-(`opening-degree`) hypernest
+; where each such bump with a corresponding degree N that's greater
+; than zero and less than `opening-degree` is converted to a hole of
+; degree N. Each of the new holes of degree N contains a
+; degree-infinity hypernest encoding the syntactic details of the
+; closing bracket itself, and in that one's degree-N hole is a
+; degree-N hypernest encoding the area beyond the closing bracket.
+;
+; The resulting hypernest is similar to an hn-expression except for
+; the fact that its degree may be greater than 1 and it may have these
+; extra holes of degree greater than 0.
+;
+(define (unmatched-brackets->holes opening-degree hn-expr)
+  (dlog 'hqq-g1
+  #/w- ds en-ds
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/w- n-d en-n-d
+  #/expect
+    (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
+      (snippet-sys-snippet-degree ss hn-expr))
+    #t
+    (error "Expected hn-expr to be a hypernest of degree 1")
+  #/w- first-d-not-to-process opening-degree
+  #/w-loop next
+    hn-expr hn-expr
+    target-d opening-degree
+    first-d-to-process (dim-sys-morphism-sys-morph-dim n-d 1)
+    
+    (dlog 'hqq-g2
+    #/begin (verify-hn hn-expr)
+    #/dissect hn-expr (hypernest-furl _ dropped)
+    #/mat dropped (hypernest-coil-hole d tails-shape data tails)
+      (hypernest-furl ds #/hypernest-coil-hole target-d
+        tails-shape
+        data
+        (snippet-sys-snippet-map shape-ss tails #/fn hole tail
+          (w- d (snippet-sys-snippet-degree shape-ss hole)
+          #/next tail target-d
+            (dim-sys-dim-max ds first-d-to-process d))))
+    #/dissect dropped
+      (hypernest-coil-bump overall-degree data bump-degree
+        bracket-and-tails)
+    #/dlog 'hqq-g3 overall-degree bump-degree (snippet-sys-snippet-degree ss bracket-and-tails)
+    #/begin (verify-hn bracket-and-tails)
+    #/begin
+      (snippet-sys-snippet-each ss bracket-and-tails
+      #/fn hole tail #/begin0 (void)
+        (w- d (snippet-sys-snippet-degree shape-ss hole)
+        #/when (dim-sys-dim<? ds d bump-degree)
+          (dlog 'hqq-g3.1 (snippet-sys-snippet-degree ss tail)
+          #/verify-hn tail)))
+    #/w- ignore
+      (fn
+        (hypernest-furl ds #/hypernest-coil-bump
+          target-d
+          data
+          bump-degree
+        #/next
+          (snippet-sys-snippet-map ss bracket-and-tails #/fn hole tail
+            (w- d (snippet-sys-snippet-degree shape-ss hole)
+            #/if
+              (and
+                (dim-sys-dim<=? ds bump-degree d)
+                (dim-sys-dim<? ds d first-d-to-process))
+              tail
+            #/next tail
+              (dim-sys-dim-max ds target-d d)
+              (dim-sys-dim-max ds first-d-to-process d)))
+          (dim-sys-dim-max ds target-d bump-degree)
+          (dim-sys-dim-max ds first-d-to-process bump-degree)))
+    #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
+    #/expect
+      (dim-sys-dim=? ds (extended-with-top-dim-infinite) bump-degree)
+      #t
+      (error "Encountered an hn-tag-unmatched-closing-bracket bump of finite degree")
+    #/expect
+      (snippet-sys-snippet-undone shape-ss
+        (hypernest-shape ss bracket-and-tails))
+      (just undone-tails)
+      (error "Encountered an hn-tag-unmatched-closing-bracket bump whose interior wasn't shaped like a snippet system identity element")
+    #/dissect undone-tails
+      (list
+        (extended-with-top-dim-infinite)
+        other-tails
+        represented-exterior-tail)
+    #/w- represented-bump-degree
+      (snippet-sys-snippet-degree shape-ss other-tails)
+    ; NOTE: By mapping selectively here, we keep the
+    ; `represented-exterior-tail` value intact in `bracket-syntax`.
+    #/w- bracket-syntax
+      (snippet-sys-snippet-map-selective ss
+        (snippet-sys-snippet-select-if-degree<
+          ss represented-bump-degree bracket-and-tails)
+        (fn hole data
+          (trivial)))
+    #/expect
+      (and
+        (dim-sys-dim<=? ds
+          first-d-to-process
+          represented-bump-degree)
+        (dim-sys-dim<? ds
+          represented-bump-degree
+          first-d-not-to-process))
+      #t
+      (ignore)
+    #/hypernest-furl ds #/hypernest-coil-hole target-d
+      (snippet-sys-snippet-map shape-ss other-tails #/fn hole tail
+        (trivial))
+      bracket-syntax
+      (snippet-sys-snippet-map shape-ss other-tails #/fn hole tail
+        (w- d (snippet-sys-snippet-degree shape-ss hole)
+        #/next tail target-d
+          (dim-sys-dim-max ds first-d-to-process d))))))
 
-(define-imitation-simple-struct
-  (syntax-and-hn-builder-syntax?
-    syntax-and-hn-builder-syntax-syntax-impl
-    syntax-and-hn-builder-syntax-hn-builder-syntax-impl)
-  syntax-and-hn-builder-syntax
-  'syntax-and-hn-builder-syntax (current-inspector) (auto-write)
-  
-  (#:prop prop:procedure #/fn this stx
-    (expect this
-      (syntax-and-hn-builder-syntax
-        syntax-impl hn-builder-syntax-impl)
-      (error "Expected this to be a syntax-and-hn-builder-syntax")
-    #/syntax-impl stx))
-  
-  (#:prop prop:hn-builder-syntax #/fn this stx
-    (expect this
-      (syntax-and-hn-builder-syntax
-        syntax-impl hn-builder-syntax-impl)
-      (error "Expected this to be a syntax-and-hn-builder-syntax")
-    #/hn-builder-syntax-impl stx))
-  
-  )
+(define (helper-for-^<d-and-^>d stx bump-value)
+  (dlog 'hqq-f2
+  #/w- ds en-ds
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/w- n-d en-n-d
+  #/dlog 'hqq-f3
+  #/syntax-parse stx
+    [op:id
+      ; If this syntax transformer is used in an identifier position,
+      ; we just expand as though the identifier isn't bound to a
+      ; syntax transformer at all.
+      ;
+      ; TODO: See if we'll ever need to rely on this functionality.
+      ;
+      (hn-bracs-n-d ds n-d 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+      #/hnb-labeled 0 #/trivial)]
+  #/ (op:id degree-stx:exact-positive-integer interpolation ...)
+  #/w- degree
+    (dim-sys-morphism-sys-morph-dim n-d #/syntax-e #'degree-stx)
+  #/dlog 'hqq-f4
+  #/w- interior-and-closing-brackets
+    (verify-hn #/unmatched-brackets->holes degree
+    #/hypernest-join-0 ds n-d 1
+    #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
+      (verify-hn #/s-expr-stx->hn-expr interpolation))
+  #/dlog 'hqq-f5
+  #/w- closing-brackets
+    (hypernest-shape ss interior-and-closing-brackets)
+  #/dlog 'hqq-f6
+  #/hypernest-furl ds
+  #/dlog 'hqq-f7
+  #/hypernest-coil-bump
+    (dim-sys-morphism-sys-morph-dim n-d 1)
+    bump-value
+    (extended-with-top-dim-infinite)
+    ; This is the syntax for the bracket itself, everything in the
+    ; interior of the bump this bracket represents (noted at
+    ; NOTE INSIDE), and everything beyond the closing brackets of this
+    ; bracket (noted at NOTE BEYOND).
+    (dlog 'hqq-f8
+    #/snippet-sys-snippet-join-selective ss
+    #/hn-bracs-n-d* ds n-d (extended-with-top-dim-infinite)
+      (hnb-open 1
+        (hn-tag-1-list #/datum->syntax-with-everything stx #/list))
+      
+      (hnb-open 0 #/hn-tag-0-s-expr-stx #'op)
+      (hnb-open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
+      
+      (hnb-labeled 1
+      #/selected
+      #/snippet-sys-snippet-join-selective ss
+      #/snippet-sys-snippet-done ss (extended-with-top-dim-infinite)
+        (snippet-sys-snippet-map shape-ss closing-brackets
+          (fn hole data
+            (w- d (snippet-sys-snippet-degree shape-ss hole)
+            #/if (dim-sys-dim=0? ds d)
+              (dissect data (trivial)
+              #/unselected #/trivial)
+            ; NOTE BEYOND: At this point `data` must be a
+            ; degree-infinity hypernest representing the syntax of a
+            ; closing bracket, and it must be shaped like a
+            ; `snippet-sys-snippet-done` for a degree-`d` hole that
+            ; contains a degree-`d` hypernest. That degree-`d`
+            ; hypernest represents the content beyond this closing
+            ; bracket.
+            #/selected data)))
+        (unselected
+          ; NOTE INTERIOR: This is everything in the interior of the
+          ; bump this bracket represents.
+          (snippet-sys-snippet-map ss interior-and-closing-brackets
+          #/fn hole data
+            (trivial))))
+      0
+      
+      0
+      (hnb-labeled 0 #/unselected
+        (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)))))
+
+(define (^<d-expand stx)
+  (dlog 'hqq-f1
+  #/helper-for-^<d-and-^>d stx #/hn-tag-nest))
+
+(define (^>d-expand stx)
+  (helper-for-^<d-and-^>d stx #/hn-tag-unmatched-closing-bracket))
+
+
+(define (hn-builder-syntax-maybe v)
+  (if (dedicated-hn-builder-syntax? v)
+    (just #/fn stx #/dedicated-hn-builder-syntax-expand v stx)
+  #/mat v (hyperbracket-open-with-degree)
+    (just ^<d-expand)
+  #/mat v (hyperbracket-close-with-degree)
+    (just ^>d-expand)
+  #/if (hyperbracket-notation-prefix-expander? v)
+    (just #/fn stx
+      (s-expr-stx->hn-expr
+        (hyperbracket-notation-prefix-expander-expand v stx)))
+    (nothing)))
+
+; TODO: See if we'll use this.
+(define (hn-builder-syntax? v)
+  (just? #/hn-builder-syntax-maybe v))
+
+; TODO: See if we'll use this.
+(define (hn-builder-syntax-expand builder stx)
+  (dissect (hn-builder-syntax-maybe builder) (just impl)
+  #/impl stx))

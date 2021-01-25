@@ -3226,7 +3226,7 @@ Punctaffy's notation represents an infinite-dimensional syntactic medium. The go
 
 Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation itself, which just about every higher-dimensional macro built on Punctaffy will use.
 
-(TODO: Build a higher-dimensional macro that uses this notation. We have some quasiquotation operations almost ready to go in hypernest-qq.rkt, but they currently use different versions of @racket[^<] and @racket[^>] than the ones exported here.)
+(TODO: Demonstrate a higher-dimensional macro that uses this notation. We have some quasiquotation operations almost ready to go in hypernest-qq.rkt.)
 
 
 @defform[(^<d degree term ...)]{
