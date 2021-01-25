@@ -3266,3 +3266,27 @@ Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation 
   
   This notation is not an expression. Using it as an expression is a syntax error.
 }
+
+
+
+@section[#:tag "quote"]{Hyperbracketed Quotation Operators}
+
+@defmodule[punctaffy/quote]
+
+Quasiquotation is perhaps the most widespread example of an operation with a subterm of the shape that's known in Punctaffy as a "@tech{degree}-2 @tech{hypersnippet}." It may not be the absolute best example of hypersnippet syntax, since quotation is a complex problem domain with additional concerns around escape sequences and round-tripping, but it is the example that motivates the Punctaffy library.
+
+The @racketmodname[punctaffy/quote] module is for variations of Racket's own quotation forms that have been redesigned to use Punctaffy's @tech{hyperbrackets} for their syntax. This allows them to gracefully support nesting, as in the quotation of code that is itself performing quotation, without requiring that code to be modified with escape sequences. Furthermore, since each of these quotation operators will use the @emph{same} hyperbracket syntax to represent its nesting structure, they can each gracefully nest within each other.
+
+This design leads to a more regular experience than the current situation in Racket: At the time of writing, Racket's @racket[quasiquote] and @racket[quasisyntax] can accommodate nested occurrences of themselves, but not of each other. Racket's @racket[quasisyntax/loc] can accommodate nested occurrences of @racket[quasisyntax], but not of itself.
+
+(TODO: Export more than just one quotation operator here, so that it's clearer how they can nest with each other.)
+
+
+@; TODO: Change this `defidform` to a `defform` with some kind of appropriate grammar.
+@defidform[taffy-quote]{
+  A variation of @racket[quote] or @racket[quasiquote] that uses @tech{hyperbrackets} to delimit a quoted @tech{degree}-2 @tech{hypersnippet} of datums. Expressions can be supplied within the degree-1 @tech{holes} of this hypersnippet to cause their resulting lists to be spliced into the surrounding datum content.
+  
+  Specifically, those holes behave like @racket[unquote-splicing]. To get the behavior of @racket[unquote] instead, wrap the expression in a call to @racket[list].
+  
+  (TODO: Give an example.)
+}
