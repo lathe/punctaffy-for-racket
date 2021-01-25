@@ -86,16 +86,16 @@
 (require #/only-in lathe-comforts expect w-)
 
 
-(provide my-quasiquote)
+(provide taffy-quote)
 
 
 ; In this file, the syntax we define for quasiquotation looks
 ; something like this, using operators ^< and ^> that signify
 ; higher-dimensional opening brackets and closing brackets:
 ;
-;   (my-quasiquote #/^< 2
+;   (taffy-quote #/^< 2
 ;     (a b
-;       (my-quasiquote #/^< 2
+;       (taffy-quote #/^< 2
 ;         (c d
 ;           (^> 1 #/list
 ;             (e f
@@ -109,16 +109,16 @@
 ; higher-dimensional bracket notation is something that most programs
 ; won't need to extend or parse in custom ways.
 ;
-; The `my-quasiquote` syntax is defined without directly using all the
+; The `taffy-quote` syntax is defined without directly using all the
 ; infrastructure underlying ^< and ^>. It's defined only in terms of
 ; `s-expr-stx->hn-expr`, the structs of the hn-expression format, and
 ; the hypernest and hypertee utilities.
 ;
-; Users of `my-quasiquote` will only need to import that operation and
+; Users of `taffy-quote` will only need to import that operation and
 ; ^< and ^> but will not usually need to understand them any more
 ; deeply than the traditional `quasiquote` and `unquote`. Even if they
 ; define another quasiquotation syntax, it will interoperate
-; seamlessly with `my-quasiquote` if it makes similar use of
+; seamlessly with `taffy-quote` if it makes similar use of
 ; `s-expr-stx->hn-expr`.
 ;
 ; If people define custom parentheses very often, quotation operators
@@ -442,7 +442,7 @@
   #/dlog 'hqq-a5
   #/syntax-protect
     ; TODO: See if we should use `quasisyntax/loc` here so the error
-    ; message refers to the place `my-quasiquote` is used.
+    ; message refers to the place `taffy-quote` is used.
     #`(w- spliced-root #,result
       #/expect spliced-root (list root)
         (raise-arguments-error '#,err-name
@@ -455,7 +455,7 @@
 (define-syntax-rule (datum->datum stx-example datum)
   datum)
 
-(define-syntax (my-quasiquote stx)
+(define-syntax (taffy-quote stx)
   (syntax-parse stx #/ (_ quotation)
   #/helper-for-quasiquote
     (fn hn
@@ -466,7 +466,7 @@
         hn))
     "s-expression"
     "a quasiquotation"
-    'my-quasiquote
+    'taffy-quote
     #'quotation))
 
 
@@ -478,7 +478,7 @@
     datum))
 
 ; TODO: Test this.
-(define-syntax (my-quasiquote-syntax stx)
+(define-syntax (taffy-quote-syntax stx)
   (define (helper quote-expr datum->syntax-id quotation)
     (helper-for-quasiquote
       (fn hn
@@ -489,7 +489,7 @@
           hn))
       "syntax object"
       "a syntax quasiquotation"
-      'my-quasiquote-syntax
+      'taffy-quote-syntax
       quotation))
   (syntax-parse stx
     [
@@ -505,9 +505,6 @@
         #'datum->quoted-syntax-local
         #'quotation)]))
 
-; TODO: Rename `my-quasiquote` to `taffyquote` and
-; `my-quasiquote-syntax` to `taffyquote-syntax`.
-;
-; TODO: Define `taffydatum` corresponding to `datum`/`quasidatum`,
-; `taffysyntax` corresponding to `syntax`/`quasisyntax`, and
-; `taffysyntax/loc` corresponding to `syntax/loc`/`quasisyntax/loc`.
+; TODO: Define `taffy-datum` corresponding to `datum`/`quasidatum`,
+; `taffy-syntax` corresponding to `syntax`/`quasisyntax`, and
+; `taffy-syntax/loc` corresponding to `syntax/loc`/`quasisyntax/loc`.

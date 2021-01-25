@@ -97,7 +97,7 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^<d 2
+  (taffy-quote #/^<d 2
     (a b
       (c d
         (^>d 1 #/list
@@ -114,9 +114,9 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^<d 2
+  (taffy-quote #/^<d 2
     (a b
-      (my-quasiquote #/_^<d 2
+      (taffy-quote #/_^<d 2
         (c d
           (_^>d 1 #/list
             (e f
@@ -124,7 +124,7 @@
                 (+ 4 5))))))))
   `
     (a b
-      (my-quasiquote #/_^<d 2
+      (taffy-quote #/_^<d 2
         (c d
           (_^>d 1 #/list
             (e f
@@ -138,9 +138,9 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^<d 2
+  (taffy-quote #/^<d 2
     (a b
-      (my-quasiquote #/^<d 2
+      (taffy-quote #/^<d 2
         (c d
           (^>d 1 #/list
             (e f
@@ -148,7 +148,7 @@
                 (+ 4 5))))))))
   `
     (a b
-      (my-quasiquote #/^<d 2
+      (taffy-quote #/^<d 2
         (c d
           (^>d 1 #/list
             (e f
@@ -162,9 +162,9 @@
 ;#;
 (possibly-suppress-assertions
 #/check-equal?
-  (my-quasiquote #/^<d 2
+  (taffy-quote #/^<d 2
     (a b
-      (my-quasiquote #/^<d 2
+      (taffy-quote #/^<d 2
         (c d
           (^>d 1 #/list
             (e f
@@ -175,7 +175,7 @@
       k l))
   `
     (a b
-      (my-quasiquote #/^<d 2
+      (taffy-quote #/^<d 2
         (c d
           (^>d 1 #/list
             (e f
@@ -193,9 +193,9 @@
 (possibly-suppress-assertions
 #/check-equal?
   (w- list-to-splice (list 4 5)
-    (my-quasiquote #/^<d 2
+    (taffy-quote #/^<d 2
       (a b
-        (my-quasiquote #/^<d 2
+        (taffy-quote #/^<d 2
           (c d
             (^>d 1
               (e f
@@ -206,7 +206,7 @@
   (w- list-to-splice (list 4 5)
     `
       (a b
-        (my-quasiquote #/^<d 2
+        (taffy-quote #/^<d 2
           (c d
             (^>d 1
               (e f
