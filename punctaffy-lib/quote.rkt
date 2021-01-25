@@ -1,10 +1,10 @@
 #lang parendown racket/base
 
-; hypernest-qq.rkt
+; punctaffy/quote
 ;
-; A quasiquotation operator which allows for user-defined escape
-; sequences which can generalize unquotation and nested
-; quasiquotation.
+; Quasiuotation operators similar to those in the Racket base package,
+; but which use Punctaffy's hyperbrackets to manage their nesting and
+; interoperation.
 
 ;   Copyright 2018-2019, 2021 The Lathe Authors
 ;

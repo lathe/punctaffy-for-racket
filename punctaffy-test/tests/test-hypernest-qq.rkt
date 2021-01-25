@@ -31,7 +31,7 @@
 (require #/only-in lathe-comforts w-)
 
 (require punctaffy)
-(require punctaffy/private/experimental/macro/hypernest-qq)
+(require punctaffy/quote)
 
 ; (We provide nothing from this module.)
 
