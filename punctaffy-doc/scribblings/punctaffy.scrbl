@@ -3309,18 +3309,18 @@ This design leads to a more regular experience than the current situation in Rac
   @specsubform[atom]{
     Produces a single datum: Itself.
     
-    The @racket[atom] value must be an instance of one of a specific list of types. (TODO: Actually, at the moment, we implement @racket[atom] as a catch-all for all types of value that we don't otherwise recognize. The rest of this part of the documentation is very much aspirational.)
+    The @racket[atom] value must be an instance of one of a specific list of types. (TODO: Actually, at the moment, we implement @racket[atom] as a catch-all for all types of value that we don't otherwise recognize. We don't even check whether the value is an identifier with a transformer binding that implements @racket[prop:hyperbracket-notation], so we're overcommitting quite a bit in our implementation at the moment. The rest of this part of the documentation is very much aspirational.)
     
-    Generally, we intend to support exactly those values which are @racket[equal?] to some immmutable value that has a Racket reader syntax. Some of these are covered by the other cases of this grammar (@racket[list?], @racket[@pair?], @racket[vector?], instances of immutable prefab structure types), and the @racket[atom] case is a catch-all for those values which are unlikely to accommodate internal s-expressions.
+    Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that has a Racket reader syntax. Some of these are covered by the other cases of this grammar (@racket[list?], @racket[@pair?], @racket[vector?], instances of immutable prefab structure types), and the @racket[atom] case is a catch-all for those values which are unlikely to accommodate internal s-expressions.
     
     Values supported:
     
     @itemlist[
-      @item{This operation supports @racket[boolean?], @racket[char?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are immutable values with reader syntaxes, so they fit the description exactly.}
+      @item{This operation supports quoting @racket[boolean?], @racket[char?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are immutable values with reader syntaxes, so they fit the description exactly.}
       
-      @item{This operation supports @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent. (TODO: Actually, we don't convert it yet.)}
+      @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent. (TODO: Actually, we don't convert it yet.)}
       
-      @item{This operation supports @racket[symbol?] values. Only interned symbols have a reader syntax, but symbols exist to be used in code, even if it's code that's never represented as readable text.}
+      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but symbols exist to be used in code, even if it's code that's never represented as readable text.}
     ]
     
     Notable exclusions:
@@ -3348,8 +3348,6 @@ This design leads to a more regular experience than the current situation in Rac
   
   @specsubform[#(content-and-splices ...)]{
     Produces a single datum: An immutable vector which contains all the datum values produced by each of the given @racket[content-and-splices] terms.
-    
-    (TODO: Currently, we return a mutable vector instead.)
   }
   
   @specsubform[#s(prefab-key-datum content-and-splices ...)]{
@@ -3378,8 +3376,6 @@ This design leads to a more regular experience than the current situation in Rac
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
   This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d] and @racket[^>d] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
-  
-  (TODO: Currently, we treat identifiers that have transformer bindings to unrecognized @racket[prop:hyperbracket-notation] values as though they're @racket[atom] content. We should treat them as compile-time errors.)
   
   Out of the hyperbracket notations this operation does support, not all of them will necessarily be preserved in the quoted output; some may be replaced with other, equivalent hyperbracket notations. In general, this operation will strive to preserve the notations that were actually used at the call site. Where it fails to do that, it will use notations exported by the @racket[punctaffy] module (e.g. the @racket[^<d] and @racket[^>d] notations).
   

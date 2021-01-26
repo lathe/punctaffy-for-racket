@@ -201,7 +201,8 @@
   #/mat data (hn-tag-1-list* stx-example)
     (process-listlike stx-example #/fn lst #/apply list* lst)
   #/mat data (hn-tag-1-vector stx-example)
-    (process-listlike stx-example #/fn lst #/list->vector lst)
+    (process-listlike stx-example #/fn lst
+      (vector->immutable-vector #/list->vector lst))
   #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example #/fn lst
       (apply make-prefab-struct key lst))
@@ -314,7 +315,7 @@
   #/mat data (hn-tag-1-list* stx-example)
     (process-listlike stx-example #/list #'list*)
   #/mat data (hn-tag-1-vector stx-example)
-    (process-listlike stx-example #/list #'vector)
+    (process-listlike stx-example #/list #'vector-immutable)
   #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example
     #/list #'make-prefab-struct #`'#,key)
