@@ -53,7 +53,6 @@
   -> ->i and/c any/c contract? contract-out list/c none/c or/c
   rename-contract)
 (require #/only-in racket/contract/region define/contract)
-(require #/only-in racket/extflonum extflonum?)
 (require #/only-in racket/math natural?)
 (require #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
@@ -541,33 +540,6 @@
     '(hn-expr/c)))
 
 
-(define (adjust-atom err-dsl-stx atom-stx)
-  (w- a (syntax-e atom-stx)
-  #/if
-    ; NOTE: See the `taffy-quote` documentation for commentary on why
-    ; each of these types is supported and why certain other types are
-    ; not.
-    (or
-      (boolean? a)
-      (char? a)
-      (keyword? a)
-      (number? a)
-      (extflonum? a)
-      
-      ; NOTE: We process mutable strings below.
-      (and (string? a) (immutable? a))
-      
-      ; NOTE: We check elsewhere that the atom isn't an identifier
-      ; with a `hyperbracket-notation?` transformer binding.
-      (symbol? a))
-    atom-stx
-  #/if (string? a)
-    (datum->syntax-with-everything atom-stx
-      (string->immutable-string a))
-    (raise-syntax-error #f "value not of a recognized quasiquotable type"
-      err-dsl-stx
-      atom-stx)))
-
 ; This recursively converts the given Racket syntax object into a
 ; degree-1 hypernest. It performs a kind of macroexpansion on lists
 ; that begin with an identifier with an appropriate
@@ -705,8 +677,7 @@
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
       (hn-bracs-n-d ds n-d 1
-        (hnb-open 0
-          (hn-tag-0-s-expr-stx #/adjust-atom err-dsl-stx stx))
+        (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
         (hnb-labeled 0 #/trivial))]))
 
 ; This recursively converts the given Racket syntax object into an
@@ -963,5 +934,4 @@
   #/maybe-if (hyperbracket-notation? v) #/fn
     (fn err-dsl-stx stx
       (raise-syntax-error #f "not a hyperbracket notation recognized by this DSL"
-        err-dsl-stx
-        op-stx))))
+        err-dsl-stx op-stx))))

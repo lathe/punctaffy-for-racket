@@ -23,7 +23,10 @@
 
 (require #/for-syntax racket/base)
 
-(require #/for-syntax #/only-in syntax/parse syntax-parse)
+(require #/for-syntax #/only-in racket/extflonum extflonum?)
+(require #/for-syntax #/only-in syntax/datum datum)
+(require #/for-syntax #/only-in syntax/parse
+  ~and id nat ~optional syntax-parse)
 
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
@@ -131,6 +134,12 @@
 ; than reinventing their structural notations every time.
 
 
+(define-for-syntax (datum->syntax-with-everything stx-example datum)
+  (w- ctxt stx-example
+  #/w- srcloc stx-example
+  #/w- prop stx-example
+  #/datum->syntax ctxt datum srcloc prop))
+
 (define (datum->syntax-with-everything stx-example datum)
   (w- ctxt stx-example
   #/w- srcloc stx-example
@@ -155,6 +164,49 @@
 (define-for-syntax en-n-d
   (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
+
+(define-for-syntax (adjust-atom err-dsl-stx atom-stx)
+  (w- a (syntax-e atom-stx)
+  #/if
+    ; NOTE: See the `taffy-quote` documentation for commentary on why
+    ; each of these types is supported and why certain other types are
+    ; not.
+    (or
+      (boolean? a)
+      (char? a)
+      (keyword? a)
+      (number? a)
+      (extflonum? a)
+      
+      ; NOTE: We process mutable strings below.
+      (and (string? a) (immutable? a))
+      
+      ; NOTE: We check elsewhere that the atom isn't an identifier
+      ; with a `hyperbracket-notation?` transformer binding.
+      (symbol? a))
+    atom-stx
+  #/if (string? a)
+    (datum->syntax-with-everything atom-stx
+      (string->immutable-string a))
+    (raise-syntax-error #f "value not of a recognized quasiquotable type"
+      err-dsl-stx atom-stx)))
+
+(define-for-syntax (prefab-key-mutability k)
+  (syntax-parse k
+    [_:id 'known-to-be-immutable]
+    [
+      (
+        _:id
+        (~optional _:nat)
+        (~optional (_:nat _))
+        (~optional (~and v #(_:nat ...)) #:defaults ([(v 0) #()]))
+        . parent-key)
+      (if (= 0 (vector-length (datum v)))
+        (syntax-parse (datum parent-key)
+          [() 'known-to-be-immutable]
+          [_ (prefab-key-mutability (datum parent-key))])
+        'known-to-be-mutable)]
+    [_ 'not-known]))
 
 (define-for-syntax (hn-expr->s-expr-stx-list hn)
   (w- ds en-ds
@@ -215,7 +267,8 @@
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
 (define-for-syntax
-  (hn-expr-2->generator quote-expr datum->result-id err-phrase hn)
+  (hn-expr-2->generator
+    err-dsl-stx quote-expr datum->result-id err-phrase hn)
   (dlog 'hqq-h1
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -224,7 +277,7 @@
   #/w- recur
     (fn hn
       (hn-expr-2->generator
-        quote-expr datum->result-id err-phrase hn))
+        err-dsl-stx quote-expr datum->result-id err-phrase hn))
   #/expect
     (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
       (snippet-sys-snippet-degree ss hn))
@@ -251,7 +304,8 @@
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
     #/hypernest-furl ds #/hypernest-coil-bump
       (dim-sys-morphism-sys-morph-dim n-d 2)
-      (hn-tag-0-s-expr-stx #`(list #,(quote-expr stx)))
+      (hn-tag-0-s-expr-stx
+        #`(list #,(quote-expr #/adjust-atom err-dsl-stx stx)))
       (dim-sys-morphism-sys-morph-dim n-d 0)
       (recur tails))
   #/w- process-listlike
@@ -317,8 +371,22 @@
   #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/list #'vector-immutable)
   #/mat data (hn-tag-1-prefab key stx-example)
-    (process-listlike stx-example
-    #/list #'make-prefab-struct #`'#,key)
+    (w- mutability (prefab-key-mutability key)
+    ; TODO: See if we can procure something here that isn't an empty
+    ; list like `stx-example` is. This should have the right source
+    ; location, at least. We might want to change our policy so
+    ; `stx-example` is the original syntax object rather than
+    ; normalizing it to an empty list.
+    #/w- struct-stx stx-example
+    #/mat mutability 'known-to-be-mutable
+      (raise-syntax-error #f "cannot quote a mutable prefab struct"
+        err-dsl-stx struct-stx)
+    #/mat mutability 'not-known
+      (raise-syntax-error #f "cannot quote a prefab struct unless it's immutable"
+        err-dsl-stx struct-stx)
+    #/dissect mutability 'known-to-be-immutable
+    #/process-listlike stx-example
+      (list #'make-prefab-struct #`'#,key))
   #/mat data (hn-tag-nest)
     (expect
       (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
@@ -462,6 +530,7 @@
   #/helper-for-quasiquote
     (fn hn
       (hn-expr-2->generator
+        stx
         (fn expr #`'#,expr)
         #'datum->datum
         "an s-expression"
@@ -486,6 +555,7 @@
     (helper-for-quasiquote
       (fn hn
         (hn-expr-2->generator
+          stx
           quote-expr
           datum->syntax-id
           "a Racket syntax object"

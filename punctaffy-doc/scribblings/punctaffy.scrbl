@@ -3350,8 +3350,6 @@ This design leads to a more regular experience than the current situation in Rac
   
   @specsubform[#s(prefab-key-datum content-and-splices ...)]{
     Produces a single datum: A prefab struct which contains all the datum values produced by each of the given @racket[content-and-splices] terms. The prefab struct's key is given by @racket[_prefab-key-datum], which must be a @racket[prefab-key?] value which specifies no mutable fields.
-    
-    (TODO: Currently, we don't verify the fact that there are no mutable fields.)
   }
   
   @specsubform[#:literals (^>d) (^>d 1 spliced-list-expr)]{
