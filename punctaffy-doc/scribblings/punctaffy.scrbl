@@ -3309,7 +3309,7 @@ This design leads to a more regular experience than the current situation in Rac
   @specsubform[atom]{
     Produces a single datum: Itself.
     
-    The @racket[atom] value must be an instance of one of a specific list of types. (TODO: Actually, at the moment, we implement @racket[atom] as a catch-all for all types of value that we don't otherwise recognize. We don't even check whether the value is an identifier with a transformer binding that implements @racket[prop:hyperbracket-notation], so we're overcommitting quite a bit in our implementation at the moment. The rest of this part of the documentation is very much aspirational.)
+    The @racket[atom] value must be an instance of one of a specific list of types. (TODO: Actually, at the moment, we implement @racket[atom] as a catch-all for all types of value that we don't otherwise recognize. The rest of this part of the documentation is very much aspirational.)
     
     Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that has a Racket reader syntax. Some of these are covered by the other cases of this grammar (@racket[list?], @racket[@pair?], @racket[vector?], instances of immutable prefab structure types), and the @racket[atom] case is a catch-all for those values which are unlikely to accommodate internal s-expressions.
     

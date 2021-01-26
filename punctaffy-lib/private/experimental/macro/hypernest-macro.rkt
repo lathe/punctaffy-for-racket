@@ -63,14 +63,14 @@
   define-match-expander-attenuated
   define-match-expander-from-match-and-make)
 (require #/only-in lathe-comforts/maybe
-  just just? just-value maybe? maybe-bind maybe-map nothing)
+  just just? just-value maybe? maybe-bind maybe-if maybe-map nothing)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hyperbracket
-  hyperbracket-close-with-degree
+  hyperbracket-close-with-degree hyperbracket-notation?
   hyperbracket-notation-prefix-expander?
   hyperbracket-notation-prefix-expander-expand
   hyperbracket-open-with-degree)
@@ -137,7 +137,7 @@
   [hn-tag-other? (-> any/c boolean?)]
   [hn-tag-other-val (-> hn-tag-other? any/c)]
   [hn-expr/c (-> contract?)]
-  [s-expr-stx->hn-expr (-> syntax? #/hn-expr/c)])
+  [s-expr-stx->hn-expr (-> syntax? syntax? #/hn-expr/c)])
 
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
@@ -271,6 +271,11 @@
 
 
 
+; TODO: See if we should add this to Lathe Comforts.
+(define (maybe-or a get-b)
+  (mat a (just a) (just a)
+  #/get-b))
+
 (define/contract (improper-list->list-and-tail lst)
   (-> any/c #/list/c list? any/c)
   (w-loop next rev-elems (list) tail lst
@@ -346,7 +351,7 @@
 (define-imitation-simple-generics
   dedicated-hn-builder-syntax?
   hn-builder-syntax-impl?
-  (#:method dedicated-hn-builder-syntax-expand (#:this) ())
+  (#:method dedicated-hn-builder-syntax-expand (#:this) () ())
   prop:hn-builder-syntax
   make-hn-builder-syntax-impl
   'hn-builder-syntax
@@ -543,7 +548,7 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(define (s-expr-stx->hn-expr stx)
+(define (s-expr-stx->hn-expr err-dsl-stx stx)
   (dlog 'hqq-b1
   #/w- ds en-ds
   #/w- n-d en-n-d
@@ -552,12 +557,14 @@
     (syntax-parse stx
       [ (op:id arg ...)
         (dlog 'hqq-b1.1 #'op
-        #/maybe-bind (syntax-local-maybe #'op) #/fn op
-        #/hn-builder-syntax-maybe op)]
+        #/w- op-stx #'op
+        #/maybe-bind (syntax-local-maybe op-stx) #/fn op-val
+        #/possibly-erroneous-hn-builder-syntax-maybe op-stx op-val)]
       [op:id
         (dlog 'hqq-b1.2
-        #/maybe-bind (syntax-local-maybe #'op) #/fn op
-        #/hn-builder-syntax-maybe op)]
+        #/w- op-stx #'op
+        #/maybe-bind (syntax-local-maybe op-stx) #/fn op-val
+        #/possibly-erroneous-hn-builder-syntax-maybe op-stx op-val)]
       [_ (nothing)])
     (just expand)
     
@@ -578,16 +585,17 @@
     ;     really clear how this would be performed, since the result
     ;     is an hn-expression that may "contain" several encoded
     ;     Racket syntax objects (their trees encoded as concentric
-    ;     degree-2 bumps and their leaves as degree-1 bumps) that are
+    ;     degree-1 bumps and their leaves as degree-0 bumps) that are
     ;     peers of each other, as well as several bumps that have
     ;     nothing to do with this encoding of Racket syntax objects.
     ;
     (dlog 'hqq-b1.3
-    #/expand stx)
+    #/expand err-dsl-stx stx)
   #/dlog 'hqq-b2
   #/w- process-list
     (fn elems
-      (list-map elems #/fn elem #/s-expr-stx->hn-expr elem))
+      (list-map elems #/fn elem
+        (s-expr-stx->hn-expr err-dsl-stx elem)))
   ; NOTE: We go to some trouble to detect improper lists here. This is
   ; so we can preserve the metadata of syntax objects occurring in
   ; tail positions partway through the list, which we would lose track
@@ -638,7 +646,7 @@
     ; be expanded as an identifier syntax, processed as a vector, or
     ; processed as a prefab struct.
     #/dlog 'hqq-b3.6
-    #/w- tail (s-expr-stx->hn-expr tail)
+    #/w- tail (s-expr-stx->hn-expr err-dsl-stx tail)
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
@@ -668,8 +676,10 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (hn-bracs-n-d ds n-d 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
-      #/hnb-labeled 0 #/trivial)]))
+      (hn-bracs-n-d ds n-d 1
+        (hnb-open 0
+          (hn-tag-0-s-expr-stx #/adjust-atom err-dsl-stx stx))
+        (hnb-labeled 0 #/trivial))]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-1 hypernest just like `s-expr-stx->hn-expr`, but it expects
@@ -681,12 +691,12 @@
 ; reminder that hn-expressions aren't quite "expressions" so much as
 ; snippets of expression-like data.
 ;
-(define/contract (splicing-s-expr-stx->hn-expr stx)
-  (-> syntax? #/hn-expr/c)
+(define/contract (splicing-s-expr-stx->hn-expr err-dsl-stx stx)
+  (-> syntax? syntax? #/hn-expr/c)
   (w- ds en-ds
   #/w- n-d en-n-d
-  #/hypernest-join-0 ds n-d 1
-  #/list-map (syntax->list stx) #/fn elem #/s-expr-stx->hn-expr elem))
+  #/hypernest-join-0 ds n-d 1 #/list-map (syntax->list stx) #/fn elem
+    (s-expr-stx->hn-expr err-dsl-stx elem)))
 
 
 ; This takes an hn-expression which may contain
@@ -808,7 +818,7 @@
         #/next tail target-d
           (dim-sys-dim-max ds first-d-to-process d))))))
 
-(define (helper-for-^<d-and-^>d stx bump-value)
+(define (helper-for-^<d-and-^>d err-dsl-stx stx bump-value)
   (dlog 'hqq-f2
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -833,7 +843,7 @@
     (verify-hn #/unmatched-brackets->holes degree
     #/hypernest-join-0 ds n-d 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (verify-hn #/s-expr-stx->hn-expr interpolation))
+      (verify-hn #/s-expr-stx->hn-expr err-dsl-stx interpolation))
   #/dlog 'hqq-f5
   #/w- closing-brackets
     (hypernest-shape ss interior-and-closing-brackets)
@@ -887,24 +897,27 @@
       (hnb-labeled 0 #/unselected
         (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)))))
 
-(define (^<d-expand stx)
+(define (^<d-expand err-dsl-stx stx)
   (dlog 'hqq-f1
-  #/helper-for-^<d-and-^>d stx #/hn-tag-nest))
+  #/helper-for-^<d-and-^>d err-dsl-stx stx
+    (hn-tag-nest)))
 
-(define (^>d-expand stx)
-  (helper-for-^<d-and-^>d stx #/hn-tag-unmatched-closing-bracket))
+(define (^>d-expand err-dsl-stx stx)
+  (helper-for-^<d-and-^>d err-dsl-stx stx
+    (hn-tag-unmatched-closing-bracket)))
 
 
 (define (hn-builder-syntax-maybe v)
   (if (dedicated-hn-builder-syntax? v)
-    (just #/fn stx #/dedicated-hn-builder-syntax-expand v stx)
+    (just #/fn err-dsl-stx stx
+      (dedicated-hn-builder-syntax-expand v err-dsl-stx stx))
   #/mat v (hyperbracket-open-with-degree)
     (just ^<d-expand)
   #/mat v (hyperbracket-close-with-degree)
     (just ^>d-expand)
   #/if (hyperbracket-notation-prefix-expander? v)
-    (just #/fn stx
-      (s-expr-stx->hn-expr
+    (just #/fn err-dsl-stx stx
+      (s-expr-stx->hn-expr err-dsl-stx stx
         (hyperbracket-notation-prefix-expander-expand v stx)))
     (nothing)))
 
@@ -913,6 +926,14 @@
   (just? #/hn-builder-syntax-maybe v))
 
 ; TODO: See if we'll use this.
-(define (hn-builder-syntax-expand builder stx)
+(define (hn-builder-syntax-expand builder err-dsl-stx stx)
   (dissect (hn-builder-syntax-maybe builder) (just impl)
-  #/impl stx))
+  #/impl err-dsl-stx stx))
+
+(define (possibly-erroneous-hn-builder-syntax-maybe op-stx v)
+  (maybe-or (hn-builder-syntax-maybe v) #/fn
+  #/maybe-if (hyperbracket-notation? v) #/fn
+    (fn err-dsl-stx stx
+      (raise-syntax-error #f "not a hyperbracket notation recognized by this DSL"
+        err-dsl-stx
+        op-stx))))

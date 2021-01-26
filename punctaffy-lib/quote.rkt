@@ -350,6 +350,7 @@
 (define-for-syntax
   (helper-for-quasiquote
     hn-expr-2->result-generator
+    err-dsl-stx
     err-phrase-s-expression
     err-phrase-quasiquotation
     err-name
@@ -360,7 +361,7 @@
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/w- n-d en-n-d
   #/dlog 'hqq-a1.1
-  #/w- quotation (s-expr-stx->hn-expr quotation)
+  #/w- quotation (s-expr-stx->hn-expr err-dsl-stx quotation)
   #/dlog 'hqq-a1.2
   #/expect quotation
     (hypernest-furl _ #/hypernest-coil-bump
@@ -465,6 +466,7 @@
         #'datum->datum
         "an s-expression"
         hn))
+    stx
     "s-expression"
     "a quasiquotation"
     'taffy-quote
@@ -488,6 +490,7 @@
           datum->syntax-id
           "a Racket syntax object"
           hn))
+      stx
       "syntax object"
       "a syntax quasiquotation"
       'taffy-quote-syntax
