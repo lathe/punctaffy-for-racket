@@ -3309,16 +3309,14 @@ This design leads to a more regular experience than the current situation in Rac
   @specsubform[atom]{
     Produces a single datum: Itself.
     
-    The @racket[atom] value must be an instance of one of a specific list of types. (TODO: Actually, at the moment, we implement @racket[atom] as a catch-all for all types of value that we don't otherwise recognize. The rest of this part of the documentation is very much aspirational.)
-    
-    Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that has a Racket reader syntax. Some of these are covered by the other cases of this grammar (@racket[list?], @racket[@pair?], @racket[vector?], instances of immutable prefab structure types), and the @racket[atom] case is a catch-all for those values which are unlikely to accommodate internal s-expressions.
+    The @racket[atom] value must be an instance of one of a specific list of types. Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that has a Racket reader syntax. Some of these are covered by the other cases of this grammar (@racket[list?], @racket[@pair?], @racket[vector?], instances of immutable prefab structure types), and the @racket[atom] case is a catch-all for those values which are unlikely to accommodate internal s-expressions.
     
     Values supported:
     
     @itemlist[
       @item{This operation supports quoting @racket[boolean?], @racket[char?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are immutable values with reader syntaxes, so they fit the description exactly.}
       
-      @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent. (TODO: Actually, we don't convert it yet.)}
+      @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent.}
       
       @item{This operation supports quoting @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but symbols exist to be used in code, even if it's code that's never represented as readable text.}
     ]
