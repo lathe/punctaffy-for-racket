@@ -59,8 +59,9 @@
   snippet-sys-snippet-zip-map unselected)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-1-prefab hn-tag-1-vector
-  hn-tag-2-list* hn-tag-nest is-list*-shape? s-expr-stx->hn-expr)
+  hn-tag-0-s-expr-stx hn-tag-1-box hn-tag-1-list hn-tag-1-prefab
+  hn-tag-1-vector hn-tag-2-list* hn-tag-nest is-list*-shape?
+  s-expr-stx->hn-expr)
 
 (require #/only-in racket/list append*)
 
@@ -295,6 +296,11 @@
         (datum->syntax stx-example
           (list->whatever #/hn-expr->s-expr-stx-list elems))
         (hn-expr->s-expr-stx-list tail)))
+  #/mat data (hn-tag-1-box stx-example)
+    (process-listlike stx-example #/fn lst
+      (expect lst (list elem)
+        (error "Encountered an hn-tag-1-box bump which had more than one Racket syntax object in the box")
+      #/box-immutable elem))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/fn lst lst)
   #/mat data (hn-tag-1-vector stx-example)
@@ -347,6 +353,9 @@
     ; TODO: Improve this error.
     (error "spliced more than one element where only one was expected")
     elem))
+
+(define (box-immutable-gen-helper . args)
+  (box-immutable #/singleton-gen-helper #/append* args))
 
 (define-for-syntax
   (hn-expr-2->generator
@@ -469,6 +478,8 @@
         0
         
         (hnb-labeled 0 #/recur tail)))
+  #/mat data (hn-tag-1-box stx-example)
+    (process-listlike stx-example #/list #'box-immutable-gen-helper)
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-vector stx-example)

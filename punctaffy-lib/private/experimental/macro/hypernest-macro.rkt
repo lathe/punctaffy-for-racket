@@ -105,6 +105,11 @@
   [hn-tag-0-s-expr-stx? (-> any/c boolean?)]
   [hn-tag-0-s-expr-stx-stx (-> hn-tag-0-s-expr-stx? syntax?)])
 (provide
+  hn-tag-1-box)
+(provide #/contract-out
+  [hn-tag-1-box? (-> any/c boolean?)]
+  [hn-tag-1-box-stx-example (-> hn-tag-1-box? syntax?)])
+(provide
   hn-tag-1-list)
 (provide #/contract-out
   [hn-tag-1-list? (-> any/c boolean?)]
@@ -401,6 +406,20 @@
   attenuated-hn-tag-0-s-expr-stx
   attenuated-hn-tag-0-s-expr-stx)
 (define-imitation-simple-struct
+  (hn-tag-1-box? hn-tag-1-box-stx-example)
+  unguarded-hn-tag-1-box
+  'hn-tag-1-box (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-1-box
+  unguarded-hn-tag-1-box
+  [stx-example syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-1-box
+  unguarded-hn-tag-1-box
+  attenuated-hn-tag-1-box
+  attenuated-hn-tag-1-box)
+(define-imitation-simple-struct
   (hn-tag-1-list? hn-tag-1-list-stx-example)
   unguarded-hn-tag-1-list
   'hn-tag-1-list (current-inspector) (auto-write) (auto-equal))
@@ -553,6 +572,7 @@
               (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
                 d)
               (or/c
+                hn-tag-1-box?
                 hn-tag-1-list?
                 hn-tag-1-vector?
                 hn-tag-1-prefab?)
@@ -673,6 +693,11 @@
       #/fn hole data
         (dlog 'hqq-c3
         #/hypernest-join-0 ds n-d 1 elems)))
+  
+  ; We traverse into boxes.
+  #/mat s (box elem)
+    (w- elem (s-expr-stx->hn-expr err-dsl-stx elem)
+    #/make-list-layer (hn-tag-1-box stx-example) #/list elem)
   
   ; We traverse into proper and improper lists.
   #/dlog 'hqq-b3.1

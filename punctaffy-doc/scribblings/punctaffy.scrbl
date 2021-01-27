@@ -3294,6 +3294,7 @@ This design leads to a more regular experience than the current situation in Rac
       atom
       ()
       (content-and-splices . content-and-splices)
+      #&content-and-splices
       #(content-and-splices ...)
       #s(prefab-key-datum content-and-splices ...)
       (^>d 1 spliced-list-expr ...)
@@ -3309,7 +3310,7 @@ This design leads to a more regular experience than the current situation in Rac
   @specsubform[atom]{
     Produces a single datum: Itself.
     
-    The @racket[atom] value must be an instance of one of a specific list of types. Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that has a Racket reader syntax. Some of these are covered by the other cases of this grammar (@racket[list?], @racket[@pair?], @racket[vector?], instances of immutable prefab structure types), and the @racket[atom] case is a catch-all for those values which are unlikely to accommodate internal s-expressions.
+    The @racket[atom] value must be an instance of one of a specific list of types. Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that can appear in Racket code. Some of these values can accommodate internal s-expressions, including spliced expressions, and they're covered by the other cases of this grammar (@racket[list?], @racket[box?], @racket[@pair?], @racket[vector?], and instances of immutable prefab structure types). The @racket[atom] case is a catch-all for those values which are unlikely to ever accommodate internal s-expressions.
     
     Values supported:
     
@@ -3318,15 +3319,13 @@ This design leads to a more regular experience than the current situation in Rac
       
       @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent.}
       
-      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but symbols exist to be used in code, even if it's code that's never represented as readable text.}
+      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
     ]
     
     Notable exclusions:
     
     @itemlist[
-      @item{This operation does not yet support quoting @racket[box?] values since they accommodate complex s-expressions inside. These are likely to be supported in the future by adding a new case to this grammar (rather than using the @racket[atom] case). (TODO: Support boxes.)}
-      
-      @item{Out of caution, this operation does not yet support quoting @racket[hash?] values. There are several places where the design of this support could go wrong: Hashes have unspecified iteration order (potentially affecting the order splices would be evaluated), their keys are be unique (potentially unique both after and @emph{before} processing hyperbrackets and splices), and weak hashes have the same syntax as strong hashes despite being non-@racket[equal?]. Racket's @racket[quasiquote] seems to support @racket[unquote] in a hash's value, but @racket[syntax] and @racket[quasisyntax] leave hashes' values alone, neither processing template variables nor process @racket[unsyntax] in that location. To keep clear of confusion, the Punctaffy authors recommend not to use quotation operations to construct Racket's hashes.}
+      @item{Out of caution, this operation does not yet support quoting @racket[hash?] values. There are several places where the design of this support could go wrong: Hashes have unspecified iteration order (potentially affecting the order splices would be evaluated) and their keys are unique (potentially unique both after and @emph{before} processing hyperbrackets and splices). There isn't much of a precedent, either; Racket's @racket[quasiquote] seems to support @racket[unquote] in a hash entry's value, but @racket[syntax] and @racket[quasisyntax] leave hash entries' values alone, processing neither template variables nor @racket[unsyntax] in that location. It's possible that treating hashes as unquotable values will be the design that raises the fewest questions.}
       
       @item{Out of caution, this operation does not yet support quoting @racket[compiled-expression?] or @racket[regexp?] values. These values' reader syntaxes are complex languages, and it's easy to conceive of the idea that they may someday be extended in in ways that support internal s-expressions.}
       
@@ -3340,6 +3339,10 @@ This design leads to a more regular experience than the current situation in Rac
   
   @specsubform[(content-and-splices . content-and-splices)]{
     Produces a single datum by combining some datum values using @racket[list*]. The first @racket[content-and-splices] produces any number of leading arguments for the @racket[list*] call. The second @racket[content-and-splices] must produce a single datum, and that datum serves as the final @racket[list*] argument, namely the tail.
+  }
+  
+  @specsubform[#&content-and-splices]{
+    Produces a single datum: An immutable box which contains the datum value produced by the given @racket[content-and-splices] term. The given @racket[content-and-splices] term must produce a single datum.
   }
   
   @specsubform[#(content-and-splices ...)]{
