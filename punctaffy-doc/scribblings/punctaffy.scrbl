@@ -3296,8 +3296,8 @@ This design leads to a more regular experience than the current situation in Rac
       (content-and-splices . content-and-splices)
       #(content-and-splices ...)
       #s(prefab-key-datum content-and-splices ...)
-      (^>d 1 spliced-list-expr)
-      (^<d degree deeper-content-and-splices))]
+      (^>d 1 spliced-list-expr ...)
+      (^<d degree deeper-content-and-splices ...))]
   #:contracts ([spliced-list-expr list?])
 ]{
   A variation upon @racket[quote] or @racket[quasiquote] that uses @tech{hyperbrackets} to delimit a quoted @tech{degree}-2 @tech{hypersnippet} of datum values. Expressions can be supplied within the degree-1 @tech{holes} of this hypersnippet to cause their resulting lists to be spliced into the surrounding datum content.
@@ -3340,8 +3340,6 @@ This design leads to a more regular experience than the current situation in Rac
   
   @specsubform[(content-and-splices . content-and-splices)]{
     Produces a single datum by combining some datum values using @racket[list*]. The first @racket[content-and-splices] produces any number of leading arguments for the @racket[list*] call. The second @racket[content-and-splices] must produce a single datum, and that datum serves as the final @racket[list*] argument, namely the tail.
-    
-    (TODO: Currently, there may be issues with using a hyperbracket in the tail position.)
   }
   
   @specsubform[#(content-and-splices ...)]{
@@ -3352,19 +3350,19 @@ This design leads to a more regular experience than the current situation in Rac
     Produces a single datum: A prefab struct which contains all the datum values produced by each of the given @racket[content-and-splices] terms. The prefab struct's key is given by @racket[_prefab-key-datum], which must be a @racket[prefab-key?] value which specifies no mutable fields.
   }
   
-  @specsubform[#:literals (^>d) (^>d 1 spliced-list-expr)]{
-    Evaluates the expression @racket[spliced-list-expr] and produces whatever datum values it returns. The expression must return a list; the elements of the list are the datum values to return. The elements can be any type of value, even types that this operation doesn't allow in the quoted content.
+  @specsubform[#:literals (^>d) (^>d 1 spliced-list-expr ...)]{
+    Evaluates the expressions @racket[spliced-list-expr ...] and produces whatever datum values they return. Each expression must return a list; the elements of the lists, appended together, are the datum values to return. The elements can be any type of value, even types that this operation doesn't allow in the quoted content.
   }
   
   @specsubform[
     #:literals (^<d)
-    (^<d degree deeper-content-and-splices)
+    (^<d degree deeper-content-and-splices ...)
   ]{
     Parses as an opening hyperbracket, and produces datum values which denote a similar opening hyperbracket.
     
-    Within the @racket[deeper-content-and-splices] of an opening hyperbracket like this of some degree N, the same grammar as @racket[content-and-splices] applies except that occurrences of @racket[(^>d degree _shallower-content-and-splices)] for degree less than N instead serve as hyperbrackets that close this opening hyperbracket.
+    Within the @racket[deeper-content-and-splices] of an opening hyperbracket like this of some degree N, the same grammar as @racket[content-and-splices] applies except that occurrences of @racket[(^>d degree _shallower-content-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this opening hyperbracket.
     
-    Within the @racket[_shallower-content-and-splices] of a closing hyperbracket of some degree N, the same grammar applies that did at the location of the corresponding opening bracket, except that occurrences of @racket[(^>d degree deeper-content-and-splices)] for degree less than N instead serve as hyperbrackets that close this closing hyperbracket (resuming the body of the opening hyperbracket again).
+    Within the @racket[_shallower-content-and-splices] of a closing hyperbracket of some degree N, the same grammar applies that did at the location of the corresponding opening bracket, except that occurrences of @racket[(^>d degree deeper-content-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this closing hyperbracket (resuming the body of the opening hyperbracket again).
   }
   
   Each intermediate @racket[_content-and-values] may result in any number of datum values, but the overall @racket[_content-and-values] must result in exactly one datum. If it results in some other number of datum values, an error is raised.

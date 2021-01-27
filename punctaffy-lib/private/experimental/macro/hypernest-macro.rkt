@@ -85,6 +85,7 @@
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof
   hypernest-shape hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee
+  htb-labeled htb-unlabeled hypertee-from-brackets
   hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
   selectable-map selected snippet-sys-dim-sys
@@ -95,7 +96,8 @@
   snippet-sys-snippet-select-if-degree
   snippet-sys-snippet-select-if-degree<
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
-  snippet-sys-snippet-with-degree=/c unselected)
+  snippet-sys-snippet-with-degree=/c snippet-sys-snippet-zip-map
+  unselected)
 
 (provide
   hn-tag-0-s-expr-stx)
@@ -108,11 +110,6 @@
   [hn-tag-1-list? (-> any/c boolean?)]
   [hn-tag-1-list-stx-example (-> hn-tag-1-list? syntax?)])
 (provide
-  hn-tag-1-list*)
-(provide #/contract-out
-  [hn-tag-1-list*? (-> any/c boolean?)]
-  [hn-tag-1-list*-stx-example (-> hn-tag-1-list*? syntax?)])
-(provide
   hn-tag-1-vector)
 (provide #/contract-out
   [hn-tag-1-vector? (-> any/c boolean?)]
@@ -123,6 +120,11 @@
   [hn-tag-1-prefab? (-> any/c boolean?)]
   [hn-tag-1-prefab-key (-> hn-tag-1-prefab? prefab-key?)]
   [hn-tag-1-prefab-stx-example (-> hn-tag-1-prefab? syntax?)])
+(provide
+  hn-tag-2-list*)
+(provide #/contract-out
+  [hn-tag-2-list*? (-> any/c boolean?)]
+  [hn-tag-2-list*-stx-example (-> hn-tag-2-list*? syntax?)])
 (provide
   hn-tag-unmatched-closing-bracket)
 (provide #/contract-out
@@ -136,6 +138,14 @@
 (provide #/contract-out
   [hn-tag-other? (-> any/c boolean?)]
   [hn-tag-other-val (-> hn-tag-other? any/c)]
+  
+  ; TODO: We should constrain this argument's contract more. It should
+  ; be `(snippet-sys-snippet/c shape-ss)`, where `shape-ss` is
+  ; computed the way we usually do in this file. In order for this to
+  ; make complete sense as a contract, we should probably be exporting
+  ; `shape-ss` or its building blocks.
+  [is-list*-shape? (-> any/c boolean?)]
+  
   [hn-expr/c (-> contract?)]
   [s-expr-stx->hn-expr (-> syntax? syntax? #/hn-expr/c)])
 
@@ -298,6 +308,14 @@
       (just local))
     (nothing)))
 
+(define (ht-bracs-n-d ds n-d degree . brackets)
+  (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
+  #/hypertee-from-brackets ds (n-d degree)
+    (list-map brackets #/fn bracket
+      (mat bracket (htb-labeled d data) (htb-labeled (n-d d) data)
+      #/mat bracket (htb-unlabeled d) (htb-unlabeled (n-d d))
+      #/htb-unlabeled (n-d bracket)))))
+
 (define (hypernest-from-brackets-n-d* ds n-d degree brackets)
   (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
   #/hypernest-from-brackets ds degree
@@ -397,20 +415,6 @@
   attenuated-hn-tag-1-list
   attenuated-hn-tag-1-list)
 (define-imitation-simple-struct
-  (hn-tag-1-list*? hn-tag-1-list*-stx-example)
-  unguarded-hn-tag-1-list*
-  'hn-tag-1-list* (current-inspector) (auto-write) (auto-equal))
-(define-match-expander-attenuated
-  attenuated-hn-tag-1-list*
-  unguarded-hn-tag-1-list*
-  [stx-example syntax?]
-  #t)
-(define-match-expander-from-match-and-make
-  hn-tag-1-list*
-  unguarded-hn-tag-1-list*
-  attenuated-hn-tag-1-list*
-  attenuated-hn-tag-1-list*)
-(define-imitation-simple-struct
   (hn-tag-1-vector? hn-tag-1-vector-stx-example)
   unguarded-hn-tag-1-vector
   'hn-tag-1-vector (current-inspector) (auto-write) (auto-equal))
@@ -439,6 +443,20 @@
   unguarded-hn-tag-1-prefab
   attenuated-hn-tag-1-prefab
   attenuated-hn-tag-1-prefab)
+(define-imitation-simple-struct
+  (hn-tag-2-list*? hn-tag-2-list*-stx-example)
+  unguarded-hn-tag-2-list*
+  'hn-tag-2-list* (current-inspector) (auto-write) (auto-equal))
+(define-match-expander-attenuated
+  attenuated-hn-tag-2-list*
+  unguarded-hn-tag-2-list*
+  [stx-example syntax?]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-2-list*
+  unguarded-hn-tag-2-list*
+  attenuated-hn-tag-2-list*
+  attenuated-hn-tag-2-list*)
 
 ; The `hn-tag-unmatched-closing-bracket` tag can occur as a bump of
 ; degree infinity (in the sense of `(extended-with-top-dim-infinite)`
@@ -491,6 +509,29 @@
   hn-tag-other
   'hn-tag-other (current-inspector) (auto-write) (auto-equal))
 
+(define example-list*-shape
+  (w- ds en-ds
+  #/w- n-d en-n-d
+  #/ht-bracs-n-d ds n-d 2
+    (htb-labeled 1 #/trivial)
+    0
+    (htb-labeled 1 #/trivial)
+    0
+    (htb-labeled 0 #/trivial)))
+
+(define (is-list*-shape? bump-interior-shape)
+  (w- ds en-ds
+  #/w- sfs (hypertee-snippet-format-sys)
+  #/w- ss (hypernest-snippet-sys sfs ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/just? #/snippet-sys-snippet-zip-map shape-ss
+    bump-interior-shape
+    example-list*-shape
+    (fn hole bump-data example-data
+      (dissect bump-data (trivial)
+      #/dissect example-data (trivial)
+      #/just #/trivial))))
+
 (define (hn-expr/c)
   (w- ds en-ds
   #/w- n-d en-n-d
@@ -513,9 +554,14 @@
                 d)
               (or/c
                 hn-tag-1-list?
-                hn-tag-1-list*?
                 hn-tag-1-vector?
                 hn-tag-1-prefab?)
+            #/if
+              (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
+                d)
+              (if (is-list*-shape? bump-interior-shape)
+                hn-tag-2-list*?
+                none/c)
             #/if (dim-sys-dim=? ds (extended-with-top-dim-infinite) d)
               (expect
                 (snippet-sys-snippet-undone shape-ss
@@ -672,31 +718,29 @@
       ; can recover this layer of information about it.
       (dlog 'hqq-b3.5
       #/make-list-layer (dlog 'hqq-b3.5.1 #/hn-tag-1-list stx-example) elems)
-      
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
-      ;
-      ; TODO: This probably doesn't behave as expected when the tail
-      ; is a splice of more or less than one datum. What happens is
-      ; that those datums (however many there are) are appended to
-      ; the other elements to serve as `list*` arguments. If the tail
-      ; has zero datum values, that means the previous element in
-      ; `elems` list will be treated as the tail instead, and if there
-      ; isn't a previous element, then `list*` will be called with
-      ; zero arguments and cause an error. If the tail has more than
-      ; one datum value, only the last one is treated like the tail,
-      ; and the previous ones become list elements.
-      ;
-      ; What we should do instead is change the design of
-      ; `hn-tag-1-list*` so that it goes on a degree-2 bump (or hole?)
-      ; with no content and two degree-1 holes. The first degree-1
-      ; hole bounds the `elems`, and the second degree-1 hole bounds
-      ; the `tail`. That way we can tell when we get the wrong number
-      ; of elements in the tail.
-      ;
-      (make-list-layer (hn-tag-1-list* stx-example)
-        (append elems #/list tail)))
+      (snippet-sys-snippet-set-degree-and-bind-highest-degrees ss
+        (dim-sys-morphism-sys-morph-dim n-d 1)
+        (dlog 'hqq-c2
+        #/hn-bracs-n-d ds n-d 2
+          
+          (hnb-open 2 #/hn-tag-2-list* stx-example)
+          1
+            (hnb-labeled 1
+              (selected #/hypernest-join-0 ds n-d 1 elems))
+            0
+          0
+          1
+            (hnb-labeled 1 #/selected tail)
+            0
+          0
+          0
+          
+          (hnb-labeled 0 #/unselected #/trivial))
+      #/fn hole data
+        data))
   
   ; We traverse into prefab structs.
   #/dlog 'hqq-b4

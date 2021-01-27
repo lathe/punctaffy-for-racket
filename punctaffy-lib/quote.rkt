@@ -30,8 +30,10 @@
 
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
-(require #/for-syntax #/only-in lathe-comforts/list list-map)
-(require #/for-syntax #/only-in lathe-comforts/maybe just just-value)
+(require #/for-syntax #/only-in lathe-comforts/list
+  list-each list-map)
+(require #/for-syntax #/only-in lathe-comforts/maybe
+  just just-value nothing)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/dim
@@ -44,20 +46,26 @@
   hypernest-get-hole-zero-maybe hypernest-join-list-and-tail-along-0
   hypernest-shape hypernest-snippet-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
+  hypertee-coil-hole hypertee-coil-zero hypertee-furl
   hypertee-snippet-format-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
-  snippet-sys-shape->snippet snippet-sys-shape-snippet-sys
+  selected snippet-sys-shape->snippet snippet-sys-shape-snippet-sys
   snippet-sys-snippet-bind snippet-sys-snippet-degree
   snippet-sys-snippet-each snippet-sys-snippet-join
-  snippet-sys-snippet-map snippet-sys-snippet-map-selective
-  snippet-sys-snippet->maybe-shape
+  snippet-sys-snippet-join-selective snippet-sys-snippet-map
+  snippet-sys-snippet-map-selective snippet-sys-snippet->maybe-shape
   snippet-sys-snippet-select-if-degree
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
-  snippet-sys-snippet-zip-map)
+  snippet-sys-snippet-zip-map unselected)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-1-list* hn-tag-1-prefab
-  hn-tag-1-vector hn-tag-nest s-expr-stx->hn-expr)
+  hn-tag-0-s-expr-stx hn-tag-1-list hn-tag-1-prefab hn-tag-1-vector
+  hn-tag-2-list* hn-tag-nest is-list*-shape? s-expr-stx->hn-expr)
+
+(require #/only-in racket/list append*)
+
+(require #/only-in lathe-comforts fn)
+(require #/only-in lathe-comforts/list list-each)
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
 (require #/for-syntax #/only-in racket/syntax syntax-local-eval)
@@ -164,6 +172,45 @@
 (define-for-syntax en-n-d
   (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
+(define-for-syntax (parse-list*-tag bump-degree tag tails)
+  (w- ds en-ds
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- n-d en-n-d
+  #/expect tag (hn-tag-2-list* stx-example) (nothing)
+  #/expect
+    (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
+      bump-degree)
+    #t
+    (error "Encountered an hn-tag-2-list* bump with a degree other than 2")
+  #/expect (snippet-sys-snippet->maybe-shape ss tails)
+    (just tails)
+    (error "Encountered an hn-tag-2-list* bump with contents in its interior")
+  
+  ; TODO: This begs for an abstraction. Perhaps ideally, there would
+  ; be a match pattern that had hyperbrackets so we could write
+  ; something like...
+  ;
+  ;   #/expect tails
+  ;     (taffy-hn-expr-shape
+  ;       (^<d 2 (^>d 1 list*-elems) (^>d 1 list*-tail))
+  ;       tail)
+  ;     (error "Encountered...")
+  ;
+  #/expect (is-list*-shape? tails) #t
+    (error "Encountered an hn-tag-2-list* bump which didn't have precisely two degree-1 holes")
+  #/dissect tails
+    (hypertee-furl _ #/hypertee-coil-hole _ _ list*-elems
+      (hypertee-furl _ #/hypertee-coil-hole _ _ tails
+        (hypertee-furl _ #/hypertee-coil-zero)))
+  #/dissect tails
+    (hypertee-furl _ #/hypertee-coil-hole _ _ list*-tail
+      (hypertee-furl _ #/hypertee-coil-hole _ _ tails
+        (hypertee-furl _ #/hypertee-coil-zero)))
+  #/dissect tails
+    (hypertee-furl _ #/hypertee-coil-hole _ _ tail
+      (hypertee-furl _ #/hypertee-coil-zero))
+  
+  #/just #/list stx-example list*-elems list*-tail tail))
 
 (define-for-syntax (adjust-atom err-dsl-stx atom-stx)
   (w- a (syntax-e atom-stx)
@@ -250,14 +297,22 @@
         (hn-expr->s-expr-stx-list tail)))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/fn lst lst)
-  #/mat data (hn-tag-1-list* stx-example)
-    (process-listlike stx-example #/fn lst #/apply list* lst)
   #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/fn lst
       (vector->immutable-vector #/list->vector lst))
   #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example #/fn lst
       (apply make-prefab-struct key lst))
+  #/mat (parse-list*-tag bump-degree data tails)
+    (just #/list stx-example list*-elems list*-tail tail)
+    (w- list*-elems (hn-expr->s-expr-stx-list list*-elems)
+    #/expect (hn-expr->s-expr-stx-list list*-tail)
+      (list list*-tail)
+      (error "Encountered an hn-tag-2-list* bump which had more than one Racket syntax object in its tail when converting an hn-expression to a list of Racket syntax objects")
+    #/cons
+      ; NOTE: Ironically, we don't actually use `list*` here.
+      (datum->syntax stx-example #/append list*-elems list*-tail)
+      (hn-expr->s-expr-stx-list tail))
   #/mat data (hn-tag-nest)
     (expect
       (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
@@ -266,9 +321,36 @@
     #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
   #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
+(define (splice-gen-helper-run-time . args)
+  (begin
+    (list-each args #/fn arg
+      (unless (list? arg)
+        ; TODO: Improve this error.
+        (error "spliced a non-list value")))
+  #/append* args))
+
+(define-syntax (splice-gen-helper stx)
+  (syntax-protect
+  #/syntax-parse stx #/ (_ arg ...)
+  #/begin
+    (list-each (syntax->list #'(arg ...)) #/fn arg
+      (when (keyword? (syntax-e arg))
+        (raise-syntax-error #f "keyword not allowed in splice"
+          ; TODO: See if we can somehow procure the `err-dsl-stx` here
+          ; so that this can report the location of the quasiquotation
+          ; operation that the splice belongs to.
+          arg)))
+    #'(splice-gen-helper-run-time arg ...)))
+
+(define (singleton-gen-helper lst)
+  (expect lst (list elem)
+    ; TODO: Improve this error.
+    (error "spliced more than one element where only one was expected")
+    elem))
+
 (define-for-syntax
   (hn-expr-2->generator
-    err-dsl-stx quote-expr datum->result-id err-phrase hn)
+    err-dsl-stx err-phrase quote-expr datum->result-id hn)
   (dlog 'hqq-h1
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -277,7 +359,7 @@
   #/w- recur
     (fn hn
       (hn-expr-2->generator
-        err-dsl-stx quote-expr datum->result-id err-phrase hn))
+        err-dsl-stx err-phrase quote-expr datum->result-id hn))
   #/expect
     (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
       (snippet-sys-snippet-degree ss hn))
@@ -290,12 +372,42 @@
     (fn tails
       (snippet-sys-snippet-map shape-ss tails #/fn d tail
         (recur tail)))
+  
   #/mat dropped (hypernest-coil-hole _ tails-shape data tails)
-    (hypernest-furl ds #/hypernest-coil-hole
-      (dim-sys-morphism-sys-morph-dim n-d 2)
-      tails-shape
-      data
-      (process-tails tails))
+    (dlog 'hqq-h3.1
+    #/dissect data (trivial)
+    #/dlog 'hqq-h3.2
+    #/mat tails (hypertee-furl _ #/hypertee-coil-zero)
+      ; We do nothing with the degree-0 hole.
+      (hypernest-furl ds #/hypernest-coil-hole
+        (dim-sys-morphism-sys-morph-dim n-d 2)
+        tails-shape
+        data
+        tails)
+    #/dlog 'hqq-h3.3
+    #/dissect tails
+      (hypertee-furl _ #/hypertee-coil-hole _ _ tail
+        (hypertee-furl _ #/hypertee-coil-zero))
+      
+      ; We transform each degree-1 hole by wrapping its spliced
+      ; expressions in `splice-gen-helper`.
+      ;
+      ; TODO: See if there's a better `stx-example` to use here.
+      ;
+      (dlog 'hqq-h3.4
+      #/w- stx-example err-dsl-stx
+      #/snippet-sys-snippet-join-selective ss
+        (hn-bracs-n-d ds n-d 2
+          
+          #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+            (hnb-open 0 #/hn-tag-0-s-expr-stx #'splice-gen-helper)
+            
+            (hnb-labeled 1 #/unselected #/trivial)
+            0
+          0
+          
+          (hnb-labeled 0 #/selected #/recur tail))))
+  
   #/dlog 'hqq-h4
   #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
   #/dlog 'hqq-h5
@@ -328,46 +440,37 @@
       #/snippet-sys-snippet-join ss
       #/dlog 'hqq-h5.4
       #/hn-bracs-n-d ds n-d 2
-        (hnb-open 1 #/hn-tag-1-list stx-example)
         
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'list)
-        
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx datum->result-id)
-        (hnb-open 0 #/hn-tag-0-s-expr-stx stx-example)
-        
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'apply)
-        
-        (hnb-labeled 1 #/hypernest-join-0 ds n-d 2
-        #/list-map list-beginnings #/fn list-beginning
-          (hn-bracs-n-d ds n-d 2
-            (hnb-open 0 #/hn-tag-0-s-expr-stx list-beginning)
-          #/hnb-labeled 0 #/trivial))
-        0
-        
-        (hnb-open 1 #/hn-tag-1-list stx-example)
-        
-        (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
-        
-        (hnb-labeled 1 #/recur elems)
-        0
-        
-        0
-        
-        0
-        
-        0
-        
+        #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+          (hnb-open 0 #/hn-tag-0-s-expr-stx #'list)
+          
+          #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+            (hnb-open 0 #/hn-tag-0-s-expr-stx datum->result-id)
+            (hnb-open 0 #/hn-tag-0-s-expr-stx stx-example)
+            
+            #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+              (hnb-open 0 #/hn-tag-0-s-expr-stx #'apply)
+              
+              (hnb-labeled 1 #/hypernest-join-0 ds n-d 2
+              #/list-map list-beginnings #/fn list-beginning
+                (hn-bracs-n-d ds n-d 2
+                  (hnb-open 0 #/hn-tag-0-s-expr-stx list-beginning)
+                #/hnb-labeled 0 #/trivial))
+              0
+              
+              #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+                (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
+                
+                (hnb-labeled 1 #/recur elems)
+                0
+              0
+            0
+          0
         0
         
         (hnb-labeled 0 #/recur tail)))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/list #'list)
-  #/mat data (hn-tag-1-list* stx-example)
-    (process-listlike stx-example #/list #'list*)
   #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/list #'vector-immutable)
   #/mat data (hn-tag-1-prefab key stx-example)
@@ -387,6 +490,42 @@
     #/dissect mutability 'known-to-be-immutable
     #/process-listlike stx-example
       (list #'make-prefab-struct #`'#,key))
+  
+  #/mat (parse-list*-tag bump-degree data tails)
+    (just #/list stx-example list*-elems list*-tail tail)
+    (snippet-sys-snippet-join ss
+      (hn-bracs-n-d ds n-d 2
+        
+        #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+          (hnb-open 0 #/hn-tag-0-s-expr-stx #'list)
+          
+          #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+            (hnb-open 0 #/hn-tag-0-s-expr-stx datum->result-id)
+            (hnb-open 0 #/hn-tag-0-s-expr-stx stx-example)
+            
+            #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+              (hnb-open 0 #/hn-tag-0-s-expr-stx #'list*)
+              
+              (hnb-labeled 1 #/recur list*-elems)
+              0
+              
+              #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+                (hnb-open 0
+                  (hn-tag-0-s-expr-stx #'singleton-gen-helper))
+                
+                #||# (hnb-open 1 #/hn-tag-1-list stx-example)
+                  (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
+                  
+                  (hnb-labeled 1 #/recur list*-tail)
+                  0
+                0
+              0
+            0
+          0
+        0
+        
+        (hnb-labeled 0 #/recur tail)))
+  
   #/mat data (hn-tag-nest)
     (expect
       (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
@@ -531,9 +670,9 @@
     (fn hn
       (hn-expr-2->generator
         stx
+        "an s-expression"
         (fn expr #`'#,expr)
         #'datum->datum
-        "an s-expression"
         hn))
     stx
     "s-expression"
@@ -556,9 +695,9 @@
       (fn hn
         (hn-expr-2->generator
           stx
+          "a Racket syntax object"
           quote-expr
           datum->syntax-id
-          "a Racket syntax object"
           hn))
       stx
       "syntax object"
@@ -578,6 +717,7 @@
         (fn expr #`(quote-syntax #,expr #:local))
         #'datum->quoted-syntax-local
         #'quotation)]))
+
 
 ; TODO: Define `taffy-datum` corresponding to `datum`/`quasidatum`,
 ; `taffy-syntax` corresponding to `syntax`/`quasisyntax`, and
