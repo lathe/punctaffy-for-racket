@@ -553,9 +553,31 @@
   #/w- ds en-ds
   #/w- n-d en-n-d
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- invoke-expand
+    (fn expand err-dsl-stx stx
+      ; TODO: See if we can call this more like a Racket syntax
+      ; transformer. If we can, we'll want to approximate this
+      ; process:
+      ;
+      ;   - Disarm `stx`.
+      ;
+      ;   - Remove any `'taint-mode` and `'certify-mode` syntax
+      ;     properties from `stx`.
+      ;
+      ;   - Rearm the result, and apply syntax properties to the
+      ;     result that correspond to the syntax properties of `stx`.
+      ;     It's not really clear how this would be performed, since
+      ;     the result is an hn-expression that may "contain" several
+      ;     encoded Racket syntax objects (their trees encoded as
+      ;     concentric degree-1 bumps and their leaves as degree-0
+      ;     bumps) that are peers of each other, as well as several
+      ;     bumps that have nothing to do with this encoding of Racket
+      ;     syntax objects.
+      ;
+      (expand err-dsl-stx stx))
   #/mat
     (syntax-parse stx
-      [ (op:id arg ...)
+      [ (op:id . args)
         (dlog 'hqq-b1.1 #'op
         #/w- op-stx #'op
         #/maybe-bind (syntax-local-maybe op-stx) #/fn op-val
@@ -567,30 +589,11 @@
         #/possibly-erroneous-hn-builder-syntax-maybe op-stx op-val)]
       [_ (nothing)])
     (just expand)
-    
-    ; If `stx` is shaped like `op` or `(op arg ...)` where `op` is
+    ; If `stx` is shaped like `op` or `(op . args)` where `op` is
     ; bound to an `hn-builder-syntax?` syntax transformer according to
     ; `syntax-local-value`, then we invoke it on `stx`.
-    ;
-    ; TODO: See if we can call this more like a Racket syntax
-    ; transformer. If we can, we'll want to approximate this process:
-    ;
-    ;   - Disarm `stx`.
-    ;
-    ;   - Remove any `'taint-mode` and `'certify-mode` syntax
-    ;     properties from `stx`.
-    ;
-    ;   - Rearm the result, and apply syntax properties to the result
-    ;     that correspond to the syntax properties of `stx`. It's not
-    ;     really clear how this would be performed, since the result
-    ;     is an hn-expression that may "contain" several encoded
-    ;     Racket syntax objects (their trees encoded as concentric
-    ;     degree-1 bumps and their leaves as degree-0 bumps) that are
-    ;     peers of each other, as well as several bumps that have
-    ;     nothing to do with this encoding of Racket syntax objects.
-    ;
     (dlog 'hqq-b1.3
-    #/expand err-dsl-stx stx)
+    #/invoke-expand expand err-dsl-stx stx)
   #/dlog 'hqq-b2
   #/w- process-list
     (fn elems
@@ -627,31 +630,73 @@
   
   ; We traverse into proper and improper lists.
   #/dlog 'hqq-b3.1
-  #/if (pair? s)
+  #/mat s (cons first-elem rest)
     (dlog 'hqq-b3.2
-    #/dissect (improper-list->list-and-tail s) (list elems tail)
-    #/dlog 'hqq-b3.3
-    #/w- elems (process-list elems)
-    #/dlog 'hqq-b3.4
-    #/mat tail (list)
+    #/dissect
+      (w-loop next
+        rev-elems (list #/s-expr-stx->hn-expr err-dsl-stx first-elem)
+        rest rest
+        
+        (mat rest (cons op-stx args)
+          (mat
+            (maybe-bind (syntax-local-maybe op-stx) #/fn op-val
+              (possibly-erroneous-hn-builder-syntax-maybe
+                op-stx op-val))
+            (just expand)
+            (list
+              rev-elems
+              ; TODO: See if we should convert `rest` to be `syntax?`
+              ; here.
+              (just #/invoke-expand expand err-dsl-stx rest))
+            (next
+              (cons (s-expr-stx->hn-expr err-dsl-stx op-stx)
+                rev-elems)
+              args))
+        #/mat rest (list)
+          (list rev-elems (nothing))
+          (list
+            rev-elems
+            ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
+            ; operation here, we already know `#'tail` can't be
+            ; cons-shaped. Usually it'll be wrapped up as an atom.
+            ; However, it could still be expanded as an identifier
+            ; syntax, processed as a vector, or processed as a prefab
+            ; struct.
+            (just #/s-expr-stx->hn-expr err-dsl-stx rest))))
+      (list rev-elems maybe-tail)
+    #/w- elems (reverse rev-elems)
+    #/expect maybe-tail (just tail)
       ; The metadata we pass in here represents the `list` operation,
       ; so its data contains the metadata of `stx` so that clients
       ; processing this hypernest-based encoding of this Racket syntax
       ; can recover this layer of information about it.
       (dlog 'hqq-b3.5
       #/make-list-layer (dlog 'hqq-b3.5.1 #/hn-tag-1-list stx-example) elems)
-    ; NOTE: Even though we call the full `s-expr-stx->hn-expr`
-    ; operation here, we already know `#'tail` can't be cons-shaped.
-    ; Usually it'll be wrapped up as an atom. However, it could still
-    ; be expanded as an identifier syntax, processed as a vector, or
-    ; processed as a prefab struct.
-    #/dlog 'hqq-b3.6
-    #/w- tail (s-expr-stx->hn-expr err-dsl-stx tail)
+      
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
+      ;
+      ; TODO: This probably doesn't behave as expected when the tail
+      ; is a splice of more or less than one datum. What happens is
+      ; that those datums (however many there are) are appended to
+      ; the other elements to serve as `list*` arguments. If the tail
+      ; has zero datum values, that means the previous element in
+      ; `elems` list will be treated as the tail instead, and if there
+      ; isn't a previous element, then `list*` will be called with
+      ; zero arguments and cause an error. If the tail has more than
+      ; one datum value, only the last one is treated like the tail,
+      ; and the previous ones become list elements.
+      ;
+      ; What we should do instead is change the design of
+      ; `hn-tag-1-list*` so that it goes on a degree-2 bump (or hole?)
+      ; with no content and two degree-1 holes. The first degree-1
+      ; hole bounds the `elems`, and the second degree-1 hole bounds
+      ; the `tail`. That way we can tell when we get the wrong number
+      ; of elements in the tail.
+      ;
       (make-list-layer (hn-tag-1-list* stx-example)
-      #/append elems #/list tail))
+        (append elems #/list tail)))
   
   ; We traverse into prefab structs.
   #/dlog 'hqq-b4
