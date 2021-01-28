@@ -300,3 +300,21 @@
     (w- x 1 #/taffy-quote-syntax #:local #/^<d 2 x))
   #f
   "`taffy-quote-syntax` with `#:local` does not prune local binding information")
+
+(check-equal?
+  (syntax-property (quote-syntax {a b c}) 'paren-shape)
+  #\{
+  "Racket's `quote-syntax` preserves the `'paren-shape` syntax property")
+(check-equal?
+  (syntax-property
+    (taffy-quote-syntax #/^<d 2 {a (^>d 1 #/list (quote-syntax b)) c})
+    'paren-shape)
+  #\{
+  "`taffy-quote-syntax` preserves the `'paren-shape` syntax property, even when there's a splice beyond that node")
+
+(check-equal?
+  (syntax-property
+    (taffy-quote-syntax #/^<d 2 #/^>d 1 #/list #/quote-syntax {a b c})
+    'paren-shape)
+  #\{
+  "`taffy-quote-syntax` preserves the `'paren-shape` syntax property in the spliced subexpressions")
