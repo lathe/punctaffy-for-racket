@@ -262,6 +262,12 @@
           (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c
             contract?)])
       [_ contract?])]
+  [snippet-sys-snippet-fitting-shape/c
+    (->i
+      (
+        [ss snippet-sys?]
+        [shape (ss) (snippet-sys-unlabeled-shape/c ss)])
+      [_ contract?])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the input
   ; shape.
@@ -351,35 +357,16 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss snippet)
+          (w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
-              (w- prefix-hole-d
-                (snippet-sys-snippet-degree shape-ss prefix-hole)
-              #/maybe/c #/selectable/c any/c
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `prefix-hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                    (fn suffix-hole subject-data
-                      (w- suffix-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss suffix-hole)
-                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                    (fn hole shape-data subject-data trivial?))))])])
+              (maybe/c #/selectable/c any/c #/and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-fitting-shape/c ss
+                  prefix-hole))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -526,35 +513,16 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss prefix)
+          (w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
-              (w- prefix-hole-d
-                (snippet-sys-snippet-degree shape-ss prefix-hole)
-              #/selectable/c any/c
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `prefix-hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                    (fn suffix-hole subject-data
-                      (w- suffix-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss suffix-hole)
-                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                    (fn hole shape-data subject-data trivial?))))])])
+              (selectable/c any/c #/and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-fitting-shape/c ss
+                  prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])]
@@ -563,33 +531,13 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c (snippet-sys-snippet/c ss)
+          (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
           #/w- d (snippet-sys-snippet-degree ss snippet)
           #/snippet-sys-snippetof ss #/fn prefix-hole
-            (w- prefix-hole-d
-              (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/selectable/c any/c
-              
-              ; What this means is that this should be a snippet whose
-              ; low-degree holes correspond to the holes of
-              ; `prefix-hole` and contain `trivial?` values.
-              ;
-              ; TODO: See if we can factor out a
-              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-              ; something out of this.
-              ;
-              (and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
-                (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                  (fn suffix-hole subject-data
-                    (w- suffix-hole-d
-                      (snippet-sys-snippet-degree
-                        shape-ss suffix-hole)
-                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                  (fn hole shape-data subject-data trivial?)))))])
+            (selectable/c any/c #/and/c
+              (snippet-sys-snippet-with-degree=/c ss d)
+              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss snippet)])]
@@ -599,34 +547,16 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss prefix)
+          (w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
-              (w- prefix-hole-d
-                (snippet-sys-snippet-degree shape-ss prefix-hole)
-              
-              ; What this means is that this should be a snippet
-              ; whose low-degree holes correspond to the holes of
-              ; `prefix-hole` and contain `trivial?` values.
-              ;
-              ; TODO: See if we can factor out a
-              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-              ; something out of this.
-              ;
-              #/and/c
+              (and/c
                 (snippet-sys-snippet-with-degree=/c ss d)
-                (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                  (fn suffix-hole subject-data
-                    (w- suffix-hole-d
-                      (snippet-sys-snippet-degree
-                        shape-ss suffix-hole)
-                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                  (fn hole shape-data subject-data trivial?)))])])
+                (snippet-sys-snippet-fitting-shape/c ss
+                  prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])]
@@ -635,32 +565,13 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c (snippet-sys-snippet/c ss)
+          (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
           #/w- d (snippet-sys-snippet-degree ss snippet)
           #/snippet-sys-snippetof ss #/fn prefix-hole
-            (w- prefix-hole-d
-              (snippet-sys-snippet-degree shape-ss prefix-hole)
-            
-            ; What this means is that this should be a snippet whose
-            ; low-degree holes correspond to the holes of
-            ; `prefix-hole` and contain `trivial?` values.
-            ;
-            ; TODO: See if we can factor out a
-            ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-            ; something out of this.
-            ;
-            #/and/c
+            (and/c
               (snippet-sys-snippet-with-degree=/c ss d)
-              (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                (fn suffix-hole subject-data
-                  (w- suffix-hole-d
-                    (snippet-sys-snippet-degree
-                      shape-ss suffix-hole)
-                  #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                (fn hole shape-data subject-data trivial?))))])
+              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss snippet)])]
@@ -736,38 +647,16 @@
           [ss snippet-sys?]
           [snippet (ss) (snippet-sys-snippet/c ss)]
           [hv-to-splice (ss snippet)
-            (w- ds (snippet-sys-dim-sys ss)
-            #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-            #/w- d (snippet-sys-snippet-degree ss snippet)
+            (w- d (snippet-sys-snippet-degree ss snippet)
             #/->i
               (
                 [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
                 [data any/c])
               [_ (prefix-hole)
-                (w- prefix-hole-d
-                  (snippet-sys-snippet-degree shape-ss prefix-hole)
-                #/maybe/c #/selectable/c any/c
-                  
-                  ; What this means is that this should be a snippet
-                  ; whose low-degree holes correspond to the holes of
-                  ; `prefix-hole` and contain `trivial?` values.
-                  ;
-                  ; TODO: See if we can factor out a
-                  ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                  ; something out of this.
-                  ;
-                  (and/c
-                    (snippet-sys-snippet-with-degree=/c ss d)
-                    (snippet-sys-snippet-zip-selective/c ss
-                      prefix-hole
-                      (fn suffix-hole subject-data
-                        (w- suffix-hole-d
-                          (snippet-sys-snippet-degree
-                            shape-ss suffix-hole)
-                        #/dim-sys-dim<?
-                          ds suffix-hole-d prefix-hole-d))
-                      (fn hole shape-data subject-data
-                        trivial?))))])])
+                (maybe/c #/selectable/c any/c #/and/c
+                  (snippet-sys-snippet-with-degree=/c ss d)
+                  (snippet-sys-snippet-fitting-shape/c ss
+                    prefix-hole))])])
         [_ (ss snippet)
           (maybe/c
             (snippet-sys-snippet-with-degree=/c ss
@@ -1101,7 +990,6 @@
         [h-to-value/c (sfs ds)
           (w- ffdstsss (snippet-format-sys-functor sfs)
           #/w- ss (functor-sys-apply-to-object ffdstsss ds)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/-> (snippet-sys-unlabeled-shape/c ss) contract?)])
       [_ contract?])]
   [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
@@ -1350,35 +1238,16 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss snippet)
+          (w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
-              (w- prefix-hole-d
-                (snippet-sys-snippet-degree shape-ss prefix-hole)
-              #/maybe/c #/selectable/c any/c
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `prefix-hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                    (fn suffix-hole subject-data
-                      (w- suffix-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss suffix-hole)
-                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                    (fn hole shape-data subject-data trivial?))))])])
+              (maybe/c #/selectable/c any/c #/and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-fitting-shape/c ss
+                  prefix-hole))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -1650,6 +1519,21 @@
             name v)
           result)))))
 
+(define (snippet-sys-snippet-fitting-shape/c ss shape)
+  (w- ds (snippet-sys-dim-sys ss)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/w- shape-d (snippet-sys-snippet-degree shape-ss shape)
+  #/rename-contract
+    ; What this means is that this should be a snippet whose
+    ; low-degree holes correspond to the holes of `shape` and contain
+    ; `trivial?` values.
+    (snippet-sys-snippet-zip-selective/c ss shape
+      (fn hole subject-data
+        (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+        #/dim-sys-dim<? ds hole-d shape-d))
+      (fn hole shape-data subject-data trivial?))
+    `(snippet-sys-snippet-fitting-shape/c ,ss ,shape)))
+
 
 ; TODO: Use the things that use this.
 (define
@@ -1674,36 +1558,16 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss prefix)
+          (w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
-              (w- prefix-hole-d
-                (snippet-sys-snippet-degree shape-ss prefix-hole)
-              #/selectable/c any/c
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `prefix-hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
-                  (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                    (fn suffix-hole subject-data
-                      (dlogr 'g1 prefix-hole suffix-hole
-                      #/w- suffix-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss suffix-hole)
-                      #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                    (fn hole shape-data subject-data trivial?))))])])
+              (selectable/c any/c #/and/c
+                (snippet-sys-snippet-with-degree=/c ss d)
+                (snippet-sys-snippet-fitting-shape/c ss
+                  prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])
@@ -1721,33 +1585,13 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c (snippet-sys-snippet/c ss)
+          (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
           #/w- d (snippet-sys-snippet-degree ss snippet)
           #/snippet-sys-snippetof ss #/fn prefix-hole
-            (w- prefix-hole-d
-              (snippet-sys-snippet-degree shape-ss prefix-hole)
-            #/selectable/c any/c
-              
-              ; What this means is that this should be a snippet whose
-              ; low-degree holes correspond to the holes of
-              ; `prefix-hole` and contain `trivial?` values.
-              ;
-              ; TODO: See if we can factor out a
-              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-              ; something out of this.
-              ;
-              (and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
-                (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                  (fn suffix-hole subject-data
-                    (w- suffix-hole-d
-                      (snippet-sys-snippet-degree
-                        shape-ss suffix-hole)
-                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                  (fn hole shape-data subject-data trivial?)))))])
+            (selectable/c any/c #/and/c
+              (snippet-sys-snippet-with-degree=/c ss d)
+              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss snippet)])
@@ -1763,34 +1607,16 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss prefix)
+          (w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
-              (w- prefix-hole-d
-                (snippet-sys-snippet-degree shape-ss prefix-hole)
-              
-              ; What this means is that this should be a snippet
-              ; whose low-degree holes correspond to the holes of
-              ; `prefix-hole` and contain `trivial?` values.
-              ;
-              ; TODO: See if we can factor out a
-              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-              ; something out of this.
-              ;
-              #/and/c
+              (and/c
                 (snippet-sys-snippet-with-degree=/c ss d)
-                (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                  (fn suffix-hole subject-data
-                    (w- suffix-hole-d
-                      (snippet-sys-snippet-degree
-                        shape-ss suffix-hole)
-                    #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                  (fn hole shape-data subject-data trivial?)))])])
+                (snippet-sys-snippet-fitting-shape/c ss
+                  prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss prefix)])
@@ -1806,32 +1632,13 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (w- ds (snippet-sys-dim-sys ss)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c (snippet-sys-snippet/c ss)
+          (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
           #/w- d (snippet-sys-snippet-degree ss snippet)
           #/snippet-sys-snippetof ss #/fn prefix-hole
-            (w- prefix-hole-d
-              (snippet-sys-snippet-degree shape-ss prefix-hole)
-            
-            ; What this means is that this should be a snippet whose
-            ; low-degree holes correspond to the holes of
-            ; `prefix-hole` and contain `trivial?` values.
-            ;
-            ; TODO: See if we can factor out a
-            ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-            ; something out of this.
-            ;
-            #/and/c
+            (and/c
               (snippet-sys-snippet-with-degree=/c ss d)
-              (snippet-sys-snippet-zip-selective/c ss prefix-hole
-                (fn suffix-hole subject-data
-                  (w- suffix-hole-d
-                    (snippet-sys-snippet-degree
-                      shape-ss suffix-hole)
-                  #/dim-sys-dim<? ds suffix-hole-d prefix-hole-d))
-                (fn hole shape-data subject-data trivial?))))])
+              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
         #/snippet-sys-snippet-degree ss snippet)])
@@ -3261,24 +3068,9 @@
           #/snippet-sys-snippet-zip-selective/c ss hole
             (fn hole subject-data #t)
             (fn hole shape-data subject-data
-              (w- hole-d (snippet-sys-snippet-degree ss hole)
-              
-              ; What this means is that this should be a snippet whose
-              ; low-degree holes correspond to the holes of `hole` and
-              ; contain `trivial?` values.
-              ;
-              ; TODO: See if we can factor out a
-              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-              ; something out of this.
-              ;
-              #/and/c
+              (and/c
                 (snippet-sys-snippet-with-degree=/c ss overall-degree)
-                (snippet-sys-snippet-zip-selective/c ss hole
-                  (fn tail-hole subject-data
-                    (w- tail-hole-d
-                      (snippet-sys-snippet-degree ss tail-hole)
-                    #/dim-sys-dim<? ds tail-hole-d hole-d))
-                  (fn hole shape-data subject-data trivial?)))))])
+                (snippet-sys-snippet-fitting-shape/c ss hole))))])
       [_ any/c])
     any/c)
   (hypertee-coil-hole overall-degree hole data tails))
@@ -3296,7 +3088,6 @@
 ; the only thing in our way is `by-own-method/c`.
 (define (hypertee-coil/c ds)
   (w- ss (hypertee-snippet-sys ds)
-  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/rename-contract
     (or/c
       hypertee-coil-zero?
@@ -3315,26 +3106,10 @@
             (snippet-sys-snippet-zip-selective/c ss hole
               (fn hole subject-data #t)
               (fn hole shape-data subject-data
-                (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
-                #/and/c
+                (and/c
                   (snippet-sys-snippet-with-degree=/c
                     ss overall-degree)
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn tail-hole subject-data
-                      (w- tail-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss tail-hole)
-                      #/dim-sys-dim<? ds tail-hole-d hole-d))
-                    (fn hole shape-data subject-data trivial?)))))))))
+                  (snippet-sys-snippet-fitting-shape/c ss hole))))))))
     `(hypertee-coil/c ,(value-name-for-contract ds))))
 
 ; TODO: Use the things that use these.
@@ -4699,26 +4474,10 @@
           #/snippet-sys-snippet-zip-selective/c shape-ss hole
             (fn hole subject-data #t)
             (fn hole shape-data subject-data
-              (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
-              
-              ; What this means is that this should be a snippet
-              ; whose low-degree holes correspond to the holes of
-              ; `hole` and contain `trivial?` values.
-              ;
-              ; TODO: See if we can factor out a
-              ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-              ; something out of this.
-              ;
-              #/and/c
+              (and/c
                 (snippet-sys-snippet-with-degree=/c
                   ss overall-degree)
-                (snippet-sys-snippet-zip-selective/c ss hole
-                  (fn tail-hole subject-data
-                    (w- tail-hole-d
-                      (snippet-sys-snippet-degree
-                        shape-ss tail-hole)
-                    #/dim-sys-dim<? ds tail-hole-d hole-d))
-                  (fn hole shape-data subject-data trivial?)))))])
+                (snippet-sys-snippet-fitting-shape/c ss hole))))])
       [_ any/c])
     any/c)
   (hypernest-coil-hole overall-degree hole data tails-hypertee))
@@ -4748,26 +4507,10 @@
             (snippet-sys-snippet-zip-selective/c shape-ss hole
               (fn hole subject-data #t)
               (fn hole shape-data subject-data
-                (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
-                #/and/c
+                (and/c
                   (snippet-sys-snippet-with-degree=/c
                     ss overall-degree)
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn tail-hole subject-data
-                      (w- tail-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss tail-hole)
-                      #/dim-sys-dim<? ds tail-hole-d hole-d))
-                    (fn hole shape-data subject-data trivial?))))))))
+                  (snippet-sys-snippet-fitting-shape/c ss hole)))))))
       (and/c
         (match/c hypernest-coil-bump
           (dim-sys-0<dim/c ds)
@@ -4789,15 +4532,6 @@
                   (snippet-sys-snippet-degree shape-ss hole)
                 #/expect (dim-sys-dim<? ds hole-d bump-degree) #t
                   any/c
-                
-                ; What this means is that this should be a snippet
-                ; whose low-degree holes correspond to the holes of
-                ; `hole` and contain `trivial?` values.
-                ;
-                ; TODO: See if we can factor out a
-                ; `snippet-sys-snippet-zip-low-degree-holes/c` or
-                ; something out of this.
-                ;
                 #/and/c
                   (snippet-sys-snippet-with-degree=/c ss
                     
@@ -4811,13 +4545,7 @@
                     ; hypernest).
                     ;
                     (dim-sys-dim-max ds overall-degree hole-d))
-                  (snippet-sys-snippet-zip-selective/c ss hole
-                    (fn tail-hole subject-data
-                      (w- tail-hole-d
-                        (snippet-sys-snippet-degree
-                          shape-ss tail-hole)
-                      #/dim-sys-dim<? ds tail-hole-d hole-d))
-                    (fn hole shape-data subject-data trivial?)))))))))
+                  (snippet-sys-snippet-fitting-shape/c ss hole))))))))
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
 ; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.

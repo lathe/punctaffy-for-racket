@@ -1011,7 +1011,18 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   To determine if a value in the subject's holes is compatible with a corresponding (same-shaped) hole in @racket[shape], the @racket[hvv-to-subject-v/c] function is called, passing it the hole's shape, the value carried in @racket[shape]'s hole, and the value carried in the subject's hole. It's expected to return a contract, and the value in the subject's hole is expected to abide by that contract.
   
-  In our experience so far, it seems the @racket[check-subject-hv?] function always takes on a certain form: It always selects every hole that has @tech{degree} lower than @racket[shape]'s degree. (TODO: Consider updating the design of @tt{snippet-sys-snippet-zip-selective/c} to reflect that, or at least designing an alternative that's simpler for this common case.)
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-snippet-fitting-shape/c
+    [ss snippet-sys?]
+    [shape (snippet-sys-unlabeled-shape/c ss)])
+  contract?
+]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{holes} of low enough @tech{degree} correspond with the holes of the given @tech{shape} hypersnippet @racket[shape] and if there are only @racket[trivial?] values in those holes. Only holes of degree less than the degree of @racket[shape] are constrained this way; other holes don't have to coincide with holes of @racket[shape], and they can have any contents.
+  
+  This contract is fairly common because it's the kind of compatibility that's needed to concatenate hypersnippets (e.g. using @racket[snippet-sys-snippet-bind]). It's similar to joining two 3D polyhedra along a 2D face they share (and the 1D edges and 0D vertices of that face, which they also share).
   
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
@@ -1136,37 +1147,18 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
     [hv-to-splice
-      (let
-        (
-          [_ds (snippet-sys-dim-sys ss)]
-          [_shape-ss (snippet-sys-shape-snippet-sys ss)]
-          [_d (snippet-sys-snippet-degree ss snippet)])
+      (let ([_d (snippet-sys-snippet-degree ss snippet)])
         (->i
           (
             [_prefix-hole (snippet-sys-unlabeled-shape/c ss)]
             [_data any/c])
           [_ (_prefix-hole)
-            (let
-              (
-                [_prefix-hole-d
-                  (snippet-sys-snippet-degree
-                    _shape-ss _prefix-hole)])
-              (maybe/c
-                (selectable/c any/c
-                  (and/c
-                    (snippet-sys-snippet-with-degree=/c ss _d)
-                    (snippet-sys-snippet-zip-selective/c ss
-                      _prefix-hole
-                      (fn _suffix-hole _subject-data
-                        (let
-                          (
-                            [_suffix-hole-d
-                              (snippet-sys-snippet-degree
-                                _shape-ss _suffix-hole)])
-                          (dim-sys-dim<?
-                            _ds _suffix-hole-d _prefix-hole-d)))
-                      (fn _hole _shape-data _subject-data
-                        trivial?))))))]))])
+            (maybe/c
+              (selectable/c any/c
+                (and/c
+                  (snippet-sys-snippet-with-degree=/c ss _d)
+                  (snippet-sys-snippet-fitting-shape/c ss
+                    _prefix-hole))))]))])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet)))
@@ -1359,35 +1351,17 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [prefix (snippet-sys-snippet/c ss)]
     [hv-to-suffix
-      (let
-        (
-          [_ds (snippet-sys-dim-sys ss)]
-          [_shape-ss (snippet-sys-shape-snippet-sys ss)]
-          [_d (snippet-sys-snippet-degree ss prefix)])
+      (let ([_d (snippet-sys-snippet-degree ss prefix)])
         (->i
           (
             [_prefix-hole (snippet-sys-unlabeled-shape/c ss)]
             [_data any/c])
           [_ (_prefix-hole)
-            (let
-              (
-                [_prefix-hole-d
-                  (snippet-sys-snippet-degree
-                    _shape-ss _prefix-hole)])
-              (selectable/c any/c
-                (and/c
-                  (snippet-sys-snippet-with-degree=/c ss _d)
-                  (snippet-sys-snippet-zip-selective/c ss _prefix-hole
-                    (fn _suffix-hole _subject-data
-                      (let
-                        (
-                          [_suffix-hole-d
-                            (snippet-sys-snippet-degree
-                              _shape-ss _suffix-hole)])
-                        (dim-sys-dim<?
-                          _ds _suffix-hole-d _prefix-hole-d)))
-                    (fn _hole _shape-data _subject-data
-                      trivial?)))))]))])
+            (selectable/c any/c
+              (and/c
+                (snippet-sys-snippet-with-degree=/c ss _d)
+                (snippet-sys-snippet-fitting-shape/c ss
+                  _prefix-hole)))]))])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss prefix)))
@@ -1403,35 +1377,16 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-join-selective
     [ss snippet-sys?]
     [snippet
-      (let
-        (
-          [_ds (snippet-sys-dim-sys ss)]
-          [_shape-ss (snippet-sys-shape-snippet-sys ss)])
-        (and/c (snippet-sys-snippet/c ss)
-          (by-own-method/c _snippet
-            (let ([_d (snippet-sys-snippet-degree ss _snippet)])
-              (snippet-sys-snippetof ss
-                (fn _prefix-hole
-                  (let
-                    (
-                      [_prefix-hole-d
-                        (snippet-sys-snippet-degree
-                          _shape-ss _prefix-hole)])
-                    (selectable/c any/c
-                      (and/c
-                        (snippet-sys-snippet-with-degree=/c ss _d)
-                        (snippet-sys-snippet-zip-selective/c ss
-                          _prefix-hole
-                          (fn _suffix-hole _subject-data
-                            (let
-                              (
-                                [_suffix-hole-d
-                                  (snippet-sys-snippet-degree
-                                    _shape-ss _suffix-hole)])
-                              (dim-sys-dim<?
-                                _ds _suffix-hole-d _prefix-hole-d)))
-                          (fn _hole _shape-data _subject-data
-                            trivial?)))))))))))])
+      (and/c (snippet-sys-snippet/c ss)
+        (by-own-method/c _snippet
+          (let ([_d (snippet-sys-snippet-degree ss _snippet)])
+            (snippet-sys-snippetof ss
+              (fn _prefix-hole
+                (selectable/c any/c
+                  (and/c
+                    (snippet-sys-snippet-with-degree=/c ss _d)
+                    (snippet-sys-snippet-fitting-shape/c ss
+                      _prefix-hole))))))))])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet)))
@@ -1448,34 +1403,16 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [prefix (snippet-sys-snippet/c ss)]
     [hv-to-suffix
-      (let
-        (
-          [_ds (snippet-sys-dim-sys ss)]
-          [_shape-ss (snippet-sys-shape-snippet-sys ss)]
-          [_d (snippet-sys-snippet-degree ss prefix)])
+      (let ([_d (snippet-sys-snippet-degree ss prefix)])
         (->i
           (
             [_prefix-hole (snippet-sys-unlabeled-shape/c ss)]
             [_data any/c])
           [_ (_prefix-hole)
-            (let
-              (
-                [_prefix-hole-d
-                  (snippet-sys-snippet-degree
-                    _shape-ss _prefix-hole)])
-              (and/c
-                (snippet-sys-snippet-with-degree=/c ss _d)
-                (snippet-sys-snippet-zip-selective/c ss _prefix-hole
-                  (fn _suffix-hole _subject-data
-                    (let
-                      (
-                        [_suffix-hole-d
-                          (snippet-sys-snippet-degree
-                            _shape-ss _suffix-hole)])
-                      (dim-sys-dim<?
-                        _ds _suffix-hole-d _prefix-hole-d)))
-                  (fn _hole _shape-data _subject-data
-                    trivial?))))]))])
+            (and/c
+              (snippet-sys-snippet-with-degree=/c ss _d)
+              (snippet-sys-snippet-fitting-shape/c ss
+                _prefix-hole))]))])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss prefix)))
@@ -1491,34 +1428,15 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-join
     [ss snippet-sys?]
     [snippet
-      (let
-        (
-          [_ds (snippet-sys-dim-sys ss)]
-          [_shape-ss (snippet-sys-shape-snippet-sys ss)])
-        (and/c (snippet-sys-snippet/c ss)
-          (by-own-method/c _snippet
-            (let ([_d (snippet-sys-snippet-degree ss _snippet)])
-              (snippet-sys-snippetof ss
-                (fn _prefix-hole
-                  (let
-                    (
-                      [_prefix-hole-d
-                        (snippet-sys-snippet-degree
-                          _shape-ss _prefix-hole)])
-                    (and/c
-                      (snippet-sys-snippet-with-degree=/c ss _d)
-                      (snippet-sys-snippet-zip-selective/c ss
-                        _prefix-hole
-                        (fn _suffix-hole _subject-data
-                          (let
-                            (
-                              [_suffix-hole-d
-                                (snippet-sys-snippet-degree
-                                  _shape-ss _suffix-hole)])
-                            (dim-sys-dim<?
-                              _ds _suffix-hole-d _prefix-hole-d)))
-                        (fn _hole _shape-data _subject-data
-                          trivial?))))))))))])
+      (and/c (snippet-sys-snippet/c ss)
+        (by-own-method/c _snippet
+          (let ([_d (snippet-sys-snippet-degree ss _snippet)])
+            (snippet-sys-snippetof ss
+              (fn _prefix-hole
+                (and/c
+                  (snippet-sys-snippet-with-degree=/c ss _d)
+                  (snippet-sys-snippet-fitting-shape/c ss
+                    _prefix-hole)))))))])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet)))
@@ -1603,37 +1521,18 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_ss snippet-sys?]
           [_snippet (_ss) (snippet-sys-snippet/c _ss)]
           [_hv-to-splice (_ss _snippet)
-            (let
-              (
-                [_ds (snippet-sys-dim-sys _ss)]
-                [_shape-ss (snippet-sys-shape-snippet-sys _ss)]
-                [_d (snippet-sys-snippet-degree _ss _snippet)])
+            (let ([_d (snippet-sys-snippet-degree _ss _snippet)])
               (->i
                 (
                   [_prefix-hole (snippet-sys-unlabeled-shape/c _ss)]
                   [_data any/c])
                 [_ (_prefix-hole)
-                  (let
-                    (
-                      [_prefix-hole-d
-                        (snippet-sys-snippet-degree
-                          _shape-ss _prefix-hole)])
-                    (maybe/c
-                      (selectable/c any/c
-                        (and/c
-                          (snippet-sys-snippet-with-degree=/c _ss _d)
-                          (snippet-sys-snippet-zip-selective/c _ss
-                            _prefix-hole
-                            (fn _suffix-hole _subject-data
-                              (let
-                                (
-                                  [_suffix-hole-d
-                                    (snippet-sys-snippet-degree
-                                      _shape-ss _suffix-hole)])
-                                (dim-sys-dim<?
-                                  _ds _suffix-hole-d _prefix-hole-d)))
-                            (fn _hole _shape-data _subject-data
-                              trivial?))))))]))])
+                  (maybe/c
+                    (selectable/c any/c
+                      (and/c
+                        (snippet-sys-snippet-with-degree=/c _ss _d)
+                        (snippet-sys-snippet-fitting-shape/c ss
+                          _prefix-hole))))]))])
         [_ (_ss _snippet)
           (maybe/c
             (snippet-sys-snippet-with-degree=/c _ss
