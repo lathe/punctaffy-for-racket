@@ -98,7 +98,9 @@
 (require #/only-in lathe-comforts expect w-)
 
 
-(provide taffy-quote)
+(provide
+  taffy-quote
+  taffy-quote-syntax)
 
 
 ; In this file, the syntax we define for quasiquotation looks
@@ -293,7 +295,7 @@
           (trivial))
       #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
       #/cons
-        (datum->syntax stx-example
+        (datum->syntax-with-everything stx-example
           (list->whatever #/hn-expr->s-expr-stx-list elems))
         (hn-expr->s-expr-stx-list tail)))
   #/mat data (hn-tag-1-box stx-example)
@@ -316,8 +318,9 @@
       (list list*-tail)
       (error "Encountered an hn-tag-2-list* bump which had more than one Racket syntax object in its tail when converting an hn-expression to a list of Racket syntax objects")
     #/cons
-      ; NOTE: Ironically, we don't actually use `list*` here.
-      (datum->syntax stx-example #/append list*-elems list*-tail)
+      (datum->syntax-with-everything stx-example
+        ; NOTE: Ironically, we don't actually use `list*` here.
+        (append list*-elems list*-tail))
       (hn-expr->s-expr-stx-list tail))
   #/mat data (hn-tag-nest)
     (expect

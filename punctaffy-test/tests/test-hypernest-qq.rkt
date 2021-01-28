@@ -107,7 +107,7 @@
     (a b
       (c d
         ,(+ 4 5)))
-  "The new quasiquote works a lot like the original")
+  "`taffy-quote` works a lot like `quasiquote`")
 
 ; Time with assertions:           18.094s
 ; Time without assertions:        18.119s
@@ -131,7 +131,7 @@
             (e f
               ,
                 (+ 4 5))))))
-  "The new quasiquote works on data that looks roughly similar to nesting")
+  "`taffy-quote` works on data that looks roughly similar to nesting")
 
 ; Time with assertions:           20.466s
 ; Time without assertions:        21.376s
@@ -155,7 +155,7 @@
             (e f
               ,
                 (+ 4 5))))))
-  "The new quasiquote supports nesting")
+  "`taffy-quote` supports nesting")
 
 ; Time with assertions:           21.670s
 ; Time without assertions:        21.087s
@@ -185,7 +185,7 @@
               g h))
           i j))
       k l)
-  "The new quasiquote supports nesting even when it's not at the end of a list")
+  "`taffy-quote` supports nesting even when it's not at the end of a list")
 
 ; Time with assertions:           17.457s
 ; Time without assertions:        21.868s
@@ -215,9 +215,88 @@
                 g h))
             i j))
         k l))
-  "The new quasiquote supports nesting and splicing")
+  "`taffy-quote` supports nesting and splicing")
 
 (check-equal?
   (pd / taffy-quote / ^<d 2 / println "hello")
   '(println "hello")
-  "The new quasiquote supports being used with `pd`")
+  "`taffy-quote` supports being used with `pd`")
+
+(possibly-suppress-assertions
+#/check-equal?
+  (syntax->datum
+  #/w- list-to-splice (list 4 5)
+    (taffy-quote-syntax #/^<d 2
+      (a b
+        (taffy-quote-syntax #/^<d 2
+          (c d
+            (^>d 1
+              (e f
+                (^>d 1 list-to-splice)
+                g h))
+            i j))
+        k l)))
+  (w- list-to-splice (list 4 5)
+    `
+      (a b
+        (taffy-quote-syntax #/^<d 2
+          (c d
+            (^>d 1
+              (e f
+                ,@list-to-splice
+                g h))
+            i j))
+        k l))
+  "`taffy-quote-syntax` supports nesting and splicing")
+
+(possibly-suppress-assertions
+#/check-equal?
+  (syntax->datum
+  #/w- list-to-splice (list 4 5)
+    (taffy-quote-syntax #:local #/^<d 2
+      (a b
+        (taffy-quote-syntax #:local #/^<d 2
+          (c d
+            (^>d 1
+              (e f
+                (^>d 1 list-to-splice)
+                g h))
+            i j))
+        k l)))
+  (w- list-to-splice (list 4 5)
+    `
+      (a b
+        (taffy-quote-syntax #:local #/^<d 2
+          (c d
+            (^>d 1
+              (e f
+                ,@list-to-splice
+                g h))
+            i j))
+        k l))
+  "`taffy-quote-syntax` with `#:local` supports nesting and splicing")
+
+(check-equal?
+  (bound-identifier=?
+    (w- x 1 #/quote-syntax x)
+    (w- x 1 #/quote-syntax x))
+  #t
+  "Racket's `quote-syntax` prunes local binding information")
+(check-equal?
+  (bound-identifier=?
+    (w- x 1 #/taffy-quote-syntax #/^<d 2 x)
+    (w- x 1 #/taffy-quote-syntax #/^<d 2 x))
+  #t
+  "`taffy-quote-syntax` prunes local binding information")
+(check-equal?
+  (bound-identifier=?
+    (w- x 1 #/quote-syntax x #:local)
+    (w- x 1 #/quote-syntax x #:local))
+  #f
+  "Racket's `quote-syntax` with `#:local` does not prune local binding information")
+(check-equal?
+  (bound-identifier=?
+    (w- x 1 #/taffy-quote-syntax #:local #/^<d 2 x)
+    (w- x 1 #/taffy-quote-syntax #:local #/^<d 2 x))
+  #f
+  "`taffy-quote-syntax` with `#:local` does not prune local binding information")

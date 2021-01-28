@@ -3127,7 +3127,7 @@ The @racketmodname[punctaffy/quote] module is for variations of Racket's own quo
 
 This design leads to a more regular experience than the current situation in Racket: At the time of writing, Racket's @racket[quasiquote] and @racket[quasisyntax] can accommodate nested occurrences of themselves, but not of each other. Racket's @racket[quasisyntax/loc] can accommodate nested occurrences of @racket[quasisyntax], but not of itself.
 
-(TODO: Export more than just one quotation operator here, so that it's clearer how they can nest with each other.)
+(TODO: Let's give an example of how @racket[taffy-quote] and @racket[taffy-quote-syntax] can nest with each other.)
 
 
 @defform[
@@ -3238,4 +3238,36 @@ This design leads to a more regular experience than the current situation in Rac
       (pd _/ taffy-quote _/ ^<d 2 _/ println "hello")
       '(println "hello"))
   ]
+}
+
+@defform[
+  #:literals (^<d ^>d)
+  (taffy-quote-syntax maybe-local (^<d 2 content-and-splices))
+  #:grammar
+  [
+    (maybe-local
+      (code:line)
+      #:local)
+    (content-and-splices
+      atom
+      ()
+      (content-and-splices . content-and-splices)
+      #&content-and-splices
+      #(content-and-splices ...)
+      #s(prefab-key-datum content-and-splices ...)
+      (^>d 1 spliced-list-expr ...)
+      (^<d degree deeper-content-and-splices ...))]
+  #:contracts ([spliced-list-expr list?])
+]{
+  Like @racket[taffy-quote], but instead of producing a datum, produces a syntax object.
+  
+  If the @racket[#:local] option is not supplied, the scope sets of the quoted content are pruned using the same method as @racket[quote-syntax] to omit the scope for local bindings that surround the @tt{taffy-quote-syntax} expression. The only syntax objects in the result that are pruned this way are the ones that correspond to the quoted content; syntax objects that are spliced into the result are left alone.
+  
+  Note that the result values of spliced expressions must still be non-syntax lists. The @racket[syntax->list] function may come in handy.
+  
+  Whereas @racket[taffy-quote] imitates @racket[quote] and @racket[quasiquote], @racket[taffy-quote-syntax] imitates @racket[quote-syntax].
+  
+  It may be tempting to compare the splicing support of @tt{taffy-quote-syntax} to the splicing support of @racket[quasisyntax]. However, @racket[quasisyntax] supports template variables and ellispes, and @tt{taffy-quote-syntax} does not. In the future, Punctaffy may offer a @tt{taffy-syntax} operation that works more like @racket[quasisyntax].
+  
+  @; TODO: Update that `taffy-syntax` remark if and when we implement `taffy-syntax`.
 }
