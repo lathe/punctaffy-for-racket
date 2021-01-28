@@ -41,7 +41,7 @@
   selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
   snippet-sys-snippet-done snippet-sys-snippet-join
   snippet-sys-snippet-join-selective snippet-sys-snippet-map
-  snippet-sys-snippetof unselected)
+  snippet-sys-unlabeled-snippet/c unselected)
 
 ; (We provide nothing from this module.)
 
@@ -207,7 +207,7 @@
 ; NOTE: We used the following tests to debug the test below them.
 (check-equal?
   (contract
-    (snippet-sys-snippetof htss #/fn hole trivial?)
+    (snippet-sys-unlabeled-snippet/c htss)
     (hypertee-furl ds #/hypertee-coil-zero)
     'pos
     'neg)

@@ -243,15 +243,13 @@
       (
         [ss snippet-sys?]
         [h-to-value/c (ss)
-          (->
-            ; TODO: See if the fact we're using
-            ; `snippet-sys-snippetof` inside its own contract will
-            ; cause any problems.
-            (snippet-sys-snippetof
-              (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            contract?)])
+          ; NOTE: Via the definition of
+          ; `snippet-sys-unlabeled-shape/c`, `snippet-sys-snippetof`
+          ; basically appears in its own contract.
+          (-> (snippet-sys-unlabeled-shape/c ss) contract?)])
       [_ contract?])]
+  [snippet-sys-unlabeled-snippet/c (-> snippet-sys? contract?)]
+  [snippet-sys-unlabeled-shape/c (-> snippet-sys? contract?)]
   [snippet-sys-snippet-zip-selective/c
     (->i
       (
@@ -259,19 +257,9 @@
         [shape (ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [check-subject-hv? (ss)
-          (->
-            (snippet-sys-snippetof
-              (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            boolean?)]
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)]
         [hvv-to-subject-v/c (ss)
-          (->
-            (snippet-sys-snippetof
-              (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            any/c
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c
             contract?)])
       [_ contract?])]
   ; TODO: See if the result contract should be more specific. The
@@ -368,8 +356,7 @@
           #/w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
-              [prefix-hole
-                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -409,13 +396,7 @@
         [snippet (ss)
           (snippet-sys-snippetof ss #/fn hole selectable?)]
         [hvv-to-maybe-v (ss)
-          (->
-            (snippet-sys-snippetof
-              (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            any/c
-            maybe?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c maybe?)])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -431,13 +412,7 @@
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hvv-to-maybe-v (ss)
-          (->
-            (snippet-sys-snippetof
-              (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            any/c
-            maybe?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c maybe?)])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -448,11 +423,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [check-hv? (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            boolean?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
       [_ boolean?])]
   [snippet-sys-snippet-all?
     (->i
@@ -460,11 +431,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [check-hv? (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            boolean?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
       [_ boolean?])]
   [snippet-sys-snippet-each
     (->i
@@ -472,11 +439,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [visit-hv (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            void?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c void?)])
       [_ void?])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
@@ -487,11 +450,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-maybe-v (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            maybe?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c maybe?)])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
@@ -505,11 +464,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-v (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            any/c)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
@@ -523,11 +478,7 @@
         [snippet (ss)
           (snippet-sys-snippetof ss #/fn hole selectable?)]
         [hv-to-v (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            any/c)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
@@ -540,11 +491,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [check-hv? (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            boolean?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
@@ -584,8 +531,7 @@
           #/w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
-              [prefix-hole
-                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -658,8 +604,7 @@
           #/w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
-              [prefix-hole
-                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -796,8 +741,7 @@
             #/w- d (snippet-sys-snippet-degree ss snippet)
             #/->i
               (
-                [prefix-hole
-                  (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+                [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
                 [data any/c])
               [_ (prefix-hole)
                 (w- prefix-hole-d
@@ -838,12 +782,7 @@
           [snippet (ss)
             (snippet-sys-snippetof ss #/fn hole selectable?)]
           [hvv-to-maybe-v (ss)
-            (->
-              (snippet-sys-snippetof
-                (snippet-sys-shape-snippet-sys ss)
-                (fn hole trivial?))
-              any/c
-              any/c
+            (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c
               maybe?)])
         [_ (ss snippet)
           (maybe/c
@@ -1158,18 +1097,12 @@
         [b-to-value/c (sfs ds)
           (w- ffdstsss (snippet-format-sys-functor sfs)
           #/w- ss (functor-sys-apply-to-object ffdstsss ds)
-          #/->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            contract?)]
+          #/-> (snippet-sys-unlabeled-shape/c ss) contract?)]
         [h-to-value/c (sfs ds)
           (w- ffdstsss (snippet-format-sys-functor sfs)
           #/w- ss (functor-sys-apply-to-object ffdstsss ds)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            contract?)])
+          #/-> (snippet-sys-unlabeled-shape/c ss) contract?)])
       [_ contract?])]
   [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
 (module+ private/hypernest #/provide
@@ -1422,8 +1355,7 @@
           #/w- d (snippet-sys-snippet-degree ss snippet)
           #/->i
             (
-              [prefix-hole
-                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -1497,11 +1429,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-v (ss)
-          (->
-            (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-              (fn hole trivial?))
-            any/c
-            any/c)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])
@@ -1649,6 +1577,17 @@
             data
             missing-party))))))
 
+(define (snippet-sys-unlabeled-snippet/c ss)
+  (rename-contract
+    (snippet-sys-snippetof ss #/fn hole trivial?)
+    `(snippet-sys-unlabeled-snippet/c ,ss)))
+
+(define (snippet-sys-unlabeled-shape/c ss)
+  (rename-contract
+    (snippet-sys-unlabeled-snippet/c
+      (snippet-sys-shape-snippet-sys ss))
+    `(snippet-sys-unlabeled-shape/c ,ss)))
+
 (define
   (snippet-sys-snippet-zip-selective/c
     ss shape check-subject-hv? hvv-to-subject-v/c)
@@ -1740,8 +1679,7 @@
           #/w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
-              [prefix-hole
-                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -1830,8 +1768,7 @@
           #/w- d (snippet-sys-snippet-degree ss prefix)
           #/->i
             (
-              [prefix-hole
-                (snippet-sys-snippetof shape-ss #/fn hole trivial?)]
+              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (w- prefix-hole-d
@@ -3316,7 +3253,7 @@
         [hole (ds overall-degree)
           (w- ss (hypertee-snippet-sys ds)
           #/and/c
-            (snippet-sys-snippetof ss #/fn hole trivial?)
+            (snippet-sys-unlabeled-snippet/c ss)
             (snippet-sys-snippet-with-degree</c ss overall-degree))]
         [data any/c]
         [tails (ds overall-degree hole)
@@ -3366,7 +3303,7 @@
       (and/c
         (match/c hypertee-coil-hole
           (dim-sys-0<dim/c ds)
-          (snippet-sys-snippetof ss #/fn hole trivial?)
+          (snippet-sys-unlabeled-snippet/c ss)
           any/c
           any/c)
         (by-own-method/c
@@ -4751,7 +4688,7 @@
             (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
           #/and/c
-            (snippet-sys-snippetof shape-ss #/fn hole trivial?)
+            (snippet-sys-unlabeled-shape/c ss)
             (snippet-sys-snippet-with-degree</c
               shape-ss overall-degree))]
         [data any/c]
@@ -4797,7 +4734,7 @@
       (and/c
         (match/c hypernest-coil-hole
           (dim-sys-0<dim/c ds)
-          (snippet-sys-snippetof shape-ss #/fn hole trivial?)
+          (snippet-sys-unlabeled-shape/c ss)
           any/c
           any/c)
         (by-own-method/c

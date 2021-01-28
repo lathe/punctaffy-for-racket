@@ -967,20 +967,30 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 @defproc[
   (snippet-sys-snippetof
     [ss snippet-sys?]
-    [h-to-value/c
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        contract?)])
+    [h-to-value/c (-> (snippet-sys-unlabeled-shape/c ss) contract?)])
   contract?
 ]{
   Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if the values in its @tech{holes} abide by the given contracts. The contracts are given by a function @racket[h-to-value/c] that takes the hypersnippet @tech{shape} of a hole and returns a contract for values residing in that hole.
   
   This design allows us to require the values in the holes to somehow @emph{fit} the shapes of the holes they're carried in. It's rather common for the value contracts to depend on at least the @tech{degree} of the hole, if not on its complete shape.
   
-  This operation appears in its own contract. This usage refers to the fact that the hole shape supplied to @racket[h-to-value/c] will have @racket[trivial?] values in its holes.
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-unlabeled-snippet/c [ss snippet-sys?])
+  contract?
+]{
+  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if it has only @racket[trivial?] values in its @tech{holes}.
   
-  @; TODO: See if we should have a `(snippet-sys-unlabeled-shape/c ss)` that abbreviates this common `(snippet-sys-snippetof ... trivial? ...)` combination. That might be especially helpful here, just in case `snippet-sys-snippetof` appearing in its own contract turns out to confuse someone.
+  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+}
+
+@defproc[
+  (snippet-sys-unlabeled-shape/c [ss snippet-sys?])
+  contract?
+]{
+  Returns a contract which recognizes any hypersnippet @tech{shape} of the given @tech{snippet system} if it has only @racket[trivial?] values in its @tech{holes}.
   
   @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
@@ -990,18 +1000,9 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
     [check-subject-hv?
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        boolean?)]
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)]
     [hvv-to-subject-v/c
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        any/c
-        contract?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c contract?)])
   contract?
 ]{
   Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if some of its @tech{holes} correspond with the holes of the given @tech{shape} hypersnippet @racket[shape] and if the values in those holes are somehow compatible with the values held in @racket[shape]'s holes.
@@ -1142,9 +1143,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_d (snippet-sys-snippet-degree ss snippet)])
         (->i
           (
-            [
-              _prefix-hole
-              (snippet-sys-snippetof _shape-ss (fn _hole trivial?))]
+            [_prefix-hole (snippet-sys-unlabeled-shape/c ss)]
             [_data any/c])
           [_ (_prefix-hole)
             (let
@@ -1193,12 +1192,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
     [snippet (snippet-sys-snippetof ss (fn _hole selectable?))]
     [hvv-to-maybe-v
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        any/c
-        maybe?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c maybe?)])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet)))
@@ -1222,12 +1216,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
     [snippet (snippet-sys-snippet/c ss)]
     [hvv-to-maybe-v
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        any/c
-        maybe?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c maybe?)])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet)))
@@ -1250,11 +1239,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
     [check-hv?
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        boolean?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
   boolean?
 ]{
   Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[#t]. If any of these invocations of the function returns @racket[#t], the result is @racket[#t]. Otherwise, the result is @racket[#f].
@@ -1267,11 +1252,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
     [check-hv?
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        boolean?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
   boolean?
 ]{
   Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[#f]. If any of these invocations of the function returns @racket[#f], the result is @racket[#f]. Otherwise, the result is @racket[#t].
@@ -1283,12 +1264,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-each
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
-    [visit-hv
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        void?)])
+    [visit-hv (-> (snippet-sys-unlabeled-shape/c ss) any/c void?)])
   void?
 ]{
   Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given procedure on each one. The procedure is called only for its side effects and must return @racket[(void)]. The overall result of this call is also @racket[(void)].
@@ -1301,11 +1277,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
     [hv-to-maybe-v
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        maybe?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c maybe?)])
   (maybe/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet)))
@@ -1319,12 +1291,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-map
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
-    [hv-to-v
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        any/c)])
+    [hv-to-v (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
   (snippet-sys-snippet-with-degree=/c ss
     (snippet-sys-snippet-degree ss snippet))
 ]{
@@ -1337,12 +1304,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-map-selective
     [ss snippet-sys?]
     [snippet (snippet-sys-snippetof ss (fn _hole selectable?))]
-    [hv-to-v
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        any/c)])
+    [hv-to-v (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
   (snippet-sys-snippet-with-degree=/c ss
     (snippet-sys-snippet-degree ss snippet))
 ]{
@@ -1356,11 +1318,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
     [check-hv?
-      (->
-        (snippet-sys-snippetof (snippet-sys-shape-snippet-sys ss)
-          (fn _hole trivial?))
-        any/c
-        boolean?)])
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
   (snippet-sys-snippet-with-degree=/c ss
     (snippet-sys-snippet-degree ss snippet))
 ]{
@@ -1408,9 +1366,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_d (snippet-sys-snippet-degree ss prefix)])
         (->i
           (
-            [
-              _prefix-hole
-              (snippet-sys-snippetof _shape-ss (fn _hole trivial?))]
+            [_prefix-hole (snippet-sys-unlabeled-shape/c ss)]
             [_data any/c])
           [_ (_prefix-hole)
             (let
@@ -1499,9 +1455,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_d (snippet-sys-snippet-degree ss prefix)])
         (->i
           (
-            [
-              _prefix-hole
-              (snippet-sys-snippetof _shape-ss (fn _hole trivial?))]
+            [_prefix-hole (snippet-sys-unlabeled-shape/c ss)]
             [_data any/c])
           [_ (_prefix-hole)
             (let
@@ -1656,9 +1610,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
                 [_d (snippet-sys-snippet-degree _ss _snippet)])
               (->i
                 (
-                  [_prefix-hole
-                    (snippet-sys-snippetof _shape-ss
-                      (fn hole trivial?))]
+                  [_prefix-hole (snippet-sys-unlabeled-shape/c _ss)]
                   [_data any/c])
                 [_ (_prefix-hole)
                   (let
@@ -1696,12 +1648,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_snippet (_ss)
             (snippet-sys-snippetof _ss (fn _hole selectable?))]
           [_hvv-to-maybe-v (_ss)
-            (->
-              (snippet-sys-snippetof
-                (snippet-sys-shape-snippet-sys _ss)
-                (fn _hole trivial?))
-              any/c
-              any/c
+            (-> (snippet-sys-unlabeled-shape/c _ss) any/c any/c
               maybe?)])
         [_ (_ss _snippet)
           (maybe/c
@@ -2952,19 +2899,13 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
         (
           [_ffdstsss (snippet-format-sys-functor sfs)]
           [_ss (functor-sys-apply-to-object _ffdstsss ds)])
-        (->
-          (snippet-sys-snippetof (snippet-sys-shape-snippet-sys _ss)
-            (fn _hole trivial?))
-          contract?))]
+        (-> (snippet-sys-unlabeled-shape/c _ss) contract?))]
     [h-to-value/c
       (let*
         (
           [_ffdstsss (snippet-format-sys-functor sfs)]
           [_ss (functor-sys-apply-to-object _ffdstsss ds)])
-        (->
-          (snippet-sys-snippetof (snippet-sys-shape-snippet-sys _ss)
-            (fn _hole trivial?))
-          contract?))])
+        (-> (snippet-sys-unlabeled-shape/c _ss) contract?))])
   contract?
 ]{
   Returns a contract that recognizes any @tech{generalized hypernest} (@racket[hypernest?]) value if its @tech{snippet format system} and its @tech{dimension system} are @racket[ok/c] matches for the given ones and if the values carried by its @tech{bumps} and @tech{holes} abide by the given contracts. The contracts for the bumps are given by a function @racket[b-to-value/c] that takes the hypersnippet @tech{shape} of a bump's @tech{interior} and returns a contract for values residing on that bump. The contracts for the holes are given by a function @racket[h-to-value/c] that takes the shape of a hole and returns a contract for values residing in that hole.
