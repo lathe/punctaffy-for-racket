@@ -9,6 +9,7 @@
     "lathe-comforts-lib"
     "lathe-morphisms-doc"
     "lathe-morphisms-lib"
+    "parendown-doc"
     "parendown-lib"
     "punctaffy-lib"
     "racket-doc"

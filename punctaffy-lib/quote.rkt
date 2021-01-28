@@ -515,7 +515,8 @@
             (hnb-open 0 #/hn-tag-0-s-expr-stx stx-example)
             
             #||# (hnb-open 1 #/hn-tag-1-list stx-example)
-              (hnb-open 0 #/hn-tag-0-s-expr-stx #'list*)
+              ; NOTE: Ironically, we don't actually use `list*` here.
+              (hnb-open 0 #/hn-tag-0-s-expr-stx #'append)
               
               (hnb-labeled 1 #/recur list*-elems)
               0

@@ -50,7 +50,7 @@
   (require 'private/lathe-debugging/placebo))
 
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-out list/c none/c or/c
+  -> ->i and/c any/c contract? contract-out none/c or/c
   rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
@@ -290,12 +290,6 @@
 (define (maybe-or a get-b)
   (mat a (just a) (just a)
   #/get-b))
-
-(define/contract (improper-list->list-and-tail lst)
-  (-> any/c #/list/c list? any/c)
-  (w-loop next rev-elems (list) tail lst
-    (expect tail (cons elem tail) (list (reverse rev-elems) tail)
-    #/next (cons elem rev-elems) tail)))
 
 (define (datum->syntax-with-everything stx-example datum)
   (w- ctxt stx-example
@@ -543,11 +537,12 @@
   #/w- sfs (hypertee-snippet-format-sys)
   #/w- ss (hypernest-snippet-sys sfs ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/dlog 'hqq-k1 bump-interior-shape example-list*-shape
   #/just? #/snippet-sys-snippet-zip-map shape-ss
     bump-interior-shape
     example-list*-shape
     (fn hole bump-data example-data
-      (dissect bump-data (trivial)
+      (dlog 'hqq-k2
       #/dissect example-data (trivial)
       #/just #/trivial))))
 
@@ -701,6 +696,8 @@
   
   ; We traverse into proper and improper lists.
   #/dlog 'hqq-b3.1
+  #/mat s (list)
+    (make-list-layer (hn-tag-1-list stx-example) #/list)
   #/mat s (cons first-elem rest)
     (dlog 'hqq-b3.2
     #/dissect
@@ -753,17 +750,16 @@
           
           (hnb-open 2 #/hn-tag-2-list* stx-example)
           1
-            (hnb-labeled 1
-              (selected #/hypernest-join-0 ds n-d 1 elems))
+            (hnb-labeled 1 #/hypernest-join-0 ds n-d 1 elems)
             0
           0
           1
-            (hnb-labeled 1 #/selected tail)
+            (hnb-labeled 1 tail)
             0
           0
           0
           
-          (hnb-labeled 0 #/unselected #/trivial))
+          (hnb-labeled 0 #/trivial))
       #/fn hole data
         data))
   

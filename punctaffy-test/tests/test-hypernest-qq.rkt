@@ -29,6 +29,7 @@
 (require rackunit)
 
 (require #/only-in lathe-comforts w-)
+(require #/only-in parendown pd)
 
 (require punctaffy)
 (require punctaffy/quote)
@@ -215,3 +216,8 @@
             i j))
         k l))
   "The new quasiquote supports nesting and splicing")
+
+(check-equal?
+  (pd / taffy-quote / ^<d 2 / println "hello")
+  '(println "hello")
+  "The new quasiquote supports being used with `pd`")

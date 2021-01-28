@@ -51,14 +51,25 @@
   prop:functor-sys)
 @(require #/for-label #/only-in lathe-morphisms/in-fp/mediary/set
   ok/c)
+@(require #/for-label #/only-in parendown pd)
 
+@(require #/for-label punctaffy)
 @(require #/for-label punctaffy/hypersnippet/dim)
 @(require #/for-label punctaffy/hypersnippet/hyperstack)
 @(require #/for-label punctaffy/hypersnippet/hypernest)
 @(require #/for-label punctaffy/hypersnippet/hypertee)
 @(require #/for-label punctaffy/hypersnippet/snippet)
 @(require #/for-label punctaffy/hyperbracket)
-@(require #/for-label punctaffy)
+@(require #/for-label punctaffy/quote)
+
+@(require #/only-in scribble/example examples make-eval-factory)
+
+@(define example-eval
+  (make-eval-factory #/list
+    'racket/base
+    'parendown
+    'punctaffy
+    'punctaffy/quote))
 
 
 @title{Punctaffy}
@@ -3378,5 +3389,19 @@ This design leads to a more regular experience than the current situation in Rac
   
   At the moment, there is no particular notation that this operation is committed to preserving, so users should not rely on specific outputs. Users should only use this operation to generate code for informal visualization purposes, code that will be evaluated with the entire @racket[punctaffy] module in scope, and code that they're ready to process using a parser that understands all the hyperbracket notations currently exported by the @racket[punctaffy] module.
   
-  (TODO: Write some usage examples.)
+  (TODO: Write some usage examples. Below is a scratch area.)
+  
+  @examples[
+    #:eval (example-eval)
+    '(println "hello")
+    (eval:alts
+      '(println "hello")
+      (println "hello"))
+    (eval:alts
+      (taffy-quote (^<d 2 (println "hello")))
+      '(println "hello"))
+    (eval:alts
+      (pd _/ taffy-quote _/ ^<d 2 _/ println "hello")
+      '(println "hello"))
+  ]
 }
