@@ -357,20 +357,22 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
+          (w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss snippet))
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (maybe/c #/selectable/c any/c #/and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
+                has-d/c
                 (snippet-sys-snippet-fitting-shape/c ss
                   prefix-hole))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
-          #/snippet-sys-snippet-degree ss snippet))])]
+            (snippet-sys-snippet-degree ss snippet)))])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
   ; one.
@@ -513,19 +515,21 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- d (snippet-sys-snippet-degree ss prefix)
+          (w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss prefix))
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (selectable/c any/c #/and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
+                has-d/c
                 (snippet-sys-snippet-fitting-shape/c ss
                   prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss prefix)])]
+          (snippet-sys-snippet-degree ss prefix))])]
   [snippet-sys-snippet-join-selective
     (->i
       (
@@ -533,33 +537,37 @@
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
-          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss snippet))
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (selectable/c any/c #/and/c
-              (snippet-sys-snippet-with-degree=/c ss d)
+              has-d/c
               (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])]
+          (snippet-sys-snippet-degree ss snippet))])]
   [snippet-sys-snippet-bind
     (->i
       (
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- d (snippet-sys-snippet-degree ss prefix)
+          (w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss prefix))
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
+                has-d/c
                 (snippet-sys-snippet-fitting-shape/c ss
                   prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss prefix)])]
+          (snippet-sys-snippet-degree ss prefix))])]
   [snippet-sys-snippet-join
     (->i
       (
@@ -567,14 +575,16 @@
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
-          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss snippet))
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (and/c
-              (snippet-sys-snippet-with-degree=/c ss d)
+              has-d/c
               (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])]
+          (snippet-sys-snippet-degree ss snippet))])]
   [prop:snippet-sys (struct-type-property/c snippet-sys-impl?)]
   ; TODO: See if we can come up with a better name or interface for
   ; this.
@@ -647,20 +657,22 @@
           [ss snippet-sys?]
           [snippet (ss) (snippet-sys-snippet/c ss)]
           [hv-to-splice (ss snippet)
-            (w- d (snippet-sys-snippet-degree ss snippet)
+            (w- has-d/c
+              (snippet-sys-snippet-with-degree=/c ss
+                (snippet-sys-snippet-degree ss snippet))
             #/->i
               (
                 [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
                 [data any/c])
               [_ (prefix-hole)
                 (maybe/c #/selectable/c any/c #/and/c
-                  (snippet-sys-snippet-with-degree=/c ss d)
+                  has-d/c
                   (snippet-sys-snippet-fitting-shape/c ss
                     prefix-hole))])])
         [_ (ss snippet)
           (maybe/c
             (snippet-sys-snippet-with-degree=/c ss
-            #/snippet-sys-snippet-degree ss snippet))])
+              (snippet-sys-snippet-degree ss snippet)))])
       ; snippet-sys-snippet-zip-map-selective
       (->i
         (
@@ -1030,9 +1042,9 @@
           (w- ss
             (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/w- d (snippet-sys-snippet-degree ss last-snippet)
           #/listof #/and/c
-            (snippet-sys-snippet-with-degree=/c ss d)
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss last-snippet))
             (snippet-sys-snippetof ss #/fn hole
               (if
                 (dim-sys-dim=0? ds
@@ -1046,8 +1058,8 @@
       [_ (ds last-snippet)
         (w- ss
           (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-        #/w- d (snippet-sys-snippet-degree ss last-snippet)
-        #/snippet-sys-snippet-with-degree=/c ss d)])])
+        #/snippet-sys-snippet-with-degree=/c ss
+          (snippet-sys-snippet-degree ss last-snippet))])])
 
 (module+ private/hypernest #/provide
   hypernest-coil-zero)
@@ -1238,20 +1250,22 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [hv-to-splice (ss snippet)
-          (w- d (snippet-sys-snippet-degree ss snippet)
+          (w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss snippet))
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (maybe/c #/selectable/c any/c #/and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
+                has-d/c
                 (snippet-sys-snippet-fitting-shape/c ss
                   prefix-hole))])])
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
-          #/snippet-sys-snippet-degree ss snippet))])
+            (snippet-sys-snippet-degree ss snippet)))])
     any/c)
   (unguarded-snippet-sys-snippet-splice ss snippet hv-to-splice))
 (define-syntax (snippet-sys-snippet-splice stx)
@@ -1558,19 +1572,21 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- d (snippet-sys-snippet-degree ss prefix)
+          (w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss prefix))
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (selectable/c any/c #/and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
+                has-d/c
                 (snippet-sys-snippet-fitting-shape/c ss
                   prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss prefix)])
+          (snippet-sys-snippet-degree ss prefix))])
     any/c)
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/dlog 'd2 prefix
@@ -1587,14 +1603,16 @@
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
-          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss snippet))
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (selectable/c any/c #/and/c
-              (snippet-sys-snippet-with-degree=/c ss d)
+              has-d/c
               (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])
+          (snippet-sys-snippet-degree ss snippet))])
     any/c)
   (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
@@ -1607,19 +1625,21 @@
         [ss snippet-sys?]
         [prefix (ss) (snippet-sys-snippet/c ss)]
         [hv-to-suffix (ss prefix)
-          (w- d (snippet-sys-snippet-degree ss prefix)
+          (w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss prefix))
           #/->i
             (
               [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
               [data any/c])
             [_ (prefix-hole)
               (and/c
-                (snippet-sys-snippet-with-degree=/c ss d)
+                has-d/c
                 (snippet-sys-snippet-fitting-shape/c ss
                   prefix-hole))])])
       [_ (ss prefix)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss prefix)])
+          (snippet-sys-snippet-degree ss prefix))])
     any/c)
   (snippet-sys-snippet-bind-selective ss prefix #/fn hole data
     (selected #/hv-to-suffix hole data)))
@@ -1634,14 +1654,16 @@
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
           #/by-own-method/c snippet
-          #/w- d (snippet-sys-snippet-degree ss snippet)
+          #/w- has-d/c
+            (snippet-sys-snippet-with-degree=/c ss
+              (snippet-sys-snippet-degree ss snippet))
           #/snippet-sys-snippetof ss #/fn prefix-hole
             (and/c
-              (snippet-sys-snippet-with-degree=/c ss d)
+              has-d/c
               (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree ss snippet)])
+          (snippet-sys-snippet-degree ss snippet))])
     any/c)
   (snippet-sys-snippet-bind ss snippet #/fn hole data data))
 
