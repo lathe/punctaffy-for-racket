@@ -5,7 +5,7 @@
 ; A dimension system where the dimension numbers are the naturals and
 ; a special `omega` value that's greater than all the others.
 
-;   Copyright 2019 The Lathe Authors
+;   Copyright 2019-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
   prop:atomic-set-element-sys)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  make-dim-sys-impl-from-max prop:dim-sys)
+  make-dim-sys-impl-from-max-of-two prop:dim-sys)
 
 (provide
   omega)
@@ -53,14 +53,15 @@
     (make-atomic-set-element-sys-impl-from-contract
       ; atomic-set-element-sys-accepts/c
       (fn es extended-nat-dim-sys?)))
-  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
+  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max-of-two
     ; dim-sys-dim/c
     (fn ds #/or/c natural? omega?)
     ; dim-sys-dim=?
     (fn ds a b #/equal? a b)
-    ; dim-sys-dim-max-of-list
-    (fn ds lst
-      (w-loop next state 0 rest lst
-        (expect rest (cons first rest) state
-        #/mat first (omega) (omega)
-        #/next (max state first) rest)))))
+    ; dim-sys-dim-zero
+    (fn ds 0)
+    ; dim-sys-dim-max-of-two
+    (fn ds a b
+      (mat a (omega) (omega)
+      #/mat b (omega) (omega)
+      #/max a b))))

@@ -75,6 +75,13 @@
       #:rest [args (ds) (listof #/dim-sys-dim/c ds)]
       [_ (ds) (dim-sys-dim/c ds)])]
   [dim-sys-dim-zero (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dim/c ds)])]
+  [dim-sys-dim-max-of-two
+    (->i
+      (
+        [ds dim-sys?]
+        [a (ds) (dim-sys-dim/c ds)]
+        [b (ds) (dim-sys-dim/c ds)])
+      [_ (ds) (dim-sys-dim/c ds)])]
   [dim-sys-dim=?
     (->i
       (
@@ -106,7 +113,7 @@
     (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
   [dim-sys-0<dim/c (-> dim-sys? flat-contract?)]
   [prop:dim-sys (struct-type-property/c dim-sys-impl?)]
-  [make-dim-sys-impl-from-max
+  [make-dim-sys-impl-from-max-of-two
     (->
       (-> dim-sys? flat-contract?)
       (->i
@@ -115,7 +122,12 @@
           [a (ds) (dim-sys-dim/c ds)]
           [b (ds) (dim-sys-dim/c ds)])
         [_ boolean?])
-      (->i ([ds dim-sys?] [dims (ds) (listof #/dim-sys-dim/c ds)])
+      (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dim/c ds)])
+      (->i
+        (
+          [ds dim-sys?]
+          [a (ds) (dim-sys-dim/c ds)]
+          [b (ds) (dim-sys-dim/c ds)])
         [_ (ds) (dim-sys-dim/c ds)])
       dim-sys-impl?)]
   
@@ -405,15 +417,28 @@
 (define-imitation-simple-generics dim-sys? dim-sys-impl?
   (#:method dim-sys-dim/c (#:this))
   (#:method dim-sys-dim=? (#:this) () ())
-  (#:method dim-sys-dim-max-of-list (#:this) ())
-  prop:dim-sys make-dim-sys-impl-from-max
+  (#:method dim-sys-dim-zero (#:this))
+  (#:method dim-sys-dim-max-of-two (#:this) () ())
+  prop:dim-sys make-dim-sys-impl-from-max-of-two
   'dim-sys 'dim-sys-impl (list))
 
-(define (dim-sys-dim-max ds . args)
-  (dim-sys-dim-max-of-list ds args))
+(define (dim-sys-dim-max-of-dim-and-list ds d lst)
+  (expect lst (cons first rest)
+    d
+  #/dim-sys-dim-max-of-dim-and-list
+    ds (dim-sys-dim-max-of-two ds d first) rest))
 
-(define (dim-sys-dim-zero ds)
-  (dim-sys-dim-max ds))
+; TODO: See if we'll use this.
+(define (dim-sys-dim-max-of-list ds lst)
+  (dim-sys-dim-max-of-dim-and-list ds (dim-sys-dim-zero ds) lst))
+
+; NOTE OPTIMIZATION: The use of `case-lambda` gives this a substantial
+; boost.
+(define dim-sys-dim-max
+  (case-lambda
+    [(ds a b) (dim-sys-dim-max-of-two ds a b)]
+    [(ds) (dim-sys-dim-zero ds)]
+    [(ds d . args) (dim-sys-dim-max-of-dim-and-list ds d args)]))
 
 (define (dim-sys-dim<=? ds a b)
   (dim-sys-dim=? ds b #/dim-sys-dim-max ds a b))
@@ -734,16 +759,15 @@
     (make-atomic-set-element-sys-impl-from-contract
       ; atomic-set-element-sys-accepts/c
       (fn es nat-dim-sys?)))
-  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
+  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max-of-two
     ; dim-sys-dim/c
     (fn ds natural?)
     ; dim-sys-dim=?
     (fn ds a b #/equal? a b)
-    ; dim-sys-dim-max-of-list
-    (fn ds lst
-      (w-loop next state 0 rest lst
-        (expect rest (cons first rest) state
-        #/next (max state first) rest)))))
+    ; dim-sys-dim-zero
+    (fn ds 0)
+    ; dim-sys-dim-max-of-two
+    (fn ds a b #/max a b)))
 (define-imitation-simple-struct (nat-dim-successors-sys?)
   nat-dim-successors-sys 'nat-dim-successors-sys (current-inspector)
   (auto-write)
@@ -805,7 +829,7 @@
       ; atomic-set-element-sys-accepts/c
       (dissectfn (extended-with-top-dim-sys orig-ds)
         (match/c extended-with-top-dim-sys #/ok/c orig-ds))))
-  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
+  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max-of-two
     ; dim-sys-dim/c
     (dissectfn (extended-with-top-dim-sys orig-ds)
       (extended-with-top-dim/c #/dim-sys-dim/c orig-ds))
@@ -814,16 +838,17 @@
       (dissect ds (extended-with-top-dim-sys orig-ds)
       #/w- orig-dim=? (fn a b #/dim-sys-dim=? orig-ds a b)
       #/extended-with-top-dim=? orig-dim=? a b))
-    ; dim-sys-dim-max-of-list
-    (fn ds lst
+    ; dim-sys-dim-zero
+    (fn ds
       (dissect ds (extended-with-top-dim-sys orig-ds)
-      #/w-loop next state (dim-sys-dim-zero orig-ds) rest lst
-        (expect rest (cons first rest)
-          (extended-with-top-dim-finite state)
-        #/mat first (extended-with-top-dim-infinite)
-          (extended-with-top-dim-infinite)
-        #/dissect first (extended-with-top-dim-finite orig-first)
-        #/next (dim-sys-dim-max orig-ds state orig-first) rest)))))
+      #/extended-with-top-dim-finite #/dim-sys-dim-zero orig-ds))
+    ; dim-sys-dim-max-of-two
+    (fn ds a b
+      (dissect ds (extended-with-top-dim-sys orig-ds)
+      #/expect a (extended-with-top-dim-finite orig-a) a
+      #/expect b (extended-with-top-dim-finite orig-b) b
+      #/extended-with-top-dim-finite
+        (dim-sys-dim-max-of-two orig-ds orig-a orig-b)))))
 (define-match-expander-attenuated
   attenuated-extended-with-top-dim-sys
   unguarded-extended-with-top-dim-sys
@@ -976,7 +1001,7 @@
       ; atomic-set-element-sys-accepts/c
       (dissectfn (extended-with-top-finite-dim-sys orig-ds)
         (match/c extended-with-top-finite-dim-sys #/ok/c orig-ds))))
-  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
+  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max-of-two
     ; dim-sys-dim/c
     (dissectfn (extended-with-top-finite-dim-sys orig-ds)
       (match/c extended-with-top-dim-finite #/dim-sys-dim/c orig-ds))
@@ -986,11 +1011,17 @@
       #/dissect a (extended-with-top-dim-finite a)
       #/dissect b (extended-with-top-dim-finite b)
       #/dim-sys-dim=? orig-ds a b))
-    ; dim-sys-dim-max-of-list
-    (fn ds lst
+    ; dim-sys-dim-zero
+    (fn ds
       (dissect ds (extended-with-top-finite-dim-sys orig-ds)
-      #/dim-sys-dim-max-of-list orig-ds #/list-map lst
-        (dissectfn (extended-with-top-dim-finite d) d)))))
+      #/extended-with-top-dim-finite #/dim-sys-dim-zero orig-ds))
+    ; dim-sys-dim-max-of-two
+    (fn ds a b
+      (dissect ds (extended-with-top-finite-dim-sys orig-ds)
+      #/dissect a (extended-with-top-dim-finite orig-a)
+      #/dissect b (extended-with-top-dim-finite orig-b)
+      #/extended-with-top-dim-finite
+        (dim-sys-dim-max-of-two orig-ds orig-a orig-b)))))
 (define-match-expander-attenuated
   attenuated-extended-with-top-finite-dim-sys
   unguarded-extended-with-top-finite-dim-sys
@@ -1175,7 +1206,7 @@
       ; atomic-set-element-sys-accepts/c
       (dissectfn (fin-multiplied-dim-sys bound orig-ds)
         (match/c fin-multiplied-dim-sys (=/c bound) (ok/c orig-ds)))))
-  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max
+  (#:prop prop:dim-sys #/make-dim-sys-impl-from-max-of-two
     ; dim-sys-dim/c
     (dissectfn (fin-multiplied-dim-sys bound orig-ds)
       (fin-multiplied-dim/c bound #/dim-sys-dim/c orig-ds))
@@ -1184,25 +1215,21 @@
       (dissect ds (fin-multiplied-dim-sys bound orig-ds)
       #/w- orig-dim=? (fn a b #/dim-sys-dim=? orig-ds a b)
       #/fin-multiplied-dim=? orig-dim=? a b))
-    ; dim-sys-dim-max-of-list
-    (fn ds lst
+    ; dim-sys-dim-zero
+    (fn ds
       (dissect ds (fin-multiplied-dim-sys bound orig-ds)
-      #/w-loop next
-        state (fin-multiplied-dim 0 (dim-sys-dim-zero orig-ds))
-        rest lst
-        
-        (expect rest (cons first rest) state
-        #/dissect state (fin-multiplied-dim state-i state-orig)
-        #/dissect first (fin-multiplied-dim first-i first-orig)
-        #/w- max-orig
-          (dim-sys-dim-max orig-ds state-orig first-orig)
-        #/w- state
-          (expect (dim-sys-dim=? orig-ds max-orig state-orig) #t
-            first
-          #/expect (dim-sys-dim=? orig-ds max-orig first-orig) #t
-            state
-          #/fin-multiplied-dim (max state-i first-i) max-orig)
-        #/next state rest)))))
+      #/fin-multiplied-dim 0 #/dim-sys-dim-zero orig-ds))
+    ; dim-sys-dim-max-of-two
+    (fn ds a b
+      (dissect ds (fin-multiplied-dim-sys bound orig-ds)
+      #/dissect a (fin-multiplied-dim a-i a-orig)
+      #/dissect b (fin-multiplied-dim b-i b-orig)
+      #/w- max-orig (dim-sys-dim-max-of-two orig-ds a-orig b-orig)
+      #/expect (dim-sys-dim=? orig-ds max-orig a-orig) #t
+        b
+      #/expect (dim-sys-dim=? orig-ds max-orig b-orig) #t
+        a
+      #/fin-multiplied-dim (max a-i b-i) max-orig))))
 (define-match-expander-attenuated
   attenuated-fin-multiplied-dim-sys
   unguarded-fin-multiplied-dim-sys

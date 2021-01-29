@@ -152,13 +152,25 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 ]{
   Returns the maximum of zero or more @tech{dimension numbers}.
   
-  The maximum of zero dimension numbers is well-defined; it's the least dimension number of the @tech{dimension system}. Typically this is 0, representing the dimension of 0-dimensional shapes. We recommended to use @racket[dim-sys-dim-zero] in that case for better clarity of intent.
+  The maximum of zero dimension numbers is well-defined; it's the least dimension number of the @tech{dimension system}. Typically this is 0, representing the dimension of 0-dimensional shapes. We recommend to use @racket[dim-sys-dim-zero] in that case for better clarity of intent.
 }
 
 @defproc[(dim-sys-dim-zero [ds dim-sys?]) (dim-sys-dim/c ds)]{
   Returns the least @tech{dimension numbers} of the @tech{dimension system}. Typically this is 0, representing the dimension of 0-dimensional shapes.
   
   This is equivalent to calling @racket[dim-sys-dim-max] without passing in any dimension numbers. We provide this alternative for better clarity of intent.
+}
+
+@defproc[
+  (dim-sys-dim-max-of-two
+    [ds dim-sys?]
+    [a (dim-sys-dim/c ds)]
+    [b (dim-sys-dim/c ds)])
+  (dim-sys-dim/c ds)
+]{
+  Returns the maximum of two given @tech{dimension numbers}.
+  
+  This is equivalent to calling @racket[dim-sys-dim-max] without exactly two dimension numbers. We provide this alternative to clarify how @racket[make-dim-sys-impl-from-max-of-two] works. It may also be good for catching errors.
 }
 
 @deftogether[(
@@ -212,7 +224,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 }
 
 @defproc[
-  (make-dim-sys-impl-from-max
+  (make-dim-sys-impl-from-max-of-two
     [dim/c (-> dim-sys? flat-contract?)]
     [dim=?
       (->i
@@ -221,14 +233,19 @@ Higher-dimensional geometric shapes often have quite a number of component verti
           [_a (_ds) (dim-sys-dim/c _ds)]
           [_b (_ds) (dim-sys-dim/c _ds)])
         [_ boolean?])]
-    [dim-max-of-list
-      (->i ([_ds dim-sys?] [_dims (_ds) (listof (dim-sys-dim/c _ds))])
+    [dim-zero (->i ([_ds dim-sys?]) [_ (_ds) (dim-sys-dim/c _ds)])]
+    [dim-max-of-two
+      (->i
+        (
+          [_ds dim-sys?]
+          [_a (_ds) (dim-sys-dim/c _ds)]
+          [_b (_ds) (dim-sys-dim/c _ds)])
         [_ (_ds) (dim-sys-dim/c _ds)])])
   dim-sys-impl?
 ]{
-  Given implementations for @racket[dim-sys-dim/c], @racket[dim-sys-dim=?], and a list-taking variation of @racket[dim-sys-dim-max], returns something a struct can use to implement the @racket[prop:dim-sys] interface.
+  Given implementations for @racket[dim-sys-dim/c], @racket[dim-sys-dim=?], @racket[dim-sys-dim-zero], and @racket[dim-sys-dim-max-of-two], returns something a struct can use to implement the @racket[prop:dim-sys] interface.
   
-  The given method implementations should observe some algebraic laws. Namely, the @racket[dim=?] operation should be a decision procedure for equality of @tech{dimension numbers}, and the @racket[dim-max-of-list] operation should be associative, commutative, and idempotent. (As a particularly notable consequence of idempotence, the maximum of a list of one dimension number should be that number itself.)
+  The given method implementations should observe some algebraic laws. Namely, the @racket[dim=?] operation should be a decision procedure for equality of @tech{dimension numbers}, and the @racket[dim-max-of-two] operation should be associative, commutative, and idempotent with @racket[dim-zero] as its identity element.
 }
 
 
