@@ -27,20 +27,8 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i </c =/c and/c any/c contract? contract-name contract-out
-  flat-contract? flat-contract-predicate listof or/c rename-contract)
-; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
-; section. Should we provide `.../with-placebo-contracts/...` modules?
-; For now, we have this here for testing. Note that if we enable this
-; code, we also need to comment out the `contract-out` import above.
-#;
-(begin
-  (require #/for-syntax
-    racket/base racket/provide-transform syntax/parse lathe-comforts)
-  (define-syntax contract-out
-    (make-provide-transformer #/fn stx modes
-      (syntax-parse stx #/ (_ [var:id contract:expr] ...)
-      #/expand-export #'(combine-out var ...) modes))))
+  -> ->i </c =/c and/c any/c contract? contract-name flat-contract?
+  flat-contract-predicate listof or/c rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract)
@@ -74,7 +62,10 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
-(provide #/contract-out
+(require lathe-morphisms/private/shim)
+
+
+(provide #/shim-contract-out
   
   [dim-sys? (-> any/c boolean?)]
   [dim-sys-impl? (-> any/c boolean?)]
@@ -173,7 +164,7 @@
 
 (provide
   dim-sys-category-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [dim-sys-category-sys? (-> any/c boolean?)]
   [functor-from-dim-sys-sys-apply-to-morphism
     (->i
@@ -223,7 +214,7 @@
 ; TODO: Document these exports if we ever need them. We would comment
 ; them out, but they're currently in use by some internal experiments.
 ;#;
-(provide #/contract-out
+(provide #/shim-contract-out
   [dim-successors-sys? (-> any/c boolean?)]
   [dim-successors-sys-impl? (-> any/c boolean?)]
   [dim-successors-sys-dim-sys (-> dim-successors-sys? dim-sys?)]
@@ -268,11 +259,11 @@
 
 ; TODO: Uncomment these exports if we ever need them.
 ;(provide successorless-dim-successors-sys)
-;(provide #/contract-out
+;(provide #/shim-contract-out
 ;  [successorless-dim-successors-sys? (-> any/c boolean?)])
 (provide
   nat-dim-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [nat-dim-sys? (-> any/c boolean?)])
 ; TODO: Document this export if we ever need it. We would comment it
 ; out, but it's currently in use by some internal experiments.
@@ -280,19 +271,19 @@
 (provide
   nat-dim-successors-sys)
 ; TODO: Uncomment this export if we ever need it.
-;(provide #/contract-out
+;(provide #/shim-contract-out
 ;  [nat-dim-successors-sys? (-> any/c boolean?)])
 (provide
   extended-with-top-dim-finite)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim-finite? (-> any/c boolean?)]
   [extended-with-top-dim-finite-original
     (-> extended-with-top-dim-finite? any/c)])
 (provide
   extended-with-top-dim-infinite)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim-infinite? (-> any/c boolean?)])
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim? (-> any/c boolean?)]
   [extended-with-top-dim/c (-> contract? contract?)]
   [extended-with-top-dim=?
@@ -303,42 +294,42 @@
       boolean?)])
 (provide
   extended-with-top-dim-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim-sys? (-> any/c boolean?)]
   [extended-with-top-dim-sys-original
     (-> extended-with-top-dim-sys? dim-sys?)])
 (provide
   extended-with-top-dim-sys-morphism-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
   [extended-with-top-dim-sys-morphism-sys-original
     (-> extended-with-top-dim-sys-morphism-sys?
       dim-sys-morphism-sys?)])
 (provide
   extended-with-top-dim-sys-endofunctor-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim-sys-endofunctor-sys? (-> any/c boolean?)])
 (provide
   extend-with-top-dim-sys-morphism-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extend-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
   [extend-with-top-dim-sys-morphism-sys-source
     (-> extend-with-top-dim-sys-morphism-sys? dim-sys?)])
 (provide
   extended-with-top-finite-dim-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-finite-dim-sys? (-> any/c boolean?)]
   [extended-with-top-finite-dim-sys-original
     (-> extended-with-top-finite-dim-sys? dim-sys?)])
 (provide
   unextend-with-top-dim-sys-morphism-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [unextend-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
   [unextend-with-top-dim-sys-morphism-sys-target
     (-> unextend-with-top-dim-sys-morphism-sys? dim-sys?)])
 (provide
   extended-with-top-dim-successors-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [extended-with-top-dim-successors-sys? (-> any/c boolean?)]
   [extended-with-top-dim-successors-sys-original
     (-> extended-with-top-dim-successors-sys? dim-successors-sys?)])
@@ -346,7 +337,7 @@
 #|
 (provide
   fin-multiplied-dim)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-multiplied-dim? (-> any/c boolean?)]
   [fin-multiplied-dim-index (-> fin-multiplied-dim? natural?)]
   [fin-multiplied-dim-original (-> fin-multiplied-dim? any/c)]
@@ -356,7 +347,7 @@
     (-> (-> any/c any/c boolean?) any/c any/c boolean?)])
 (provide
   fin-multiplied-dim-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-multiplied-dim-sys? (-> any/c boolean?)]
   [fin-multiplied-dim-sys-bound
     (-> fin-multiplied-dim-sys? exact-positive-integer?)]
@@ -364,7 +355,7 @@
     (-> fin-multiplied-dim-sys? dim-sys?)])
 (provide
   fin-multiplied-dim-sys-morphism-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-multiplied-dim-sys-morphism-sys? (-> any/c boolean?)]
   [fin-multiplied-dim-sys-morphism-sys-bound
     (-> fin-multiplied-dim-sys-morphism-sys? exact-positive-integer?)]
@@ -373,14 +364,14 @@
       dim-sys-morphism-sys?)])
 (provide
   fin-multiplied-dim-sys-endofunctor-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-multiplied-dim-sys-endofunctor-sys? (-> any/c boolean?)]
   [fin-multiplied-dim-sys-endofunctor-sys-bound
     (-> fin-multiplied-dim-sys-endofunctor-sys?
       exact-positive-integer?)])
 (provide
   fin-times-dim-sys-morphism-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-times-dim-sys-morphism-sys? (-> any/c boolean?)]
   [fin-times-dim-sys-morphism-sys-bound
     (-> fin-times-dim-sys-morphism-sys? exact-positive-integer?)]
@@ -394,7 +385,7 @@
             (</c #/fin-times-dim-sys-morphism-sys-bound ms)))])])
 (provide
   fin-untimes-dim-sys-morphism-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-untimes-dim-sys-morphism-sys? (-> any/c boolean?)]
   [fin-untimes-dim-sys-morphism-sys-bound
     (-> fin-untimes-dim-sys-morphism-sys? exact-positive-integer?)]
@@ -402,7 +393,7 @@
     (-> fin-untimes-dim-sys-morphism-sys? dim-sys?)])
 (provide
   fin-multiplied-dim-successors-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [fin-multiplied-dim-successors-sys? (-> any/c boolean?)]
   [fin-multiplied-dim-successors-sys-bound
     (-> fin-multiplied-dim-successors-sys? exact-positive-integer?)]

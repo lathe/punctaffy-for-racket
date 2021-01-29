@@ -112,21 +112,8 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-name contract-out
-  flat-contract? flat-contract-predicate list/c listof none/c or/c
-  rename-contract)
-; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
-; section. Should we provide `.../with-placebo-contracts/...` modules?
-; For now, we have this here for testing. Note that if we enable this
-; code, we also need to comment out the `contract-out` import above.
-#;
-(begin
-  (require #/for-syntax
-    racket/base racket/provide-transform syntax/parse lathe-comforts)
-  (define-syntax contract-out
-    (make-provide-transformer #/fn stx modes
-      (syntax-parse stx #/ (_ [var:id contract:expr] ...)
-      #/expand-export #'(combine-out var ...) modes))))
+  -> ->i and/c any/c contract? contract-name flat-contract?
+  flat-contract-predicate list/c listof none/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract raise-blame-error)
@@ -164,6 +151,8 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
+(require punctaffy/private/shim)
+
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-category-sys dim-sys-category-sys? dim-sys-dim<?
   dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0? dim-sys-dim/c
@@ -185,12 +174,12 @@
 
 (provide
   unselected)
-(provide #/contract-out
+(provide #/shim-contract-out
   [unselected? (-> any/c boolean?)]
   [unselected-value (-> unselected? any/c)])
 (provide
   selected)
-(provide #/contract-out
+(provide #/shim-contract-out
   [selected? (-> any/c boolean?)]
   [selected-value (-> selected? any/c)]
   [selectable? (-> any/c boolean?)]
@@ -210,7 +199,7 @@
 ; See the note on the `snippet-sys-snippet-degree` macro export.
 (provide
   snippet-sys-snippet-splice)
-(provide #/contract-out
+(provide #/shim-contract-out
   [snippet-sys? (-> any/c boolean?)]
   [snippet-sys-impl? (-> any/c boolean?)]
   [snippet-sys-snippet/c (-> snippet-sys? contract?)]
@@ -761,10 +750,10 @@
 
 (provide
   snippet-sys-category-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [snippet-sys-category-sys? (-> any/c boolean?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [functor-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
   [make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
     (->
@@ -889,10 +878,10 @@
 
 (provide
   snippet-format-sys-category-sys)
-(provide #/contract-out
+(provide #/shim-contract-out
   [snippet-format-sys-category-sys? (-> any/c boolean?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [snippet-format-sys-endofunctor-sys? (-> any/c boolean?)]
   [make-snippet-format-sys-endofunctor-sys-impl-from-apply
     (->
@@ -914,21 +903,21 @@
 
 (module+ private/hypertee #/provide
   hypertee-coil-zero)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee-coil-zero? (-> any/c boolean?)])
 (module+ private/hypertee #/provide
   hypertee-coil-hole)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee-coil-hole? (-> any/c boolean?)]
   [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
   [hypertee-coil-hole-hole (-> hypertee-coil-hole? any/c)]
   [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
   [hypertee-coil-hole-tails (-> hypertee-coil-hole? any/c)])
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee-coil/c (-> dim-sys? contract?)])
 (module+ private/hypertee #/provide
   hypertee-furl)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee? (-> any/c boolean?)]
   [hypertee-get-dim-sys (-> hypertee? dim-sys?)]
   [hypertee-get-coil
@@ -937,12 +926,12 @@
   [hypertee/c (-> dim-sys? contract?)])
 (module+ private/hypertee #/provide
   hypertee-snippet-sys)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee-snippet-sys? (-> any/c boolean?)]
   [hypertee-snippet-sys-dim-sys (-> hypertee-snippet-sys? dim-sys?)])
 (module+ private/hypertee #/provide
   hypertee-snippet-format-sys)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee-snippet-format-sys? (-> any/c boolean?)]
   [hypertee-get-hole-zero-maybe
     (->
@@ -952,16 +941,16 @@
 
 (module+ private/hypertee #/provide
   htb-labeled)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [htb-labeled? (-> any/c boolean?)]
   [htb-labeled-degree (-> htb-labeled? any/c)]
   [htb-labeled-data (-> htb-labeled? any/c)])
 (module+ private/hypertee #/provide
   htb-unlabeled)
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [htb-unlabeled? (-> any/c boolean?)]
   [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
-(module+ private/hypertee #/provide #/contract-out
+(module+ private/hypertee #/provide #/shim-contract-out
   [hypertee-bracket? (-> any/c boolean?)]
   [hypertee-bracket/c (-> contract? contract?)]
   ; TODO: Uncomment this export if we ever need it.
@@ -987,7 +976,7 @@
         (w- ds (hypertee-get-dim-sys ht)
         #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])])
 
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest? (-> any/c boolean?)]
   [hypernest/c (-> snippet-format-sys? dim-sys? contract?)]
   [hypernestof
@@ -1007,7 +996,7 @@
   [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
 (module+ private/hypernest #/provide
   hypernest-snippet-sys)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-snippet-sys? (-> any/c boolean?)]
   [hypernest-snippet-sys-snippet-format-sys
     (-> hypernest-snippet-sys? snippet-format-sys?)]
@@ -1015,11 +1004,11 @@
     (-> hypernest-snippet-sys? dim-sys?)])
 (module+ private/hypernest #/provide
   hypernest-snippet-format-sys)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-snippet-format-sys? (-> any/c boolean?)]
   [hypernest-snippet-format-sys-original
     (-> hypernest-snippet-format-sys? snippet-format-sys?)])
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-shape
     (->i
       (
@@ -1063,11 +1052,11 @@
 
 (module+ private/hypernest #/provide
   hypernest-coil-zero)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-coil-zero? (-> any/c boolean?)])
 (module+ private/hypernest #/provide
   hypernest-coil-hole)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-coil-hole? (-> any/c boolean?)]
   [hypernest-coil-hole-overall-degree (-> hypernest-coil-hole? any/c)]
   [hypernest-coil-hole-hole (-> hypernest-coil-hole? any/c)]
@@ -1076,40 +1065,40 @@
     (-> hypernest-coil-hole? any/c)])
 (module+ private/hypernest #/provide
   hypernest-coil-bump)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-coil-bump? (-> any/c boolean?)]
   [hypernest-coil-bump-overall-degree (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
   [hypernest-coil-bump-tails-hypernest
     (-> hypernest-coil-bump? any/c)])
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-coil/c (-> dim-sys? contract?)])
 (module+ private/hypernest #/provide
   hypernest-furl)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-get-coil
     (->i ([hn hypernest?])
       [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])])
 
 (module+ private/hypernest #/provide
   hnb-open)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hnb-open? (-> any/c boolean?)]
   [hnb-open-degree (-> hnb-open? any/c)]
   [hnb-open-data (-> hnb-open? any/c)])
 (module+ private/hypernest #/provide
   hnb-labeled)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hnb-labeled? (-> any/c boolean?)]
   [hnb-labeled-degree (-> hnb-labeled? any/c)]
   [hnb-labeled-data (-> hnb-labeled? any/c)])
 (module+ private/hypernest #/provide
   hnb-unlabeled)
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hnb-unlabeled? (-> any/c boolean?)]
   [hnb-unlabeled-degree (-> hnb-unlabeled? any/c)])
-(module+ private/hypernest #/provide #/contract-out
+(module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-bracket? (-> any/c boolean?)]
   [hypernest-bracket/c (-> contract? contract?)]
   ; TODO: Uncomment this export if we ever need it.

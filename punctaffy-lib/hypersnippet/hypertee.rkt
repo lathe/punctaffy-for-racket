@@ -20,67 +20,55 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract/base recontract-out)
-; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
-; section. Should we provide `.../with-placebo-contracts/...` modules?
-; For now, we have this here for testing. Note that if we enable this
-; code, we also need to comment out the `recontract-out` import above.
-#;
-(begin
-  (require #/for-syntax
-    racket/base racket/provide-transform syntax/parse lathe-comforts)
-  (define-syntax recontract-out
-    (make-provide-transformer #/fn stx modes
-      (syntax-parse stx #/ (_ var:id ...)
-      #/expand-export #'(combine-out var ...) modes))))
+(require lathe-morphisms/private/shim)
 
 (require #/submod punctaffy/hypersnippet/snippet private/hypertee)
 
 
 (provide
   hypertee-coil-zero)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee-coil-zero?)
 (provide
   hypertee-coil-hole)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee-coil-hole?
   hypertee-coil-hole-overall-degree
   hypertee-coil-hole-hole
   hypertee-coil-hole-data
   hypertee-coil-hole-tails)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee-coil/c)
 (provide
   hypertee-furl)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee?
   hypertee-get-dim-sys
   hypertee-get-coil
   hypertee/c)
 (provide
   hypertee-snippet-sys)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee-snippet-sys?
   hypertee-snippet-sys-dim-sys)
 (provide
   hypertee-snippet-format-sys)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee-snippet-format-sys?
   hypertee-get-hole-zero-maybe)
 
 (provide
   htb-labeled)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   htb-labeled?
   htb-labeled-degree
   htb-labeled-data)
 (provide
   htb-unlabeled)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   htb-unlabeled?
   htb-unlabeled-degree)
-(provide #/recontract-out
+(provide #/shim-recontract-out
   hypertee-bracket?
   hypertee-bracket/c
   ; TODO: Uncomment this export if we ever need it.
