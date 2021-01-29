@@ -142,10 +142,8 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   Structure type property operations for @tech{dimension systems}. These are systems of operations over a space of @tech{dimension numbers} which can be used to describe the @tech{degree} of a @tech{hypersnippet}.
 }
 
-@defproc[(dim-sys-dim/c [ds dim-sys?]) contract?]{
-  Returns a contract which recognizes any @tech{dimension number} of the given @tech{dimension system}.
-  
-  For some dimension systems, this may be relied upon to be a flat contract or a chaperone contract.
+@defproc[(dim-sys-dim/c [ds dim-sys?]) flat-contract?]{
+  Returns a flat contract which recognizes any @tech{dimension number} of the given @tech{dimension system}.
 }
 
 @defproc[
@@ -199,31 +197,23 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 @deftogether[(
   @defproc[
     (dim-sys-dim</c [ds dim-sys?] [bound (dim-sys-dim/c ds)])
-    contract?
+    flat-contract?
   ]
   @defproc[
     (dim-sys-dim=/c [ds dim-sys?] [bound (dim-sys-dim/c ds)])
-    contract?
+    flat-contract?
   ]
 )]{
-  Returns a contract which recognizes @tech{dimension numbers} which are strictly less than the given one, or which are equal to the given one.
-  
-  The result is a flat contract as long as the given @tech{dimension system}'s @racket[dim-sys-dim/c] contract is flat.
-  
-  @; TODO: See if we should make a similar guarantee about chaperone contracts.
+  Returns a flat contract which recognizes @tech{dimension numbers} which are strictly less than the given one, or which are equal to the given one.
 }
 
-@defproc[(dim-sys-0<dim/c [ds dim-sys?]) contract?]{
-  Returns a contract which recognizes @tech{dimension numbers} which are nonzero, in the sense of @racket[dim-sys-dim-zero].
-  
-  The result is a flat contract as long as the given @tech{dimension system}'s @racket[dim-sys-dim/c] contract is flat.
-  
-  @; TODO: See if we should make a similar guarantee about chaperone contracts.
+@defproc[(dim-sys-0<dim/c [ds dim-sys?]) flat-contract?]{
+  Returns a flat contract which recognizes @tech{dimension numbers} which are nonzero, in the sense of @racket[dim-sys-dim-zero].
 }
 
 @defproc[
   (make-dim-sys-impl-from-max
-    [dim/c (-> dim-sys? contract?)]
+    [dim/c (-> dim-sys? flat-contract?)]
     [dim=?
       (->i
         (
@@ -238,9 +228,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 ]{
   Given implementations for @racket[dim-sys-dim/c], @racket[dim-sys-dim=?], and a list-taking variation of @racket[dim-sys-dim-max], returns something a struct can use to implement the @racket[prop:dim-sys] interface.
   
-  The given method implementations should observe some algebraic laws. Namely, the @racket[dim=?] operation should be a decision procedure for equality of @tech{dimension numbers}, the @racket[dim-max-of-list] operation should be associative, commutative, and idempotent. (As a particularly notable consequence of idempotence, the maximum of a list of one dimension number should be that number itself.)
-  
-  So far, we've only tried @racket[flat-contract?] values for @racket[dim/c]. It's possible that the implementation of some Punctaffy operations like @racket[dim-sys-dim</c] relies on the @racket[dim/c] contract being flat in order to avoid breaking contracts itself when it passes the value to another operation. (TODO: Investigate this further.)
+  The given method implementations should observe some algebraic laws. Namely, the @racket[dim=?] operation should be a decision procedure for equality of @tech{dimension numbers}, and the @racket[dim-max-of-list] operation should be associative, commutative, and idempotent. (As a particularly notable consequence of idempotence, the maximum of a list of one dimension number should be that number itself.)
 }
 
 

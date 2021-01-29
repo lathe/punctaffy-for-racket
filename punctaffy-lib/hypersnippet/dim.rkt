@@ -69,7 +69,7 @@
   
   [dim-sys? (-> any/c boolean?)]
   [dim-sys-impl? (-> any/c boolean?)]
-  [dim-sys-dim/c (-> dim-sys? contract?)]
+  [dim-sys-dim/c (-> dim-sys? flat-contract?)]
   [dim-sys-dim-max
     (->i ([ds dim-sys?])
       #:rest [args (ds) (listof #/dim-sys-dim/c ds)]
@@ -98,17 +98,17 @@
       [_ boolean?])]
   [dim-sys-dim</c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ contract?])]
+      [_ flat-contract?])]
   [dim-sys-dim=/c
     (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ contract?])]
+      [_ flat-contract?])]
   [dim-sys-dim=0?
     (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
-  [dim-sys-0<dim/c (-> dim-sys? contract?)]
+  [dim-sys-0<dim/c (-> dim-sys? flat-contract?)]
   [prop:dim-sys (struct-type-property/c dim-sys-impl?)]
   [make-dim-sys-impl-from-max
     (->
-      (-> dim-sys? contract?)
+      (-> dim-sys? flat-contract?)
       (->i
         (
           [ds dim-sys?]
