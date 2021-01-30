@@ -448,30 +448,12 @@
 
 (define (dim-sys-dim</c ds bound)
   (rename-contract
-    
-    ; TODO CONTRACT ROBUSTNESS: Extend the `dim-sys?` interface with a
-    ; method that can perform `dim-sys-dim<?` like this, but that
-    ; gracefully returns `#f` if its first dimension number input
-    ; isn't a valid dimension number, as long as its input passes the
-    ; first-order check of the dimension number contract. Then use
-    ; that method here.
-    ;
     (and/c (dim-sys-dim/c ds) (fn v #/dim-sys-dim<? ds v bound))
-    
     `(dim-sys-dim</c ,ds ,bound)))
 
 (define (dim-sys-dim=/c ds bound)
   (rename-contract
-    
-    ; TODO CONTRACT ROBUSTNESS: Extend the `dim-sys?` interface with a
-    ; method that can perform `dim-sys-dim=?` like this, but that
-    ; gracefully returns `#f` if its first dimension number input
-    ; isn't a valid dimension number, as long as its input passes the
-    ; first-order check of the dimension number contract. Then use
-    ; that method here.
-    ;
     (and/c (dim-sys-dim/c ds) (fn v #/dim-sys-dim=? ds v bound))
-    
     `(dim-sys-dim=/c ,ds ,bound)))
 
 (define (dim-sys-dim=0? ds d)
@@ -479,15 +461,7 @@
 
 (define (dim-sys-0<dim/c ds)
   (rename-contract
-    
-    ; TODO CONTRACT ROBUSTNESS: Extend the `dim-sys?` interface with a
-    ; method that can perform `dim-sys-dim=0?` like this, but that
-    ; gracefully returns `#f` if its input isn't a valid dimension
-    ; number, as long as its input passes the first-order check of the
-    ; dimension number contract. Then use that method here.
-    ;
     (and/c (dim-sys-dim/c ds) (fn v #/not #/dim-sys-dim=0? ds v))
-    
     `(dim-sys-0<dim/c ,ds)))
 
 
