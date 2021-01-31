@@ -37,6 +37,8 @@
 ; (We provide nothing from this module.)
 
 
+; TODO NOW: Uncomment these.
+#|
 ; NOTE: We edit this line to change this to `#f` when we want to
 ; measure the "with assertions" times.
 (define-for-syntax should-suppress-assertions #f)
@@ -318,3 +320,4 @@
     'paren-shape)
   #\{
   "`taffy-quote-syntax` preserves the `'paren-shape` syntax property in the spliced subexpressions")
+|#

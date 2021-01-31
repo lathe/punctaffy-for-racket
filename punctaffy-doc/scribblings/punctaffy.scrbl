@@ -31,6 +31,8 @@
 @(require #/for-label #/only-in racket/math natural?)
 
 @(require #/for-label #/only-in lathe-comforts fn)
+@(require #/for-label #/only-in lathe-comforts/contract
+  flat-obstinacy obstinacy? obstinacy-contract/c)
 @(require #/for-label #/only-in lathe-comforts/maybe
   just? maybe? maybe/c nothing)
 @(require #/for-label #/only-in lathe-comforts/trivial trivial?)
@@ -68,6 +70,9 @@
     'parendown
     'punctaffy
     'punctaffy/quote))
+
+@(define lathe-comforts-doc
+  '(lib "lathe-comforts/scribblings/lathe-comforts.scrbl"))
 
 
 @title{Punctaffy}
@@ -383,6 +388,8 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   Returns a contract that recognizes any @racket[dim-sys-morphism-sys?] value whose source and target @tech{dimension systems} are recognized by the given contracts.
   
   The result is a flat contract as long as the given contracts are flat.
+  
+  @; TODO: Support chaperone contracts as well.
 }
 
 @; TODO: Consider having a `makeshift-dim-sys-morphism-sys`, similar to `makeshift-functor-sys`.
@@ -559,7 +566,7 @@ Higher-dimensional geometric shapes often have quite a number of component verti
 ]{
   Returns a contract that recognizes an @racket[extended-with-top-dim?] value where the unextended @tech{dimension system}'s corresponding @tech{dimension number}, if any, abides by the given contract.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract has the same @tech[#:doc lathe-comforts-doc]{contract obstinacy} as the given one.
 }
 
 @defproc[
@@ -596,8 +603,6 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   Struct-like operations which construct and deconstruct a @tech{dimension system} (@racket[dim-sys?]) where the @tech{dimension numbers} are @racket[(extended-with-top-dim/c (dim-sys-dim/c original))] values. That is to say, the dimension numbers are all the dimension numbers of the @racket[original] dimension system (wrapped in @racket[extended-with-top-dim-finite]) and one more dimension number greater than the rest (@racket[extended-with-top-dim-infinite]).
   
   The resulting dimension system's @racket[dim-sys-dim-max] operation corresponds with the original operation on the @racket[extended-with-top-dim-finite?] dimension numbers, and it treats the @racket[extended-with-top-dim-infinite?] dimension number as being greater than the rest.
-  
-  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] to be a flat contract or chaperone contract under certain circumstances.
   
   Two @tt{extended-with-top-dim-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's element is @racket[ok/c] for the second's.
 }
@@ -703,8 +708,6 @@ Higher-dimensional geometric shapes often have quite a number of component verti
   Struct-like operations which construct and deconstruct a @tech{dimension system} (@racket[dim-sys?]) where the @tech{dimension numbers} are all the dimension numbers of the @racket[original] dimension system wrapped in @racket[extended-with-top-dim-finite], and where the action on those dimension numbers is the same as the original action. That is to say, this is a dimension system that @emph{represents} its dimension numbers the same way @racket[extended-with-top-dim-sys] does, but which doesn't actually include the additional @racket[extended-with-top-dim-infinite] dimension number.
   
   This is primarily used as the source of @racket[unextend-with-top-dim-sys], which otherwise would have to have an error-handling case if it encountered the @racket[extended-with-top-dim-infinite] value. (TODO: Consider passing an error handler to @racket[unextend-with-top-dim-sys-morphism-sys]. Perhaps that would be a better approach than this, since we would be encouraged to write errors where the error messages make the most sense, not rely indirectly on the error messages of the contracts of the behaviors we invoke. On the other hand, perhaps that error-handling should take place in a morphism (or natural transformation) from @racket[extended-with-top-dim-sys] to @racket[extended-with-top-finite-dim-sys].)
-  
-  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] to be a flat contract or chaperone contract under certain circumstances.
   
   Two @tt{extended-with-top-finite-dim-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's element is @racket[ok/c] for the second's.
 }
@@ -877,7 +880,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 ]{
   Returns a contract that recognizes a @racket[selectable?] value where the value abides by @racket[unselected/c] if it's unselected or by @racket[selected/c] if it's selected.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract has the same @tech[#:doc lathe-comforts-doc]{contract obstinacy} as the most @tech[#:doc lathe-comforts-doc]{obstinate} of the given contracts.
 }
 
 @defproc[
@@ -900,10 +903,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   @; TODO: Once the link works, add "See @racket[snippet-format-sys?] for a similar bundle of operations which allows the dimension system to be decided upon by the caller."
 }
 
-@defproc[(snippet-sys-snippet/c [ss snippet-sys?]) contract?]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system}.
-  
-  For some snippet systems, this may be relied upon to be a flat contract or a chaperone contract.
+@defproc[(snippet-sys-snippet/c [ss snippet-sys?]) flat-contract?]{
+  Returns a flat contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system}.
 }
 
 @defproc[(snippet-sys-dim-sys [ss snippet-sys?]) dim-sys?]{
@@ -932,11 +933,9 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-with-degree/c
     [ss snippet-sys?]
     [degree/c flat-contract?])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} satisfies the given flat contract.
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  Returns a flat contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} satisfies the given flat contract.
 }
 
 @deftogether[(
@@ -944,69 +943,66 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     (snippet-sys-snippet-with-degree</c
       [ss snippet-sys?]
       [degree (dim-sys-dim/c (snippet-sys-dim-sys ss))])
-    contract?
+    flat-contract?
   ]
   @defproc[
     (snippet-sys-snippet-with-degree=/c
       [ss snippet-sys?]
       [degree (dim-sys-dim/c (snippet-sys-dim-sys ss))])
-    contract?
+    flat-contract?
   ]
 )]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly less than the given one, or if its degree is equal to the given one.
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  Returns a flat contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly less than the given one, or if its degree is equal to the given one.
 }
 
 @defproc[
   (snippet-sys-snippet-with-0<degree/c [ss snippet-sys?])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly greater than 0 (in the sense of @racket[dim-sys-dim-zero]).
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  Returns a flat contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{degree} is strictly greater than 0 (in the sense of @racket[dim-sys-dim-zero]).
 }
 
 @defproc[
-  (snippet-sys-snippetof
+  (snippet-sys-snippetof/ob-c
     [ss snippet-sys?]
-    [h-to-value/c (-> (snippet-sys-unlabeled-shape/c ss) contract?)])
-  contract?
+    [ob obstinacy?]
+    [h-to-value/c
+      (-> (snippet-sys-unlabeled-shape/c ss)
+        (obstinacy-contract/c ob))])
+  (obstinacy-contract/c ob)
 ]{
   Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if the values in its @tech{holes} abide by the given contracts. The contracts are given by a function @racket[h-to-value/c] that takes the hypersnippet @tech{shape} of a hole and returns a contract for values residing in that hole.
   
   This design allows us to require the values in the holes to somehow @emph{fit} the shapes of the holes they're carried in. It's rather common for the value contracts to depend on at least the @tech{degree} of the hole, if not on its complete shape.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract is at least as @tech[#:doc lathe-comforts-doc]{reticent} as the given @tech[#:doc lathe-comforts-doc]{contract obstinacy}. The given contracts must also be at least that reticent.
 }
 
 @defproc[
   (snippet-sys-unlabeled-snippet/c [ss snippet-sys?])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if it has only @racket[trivial?] values in its @tech{holes}.
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  Returns a flat contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if it has only @racket[trivial?] values in its @tech{holes}.
 }
 
 @defproc[
   (snippet-sys-unlabeled-shape/c [ss snippet-sys?])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract which recognizes any hypersnippet @tech{shape} of the given @tech{snippet system} if it has only @racket[trivial?] values in its @tech{holes}.
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  Returns a flat contract which recognizes any hypersnippet @tech{shape} of the given @tech{snippet system} if it has only @racket[trivial?] values in its @tech{holes}.
 }
 
 @defproc[
-  (snippet-sys-snippet-zip-selective/c
+  (snippet-sys-snippet-zip-selective/ob-c
     [ss snippet-sys?]
+    [ob obstinacy?]
     [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
     [check-subject-hv?
       (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)]
     [hvv-to-subject-v/c
-      (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c contract?)])
-  contract?
+      (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c
+        (obstinacy-contract/c ob))])
+  (obstinacy-contract/c ob)
 ]{
   Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if some of its @tech{holes} correspond with the holes of the given @tech{shape} hypersnippet @racket[shape] and if the values in those holes are somehow compatible with the values held in @racket[shape]'s holes.
   
@@ -1014,20 +1010,18 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   To determine if a value in the subject's holes is compatible with a corresponding (same-shaped) hole in @racket[shape], the @racket[hvv-to-subject-v/c] function is called, passing it the hole's shape, the value carried in @racket[shape]'s hole, and the value carried in the subject's hole. It's expected to return a contract, and the value in the subject's hole is expected to abide by that contract.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract is at least as @tech[#:doc lathe-comforts-doc]{reticent} as the given @tech[#:doc lathe-comforts-doc]{contract obstinacy}. The given contracts must also be at least that reticent.
 }
 
 @defproc[
   (snippet-sys-snippet-fitting-shape/c
     [ss snippet-sys?]
     [shape (snippet-sys-unlabeled-shape/c ss)])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{holes} of low enough @tech{degree} correspond with the holes of the given @tech{shape} hypersnippet @racket[shape] and if there are only @racket[trivial?] values in those holes. Only holes of degree less than the degree of @racket[shape] are constrained this way; other holes don't have to coincide with holes of @racket[shape], and they can have any contents.
+  Returns a flat contract which recognizes any @tech{hypersnippet} of the given @tech{snippet system} if its @tech{holes} of low enough @tech{degree} correspond with the holes of the given @tech{shape} hypersnippet @racket[shape] and if there are only @racket[trivial?] values in those holes. Only holes of degree less than the degree of @racket[shape] are constrained this way; other holes don't have to coincide with holes of @racket[shape], and they can have any contents.
   
   This contract is fairly common because it's the kind of compatibility that's needed to concatenate hypersnippets (e.g. using @racket[snippet-sys-snippet-bind]). It's similar to joining two 3D polyhedra along a 2D face they share (and the 1D edges and 0D vertices of that face, which they also share).
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
 @defproc[
@@ -1050,18 +1044,13 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet->maybe-shape
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)])
-  (maybe/c
-    (snippet-sys-snippet-with-degree=/c
-      (snippet-sys-shape-snippet-sys ss)
-      (snippet-sys-snippet-degree ss snippet)))
+  (maybe/c (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss)))
 ]{
   Checks whether a @tech{hypersnippet} is content-free, and if it is, computes the hypersnippet's @tech{shape}.
   
   The resulting shape, if any, carries all the same values in its @tech{holes}.
   
   This operation is invertible when it succeeds. The resulting shape, if any, can be converted back into a content-free hypersnippet by using @racket[snippet-sys-shape->snippet].
-  
-  @; TODO: See if the result contract should be more specific. The resulting shape should always be of the same shape as the input snippet.
 }
 
 @defproc[
@@ -1185,7 +1174,9 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-zip-map-selective
     [ss snippet-sys?]
     [shape (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))]
-    [snippet (snippet-sys-snippetof ss (fn _hole selectable?))]
+    [snippet
+      (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+        (fn _hole selectable?))]
     [hvv-to-maybe-v
       (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c maybe?)])
   (maybe/c
@@ -1259,10 +1250,10 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (snippet-sys-snippet-each
     [ss snippet-sys?]
     [snippet (snippet-sys-snippet/c ss)]
-    [visit-hv (-> (snippet-sys-unlabeled-shape/c ss) any/c void?)])
+    [visit-hv (-> (snippet-sys-unlabeled-shape/c ss) any/c any)])
   void?
 ]{
-  Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given procedure on each one. The procedure is called only for its side effects and must return @racket[(void)]. The overall result of this call is also @racket[(void)].
+  Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given procedure on each one. The procedure is called only for its side effects. The overall result of this call is @racket[(void)].
   
   This essentially does for hypersnippets what Racket's @racket[for-each] does for lists.
 }
@@ -1298,7 +1289,9 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 @defproc[
   (snippet-sys-snippet-map-selective
     [ss snippet-sys?]
-    [snippet (snippet-sys-snippetof ss (fn _hole selectable?))]
+    [snippet
+      (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+        (fn _hole selectable?))]
     [hv-to-v (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
   (snippet-sys-snippet-with-degree=/c ss
     (snippet-sys-snippet-degree ss snippet))
@@ -1381,7 +1374,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet
       (and/c (snippet-sys-snippet/c ss)
-        (snippet-sys-snippetof ss
+        (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
           (fn _prefix-hole
             (selectable/c any/c
               (and/c
@@ -1430,7 +1423,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [snippet
       (and/c (snippet-sys-snippet/c ss)
-        (snippet-sys-snippetof ss
+        (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
           (fn _prefix-hole
             (and/c
               (snippet-sys-snippet-with-degree=/c ss
@@ -1450,14 +1443,14 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @defproc[
   (make-snippet-sys-impl-from-various-1
-    [snippet/c (-> snippet-sys? contract?)]
+    [snippet/c (-> snippet-sys? flat-contract?)]
     [dim-sys (-> snippet-sys? dim-sys?)]
     [shape-snippet-sys (-> snippet-sys? snippet-sys?)]
     [snippet-degree
       (->i
         (
           [_ss snippet-sys?]
-          [snippet (_ss) (snippet-sys-snippet/c _ss)])
+          [_snippet (_ss) (snippet-sys-snippet/c _ss)])
         [_ (_ss) (dim-sys-dim/c (snippet-sys-dim-sys _ss))])]
     [shape->snippet
       (->i
@@ -1478,9 +1471,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           [_snippet (_ss) (snippet-sys-snippet/c _ss)])
         [_ (_ss _snippet)
           (maybe/c
-            (snippet-sys-snippet-with-degree=/c
-              (snippet-sys-shape-snippet-sys _ss)
-              (snippet-sys-snippet-degree _ss _snippet)))])]
+            (snippet-sys-snippet/c
+              (snippet-sys-shape-snippet-sys _ss)))])]
     [snippet-set-degree-maybe
       (->i
         (
@@ -1545,7 +1537,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
             (snippet-sys-snippet/c
               (snippet-sys-shape-snippet-sys _ss))]
           [_snippet (_ss)
-            (snippet-sys-snippetof _ss (fn _hole selectable?))]
+            (snippet-sys-snippetof/ob-c _ss (flat-obstinacy)
+              (fn _hole selectable?))]
           [_hvv-to-maybe-v (_ss)
             (-> (snippet-sys-unlabeled-shape/c _ss) any/c any/c
               maybe?)])
@@ -1610,8 +1603,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     @item{If we can @racket[snippet-zip-map-selective] a hypersnippet shape with a hypersnippet, we should be able to zip the same shape with the result (as long as we select the same holes of the result).}
     
   ]
-  
-  Aside from those algebraic laws, it may also be a good idea to make @racket[snippet/c] a flat contract. Punctaffy doesn't ensure this in its own implementations of @racket[snippet/c], but it's possible some Punctaffy operations like @racket[snippet-sys-snippetof] rely on the @racket[snippet/c] contract being flat in order to avoid breaking contracts themselves when they pass the value to another operation. (TODO: Investigate this further.)
 }
 
 
@@ -1755,6 +1746,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Returns a contract that recognizes any @racket[snippet-sys-morphism-sys?] value whose source and target @tech{snippet systems} are recognized by the given contracts.
   
   The result is a flat contract as long as the given contracts are flat.
+  
+  @; TODO: Support chaperone contracts as well.
 }
 
 @; TODO: Consider having a `makeshift-snippet-sys-morphism-sys`, similar to `makeshift-functor-sys`.
@@ -2099,6 +2092,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Returns a contract that recognizes any @racket[snippet-format-sys-morphism-sys?] value whose source and target @tech{snippet format systems} are recognized by the given contracts.
   
   The result is a flat contract as long as the given contracts are flat.
+  
+  @; TODO: Support chaperone contracts as well.
 }
 
 @; TODO: Consider having a `makeshift-snippet-format-sys-morphism-sys`, similar to `makeshift-functor-sys`.
@@ -2248,12 +2243,10 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @; TODO: Consider having a `hypertee-coil?`.
 
-@defproc[(hypertee-coil/c [ds dim-sys?]) contract?]{
-  Returns a contract that recognizes a well-formed @tech{hypertee} coil for the given @tech{dimension system}. For a value to be suitable, it must either be a @racket[hypertee-coil-zero?] value or be a @racket[hypertee-coil-hole?] value which abides by stricter expectations.
+@defproc[(hypertee-coil/c [ds dim-sys?]) flat-contract?]{
+  Returns a flat contract that recognizes a well-formed @tech{hypertee} coil for the given @tech{dimension system}. For a value to be suitable, it must either be a @racket[hypertee-coil-zero?] value or be a @racket[hypertee-coil-hole?] value which abides by stricter expectations.
   
   Namely: The overall @tech{degree} (@racket[hypertee-coil-hole-overall-degree]) must be a nonzero @tech{dimension number} in the given dimension system. The @tech{hole} @tech{shape} must be a hypertee (of any degree) with the given dimension system and with @racket[trivial?] values in its holes. The tails hypertee must be a hypertee similar to the hole shape, but with hypertees (the tails) in its holes. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and those holes must be in the same arrangement as the hole's holes.
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
 
@@ -2305,7 +2298,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 @defproc[(hypertee-bracket/c [dim/c contract?]) contract?]{
   Returns a contract that recognizes a @racket[hypertee-bracket?] value where the @tech{degree} abides by the given contract.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract has the same @tech[#:doc lathe-comforts-doc]{contract obstinacy} as the given one.
 }
 
 
@@ -2390,10 +2383,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Given a @tech{hypertee}, computes the list of @racket[hypertee-bracket?] values that would need to be passed to @racket[hypertee-from-brackets] to construct it.
 }
 
-@defproc[(hypertee/c [ds dim-sys?]) contract?]{
+@defproc[(hypertee/c [ds dim-sys?]) flat-contract?]{
   Returns a contract that recognizes a @racket[hypertee?] value where the @tech{dimension system} is an @racket[ok/c] match for the given one.
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
 @deftogether[(
@@ -2420,8 +2411,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   (TODO: This isn't really a complete specification of the behavior. A complete specification might get very exhaustive or technical, but let's see if we can at least improve this description over time. Perhaps we should go through and hedge some of the ways we describe hypertees so that they specifically appeal to @tt{hypertee-snippet-sys} as the basis for their use of terms like "hypersnippet," "@tech{degree}," and "hole.")
   
-  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
-  
   Two @tt{hypertee-snippet-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's element is @racket[ok/c] for the second's.
 }
 
@@ -2438,8 +2427,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Struct-like operations which construct and deconstruct a @tech{snippet format system} (@racket[snippet-format-sys?]) where, given any particular @tech{dimension system},  the hypersnippet @tech{shapes} and @tech{hypersnippets} are @tech{hypertees} which use that dimension system.
   
   The shapes and snippets are related according to the same behavior as @racket[hypertee-snippet-sys]. In some sense, this is a generalization of @racket[hypertee-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypertee while leaving the rest of the structure alone.
-  
-  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
   
   Every two @tt{hypertee-snippet-format-sys} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
 }
@@ -2564,8 +2551,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @; TODO: Consider having a `hypernest-coil?`.
 
-@defproc[(hypernest-coil/c [ds dim-sys?]) contract?]{
-  Returns a contract that recognizes a well-formed @tech{hypernest} coil for the given @tech{dimension system}. For a value to be suitable, it must fall into one of the following cases:
+@defproc[(hypernest-coil/c [ds dim-sys?]) flat-contract?]{
+  Returns a flat contract that recognizes a well-formed @tech{hypernest} coil for the given @tech{dimension system}. For a value to be suitable, it must fall into one of the following cases:
   
   @itemlist[
     
@@ -2576,8 +2563,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     @item{A @racket[hypernest-coil-bump?] value which abides by stricter expectations. Namely: The overall degree (@racket[hypernest-coil-bump-overall-degree]) and the bump degree (@racket[hypernest-coil-bump-bump-degree]) must be @tech{dimension numbers} in the given dimension system, and the overall degree must be nonzero. The tails hypernest must be a hypernest of degree equal to the max of the overall degree and the bump degree, and it must have hypernests (the tails) in its holes of degree lower than the bump degree. If a tail appears in a hole of degree N, each of its own holes of degree lower than N must have a @racket[trivial?] value in it, and those holes must be in the same arrangement as the hole's holes.}
     
   ]
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
 @; TODO: Consider having a `hypertee-coil->hypernest-coil`, similar to `hypertee-bracket->hypernest-bracket`. This would probably need to take a callback that could recursively convert the tails.
@@ -2662,7 +2647,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 @defproc[(hypernest-bracket/c [dim/c contract?]) contract?]{
   Returns a contract that recognizes a @racket[hypernest-bracket?] value where the @tech{degree} abides by the given contract.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract has the same @tech[#:doc lathe-comforts-doc]{contract obstinacy} as the given one.
 }
 
 @defproc[
@@ -2780,32 +2765,33 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 @defproc[
   (hypernest/c [sfs snippet-format-sys?] [ds dim-sys?])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract that recognizes a @tech{generalized hypernest} (@racket[hypernest?]) value where the @tech{snippet format system} and the @tech{dimension system} are @racket[ok/c] matches for the given ones.
+  Returns a flat contract that recognizes a @tech{generalized hypernest} (@racket[hypernest?]) value where the @tech{snippet format system} and the @tech{dimension system} are @racket[ok/c] matches for the given ones.
   
   In particular, this can be used to recognize a (non-generalized) @tech{hypernest} if the given snippet format system is @racket[(hypertee-snippet-format-sys)].
-  
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
 }
 
 @defproc[
-  (hypernestof
+  (hypernestof/ob-c
     [sfs snippet-format-sys?]
     [ds dim-sys?]
+    [ob obstinacy?]
     [b-to-value/c
       (let*
         (
           [_ffdstsss (snippet-format-sys-functor sfs)]
           [_ss (functor-sys-apply-to-object _ffdstsss ds)])
-        (-> (snippet-sys-unlabeled-shape/c _ss) contract?))]
+        (-> (snippet-sys-unlabeled-shape/c _ss)
+          (obstinacy-contract/c ob)))]
     [h-to-value/c
       (let*
         (
           [_ffdstsss (snippet-format-sys-functor sfs)]
           [_ss (functor-sys-apply-to-object _ffdstsss ds)])
-        (-> (snippet-sys-unlabeled-shape/c _ss) contract?))])
-  contract?
+        (-> (snippet-sys-unlabeled-shape/c _ss)
+          (obstinacy-contract/c ob)))])
+  (obstinacy-contract/c ob)
 ]{
   Returns a contract that recognizes any @tech{generalized hypernest} (@racket[hypernest?]) value if its @tech{snippet format system} and its @tech{dimension system} are @racket[ok/c] matches for the given ones and if the values carried by its @tech{bumps} and @tech{holes} abide by the given contracts. The contracts for the bumps are given by a function @racket[b-to-value/c] that takes the hypersnippet @tech{shape} of a bump's @tech{interior} and returns a contract for values residing on that bump. The contracts for the holes are given by a function @racket[h-to-value/c] that takes the shape of a hole and returns a contract for values residing in that hole.
   
@@ -2813,7 +2799,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   The ability for the contracts to depend on the shapes of the bumps and holes they apply to allows us to require the values to somehow @emph{fit} those shapes. It's rather common for the value contracts to depend on at least the @tech{degree} of the hole, if not on its complete shape.
   
-  @; TODO: See if we should guarantee a flat contract or chaperone contract under certain circumstances.
+  The resulting contract is at least as @tech[#:doc lathe-comforts-doc]{reticent} as the given @tech[#:doc lathe-comforts-doc]{contract obstinacy}. The given contracts must also be at least that reticent.
 }
 
 @defproc[
@@ -2855,7 +2841,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
           (and/c
             (snippet-sys-snippet-with-degree=/c _ss
               (snippet-sys-snippet-degree _ss last-snippet))
-            (snippet-sys-snippetof _ss
+            (snippet-sys-snippetof/ob-c _ss (flat-obstinacy)
               (fn _hole
                 (if
                   (dim-sys-dim=0? ds
@@ -2908,8 +2894,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   
   (TODO: This isn't really a complete specification of the behavior. A complete specification might get very exhaustive or technical, but let's see if we can at least improve this description over time. Perhaps we should go through and hedge some of the ways we describe hypernests so that they specifically appeal to @tt{hypernest-snippet-sys} as the basis for their use of terms like "hypersnippet," "@tech{degree}," and "hole.")
   
-  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
-  
   Two @tt{hypernest-snippet-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's elements are @racket[ok/c] for the second's.
 }
 
@@ -2935,8 +2919,6 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   Struct-like operations which construct and deconstruct a @tech{snippet format system} (@racket[snippet-format-sys?]) where, given any particular @tech{dimension system}, the hypersnippet @tech{shapes} are the same as those of the given @tech{snippet format system} (@racket[original]) instantiated at that dimension system, and the @tech{hypersnippets} are @tech{generalized hypernests} which are based on that snippet format system and that dimension system. (In particular, when @racket[original] is @racket[(hypertee-snippet-format-sys)], the generalized hypernests are just (non-generalized) @tech{hypernests}, and the shapes are @tech{hypertees}.)
   
   The shapes and snippets are related according to the same behavior as @racket[hypernest-snippet-sys]. In some sense, this is a generalization of @racket[hypernest-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypernest while leaving the rest of the structure alone.
-  
-  @; TODO: See if we should guarantee the @racket[dim-sys-dim/c] of the @racket[snippet-sys-dim-sys], the @racket[snippet-sys-shape/c] of the @racket[snippet-sys-shape-snippet-sys], or the @racket[snippet-sys-shape/c] to be a flat contract or chaperone contract under certain circumstances.
   
   Two @tt{hypernest-snippet-format-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's elements are @racket[ok/c] for the second's.
 }

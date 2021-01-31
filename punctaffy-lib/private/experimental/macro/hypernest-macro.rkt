@@ -50,7 +50,7 @@
   (require 'private/lathe-debugging/placebo))
 
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-out none/c or/c
+  -> ->i and/c any/c contract-out flat-contract? none/c or/c
   rename-contract)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
@@ -58,6 +58,7 @@
   exact-positive-integer id syntax-parse)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
+(require #/only-in lathe-comforts/contract flat-obstinacy)
 (require #/only-in lathe-comforts/list list-map)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
@@ -82,7 +83,7 @@
 (require #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
   hypernest-coil-hole hypernest-from-brackets hypernest-furl
-  hypernest-join-list-and-tail-along-0 hypernest? hypernestof
+  hypernest-join-list-and-tail-along-0 hypernest? hypernestof/ob-c
   hypernest-shape hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee-from-brackets
@@ -151,7 +152,7 @@
   ; `shape-ss` or its building blocks.
   [is-list*-shape? (-> any/c boolean?)]
   
-  [hn-expr/c (-> contract?)]
+  [hn-expr/c (-> flat-contract?)]
   [s-expr-stx->hn-expr (-> syntax? syntax? #/hn-expr/c)])
 
 
@@ -556,7 +557,7 @@
     (and/c
       (snippet-sys-snippet-with-degree=/c ss
         (dim-sys-morphism-sys-morph-dim n-d 1))
-      (hypernestof sfs ds
+      (hypernestof/ob-c sfs ds (flat-obstinacy)
         (fn bump-interior-shape
           (w- d
             (snippet-sys-snippet-degree shape-ss bump-interior-shape)

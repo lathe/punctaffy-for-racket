@@ -24,6 +24,7 @@
 (require rackunit)
 
 (require #/only-in lathe-comforts dissect fn mat w-)
+(require #/only-in lathe-comforts/contract flat-obstinacy)
 (require #/only-in lathe-comforts/maybe just maybe-map)
 (require #/only-in lathe-comforts/trivial trivial)
 
@@ -37,7 +38,7 @@
   snippet-sys-snippet-map snippet-sys-snippet-select
   snippet-sys-snippet-select-everything
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-splice
-  snippet-sys-snippet-undone snippet-sys-snippet-zip-selective/c
+  snippet-sys-snippet-undone snippet-sys-snippet-zip-selective/ob-c
   snippet-sys-snippet-zip-map-selective unselected)
 (require #/only-in
   (submod punctaffy/hypersnippet/snippet private/test)
@@ -131,7 +132,7 @@
 
 (check-equal?
   (contract
-    (snippet-sys-snippet-zip-selective/c ss
+    (snippet-sys-snippet-zip-selective/ob-c ss (flat-obstinacy)
       (hypertee-furl ds #/hypertee-coil-zero)
       (fn hole subject-data
         (error "Internal error"))

@@ -28,7 +28,7 @@
 (provide #/shim-recontract-out
   hypernest?
   hypernest/c
-  hypernestof
+  hypernestof/ob-c
   hypernest-get-dim-sys)
 (provide
   hypernest-snippet-sys)

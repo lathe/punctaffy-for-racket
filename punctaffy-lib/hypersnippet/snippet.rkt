@@ -112,7 +112,7 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-name flat-contract?
+  -> ->i and/c any any/c contract? contract-name flat-contract?
   flat-contract-predicate list/c listof none/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
@@ -124,7 +124,10 @@
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/contract
-  by-own-method/c value-name-for-contract)
+  by-own-method/c chaperone-obstinacy flat-obstinacy
+  impersonator-obstinacy obstinacy? obstinacy-contract/c
+  obstinacy-get-coerce-contract-for-id obstinacy-get-make-contract
+  value-name-for-contract)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
@@ -202,7 +205,7 @@
 (provide #/shim-contract-out
   [snippet-sys? (-> any/c boolean?)]
   [snippet-sys-impl? (-> any/c boolean?)]
-  [snippet-sys-snippet/c (-> snippet-sys? contract?)]
+  [snippet-sys-snippet/c (-> snippet-sys? flat-contract?)]
   [snippet-sys-dim-sys (-> snippet-sys? dim-sys?)]
   [snippet-sys-shape-snippet-sys (-> snippet-sys? snippet-sys?)]
   ; TODO DEBUGGABILITY: Provide a contract-protected version like this
@@ -213,50 +216,55 @@
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])]
   [snippet-sys-snippet-with-degree/c
-    (-> snippet-sys? flat-contract? contract?)]
+    (-> snippet-sys? flat-contract? flat-contract?)]
   [snippet-sys-snippet-with-degree</c
     (->i
       (
         [ss snippet-sys?]
         [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
-      [_ contract?])]
+      [_ flat-contract?])]
   [snippet-sys-snippet-with-degree=/c
     (->i
       (
         [ss snippet-sys?]
         [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
-      [_ contract?])]
-  [snippet-sys-snippet-with-0<degree/c (-> snippet-sys? contract?)]
-  [snippet-sys-snippetof
+      [_ flat-contract?])]
+  [snippet-sys-snippet-with-0<degree/c
+    (-> snippet-sys? flat-contract?)]
+  [snippet-sys-snippetof/ob-c
     (->i
       (
         [ss snippet-sys?]
-        [h-to-value/c (ss)
+        [ob obstinacy?]
+        [h-to-value/c (ss ob)
           ; NOTE: Via the definition of
-          ; `snippet-sys-unlabeled-shape/c`, `snippet-sys-snippetof`
-          ; basically appears in its own contract.
-          (-> (snippet-sys-unlabeled-shape/c ss) contract?)])
-      [_ contract?])]
-  [snippet-sys-unlabeled-snippet/c (-> snippet-sys? contract?)]
-  [snippet-sys-unlabeled-shape/c (-> snippet-sys? contract?)]
-  [snippet-sys-snippet-zip-selective/c
+          ; `snippet-sys-unlabeled-shape/c`,
+          ; `snippet-sys-snippetof/ob-c` basically appears in its own
+          ; contract.
+          (-> (snippet-sys-unlabeled-shape/c ss)
+            (obstinacy-contract/c ob))])
+      [_ (ob) (obstinacy-contract/c ob)])]
+  [snippet-sys-unlabeled-snippet/c (-> snippet-sys? flat-contract?)]
+  [snippet-sys-unlabeled-shape/c (-> snippet-sys? flat-contract?)]
+  [snippet-sys-snippet-zip-selective/ob-c
     (->i
       (
         [ss snippet-sys?]
+        [ob obstinacy?]
         [shape (ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [check-subject-hv? (ss)
           (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)]
-        [hvv-to-subject-v/c (ss)
+        [hvv-to-subject-v/c (ss ob)
           (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c
-            contract?)])
-      [_ contract?])]
+            (obstinacy-contract/c ob))])
+      [_ (ob) (obstinacy-contract/c ob)])]
   [snippet-sys-snippet-fitting-shape/c
     (->i
       (
         [ss snippet-sys?]
         [shape (ss) (snippet-sys-unlabeled-shape/c ss)])
-      [_ contract?])]
+      [_ flat-contract?])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the input
   ; shape.
@@ -271,16 +279,12 @@
         #/snippet-sys-snippet-degree
           (snippet-sys-shape-snippet-sys ss)
           shape)])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting shape should always be of the same shape as the input
-  ; snippet.
   [snippet-sys-snippet->maybe-shape
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss snippet)
         (maybe/c
-          (snippet-sys-snippet-with-degree=/c
-            (snippet-sys-shape-snippet-sys ss)
-          #/snippet-sys-snippet-degree ss snippet))])]
+          (snippet-sys-snippet/c
+            (snippet-sys-shape-snippet-sys ss)))])]
   ; TODO: See if the result contract should be more specific. The
   ; result should always exist if the snippet already has the given
   ; degree, and it should always exist if the given degree is greater
@@ -335,7 +339,8 @@
         (and/c
           (snippet-sys-snippet-with-degree=/c ss
             (snippet-sys-snippet-degree ss snippet))
-          (snippet-sys-snippetof ss #/fn hole selected?))])]
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            selected?))])]
   ; TODO DEBUGGABILITY: Provide a contract-protected version like this
   ; commented-out export instead. See the note on the
   ; `snippet-sys-snippet-degree` macro export.
@@ -372,7 +377,8 @@
         [shape (ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)]
         [snippet (ss)
-          (snippet-sys-snippetof ss #/fn hole selectable?)]
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            selectable?)]
         [hvv-to-maybe-v (ss)
           (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c maybe?)])
       [_ (ss snippet)
@@ -417,7 +423,7 @@
         [ss snippet-sys?]
         [snippet (ss) (snippet-sys-snippet/c ss)]
         [visit-hv (ss)
-          (-> (snippet-sys-unlabeled-shape/c ss) any/c void?)])
+          (-> (snippet-sys-unlabeled-shape/c ss) any/c any)])
       [_ void?])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
@@ -454,7 +460,8 @@
       (
         [ss snippet-sys?]
         [snippet (ss)
-          (snippet-sys-snippetof ss #/fn hole selectable?)]
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            selectable?)]
         [hv-to-v (ss)
           (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
       [_ (ss snippet)
@@ -525,14 +532,16 @@
         [ss snippet-sys?]
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c snippet
+          #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
           #/w- has-d/c
             (snippet-sys-snippet-with-degree=/c ss
               (snippet-sys-snippet-degree ss snippet))
-          #/snippet-sys-snippetof ss #/fn prefix-hole
-            (selectable/c any/c #/and/c
-              has-d/c
-              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
+          #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+            (fn prefix-hole
+              (selectable/c any/c #/and/c
+                has-d/c
+                (snippet-sys-snippet-fitting-shape/c
+                  ss prefix-hole))))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
@@ -563,14 +572,16 @@
         [ss snippet-sys?]
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c snippet
+          #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
           #/w- has-d/c
             (snippet-sys-snippet-with-degree=/c ss
               (snippet-sys-snippet-degree ss snippet))
-          #/snippet-sys-snippetof ss #/fn prefix-hole
-            (and/c
-              has-d/c
-              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
+          #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+            (fn prefix-hole
+              (and/c
+                has-d/c
+                (snippet-sys-snippet-fitting-shape/c
+                  ss prefix-hole))))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
@@ -580,7 +591,7 @@
   [make-snippet-sys-impl-from-various-1
     (->
       ; snippet-sys-snippet/c
-      (-> snippet-sys? contract?)
+      (-> snippet-sys? flat-contract?)
       ; snippet-sys-dim-sys
       (-> snippet-sys? dim-sys?)
       ; snippet-sys-shape-snippet-sys
@@ -603,14 +614,11 @@
             shape)])
       ; snippet-sys-snippet->maybe-shape
       (->i
-        (
-          [ss snippet-sys?]
-          [snippet (ss) (snippet-sys-snippet/c ss)])
+        ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
         [_ (ss snippet)
           (maybe/c
-            (snippet-sys-snippet-with-degree=/c
-              (snippet-sys-shape-snippet-sys ss)
-            #/snippet-sys-snippet-degree ss snippet))])
+            (snippet-sys-snippet/c
+              (snippet-sys-shape-snippet-sys ss)))])
       ; snippet-sys-snippet-set-degree-maybe
       (->i
         (
@@ -670,7 +678,8 @@
             (snippet-sys-snippet/c
               (snippet-sys-shape-snippet-sys ss))]
           [snippet (ss)
-            (snippet-sys-snippetof ss #/fn hole selectable?)]
+            (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+              selectable?)]
           [hvv-to-maybe-v (ss)
             (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c
               maybe?)])
@@ -914,7 +923,7 @@
   [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
   [hypertee-coil-hole-tails (-> hypertee-coil-hole? any/c)])
 (module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-coil/c (-> dim-sys? contract?)])
+  [hypertee-coil/c (-> dim-sys? flat-contract?)])
 (module+ private/hypertee #/provide
   hypertee-furl)
 (module+ private/hypertee #/provide #/shim-contract-out
@@ -923,7 +932,7 @@
   [hypertee-get-coil
     (->i ([ht hypertee?])
       [_ (ht) (hypertee-coil/c #/hypertee-get-dim-sys ht)])]
-  [hypertee/c (-> dim-sys? contract?)])
+  [hypertee/c (-> dim-sys? flat-contract?)])
 (module+ private/hypertee #/provide
   hypertee-snippet-sys)
 (module+ private/hypertee #/provide #/shim-contract-out
@@ -936,7 +945,8 @@
   [hypertee-get-hole-zero-maybe
     (->
       (and/c hypertee?
-        (by-own-method/c ht #/hypertee/c #/hypertee-get-dim-sys ht))
+        (by-own-method/c #:obstinacy (flat-obstinacy) ht
+          (hypertee/c #/hypertee-get-dim-sys ht)))
       maybe?)])
 
 (module+ private/hypertee #/provide
@@ -978,21 +988,24 @@
 
 (module+ private/hypernest #/provide #/shim-contract-out
   [hypernest? (-> any/c boolean?)]
-  [hypernest/c (-> snippet-format-sys? dim-sys? contract?)]
-  [hypernestof
+  [hypernest/c (-> snippet-format-sys? dim-sys? flat-contract?)]
+  [hypernestof/ob-c
     (->i
       (
         [sfs snippet-format-sys?]
         [ds dim-sys?]
-        [b-to-value/c (sfs ds)
+        [ob obstinacy?]
+        [b-to-value/c (sfs ds ob)
           (w- ffdstsss (snippet-format-sys-functor sfs)
           #/w- ss (functor-sys-apply-to-object ffdstsss ds)
-          #/-> (snippet-sys-unlabeled-shape/c ss) contract?)]
-        [h-to-value/c (sfs ds)
+          #/-> (snippet-sys-unlabeled-shape/c ss)
+            (obstinacy-contract/c ob))]
+        [h-to-value/c (sfs ds ob)
           (w- ffdstsss (snippet-format-sys-functor sfs)
           #/w- ss (functor-sys-apply-to-object ffdstsss ds)
-          #/-> (snippet-sys-unlabeled-shape/c ss) contract?)])
-      [_ contract?])]
+          #/-> (snippet-sys-unlabeled-shape/c ss)
+            (obstinacy-contract/c ob))])
+      [_ (ob) (obstinacy-contract/c ob)])]
   [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
 (module+ private/hypernest #/provide
   hypernest-snippet-sys)
@@ -1019,7 +1032,7 @@
   [hypernest-get-hole-zero-maybe
     (->
       (and/c hypernest?
-        (by-own-method/c hn
+        (by-own-method/c #:obstinacy (flat-obstinacy) hn
           (hypernest/c (hypertee-snippet-format-sys)
             (hypernest-get-dim-sys hn))))
       maybe?)]
@@ -1034,7 +1047,7 @@
           #/listof #/and/c
             (snippet-sys-snippet-with-degree=/c ss
               (snippet-sys-snippet-degree ss last-snippet))
-            (snippet-sys-snippetof ss #/fn hole
+            (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
               (if
                 (dim-sys-dim=0? ds
                   (snippet-sys-snippet-degree shape-ss hole))
@@ -1073,7 +1086,7 @@
   [hypernest-coil-bump-tails-hypernest
     (-> hypernest-coil-bump? any/c)])
 (module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-coil/c (-> dim-sys? contract?)])
+  [hypernest-coil/c (-> dim-sys? flat-contract?)])
 (module+ private/hypernest #/provide
   hypernest-furl)
 (module+ private/hypernest #/provide #/shim-contract-out
@@ -1131,6 +1144,30 @@
 (module+ private/test #/provide
   snippet-sys-snippet-filter-maybe)
 
+
+
+; TODO: See if we'll use this.
+; TODO: See if we should export this from Lathe Comforts. It may just
+; be an implementation detail of `obstinacy-late-contract-projector`.
+(define
+  (obstinacy-project-late ob project-v-and-late-party v late-party)
+  (w- next-v (project-v-and-late-party v late-party)
+  #/mat ob (impersonator-obstinacy) next-v
+  #/mat ob (chaperone-obstinacy) next-v
+  #/dissect ob (flat-obstinacy) v))
+
+; TODO: See if we'll use this.
+; TODO: See if we should export this from Lathe Comforts. It doesn't
+; seem as universally useful as `obstinacy-project-late`, since
+; usually the contract `c` is known before `missing-party` is.
+(define
+  (obstinacy-late-contract-projector ob coerce blame missing-party)
+  (fn c v context
+    (w- c-proj
+      (
+        (get/build-late-neg-projection #/coerce c)
+        (blame-add-context blame context))
+    #/obstinacy-project-late ob c-proj v missing-party)))
 
 
 (define-imitation-simple-struct
@@ -1353,10 +1390,7 @@
   #/w- name
     `(snippet-sys-snippet-with-degree/c ,ss ,(contract-name degree/c))
   #/w- snippet-contract (snippet-sys-snippet/c ss)
-  #/
-    (if (flat-contract? snippet-contract)
-      make-flat-contract
-      make-contract)
+  #/make-flat-contract
     
     #:name name
     
@@ -1378,12 +1412,8 @@
           (get/build-late-neg-projection degree/c)
           (blame-add-context blame "the degree check of"))
       #/fn v missing-party
-        (w- v
-          (w- next-v (snippet-contract-projection v missing-party)
-          #/if (flat-contract? snippet-contract)
-            v
-            next-v)
-        #/begin
+        (begin
+          (snippet-contract-projection v missing-party)
           (degree/c-projection (snippet-sys-snippet-degree ss v)
             missing-party)
           v)))))
@@ -1406,26 +1436,23 @@
       (dim-sys-0<dim/c #/snippet-sys-dim-sys ss))
     `(snippet-sys-snippet-with-0<degree/c ,ss)))
 
-(define (snippet-sys-snippetof ss h-to-value/c)
-  (w- name `(snippet-sys-snippetof ,ss ,h-to-value/c)
+(define (snippet-sys-snippetof/ob-c ss ob h-to-value/c)
+  (w- name `(snippet-sys-snippetof/ob-c ,ss ,ob ,h-to-value/c)
+  #/w- coerce
+    (obstinacy-get-coerce-contract-for-id ob
+      'snippet-sys-snippetof/ob-c)
   #/w- snippet-contract (snippet-sys-snippet/c ss)
   #/w- first-order
     (fn v
-      (and (contract-first-order-passes? snippet-contract v)
-      
-      ; TODO CONTRACT ROBUSTNESS: Extend the `snippet-sys?` interface
-      ; with a method that can perform a `snippet-sys-snippet-all?`
-      ; like this, but that gracefully returns `#f` if its input isn't
-      ; a valid hypersnippet, as long as its input passes the
-      ; first-order check of the hypersnippet contract. Then use that
-      ; method here.
-      ;
+      (and ((flat-contract-predicate snippet-contract) v)
       #/snippet-sys-snippet-all? ss v #/fn hole data
-        (dlog 'zr1 h-to-value/c hole
-        #/w- value/c
-          (coerce-contract 'snippet-sys-snippetof #/h-to-value/c hole)
+        (w- value/c (coerce #/h-to-value/c hole)
         #/contract-first-order-passes? value/c data)))
-  #/make-contract #:name name #:first-order first-order
+  #/ (obstinacy-get-make-contract ob)
+    
+    #:name name
+    
+    #:first-order first-order
     
     #:late-neg-projection
     (fn blame
@@ -1434,24 +1461,25 @@
           (get/build-late-neg-projection snippet-contract)
           (blame-add-context blame "the initial snippet check of"))
       #/fn v missing-party
-        (dlog 'q1 ss h-to-value/c blame missing-party v
-        #/w- v (snippet-contract-projection v missing-party)
-        #/snippet-sys-snippet-map ss v #/fn hole data
-          (dlog 'q2
-          #/w- value/c
-            (coerce-contract 'snippet-sys-snippetof
-              (h-to-value/c hole))
-          #/dlog 'q3 hole data value/c
-          #/
-            (
-              (get/build-late-neg-projection value/c)
-              (blame-add-context blame "a hole value of"))
-            data
-            missing-party))))))
+        (begin (snippet-contract-projection v missing-party)
+        #/w- process-hole
+          (fn hole data
+            (w- value/c (coerce #/h-to-value/c hole)
+            #/
+              (
+                (get/build-late-neg-projection value/c)
+                (blame-add-context blame "a hole value of"))
+              data
+              missing-party))
+        #/mat ob (flat-obstinacy)
+          (begin (snippet-sys-snippet-each ss v process-hole)
+            v)
+          (snippet-sys-snippet-map ss v process-hole))))))
 
 (define (snippet-sys-unlabeled-snippet/c ss)
   (rename-contract
-    (snippet-sys-snippetof ss #/fn hole trivial?)
+    (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+      trivial?)
     `(snippet-sys-unlabeled-snippet/c ,ss)))
 
 (define (snippet-sys-unlabeled-shape/c ss)
@@ -1461,34 +1489,31 @@
     `(snippet-sys-unlabeled-shape/c ,ss)))
 
 (define
-  (snippet-sys-snippet-zip-selective/c
-    ss shape check-subject-hv? hvv-to-subject-v/c)
+  (snippet-sys-snippet-zip-selective/ob-c
+    ss ob shape check-subject-hv? hvv-to-subject-v/c)
   (w- name
-    `(snippet-sys-snippet-zip-selective/c
-      ,ss ,shape ,check-subject-hv? ,hvv-to-subject-v/c)
+    `(snippet-sys-snippet-zip-selective/ob-c
+      ,ss ,ob ,shape ,check-subject-hv? ,hvv-to-subject-v/c)
+  #/w- coerce
+    (obstinacy-get-coerce-contract-for-id ob
+      'snippet-sys-snippet-zip-selective/ob-c)
   #/w- snippet-contract (snippet-sys-snippet/c ss)
   #/w- first-order
     (fn v
       (dlogr 'zg1
       #/and (contract-first-order-passes? snippet-contract v)
-      
-      ; TODO CONTRACT ROBUSTNESS: Extend the `snippet-sys?` interface
-      ; with a method that can perform a combination of
-      ; `snippet-sys-snippet-zip-all-selective?` and
-      ; `snippet-sys-snippet-select` like this, but that gracefully
-      ; returns `#f` if its input isn't a valid hypersnippet, as long
-      ; as its input passes the first-order check of the hypersnippet
-      ; contract. Then use that method here.
-      ;
       #/snippet-sys-snippet-zip-all-selective? ss shape
         (snippet-sys-snippet-select ss v #/fn hole data
           (check-subject-hv? hole data))
       #/fn hole shape-data subject-data
         (w- value/c
-          (coerce-contract 'snippet-sys-snippet-zip-selective/c
-            (hvv-to-subject-v/c hole shape-data subject-data))
+          (coerce #/hvv-to-subject-v/c hole shape-data subject-data)
         #/contract-first-order-passes? value/c subject-data)))
-  #/make-contract #:name name #:first-order first-order
+  #/ (obstinacy-get-make-contract ob)
+    
+    #:name name
+    
+    #:first-order first-order
     
     #:late-neg-projection
     (fn blame
@@ -1500,14 +1525,14 @@
         (dlog 'zg2 check-subject-hv?
         #/dlog 'zg2.1 shape
         #/dlog 'zg2.2 v
-        #/w- v (snippet-contract-projection v missing-party)
+        #/begin (snippet-contract-projection v missing-party)
         #/expect
           (snippet-sys-snippet-zip-map-selective ss shape
             (snippet-sys-snippet-select ss v #/fn hole data
               (check-subject-hv? hole data))
           #/fn hole shape-data subject-data
             (w- value/c
-              (coerce-contract 'snippet-sys-snippet-zip-selective/c
+              (coerce
                 (hvv-to-subject-v/c hole shape-data subject-data))
             #/just #/
               (
@@ -1520,6 +1545,8 @@
           #/raise-blame-error blame #:missing-party missing-party v
             '(expected: "~e" given: "~e")
             name v)
+        #/mat ob (flat-obstinacy)
+          v
           result)))))
 
 (define (snippet-sys-snippet-fitting-shape/c ss shape)
@@ -1530,7 +1557,7 @@
     ; What this means is that this should be a snippet whose
     ; low-degree holes correspond to the holes of `shape` and contain
     ; `trivial?` values.
-    (snippet-sys-snippet-zip-selective/c ss shape
+    (snippet-sys-snippet-zip-selective/ob-c ss (flat-obstinacy) shape
       (fn hole subject-data
         (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
         #/dim-sys-dim<? ds hole-d shape-d))
@@ -1591,14 +1618,16 @@
         [ss snippet-sys?]
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c snippet
+          #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
           #/w- has-d/c
             (snippet-sys-snippet-with-degree=/c ss
               (snippet-sys-snippet-degree ss snippet))
-          #/snippet-sys-snippetof ss #/fn prefix-hole
-            (selectable/c any/c #/and/c
-              has-d/c
-              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
+          #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+            (fn prefix-hole
+              (selectable/c any/c #/and/c
+                has-d/c
+                (snippet-sys-snippet-fitting-shape/c
+                  ss prefix-hole))))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])
@@ -1642,14 +1671,16 @@
         [ss snippet-sys?]
         [snippet (ss)
           (and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c snippet
+          #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
           #/w- has-d/c
             (snippet-sys-snippet-with-degree=/c ss
               (snippet-sys-snippet-degree ss snippet))
-          #/snippet-sys-snippetof ss #/fn prefix-hole
-            (and/c
-              has-d/c
-              (snippet-sys-snippet-fitting-shape/c ss prefix-hole)))])
+          #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+            (fn prefix-hole
+              (and/c
+                has-d/c
+                (snippet-sys-snippet-fitting-shape/c
+                  ss prefix-hole))))])
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])
@@ -2293,7 +2324,7 @@
           #/and/c
             (snippet-sys-snippet-with-degree=/c ess
               (extended-with-top-dim-infinite))
-            (snippet-sys-snippetof ess #/fn hole
+            (snippet-sys-snippetof/ob-c ess (flat-obstinacy) #/fn hole
               (dlog 'zdr1 (snippet-sys-snippet-degree shape-ess hole)
                 d
                 (dim-sys-dim<? eds
@@ -2335,9 +2366,10 @@
         (dim-sys-0<dim/c uds)
         (snippet-sys-snippet-with-degree=/c ess
           (extended-with-top-dim-infinite)))
-      (by-own-method/c (selective-snippet-nonzero d content)
+      (by-own-method/c #:obstinacy (flat-obstinacy)
+        (selective-snippet-nonzero d content)
       #/match/c selective-snippet-nonzero any/c
-        (snippet-sys-snippetof ess #/fn hole
+        (snippet-sys-snippetof/ob-c ess (flat-obstinacy) #/fn hole
           (dlog 'r1 (snippet-sys-snippet-degree shape-ess hole) d
             (dim-sys-dim<? eds
               (snippet-sys-snippet-degree shape-ess hole)
@@ -3076,7 +3108,8 @@
         [data any/c]
         [tails (ds overall-degree hole)
           (w- ss (hypertee-snippet-sys ds)
-          #/snippet-sys-snippet-zip-selective/c ss hole
+          #/snippet-sys-snippet-zip-selective/ob-c ss (flat-obstinacy)
+            hole
             (fn hole subject-data #t)
             (fn hole shape-data subject-data
               (and/c
@@ -3095,8 +3128,6 @@
             #'(hypertee-coil-hole))
           overall-degree hole data tails))))
 
-; TODO: See if we can get this to return a flat contract. It's likely
-; the only thing in our way is `by-own-method/c`.
 (define (hypertee-coil/c ds)
   (w- ss (hypertee-snippet-sys ds)
   #/rename-contract
@@ -3108,13 +3139,15 @@
           (snippet-sys-unlabeled-snippet/c ss)
           any/c
           any/c)
-        (by-own-method/c
+        (by-own-method/c #:obstinacy (flat-obstinacy)
           (hypertee-coil-hole overall-degree hole data tails)
           (match/c hypertee-coil-hole
             any/c
             (snippet-sys-snippet-with-degree</c ss overall-degree)
             any/c
-            (snippet-sys-snippet-zip-selective/c ss hole
+            (snippet-sys-snippet-zip-selective/ob-c ss
+              (flat-obstinacy)
+              hole
               (fn hole subject-data #t)
               (fn hole shape-data subject-data
                 (and/c
@@ -3862,7 +3895,7 @@
 
 ; TODO: See if we should export this.
 ; TODO: Use the things that use this.
-(define (hypernestof-lazy sfs uds b-to-value/c h-to-value/c)
+(define (hypernestof-lazy/ob-c sfs uds ob b-to-value/c h-to-value/c)
   (w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- uss (functor-sys-apply-to-object ffdstsss uds)
@@ -3887,13 +3920,14 @@
         (match/c hypernest-nonzero-unchecked
           (dim-sys-0<dim/c uds)
           any/c)
-      #/by-own-method/c (hypernest-nonzero-unchecked d _)
+      #/by-own-method/c #:obstinacy (flat-obstinacy)
+        (hypernest-nonzero-unchecked d _)
       #/match/c hypernest-nonzero-unchecked
         any/c
         (and/c
           (snippet-sys-snippet-with-degree=/c ess
             (extended-with-top-dim-infinite))
-          (snippet-sys-snippetof ess #/fn hole
+          (snippet-sys-snippetof/ob-c ess ob #/fn hole
             (mat (snippet-sys-snippet-degree shape-ess hole)
               (extended-with-top-dim-finite
                 (extended-with-top-dim-finite hole-d))
@@ -3915,24 +3949,25 @@
               (b-to-value/c #/fn
                 (snippet-sys-morphism-sys-morph-snippet unextend-shape
                   bump-interior-shape)))))))
-    `(hypernestof-lazy ,sfs ,uds ,b-to-value/c ,h-to-value/c)))
+    `(hypernestof-lazy/ob-c
+       ,sfs ,uds ,ob ,b-to-value/c ,h-to-value/c)))
 
 ; TODO: Use the things that use this.
 (define (hypernest/c sfs uds)
   (rename-contract
-    (hypernestof-lazy sfs uds
+    (hypernestof-lazy/ob-c sfs uds (flat-obstinacy)
       (fn get-bump-interior-shape any/c)
       (fn get-hole any/c))
     `(hypernest/c ,sfs ,uds)))
 
 ; TODO: Use the things that use this.
-(define (hypernestof sfs uds b-to-value/c h-to-value/c)
+(define (hypernestof/ob-c sfs uds ob b-to-value/c h-to-value/c)
   (rename-contract
-    (hypernestof-lazy sfs uds
+    (hypernestof-lazy/ob-c sfs uds ob
       (fn get-bump-interior-shape
         (b-to-value/c #/get-bump-interior-shape))
       (fn get-hole #/h-to-value/c #/get-hole))
-    `(hypernestof ,sfs ,uds ,b-to-value/c ,h-to-value/c)))
+    `(hypernestof/ob-c ,sfs ,uds ,ob ,b-to-value/c ,h-to-value/c)))
 
 (define (hypernest-get-dim-sys hn)
   (dlog 'zk1 hn
@@ -4482,7 +4517,9 @@
           (w- ss
             (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/snippet-sys-snippet-zip-selective/c shape-ss hole
+          #/snippet-sys-snippet-zip-selective/ob-c shape-ss
+            (flat-obstinacy)
+            hole
             (fn hole subject-data #t)
             (fn hole shape-data subject-data
               (and/c
@@ -4493,8 +4530,6 @@
     any/c)
   (hypernest-coil-hole overall-degree hole data tails-hypertee))
 
-; TODO: See if we can get this to return a flat contract. It's likely
-; the only thing in our way is `by-own-method/c`.
 (define (hypernest-coil/c ds)
   (w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
@@ -4507,7 +4542,7 @@
           (snippet-sys-unlabeled-shape/c ss)
           any/c
           any/c)
-        (by-own-method/c
+        (by-own-method/c #:obstinacy (flat-obstinacy)
           (hypernest-coil-hole
             overall-degree hole data tails-hypertee)
           (match/c hypernest-coil-hole
@@ -4515,7 +4550,9 @@
             (snippet-sys-snippet-with-degree</c
               shape-ss overall-degree)
             any/c
-            (snippet-sys-snippet-zip-selective/c shape-ss hole
+            (snippet-sys-snippet-zip-selective/ob-c shape-ss
+              (flat-obstinacy)
+              hole
               (fn hole subject-data #t)
               (fn hole shape-data subject-data
                 (and/c
@@ -4528,7 +4565,7 @@
           any/c
           (dim-sys-dim/c ds)
           any/c)
-        (by-own-method/c
+        (by-own-method/c #:obstinacy (flat-obstinacy)
           (hypernest-coil-bump
             overall-degree data bump-degree tails-hypernest)
           (match/c hypernest-coil-bump
@@ -4538,25 +4575,27 @@
             (and/c
               (snippet-sys-snippet-with-degree=/c ss
                 (dim-sys-dim-max ds overall-degree bump-degree))
-              (snippet-sys-snippetof ss #/fn hole
-                (w- hole-d
-                  (snippet-sys-snippet-degree shape-ss hole)
-                #/expect (dim-sys-dim<? ds hole-d bump-degree) #t
-                  any/c
-                #/and/c
-                  (snippet-sys-snippet-with-degree=/c ss
-                    
-                    ; TODO: Almost all of the unit tests in
-                    ; test-hypernest-2.rkt, with the exception of the
-                    ; `sample-hn-expr-shape-as-ast` test, continue to
-                    ; work if we just use `overall-degree` here. We
-                    ; should write more tests for this case (that is,
-                    ; the situation where a hypernest has a bump with
-                    ; a hole of degree greater than the overall
-                    ; hypernest).
-                    ;
-                    (dim-sys-dim-max ds overall-degree hole-d))
-                  (snippet-sys-snippet-fitting-shape/c ss hole))))))))
+              (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+                (fn hole
+                  (w- hole-d
+                    (snippet-sys-snippet-degree shape-ss hole)
+                  #/expect (dim-sys-dim<? ds hole-d bump-degree) #t
+                    any/c
+                  #/and/c
+                    (snippet-sys-snippet-with-degree=/c ss
+                      
+                      ; TODO: Almost all of the unit tests in
+                      ; test-hypernest-2.rkt, with the exception of
+                      ; the `sample-hn-expr-shape-as-ast` test,
+                      ; continue to work if we just use
+                      ; `overall-degree` here. We should write more
+                      ; tests for this case (that is, the situation
+                      ; where a hypernest has a bump with a hole of
+                      ; degree greater than the overall hypernest).
+                      ;
+                      (dim-sys-dim-max ds overall-degree hole-d))
+                    (snippet-sys-snippet-fitting-shape/c ss
+                      hole)))))))))
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
 ; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
