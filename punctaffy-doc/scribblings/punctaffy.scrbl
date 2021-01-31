@@ -1103,8 +1103,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [snippet (snippet-sys-snippet/c ss)])
   (maybe/c
     (list/c
-      (dim-sys-dim=/c (snippet-sys-dim-sys ss)
-        (snippet-sys-snippet-degree ss snippet))
+      (dim-sys-dim/c (snippet-sys-dim-sys ss))
       (snippet-sys-snippet/c (snippet-sys-shape-snippet-sys ss))
       any/c))
 ]{
@@ -1127,7 +1126,8 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   (and/c
     (snippet-sys-snippet-with-degree=/c ss
       (snippet-sys-snippet-degree ss snippet))
-    (snippet-sys-snippetof ss (fn _hole selected?)))
+    (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+      (fn _hole selected?)))
 ]{
   Returns a @tech{hypersnippet} like the given one, but where the data value carried in each @tech{hole} has been selected for traversal in the sense of @racket[selectable?].
   
@@ -1307,8 +1307,11 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [snippet (snippet-sys-snippet/c ss)]
     [check-hv?
       (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
-  (snippet-sys-snippet-with-degree=/c ss
-    (snippet-sys-snippet-degree ss snippet))
+  (and/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet))
+    (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+      (fn _hole selectable?)))
 ]{
   Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by calling the given function to decide whether each one should be @racket[selected?].
   
@@ -1321,8 +1324,11 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [snippet (snippet-sys-snippet/c ss)]
     [check-degree?
       (-> (dim-sys-dim/c (snippet-sys-dim-sys ss)) boolean?)])
-  (snippet-sys-snippet-with-degree=/c ss
-    (snippet-sys-snippet-degree ss snippet))
+  (and/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet))
+    (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+      (fn _hole selectable?)))
 ]{
   Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by calling the given function on each hole's @tech{degree} decide whether the value should be @racket[selected?].
   
@@ -1334,8 +1340,11 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
     [ss snippet-sys?]
     [degreee (dim-sys-dim/c (snippet-sys-dim-sys ss))]
     [snippet (snippet-sys-snippet/c ss)])
-  (snippet-sys-snippet-with-degree=/c ss
-    (snippet-sys-snippet-degree ss snippet))
+  (and/c
+    (snippet-sys-snippet-with-degree=/c ss
+      (snippet-sys-snippet-degree ss snippet))
+    (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+      (fn _hole selectable?)))
 ]{
   Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by selecting the values whose holes' @tech{degrees} are strictly less than the given one.
   
@@ -1502,8 +1511,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
         [_ (_ss _snippet)
           (maybe/c
             (list/c
-              (dim-sys-dim=/c (snippet-sys-dim-sys _ss)
-                (snippet-sys-snippet-degree _ss _snippet))
+              (dim-sys-dim/c (snippet-sys-dim-sys _ss))
               (snippet-sys-snippet/c
                 (snippet-sys-shape-snippet-sys _ss))
               any/c))])]

@@ -265,9 +265,6 @@
         [ss snippet-sys?]
         [shape (ss) (snippet-sys-unlabeled-shape/c ss)])
       [_ flat-contract?])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the input
-  ; shape.
   [snippet-sys-shape->snippet
     (->i
       (
@@ -276,9 +273,9 @@
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
       [_ (ss shape)
         (snippet-sys-snippet-with-degree=/c ss
-        #/snippet-sys-snippet-degree
-          (snippet-sys-shape-snippet-sys ss)
-          shape)])]
+          (snippet-sys-snippet-degree
+            (snippet-sys-shape-snippet-sys ss)
+            shape))])]
   [snippet-sys-snippet->maybe-shape
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss snippet)
@@ -288,8 +285,7 @@
   ; TODO: See if the result contract should be more specific. The
   ; result should always exist if the snippet already has the given
   ; degree, and it should always exist if the given degree is greater
-  ; than that degree and that degree is nonzero. Moreover, the result
-  ; should always have the same shape as the input.
+  ; than that degree and that degree is nonzero.
   [snippet-sys-snippet-set-degree-maybe
     (->i
       (
@@ -298,15 +294,9 @@
         [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss degree)
         (maybe/c #/snippet-sys-snippet-with-degree=/c ss degree)])]
-  
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; shape in its low-degree holes.
-  ;
   ; TODO DEBUGGABILITY: Provide a contract-protected version like this
   ; commented-out export instead. See the note on the
   ; `snippet-sys-snippet-degree` macro export.
-  ;
   #;
   [snippet-sys-snippet-done
     (->i
@@ -319,20 +309,13 @@
             degree)]
         [data any/c])
       [_ (ss degree) (snippet-sys-snippet-with-degree=/c ss degree)])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting shape should always be of the same shape as the given
-  ; snippet's low-degree holes.
   [snippet-sys-snippet-undone
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss snippet)
         (maybe/c #/list/c
-          (dim-sys-dim=/c (snippet-sys-dim-sys ss)
-            (snippet-sys-snippet-degree ss snippet))
+          (dim-sys-dim/c #/snippet-sys-dim-sys ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
           any/c)])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one.
   [snippet-sys-snippet-select-everything
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss snippet)
@@ -367,9 +350,6 @@
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
             (snippet-sys-snippet-degree ss snippet)))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one.
   [snippet-sys-snippet-zip-map-selective
     (->i
       (
@@ -384,10 +364,7 @@
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
-          #/snippet-sys-snippet-degree ss snippet))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one.
+            (snippet-sys-snippet-degree ss snippet)))])]
   [snippet-sys-snippet-zip-map
     (->i
       (
@@ -400,7 +377,7 @@
       [_ (ss snippet)
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
-          #/snippet-sys-snippet-degree ss snippet))])]
+            (snippet-sys-snippet-degree ss snippet)))])]
   [snippet-sys-snippet-any?
     (->i
       (
@@ -425,9 +402,6 @@
         [visit-hv (ss)
           (-> (snippet-sys-unlabeled-shape/c ss) any/c any)])
       [_ void?])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one.
   [snippet-sys-snippet-map-maybe
     (->i
       (
@@ -439,9 +413,6 @@
         (maybe/c
           (snippet-sys-snippet-with-degree=/c ss
             (snippet-sys-snippet-degree ss snippet)))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one.
   [snippet-sys-snippet-map
     (->i
       (
@@ -452,9 +423,6 @@
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one.
   [snippet-sys-snippet-map-selective
     (->i
       (
@@ -467,9 +435,6 @@
       [_ (ss snippet)
         (snippet-sys-snippet-with-degree=/c ss
           (snippet-sys-snippet-degree ss snippet))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one, and it should have `selectable?` values in its holes.
   [snippet-sys-snippet-select
     (->i
       (
@@ -478,8 +443,11 @@
         [check-hv? (ss)
           (-> (snippet-sys-unlabeled-shape/c ss) any/c boolean?)])
       [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss snippet))])]
+        (and/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet))
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            selectable?))])]
   ; TODO: See if the result contract should be more specific. The
   ; resulting snippet should always be of the same shape as the given
   ; one, and it should have `selectable?` values in its holes.
@@ -491,11 +459,11 @@
         [check-degree? (ss)
           (-> (dim-sys-dim/c #/snippet-sys-dim-sys ss) boolean?)])
       [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss snippet))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one, and it should have `selectable?` values in its holes.
+        (and/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet))
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            selectable?))])]
   [snippet-sys-snippet-select-if-degree<
     (->i
       (
@@ -503,8 +471,11 @@
         [degreee (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
         [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss snippet))])]
+        (and/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet))
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            selectable?))])]
   [snippet-sys-snippet-bind-selective
     (->i
       (
@@ -644,8 +615,7 @@
         ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
         [_ (ss snippet)
           (maybe/c #/list/c
-            (dim-sys-dim=/c (snippet-sys-dim-sys ss)
-              (snippet-sys-snippet-degree ss snippet))
+            (dim-sys-dim/c #/snippet-sys-dim-sys ss)
             (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
             any/c)])
       ; snippet-sys-snippet-splice
@@ -1258,8 +1228,7 @@
     (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
       [_ (ss snippet)
         (maybe/c #/list/c
-          (dim-sys-dim=/c (snippet-sys-dim-sys ss)
-            (snippet-sys-snippet-degree ss snippet))
+          (dim-sys-dim/c #/snippet-sys-dim-sys ss)
           (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
           any/c)])
     any/c)
