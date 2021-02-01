@@ -1182,7 +1182,7 @@
     (just ^>d-expand)
   #/if (hyperbracket-notation-prefix-expander? v)
     (just #/fn err-dsl-stx stx
-      (s-expr-stx->hn-expr err-dsl-stx stx
+      (s-expr-stx->hn-expr err-dsl-stx
         (hyperbracket-notation-prefix-expander-expand v stx)))
     (nothing)))
 
