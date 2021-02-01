@@ -53,6 +53,20 @@
       "whew"))
   "`taffy-let` only evaluates a spliced expression at the moment it occurs when evaluating the hyperbracketed body")
 
+(check-equal?
+  (list-taffy-map #/^<d 2
+    (format "~a, ~a!"
+      (^>d 1 #/list "Goodbye" "Hello")
+      (^>d 1 #/list "abyss" "world")))
+  (list "Goodbye, abyss!" "Hello, world!")
+  "`list-taffy-map` works")
+
+(check-equal?
+  (list-taffy-bind #/^<d 2
+    (list (^>d 1 #/list 1 3 5) (^>d 1 #/list 2 4 6)))
+  (list 1 2 3 4 5 6)
+  "`list-taffy-bind` works")
+
 
 ; These are examples used in the documentation.
 
@@ -70,3 +84,17 @@
       "whew"))
   "whew"
   "`taffy-let` only evaluates a spliced expression at the moment it occurs when evaluating the hyperbracketed body [documentation example variant]")
+
+(check-equal?
+  (pd _/ list-taffy-map _/ ^<d 2
+    (format "~a, ~a!"
+      (^>d 1 _/ list "Goodbye" "Hello")
+      (^>d 1 _/ list "abyss" "world")))
+  (list "Goodbye, abyss!" "Hello, world!")
+  "`list-taffy-map` works [documentation example variant]")
+
+(check-equal?
+  (pd _/ list-taffy-bind _/ ^<d 2
+    (list (^>d 1 _/ list 1 3 5) (^>d 1 _/ list 2 4 6)))
+  (list 1 2 3 4 5 6)
+  "`list-taffy-bind` works [documentation example variant]")

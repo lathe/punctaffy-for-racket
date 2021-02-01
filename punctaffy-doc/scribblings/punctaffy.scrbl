@@ -28,11 +28,13 @@
 @(require #/for-label #/only-in racket/extflonum extflonum?)
 @(require #/for-label #/only-in racket/flonum flvector?)
 @(require #/for-label #/only-in racket/fixnum fxvector?)
+@(require #/for-label #/only-in racket/list append-map)
 @(require #/for-label #/only-in racket/math natural?)
 
 @(require #/for-label #/only-in lathe-comforts fn)
 @(require #/for-label #/only-in lathe-comforts/contract
   flat-obstinacy obstinacy? obstinacy-contract/c)
+@(require #/for-label #/only-in lathe-comforts/list list-bind)
 @(require #/for-label #/only-in lathe-comforts/maybe
   just? maybe? maybe/c nothing)
 @(require #/for-label #/only-in lathe-comforts/trivial trivial?)
@@ -3138,11 +3140,11 @@ This design leads to a more regular experience than the current situation in Rac
       #&content-and-splices
       #(content-and-splices ...)
       #s(prefab-key-datum content-and-splices ...)
-      (^>d 1 spliced-list-expr ...)
-      (^<d degree deeper-content-and-splices ...))]
+      (^<d degree deeper-content-and-splices ...)
+      (^>d 1 spliced-list-expr ...))]
   #:contracts ([spliced-list-expr list?])
 ]{
-  A variation upon @racket[quote] or @racket[quasiquote] that uses @tech{hyperbrackets} to delimit a quoted @tech{degree}-2 @tech{hypersnippet} of datum values. Expressions can be supplied within the degree-1 @tech{holes} of this hypersnippet to cause their resulting lists to be spliced into the surrounding datum content.
+  A variant of @racket[quote] or @racket[quasiquote] that uses @tech{hyperbrackets} to delimit a quoted @tech{degree}-2 @tech{hypersnippet} of datum values. Expressions can be supplied within the degree-1 @tech{holes} of this hypersnippet to cause their resulting lists to be spliced into the surrounding datum content.
   
   Specifically, the holes behave like @racket[unquote-splicing]. It's possible to achieve the behavior of @racket[unquote] by wrapping the expression in a call to @racket[list].
   
@@ -3194,10 +3196,6 @@ This design leads to a more regular experience than the current situation in Rac
     Produces a single datum: A prefab struct which contains all the datum values produced by each of the given @racket[content-and-splices] terms. The prefab struct's key is given by @racket[_prefab-key-datum], which must be a @racket[prefab-key?] value which specifies no mutable fields.
   }
   
-  @specsubform[#:literals (^>d) (^>d 1 spliced-list-expr ...)]{
-    Evaluates the expressions @racket[spliced-list-expr ...] and produces whatever datum values they return. Each expression must return a list; the elements of the lists, appended together, are the datum values to return. The elements can be any type of value, even types that this operation doesn't allow in the quoted content.
-  }
-  
   @specsubform[
     #:literals (^<d)
     (^<d degree deeper-content-and-splices ...)
@@ -3209,6 +3207,10 @@ This design leads to a more regular experience than the current situation in Rac
     Within the @racket[_shallower-content-and-splices] of a closing hyperbracket of some degree N, the same grammar applies that did at the location of the corresponding opening bracket, except that occurrences of @racket[(^>d degree deeper-content-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this closing hyperbracket (resuming the body of the opening hyperbracket again).
     
     (TODO: That's a mouthful. Can we reword this?)
+  }
+  
+  @specsubform[#:literals (^>d) (^>d 1 spliced-list-expr ...)]{
+    Evaluates the expressions @racket[spliced-list-expr ...] and produces whatever datum values they return. Each expression must return a list; the elements of the lists, appended together, are the datum values to return. The elements can be any type of value, even types that this operation doesn't allow in the quoted content.
   }
   
   Each intermediate @racket[content-and-splices] may result in any number of datum values, but the overall @racket[content-and-splices] must result in exactly one datum. If it results in some other number of datum values, an error is raised.
@@ -3253,8 +3255,8 @@ This design leads to a more regular experience than the current situation in Rac
       #&content-and-splices
       #(content-and-splices ...)
       #s(prefab-key-datum content-and-splices ...)
-      (^>d 1 spliced-list-expr ...)
-      (^<d degree deeper-content-and-splices ...))]
+      (^<d degree deeper-content-and-splices ...)
+      (^>d 1 spliced-list-expr ...))]
   #:contracts ([spliced-list-expr list?])
 ]{
   Like @racket[taffy-quote], but instead of producing a datum, produces a syntax object.
@@ -3294,10 +3296,10 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
       #&body-expr-and-splices
       #(body-expr-and-splices ...)
       #s(prefab-key-datum body-expr-and-splices ...)
-      (^>d 1 spliced-expr)
-      (^<d degree deeper-body-expr-and-splices ...))]
+      (^<d degree deeper-body-expr-and-splices ...)
+      (^>d 1 spliced-expr))]
 ]{
-  A variation upon @racket[let] that uses @tech{hyperbrackets} to delimit a lexical scope in the shape of a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet behave just as they would normally but without the variable bindings in scope.
+  A variant of @racket[let] that uses @tech{hyperbrackets} to delimit a lexical scope in the shape of a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet behave just as they would normally but without the variable bindings in scope.
   
   The @racket[body-expr-and-splices] is converted to a syntax object as follows:
   
@@ -3351,12 +3353,6 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     (TODO: Actually, we don't enforce immutability yet.)
   }
   
-  @specsubform[#:literals (^>d) (^>d 1 spliced-expr)]{
-    Produces an expression which, when evaluated, is equivalent to @racket[spliced-expr].
-    
-    When this syntax object appears in a context where it's quoted, like as a subform of an expression that's a @racket[quote] form, a box, a vector, or a prefab struct, the result is unspecified.
-  }
-  
   @specsubform[
     #:literals (^<d)
     (^<d degree deeper-body-expr-and-splices ...)
@@ -3368,6 +3364,12 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     Within the @racket[_shallower-body-expr-and-splices] of a closing hyperbracket of some degree N, the same grammar applies that did at the location of the corresponding opening bracket, except that occurrences of @racket[(^>d degree deeper-body-expr-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this closing hyperbracket (resuming the body of the opening hyperbracket again).
     
     (TODO: That's a mouthful. Can we reword this?)
+  }
+  
+  @specsubform[#:literals (^>d) (^>d 1 spliced-expr)]{
+    Produces an expression which, when evaluated, is equivalent to @racket[spliced-expr].
+    
+    When this syntax object appears in a context where it's quoted, like as a subform of an expression that's a @racket[quote] form, a box, a vector, or a prefab struct, the result is unspecified.
   }
   
   As noted, all boxes, vectors, and prefab structs that are encountered in the body must be immutable. Racket's reader usually produces immutable boxes and immutable vectors as syntax anyway, and it usually refuses to produce mutable prefab structs as syntax, so the presence of mutability indicates a devoted effort is underway somewhere. If this operation cloned the object to process its elements, the fact that the result was a different mutable object than the original might interfere with whatever that devoted effort was meant to accomplish. Instead, out of caution, the presence of a mutable box, vector, or prefab struct is currently treated as an error.
@@ -3391,5 +3393,69 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
           (^>d 1 _/ error "whoops")
           "whew"))
       "whew")
+  ]
+}
+
+@defform[
+  #:literals (^<d ^>d)
+  (list-taffy-map (^<d 2 body-expr-and-splices))
+  #:grammar
+  [
+    (body-expr-and-splices
+      atomic-form
+      ()
+      (body-expr-and-splices . body-expr-and-splices)
+      #&body-expr-and-splices
+      #(body-expr-and-splices ...)
+      #s(prefab-key-datum body-expr-and-splices ...)
+      (^<d degree deeper-body-expr-and-splices ...)
+      (^>d 1 lst-expr))]
+  #:contracts ([lst-expr list?])
+]{
+  A variant of @racket[map] that uses @tech{hyperbrackets} to delimit the transformation code in a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet are evaluated first, and they supply the lists to iterate over. There must be at least one list given to iterate over, and all the lists must be of the same length.
+  
+  Per @racket[map], the result of the body on each iteration must be a single value. The overall result is a list of the body's results in the order they were generated.
+  
+  The body hypersnippet is parsed according to the same rules as @racket[taffy-let].
+  
+  @examples[
+    #:eval (example-eval)
+    (eval:alts
+      (pd _/ list-taffy-map _/ ^<d 2
+        (format "~a, ~a!"
+          (^>d 1 _/ list "Goodbye" "Hello")
+          (^>d 1 _/ list "abyss" "world")))
+      (list "Goodbye, abyss!" "Hello, world!"))
+  ]
+}
+
+@defform[
+  #:literals (^<d ^>d)
+  (list-taffy-bind (^<d 2 body-expr-and-splices))
+  #:grammar
+  [
+    (body-expr-and-splices
+      atomic-form
+      ()
+      (body-expr-and-splices . body-expr-and-splices)
+      #&body-expr-and-splices
+      #(body-expr-and-splices ...)
+      #s(prefab-key-datum body-expr-and-splices ...)
+      (^<d degree deeper-body-expr-and-splices ...)
+      (^>d 1 lst-expr))]
+  #:contracts ([lst-expr list?])
+]{
+  A variant of @racket[append-map] (named like @racket[list-bind] from Lathe Comforts) that uses @tech{hyperbrackets} to delimit the transformation code in a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet are evaluated first, and they supply the lists to iterate over. There must be at least one list given to iterate over, and all the lists must be of the same length.
+  
+  Per @racket[append-map], the result of the body on each iteration must be a list. The overall result is the concatenation of the body's list results in the order they were generated.
+  
+  The body hypersnippet is parsed according to the same rules as @racket[taffy-let].
+  
+  @examples[
+    #:eval (example-eval)
+    (eval:alts
+      (pd _/ list-taffy-bind _/ ^<d 2
+        (list (^>d 1 _/ list 1 3 5) (^>d 1 _/ list 2 4 6)))
+      (list 1 2 3 4 5 6))
   ]
 }

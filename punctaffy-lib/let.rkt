@@ -23,7 +23,8 @@
 (require #/for-syntax racket/base)
 
 (require #/for-syntax #/only-in racket/syntax generate-temporary)
-(require #/for-syntax #/only-in syntax/parse expr id syntax-parse)
+(require #/for-syntax #/only-in syntax/parse
+  ...+ expr expr/c id syntax-parse)
 
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
@@ -53,13 +54,16 @@
   hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx hn-tag-nest
   s-expr-stx->hn-expr)
 
+(require #/only-in racket/list append-map)
 (require #/only-in syntax/parse/define define-simple-macro)
 
 (require #/only-in lathe-comforts fn w-)
 
 
 (provide
-  taffy-let)
+  taffy-let
+  list-taffy-map
+  list-taffy-bind)
 
 
 (define-for-syntax (hn-bracs-n-d ds n-d degree . brackets)
@@ -215,6 +219,34 @@
   (taffy-let ([var:id val:expr] ...) body-and-splices)
   (taffy-letlike letlike-lazy letlike-merge let ([var val] ...)
     body-and-splices))
+
+(define-simple-macro (list-taffy-map-impl ([var:id val] ...+) body)
+  #:declare val (expr/c #'list? #:name "an iteration subject")
+  #:declare body (expr/c #'any/c #:name "a transformed list element")
+  #:with (elem ...+) (generate-temporaries #'(var ...))
+  (map
+    (lambda (elem ...)
+      (let ([var (fn elem)] ...)
+        body))
+    val.c
+    ...))
+
+(define-simple-macro (list-taffy-map body-and-splices)
+  (taffy-letlike list-taffy-map-impl body-and-splices))
+
+(define-simple-macro (list-taffy-bind-impl ([var:id val] ...+) body)
+  #:declare val (expr/c #'list? #:name "an iteration subject")
+  #:declare body (expr/c #'list? #:name "a transformed list segment")
+  #:with (elem ...+) (generate-temporaries #'(var ...))
+  (append-map
+    (lambda (elem ...)
+      (let ([var (fn elem)] ...)
+        body))
+    val.c
+    ...))
+
+(define-simple-macro (list-taffy-bind body-and-splices)
+  (taffy-letlike list-taffy-bind-impl body-and-splices))
 
 (define-simple-macro
   (taffy-forlike-impl forlike-call ... ([var:id seq:expr] ...) body)
