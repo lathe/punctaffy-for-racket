@@ -32,8 +32,7 @@
   dissect expect fn mat w-)
 (require #/for-syntax #/only-in lathe-comforts/list
   list-each list-map)
-(require #/for-syntax #/only-in lathe-comforts/maybe
-  just just-value nothing)
+(require #/for-syntax #/only-in lathe-comforts/maybe just)
 (require #/for-syntax #/only-in lathe-comforts/trivial trivial)
 
 (require #/for-syntax #/only-in punctaffy/hypersnippet/dim
@@ -49,23 +48,23 @@
   hypertee-coil-hole hypertee-coil-zero hypertee-furl
   hypertee-snippet-format-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/snippet
-  selected snippet-sys-shape->snippet snippet-sys-shape-snippet-sys
+  selected snippet-sys-shape-snippet-sys
   snippet-sys-snippet-bind snippet-sys-snippet-degree
   snippet-sys-snippet-each snippet-sys-snippet-join
   snippet-sys-snippet-join-selective snippet-sys-snippet-map
-  snippet-sys-snippet-map-selective snippet-sys-snippet->maybe-shape
+  snippet-sys-snippet-map-selective
   snippet-sys-snippet-select-if-degree
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
   snippet-sys-snippet-zip-map unselected)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-tag-0-s-expr-stx hn-tag-1-box hn-tag-1-list hn-tag-1-prefab
-  hn-tag-1-vector hn-tag-2-list* hn-tag-nest is-list*-shape?
-  s-expr-stx->hn-expr)
+  hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx hn-tag-1-box
+  hn-tag-1-list hn-tag-1-prefab hn-tag-1-vector hn-tag-2-list*
+  hn-tag-nest parse-list*-tag s-expr-stx->hn-expr)
 
 (require #/only-in racket/list append*)
 
-(require #/only-in lathe-comforts fn)
+(require #/only-in lathe-comforts expect fn w-)
 (require #/only-in lathe-comforts/list list-each)
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
@@ -94,8 +93,6 @@
 (ifc debugging-with-prints
   (require #/for-syntax lathe-debugging)
   (require #/for-syntax 'private/lathe-debugging/placebo))
-
-(require #/only-in lathe-comforts expect w-)
 
 
 (provide
@@ -175,46 +172,6 @@
 (define-for-syntax en-n-d
   (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
-(define-for-syntax (parse-list*-tag bump-degree tag tails)
-  (w- ds en-ds
-  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-  #/w- n-d en-n-d
-  #/expect tag (hn-tag-2-list* stx-example) (nothing)
-  #/expect
-    (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
-      bump-degree)
-    #t
-    (error "Encountered an hn-tag-2-list* bump with a degree other than 2")
-  #/expect (snippet-sys-snippet->maybe-shape ss tails)
-    (just tails)
-    (error "Encountered an hn-tag-2-list* bump with contents in its interior")
-  
-  ; TODO: This begs for an abstraction. Perhaps ideally, there would
-  ; be a match pattern that had hyperbrackets so we could write
-  ; something like...
-  ;
-  ;   #/expect tails
-  ;     (taffy-hn-expr-shape
-  ;       (^<d 2 (^>d 1 list*-elems) (^>d 1 list*-tail))
-  ;       tail)
-  ;     (error "Encountered...")
-  ;
-  #/expect (is-list*-shape? tails) #t
-    (error "Encountered an hn-tag-2-list* bump which didn't have precisely two degree-1 holes")
-  #/dissect tails
-    (hypertee-furl _ #/hypertee-coil-hole _ _ list*-elems
-      (hypertee-furl _ #/hypertee-coil-hole _ _ tails
-        (hypertee-furl _ #/hypertee-coil-zero)))
-  #/dissect tails
-    (hypertee-furl _ #/hypertee-coil-hole _ _ list*-tail
-      (hypertee-furl _ #/hypertee-coil-hole _ _ tails
-        (hypertee-furl _ #/hypertee-coil-zero)))
-  #/dissect tails
-    (hypertee-furl _ #/hypertee-coil-hole _ _ tail
-      (hypertee-furl _ #/hypertee-coil-zero))
-  
-  #/just #/list stx-example list*-elems list*-tail tail))
-
 (define-for-syntax (adjust-atom err-dsl-stx atom-stx)
   (w- a (syntax-e atom-stx)
   #/if
@@ -257,78 +214,6 @@
           [_ (prefab-key-mutability (datum parent-key))])
         'known-to-be-mutable)]
     [_ 'not-known]))
-
-(define-for-syntax (hn-expr->s-expr-stx-list hn)
-  (w- ds en-ds
-  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  #/w- n-d en-n-d
-  #/expect
-    (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
-      (snippet-sys-snippet-degree ss hn))
-    #t
-    (raise-arguments-error 'hn-expr->s-expr-stx-list
-      "expected an hn-expr of degree 1"
-      "hn" hn)
-  #/dissect hn (hypernest-furl _ dropped)
-  #/mat dropped (hypernest-coil-hole _ _ data tails)
-    (expect data (trivial)
-      (error "Expected an hn-expr with a trivial value in its degree-0 hole")
-    #/list)
-  #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
-  #/mat data (hn-tag-0-s-expr-stx stx)
-    (expect (dim-sys-dim=0? ds bump-degree) #t
-      (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/cons stx #/hn-expr->s-expr-stx-list tails)
-  #/w- process-listlike
-    (fn stx-example list->whatever
-      (expect
-        (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
-          bump-degree)
-        #t
-        (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
-      #/w- elems
-        (snippet-sys-snippet-map-selective ss
-          (snippet-sys-snippet-select-if-degree ss tails #/fn d
-            (dim-sys-dim=0? ds d))
-        #/fn hole tail
-          (trivial))
-      #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
-      #/cons
-        (datum->syntax-with-everything stx-example
-          (list->whatever #/hn-expr->s-expr-stx-list elems))
-        (hn-expr->s-expr-stx-list tail)))
-  #/mat data (hn-tag-1-box stx-example)
-    (process-listlike stx-example #/fn lst
-      (expect lst (list elem)
-        (error "Encountered an hn-tag-1-box bump which had more than one Racket syntax object in the box")
-      #/box-immutable elem))
-  #/mat data (hn-tag-1-list stx-example)
-    (process-listlike stx-example #/fn lst lst)
-  #/mat data (hn-tag-1-vector stx-example)
-    (process-listlike stx-example #/fn lst
-      (vector->immutable-vector #/list->vector lst))
-  #/mat data (hn-tag-1-prefab key stx-example)
-    (process-listlike stx-example #/fn lst
-      (apply make-prefab-struct key lst))
-  #/mat (parse-list*-tag bump-degree data tails)
-    (just #/list stx-example list*-elems list*-tail tail)
-    (w- list*-elems (hn-expr->s-expr-stx-list list*-elems)
-    #/expect (hn-expr->s-expr-stx-list list*-tail)
-      (list list*-tail)
-      (error "Encountered an hn-tag-2-list* bump which had more than one Racket syntax object in its tail when converting an hn-expression to a list of Racket syntax objects")
-    #/cons
-      (datum->syntax-with-everything stx-example
-        ; NOTE: Ironically, we don't actually use `list*` here.
-        (append list*-elems list*-tail))
-      (hn-expr->s-expr-stx-list tail))
-  #/mat data (hn-tag-nest)
-    (expect
-      (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
-      (just undone)
-      (error "Encountered an hn-tag-nest bump whose interior wasn't shaped like a snippet system identity element")
-    #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
-  #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
 
 (define (splice-gen-helper-run-time . args)
   (begin
@@ -574,7 +459,7 @@
     hn-expr-2->result-generator
     err-dsl-stx
     err-phrase-s-expression
-    err-phrase-quasiquotation
+    err-phrase-invocation
     err-name
     quotation)
   (dlog 'hqq-a1
@@ -592,7 +477,7 @@
       (extended-with-top-dim-infinite)
       bracket-and-quotation-and-tails)
     (error #/format "Expected ~a to be of the form (~s #/^< ...)"
-      err-phrase-quasiquotation
+      err-phrase-invocation
       err-name)
   #/dlog 'hqq-a2
   #/dissect
@@ -606,27 +491,19 @@
       represented-bump-degree)
     #t
     (error #/format "Expected ~a to be of the form (~s #/^< 2 ...)"
-      err-phrase-quasiquotation
+      err-phrase-invocation
       err-name)
   #/dlog 'hqq-a3
   #/begin
+    ; We verify that the tail in the hole of degree-0 is a snippet
+    ; with just one hole, a degree-0 hole containing a trivial value.
     (snippet-sys-snippet-each shape-ss tails #/fn hole tail
       (w- d (snippet-sys-snippet-degree shape-ss hole)
       #/expect (dim-sys-dim=0? ds d) #t
         (void)
-      ; TODO: See if there's a good way to differentiate these error
-      ; messages.
-      #/expect tail
-        (hypernest-furl _ #/hypernest-coil-hole _ _ data tail-tails)
-        (error #/format "Encountered more than one degree-0-adjacent piece of data in the root of ~a"
-          err-phrase-quasiquotation)
-      #/expect
-        (dim-sys-dim=0? ds
-          (snippet-sys-snippet-degree shape-ss tail-tails))
-        #t
-        (error #/format "Encountered more than one degree-0-adjacent piece of data in the root of ~a"
-          err-phrase-quasiquotation)
-      #/dissect data (trivial)
+      #/dissect tail
+        (hypernest-furl _ #/hypernest-coil-hole _ _ (trivial)
+          (hypertee-furl _ #/hypertee-coil-zero))
       #/void))
   #/dlog 'hqq-a4
   #/dissect
@@ -662,7 +539,7 @@
     (list result)
     (error #/format "Encountered more than one ~a in ~a"
       err-phrase-s-expression
-      err-phrase-quasiquotation)
+      err-phrase-invocation)
   #/dlog 'hqq-a5
   #/syntax-protect
     ; TODO: See if we should use `quasisyntax/loc` here so the error

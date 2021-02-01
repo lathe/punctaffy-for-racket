@@ -61,6 +61,7 @@
 @(require #/for-label punctaffy/hypersnippet/snippet)
 @(require #/for-label punctaffy/hyperbracket)
 @(require #/for-label punctaffy/quote)
+@(require #/for-label punctaffy/let)
 
 @(require #/only-in scribble/example examples make-eval-factory)
 
@@ -3150,7 +3151,7 @@ This design leads to a more regular experience than the current situation in Rac
   @specsubform[atom]{
     Produces a single datum: Itself.
     
-    The @racket[atom] value must be an instance of one of a specific list of types. Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that can appear in Racket code. Some of these values can accommodate internal s-expressions, including spliced expressions, and they're covered by the other cases of this grammar (@racket[list?], @racket[box?], @racket[@pair?], @racket[vector?], and instances of immutable prefab structure types). The @racket[atom] case is a catch-all for those values which are unlikely to ever accommodate internal s-expressions.
+    The @racket[atom] value must be an instance of one of a specific list of types. Generally, we intend to support exactly those values which are @racket[equal?] to some immutable value that can appear in Racket code. Some of these values can accommodate internal s-expressions, including spliced expressions, and they're covered by the other cases of this grammar (@racket[list?], @racket[box?], @racket[pair?], @racket[vector?], and instances of immutable prefab structure types). The @racket[atom] case is a catch-all for those values which are unlikely to ever accommodate internal s-expressions.
     
     Values supported:
     
@@ -3165,7 +3166,7 @@ This design leads to a more regular experience than the current situation in Rac
     Notable exclusions:
     
     @itemlist[
-      @item{Out of caution, this operation does not yet support quoting @racket[hash?] values. There are several places where the design of this support could go wrong: Hashes have unspecified iteration order (potentially affecting the order splices would be evaluated) and their keys are unique (potentially unique both after and @emph{before} processing hyperbrackets and splices). There isn't much of a precedent, either; Racket's @racket[quasiquote] seems to support @racket[unquote] in a hash entry's value, but @racket[syntax] and @racket[quasisyntax] leave hash entries' values alone, processing neither template variables nor @racket[unsyntax] in that location. It's possible that treating hashes as unquotable values will be the design that raises the fewest questions.}
+      @item{Out of caution, this operation does not yet support quoting @racket[hash?] values. There are several places where the design of this support could go wrong: Hashes have unspecified iteration order (potentially affecting the order splices would be evaluated in), and their keys are unique (potentially unique both after and @emph{before} processing hyperbrackets and splices). There isn't much of a precedent, either; Racket's @racket[quasiquote] seems to support @racket[unquote] in a hash entry's value, but @racket[syntax] and @racket[quasisyntax] leave hash entries' values alone, processing neither template variables nor @racket[unsyntax] in that location. It's possible that treating hashes as unquotable values will be the design that raises the fewest questions.}
       
       @item{Out of caution, this operation does not yet support quoting @racket[compiled-expression?] or @racket[regexp?] values. These values' reader syntaxes are complex languages, and it's easy to conceive of the idea that they may someday be extended in in ways that support internal s-expressions.}
       
@@ -3206,9 +3207,11 @@ This design leads to a more regular experience than the current situation in Rac
     Within the @racket[deeper-content-and-splices] of an opening hyperbracket like this of some degree N, the same grammar as @racket[content-and-splices] applies except that occurrences of @racket[(^>d degree _shallower-content-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this opening hyperbracket.
     
     Within the @racket[_shallower-content-and-splices] of a closing hyperbracket of some degree N, the same grammar applies that did at the location of the corresponding opening bracket, except that occurrences of @racket[(^>d degree deeper-content-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this closing hyperbracket (resuming the body of the opening hyperbracket again).
+    
+    (TODO: That's a mouthful. Can we reword this?)
   }
   
-  Each intermediate @racket[_content-and-values] may result in any number of datum values, but the overall @racket[_content-and-values] must result in exactly one datum. If it results in some other number of datum values, an error is raised.
+  Each intermediate @racket[content-and-splices] may result in any number of datum values, but the overall @racket[content-and-splices] must result in exactly one datum. If it results in some other number of datum values, an error is raised.
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
@@ -3265,4 +3268,128 @@ This design leads to a more regular experience than the current situation in Rac
   It may be tempting to compare the splicing support of @tt{taffy-quote-syntax} to the splicing support of @racket[quasisyntax]. However, @racket[quasisyntax] supports template variables and ellispes, and @tt{taffy-quote-syntax} does not. In the future, Punctaffy may offer a @tt{taffy-syntax} operation that works more like @racket[quasisyntax].
   
   @; TODO: Update that `taffy-syntax` remark if and when we implement `taffy-syntax`.
+}
+
+
+
+
+@section[#:tag "let"]{Hyperbracketed Binding Operators}
+
+@defmodule[punctaffy/let]
+
+This module uses the higher-dimensional lexical structure afforded by @tech{hyperbrackets} to define operations that use a kind of higher-dimensional lexical scope.
+
+(TODO: Let's give an example of how hyperbracketed operations can nest with each other.)
+
+
+@defform[
+  #:literals (^<d ^>d)
+  (taffy-let ([id val-expr] ...) (^<d 2 body-expr-and-splices))
+  #:grammar
+  [
+    (body-expr-and-splices
+      atomic-form
+      ()
+      (body-expr-and-splices . body-expr-and-splices)
+      #&body-expr-and-splices
+      #(body-expr-and-splices ...)
+      #s(prefab-key-datum body-expr-and-splices ...)
+      (^>d 1 spliced-expr)
+      (^<d degree deeper-body-expr-and-splices ...))]
+]{
+  A variation upon @racket[let] that uses @tech{hyperbrackets} to delimit a lexical scope in the shape of a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet behave just as they would normally but without the variable bindings in scope.
+  
+  The @racket[body-expr-and-splices] is converted to a syntax object as follows:
+  
+  @specsubform[atomic-form]{
+    Produces itself.
+    
+    The @racket[atomic-form] expression must be represented by an instance of one of a specific list of types. Generally, we intend to support exactly those representations which can appear in Racket code. Some of these values can accommodate internal s-expressions, including spliced expressions, and they're covered by the other cases of this grammar (@racket[list?], @racket[box?], @racket[pair?], @racket[vector?], and instances of immutable prefab structure types). The @racket[atomic-form] case is a catch-all for those values which are unlikely to ever accommodate internal s-expressions.
+    
+    Values supported:
+    
+    @itemlist[
+      @item{This operation accommodates subforms represented by @racket[string?], @racket[boolean?], @racket[flvector?], @racket[fxvector?], @racket[char?], @racket[bytes?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are representations with reader syntaxes, so they fit the description exactly.}
+      
+      @item{This operation accommodates subforms represented by @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
+    ]
+    
+    Notable exclusions:
+    
+    @itemlist[
+      @item{Out of caution, this operation does not yet accommodate subforms represented by @racket[hash?] values. Hash keys must be unique, both after and @emph{before} processing hyperbrackets, and this may lead to an unnecessarily confusing design.}
+      
+      @item{Out of caution, this operation does not yet support quoting @racket[compiled-expression?] or @racket[regexp?] values. These values' reader syntaxes are complex languages, and it's easy to conceive of the idea that they may someday be extended in in ways that support internal s-expressions. (TODO: Reconsider this.)}
+    ]
+    
+    (TODO: Currently, we actually let all kinds of representations through, including the ones we've listed as being excluded here. Let's fix this.)
+  }
+  
+  @specsubform[()]{
+    Produces itself, a syntax value represented by an empty list.
+  }
+  
+  @specsubform[(body-expr-and-splices . body-expr-and-splices)]{
+    Produces a syntax value similar to itself, but with the pair's head and tail processed recursively.
+  }
+  
+  @specsubform[#&body-expr-and-splices]{
+    Produces a syntax value similar to itself, but with the box's value processed recursively. The box must be immutable.
+    
+    (TODO: Actually, we don't enforce immutability yet.)
+  }
+  
+  @specsubform[#(body-expr-and-splices ...)]{
+    Produces a syntax value similar to itself, but with the vector's elements each processed recursively. The vector must be immutable.
+    
+    (TODO: Actually, we don't enforce immutability yet.)
+  }
+  
+  @specsubform[#s(prefab-key-datum body-expr-and-splices ...)]{
+    Produces a syntax value similar to itself, but with the prefab struct's field values each processed recursively. The prefab struct must not have any mutable fields.
+    
+    (TODO: Actually, we don't enforce immutability yet.)
+  }
+  
+  @specsubform[#:literals (^>d) (^>d 1 spliced-expr)]{
+    Produces an expression which, when evaluated, is equivalent to @racket[spliced-expr].
+    
+    When this syntax object appears in a context where it's quoted, like as a subform of an expression that's a @racket[quote] form, a box, a vector, or a prefab struct, the result is unspecified.
+  }
+  
+  @specsubform[
+    #:literals (^<d)
+    (^<d degree deeper-body-expr-and-splices ...)
+  ]{
+    Parses as an opening hyperbracket, and produces a syntax object which denotes a similar opening hyperbracket. The exact way the hyperbracket is re-encoded as syntax is unspecified.
+    
+    Within the @racket[deeper-body-expr-and-splices] of an opening hyperbracket like this of some degree N, the same grammar as @racket[body-expr-and-splices] applies except that occurrences of @racket[(^>d degree _shallower-body-expr-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this opening hyperbracket.
+    
+    Within the @racket[_shallower-body-expr-and-splices] of a closing hyperbracket of some degree N, the same grammar applies that did at the location of the corresponding opening bracket, except that occurrences of @racket[(^>d degree deeper-body-expr-and-splices ...)] for degree less than N instead serve as hyperbrackets that close this closing hyperbracket (resuming the body of the opening hyperbracket again).
+    
+    (TODO: That's a mouthful. Can we reword this?)
+  }
+  
+  As noted, all boxes, vectors, and prefab structs that are encountered in the body must be immutable. Racket's reader usually produces immutable boxes and immutable vectors as syntax anyway, and it usually refuses to produce mutable prefab structs as syntax, so the presence of mutability indicates a devoted effort is underway somewhere. If this operation cloned the object to process its elements, the fact that the result was a different mutable object than the original might interfere with whatever that devoted effort was meant to accomplish. Instead, out of caution, the presence of a mutable box, vector, or prefab struct is currently treated as an error.
+  
+  Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
+  
+  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d] and @racket[^>d] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
+  
+  Out of the hyperbracket notations this operation does support, not all of them will necessarily be preserved as-is; some may be replaced with other, equivalent hyperbracket notations, which may be detectable using @racket[quote]. In general, this operation will strive to preserve the notations that were actually used at the call site. Where it fails to do that, it will use notations exported by the @racket[punctaffy] module (e.g. the @racket[^<d] and @racket[^>d] notations).
+  
+  @examples[
+    #:eval (example-eval)
+    (eval:alts
+      (pd _/ let ([x 5])
+        (taffy-let ([_x (+ 1 2)]) _/ ^<d 2
+          (+ (* 10 _x) _/ ^>d 1 _x)))
+      35)
+    (eval:alts
+      (pd _/ taffy-let () _/ ^<d 2
+        (if #f
+          (^>d 1 _/ error "whoops")
+          "whew"))
+      "whew")
+  ]
 }

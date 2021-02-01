@@ -2,7 +2,7 @@
 
 ; punctaffy/tests/test-hypernest-qq
 ;
-; Unit tests of a quasiquotation operator defined in terms of
+; Unit tests of quasiquotation operators defined in terms of
 ; hypersnippet-shaped data structures.
 
 ;   Copyright 2018-2019, 2021 The Lathe Authors
