@@ -37,7 +37,7 @@ To make it a bit more mundane for the sake of example, let's suppose the `α` no
 
 In some programs, the two of them might be used together. Here's some code we can write in Racket today:
 
-```
+```racket
 (define (make-sxml-unordered-list items)
   `(ul
      ,@(for/list ([item (in-list items)])
@@ -49,7 +49,7 @@ In some programs, the two of them might be used together. Here's some code we ca
 
 Here's the same code, using the `α` operator to do the list mapping operation:
 
-```
+```racket
 (define (make-sxml-unordered-list items)
   `(ul ,@α`(li ,•items))
 ```
@@ -64,7 +64,7 @@ Our motivation for using these shapes in Punctaffy is different, but it's not a 
 
 But Punctaffy is driven by syntax. Let's recall the above example of synthesizing quasiquotaton and apply-to-all notation in a single program:
 
-```
+```racket
 (define (make-sxml-unordered-list items)
   `(ul ,@α`(li ,•items))
 ```
@@ -100,7 +100,7 @@ Before:
 
 After:
 
-```
+```racket
 (define (make-sxml-unordered-list items)
   (taffy-quote
     (^<
@@ -116,7 +116,7 @@ We refer to delimiters like `(^<` and `(^>` as hyperbrackets. There are hyperbra
 
 In many cases, we might be able to draw attention to matching hyperbrackets a little bit better by making some judicious use of [Parendown](https://github.com/lathe/parendown-for-racket):
 
-```
+```racket
 (define (make-sxml-unordered-list items)
   (taffy-quote #/^< #/ul #/^>
     (list-taffy-map
@@ -133,7 +133,7 @@ We expect the same techniques we use in Punctaffy to be useful for parsing other
 
 A more curious example is a template DSL that already exists in Racket, which is almost tailor-made for the exact situation:
 
-```
+```racket
 (define (make-sxml-unordered-list items)
   (with-datum ([(item ...) items])
     (datum (ul (li item) ...))))
@@ -174,6 +174,7 @@ In short, Punctaffy has essentially spent its entire performance budget on the c
 * The slide deck ["Type Theory and the Opetopes" by Eric Finster](https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf) gives a nice graphical overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions an inductive type `MTree` of labeled opetopes, which more or less corresponds to Punctaffy's hypertee type. To our knowledge, hyperbracketed notations have not been used in this context before, but they should be a good fit.
 
 * The paper ["Transpension: The Right Adjoint to the Pi-type" by Andreas Nuyts and Dominique Devriese](https://arxiv.org/pdf/2008.08533.pdf) discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of degree-2 hypersnippets in its syntax. More on this below.
+
 
 ### Notes on transpension
 
