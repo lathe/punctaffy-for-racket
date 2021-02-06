@@ -4,11 +4,11 @@
 
 Punctaffy is an experimental library for processing program syntax that has higher-dimensional nested structure.
 
-Most programming languages are designed for programs to be structured in the form of trees, with some (or all) nodes of the tree being delimited using opening and closing brackets. However, occasionallysometimes templating languages take this a dimension higher, opening with one tree node and closing with some number of tree nodes toward the leaves.
+Most programming languages are designed for programs to be structured in the form of trees, with some (or all) nodes of the tree being delimited using opening and closing brackets. However, occasionally some operations take that a dimension higher, opening with one tree node and closing with some number of tree nodes toward the leaves.
 
 (TODO: Illustrate this graphically.)
 
-For instance, a quasiquotation operation has a quoted body that begins with the initial `` `___`` tree node and ends with number of `,___` and `,@___` tree nodes. The quasiquotation operation also takes a number of expressions to compute what values should be inserted into those holes in the quoted body, and those expressions are positioned at their respective holes.
+This is common with templating languages. For instance, a quasiquotation operation has a quoted body that begins with the initial `` `___`` tree node and ends with number of `,___` and `,@___` tree nodes. The quasiquotation operation also takes a number of expressions to compute what values should be inserted into those holes in the quoted body, and those expressions are maintained in the same place as the holes their results will be inserted into.
 
 ```racket
 (define site-base-url "https://docs.racket-lang.org/")
@@ -178,7 +178,7 @@ In short, Punctaffy has essentially spent its entire performance budget on the c
 
 ### Notes on transpension
 
-Essentially (and if we understand correctly), a transpension operation declares a variable that represents some unknown coordinate along a new dimension. At some point in the scope of that variable, another operation takes ownership of that dimension variable, taking the original dimension variable out of scope but gaining access a reusable function that abstracts all the code in between that had depended on it. The reusable function can then be applied to a coordinate value of the user's choice.
+Essentially (and if we understand correctly), a transpension operation declares a variable that represents some unknown coordinate along a new dimension. At some point in the scope of that dimension variable, another operation takes ownership of it, taking the original dimension variable and all the variables that depended on it since then out of scope, but replacing the latter with reusable functions that can be applied repeatedly to different coordinate values of the user's choice.
 
 From a Punctaffy perspective, the dimension variable's original scope is a degree-2 hypersnippet, and the operation that replaces it with a function is one of the degree-1 closing hyperbrackets of that hypersnippet.
 
