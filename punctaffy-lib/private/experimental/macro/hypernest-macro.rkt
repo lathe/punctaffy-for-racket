@@ -95,7 +95,7 @@
   snippet-sys-snippet-degree snippet-sys-snippet-done
   snippet-sys-snippet-each snippet-sys-snippet-join-selective
   snippet-sys-snippet-map snippet-sys-snippet-map-selective
-  snippet-sys-snippet->maybe-shape
+  snippet-sys-snippet->maybe-shape snippet-sys-snippetof/ob-c
   snippet-sys-snippet-select-if-degree
   snippet-sys-snippet-select-if-degree<
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
@@ -194,8 +194,12 @@
       (maybe/c #/list/c syntax? any/c any/c any/c))]
   
   [hn-expr/c (-> flat-contract?)]
-  [s-expr-stx->hn-expr (-> syntax? syntax? #/hn-expr/c)]
-  [hn-expr->s-expr-stx-list (-> (hn-expr/c) #/listof syntax?)])
+  [unlabeled-hn-expr-with-degree-1/c (-> flat-contract?)]
+  [s-expr-stx->hn-expr
+    (-> syntax? syntax? #/unlabeled-hn-expr-with-degree-1/c)]
+  [hn-expr-forget-nests (-> (hn-expr/c) #/hn-expr/c)]
+  [hn-expr->s-expr-stx-list
+    (-> (unlabeled-hn-expr-with-degree-1/c) #/listof syntax?)])
 
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
@@ -636,52 +640,63 @@
   #/w- ss (hypernest-snippet-sys sfs ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/rename-contract
+    (hypernestof/ob-c sfs ds (flat-obstinacy)
+      (fn bump-interior-shape
+        (w- d
+          (snippet-sys-snippet-degree shape-ss bump-interior-shape)
+        #/or/c hn-tag-other?
+          (if (dim-sys-dim=0? ds d)
+            hn-tag-0-s-expr-stx?
+          #/if
+            (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
+              d)
+            (or/c
+              hn-tag-1-box?
+              hn-tag-1-list?
+              hn-tag-1-vector?
+              hn-tag-1-prefab?)
+          #/if
+            (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
+              d)
+            (if (is-list*-shape? bump-interior-shape)
+              hn-tag-2-list*?
+              none/c)
+          #/if (dim-sys-dim=? ds (extended-with-top-dim-infinite) d)
+            (expect
+              (snippet-sys-snippet-undone shape-ss
+                bump-interior-shape)
+              (just undone)
+              none/c
+            #/dissect undone
+              (list
+                (extended-with-top-dim-infinite)
+                represented-bump-interior-shape
+                (trivial))
+            #/or/c
+              hn-tag-unmatched-closing-bracket?
+              hn-tag-nest?)
+            none/c)))
+      (fn hole any/c))
+    '(hn-expr/c)))
+
+(define (unlabeled-hn-expr-with-degree-1/c)
+  (w- ds en-ds
+  #/w- n-d en-n-d
+  #/w- sfs (hypertee-snippet-format-sys)
+  #/w- ss (hypernest-snippet-sys sfs ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/rename-contract
     (and/c
       (snippet-sys-snippet-with-degree=/c ss
         (dim-sys-morphism-sys-morph-dim n-d 1))
-      (hypernestof/ob-c sfs ds (flat-obstinacy)
-        (fn bump-interior-shape
-          (w- d
-            (snippet-sys-snippet-degree shape-ss bump-interior-shape)
-          #/or/c hn-tag-other?
-            (if (dim-sys-dim=0? ds d)
-              hn-tag-0-s-expr-stx?
-            #/if
-              (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
-                d)
-              (or/c
-                hn-tag-1-box?
-                hn-tag-1-list?
-                hn-tag-1-vector?
-                hn-tag-1-prefab?)
-            #/if
-              (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
-                d)
-              (if (is-list*-shape? bump-interior-shape)
-                hn-tag-2-list*?
-                none/c)
-            #/if (dim-sys-dim=? ds (extended-with-top-dim-infinite) d)
-              (expect
-                (snippet-sys-snippet-undone shape-ss
-                  bump-interior-shape)
-                (just undone)
-                none/c
-              #/dissect undone
-                (list
-                  (extended-with-top-dim-infinite)
-                  represented-bump-interior-shape
-                  (trivial))
-              #/or/c
-                hn-tag-unmatched-closing-bracket?
-                hn-tag-nest?)
-              none/c)))
-        (fn hole
-          (if
-            (dim-sys-dim=0? ds
-              (snippet-sys-snippet-degree shape-ss hole))
-            trivial?
-            none/c))))
-    '(hn-expr/c)))
+      (hn-expr/c)
+      (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+        (if
+          (dim-sys-dim=0? ds
+            (snippet-sys-snippet-degree shape-ss hole))
+          trivial?
+          none/c)))
+    `(unlabeled-hn-expr-with-degree-1/c)))
 
 
 ; This recursively converts the given Racket syntax object into a
@@ -890,7 +905,64 @@
   #/hypernest-join-0 ds n-d 1 #/list-map (syntax->list stx) #/fn elem
     (s-expr-stx->hn-expr err-dsl-stx elem)))
 
-; This converts an hn-expression back into a list of syntax objects.
+; Given an hn-expression of any degree, removes its `hn-tag-nest`
+; bumps, leaving their bracket syntax in their place. This is
+; generally useful when parts of the hn-expression may appear in
+; quoted contexts, so that they can appear approximately as they did
+; before.
+;
+; TODO: However, if they appear in non-quoted contexts, this can cause
+; the hyperbrackets to have to be parsed all over again. This is
+; probably going to be rather regrettable for performance. We should
+; think about whether there's a way to encode hypernest structure as
+; a data structure in syntax; generally, the problem will be that
+; syntax taints and scopes won't be propagated into whatever data
+; structure we use... unless the data structure we use is made of
+; cons-cell-based Racket syntax objects.
+;
+(define (hn-expr-forget-nests hn)
+  (dlog 'hqq-l1
+  #/w- ds en-ds
+  #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+  #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  #/dissect hn (hypernest-furl _ dropped)
+  #/dlog 'hqq-l2
+  #/mat dropped (hypernest-coil-hole d tails-shape data tails)
+    (dlog 'hqq-l3
+    #/hypernest-furl ds #/hypernest-coil-hole d tails-shape data
+      (dlog 'hqq-l4
+      #/snippet-sys-snippet-map shape-ss tails #/fn d tail
+        (hn-expr-forget-nests tail)))
+  #/dissect dropped (hypernest-coil-bump d data bump-degree tails)
+  #/dlog 'hqq-l5
+  #/mat data (hn-tag-nest)
+    (dlog 'hqq-l6
+    #/dissect
+      (snippet-sys-snippet-set-degree-maybe ss d
+        (snippet-sys-snippet-bind-selective ss tails #/fn hole data
+          (w- hole-degree (snippet-sys-snippet-degree shape-ss hole)
+          #/if (dim-sys-dim<? ds hole-degree bump-degree)
+            (dissect
+              (snippet-sys-snippet-set-degree-maybe ss
+                (extended-with-top-dim-infinite)
+                data)
+              (just tail)
+              (selected tail))
+            (unselected data))))
+      (just tails)
+      (hn-expr-forget-nests tails))
+    (dlog 'hqq-l7
+    #/hypernest-furl ds #/hypernest-coil-bump d data bump-degree
+      (dlog 'hqq-l8
+      #/w- tails (hn-expr-forget-nests tails)
+      #/snippet-sys-snippet-map ss tails #/fn hole data
+        (w- hole-degree (snippet-sys-snippet-degree shape-ss hole)
+        #/if (dim-sys-dim<? ds hole-degree bump-degree)
+          (hn-expr-forget-nests data)
+          data)))))
+
+; This converts an hn-expression back into a list of syntax objects,
+; as long as it doesn't have any `hn-tag-nest` bumps.
 (define (hn-expr->s-expr-stx-list hn)
   (w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -934,7 +1006,7 @@
   #/mat data (hn-tag-1-box stx-example)
     (process-listlike stx-example #/fn lst
       (expect lst (list elem)
-        (error "Encountered an hn-tag-1-box bump which had more than one Racket syntax object in the box")
+        (error "Expected an hn-tag-1-box bump to have exactly one Racket syntax object in the box")
       #/box-immutable elem))
   #/mat data (hn-tag-1-list stx-example)
     (process-listlike stx-example #/fn lst lst)
@@ -949,19 +1021,15 @@
     (w- list*-elems (hn-expr->s-expr-stx-list list*-elems)
     #/expect (hn-expr->s-expr-stx-list list*-tail)
       (list list*-tail)
-      (error "Encountered an hn-tag-2-list* bump which had more than one Racket syntax object in its tail when converting an hn-expression to a list of Racket syntax objects")
+      (error "Expected an hn-tag-2-list* bump to have exactly one Racket syntax object in its tail when converting an hn-expression to a list of Racket syntax objects")
     #/cons
       (datum->syntax-with-everything stx-example
         ; NOTE: Ironically, we don't actually use `list*` here.
         (append list*-elems list*-tail))
       (hn-expr->s-expr-stx-list tail))
   #/mat data (hn-tag-nest)
-    (expect
-      (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
-      (just undone)
-      (error "Encountered an hn-tag-nest bump whose interior wasn't shaped like a snippet system identity element")
-    #/error "Encountered an hn-tag-nest bump value when converting an hn-expression to a list of Racket syntax objects")
-  #/error "Encountered an unsupported bump value when converting an hn-expression to a list of Racket syntax objects"))
+    (error "Encountered an hn-tag-nest bump when converting an hn-expression to a list of Racket syntax objects")
+  #/error "Encountered an unsupported bump when converting an hn-expression to a list of Racket syntax objects"))
 
 
 ; This takes an hn-expression which may contain

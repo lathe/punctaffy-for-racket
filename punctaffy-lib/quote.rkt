@@ -58,9 +58,9 @@
   snippet-sys-snippet-zip-map unselected)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx hn-tag-1-box
-  hn-tag-1-list hn-tag-1-prefab hn-tag-1-vector hn-tag-2-list*
-  hn-tag-nest parse-list*-tag s-expr-stx->hn-expr)
+  hn-expr-forget-nests hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx
+  hn-tag-1-box hn-tag-1-list hn-tag-1-prefab hn-tag-1-vector
+  hn-tag-2-list* hn-tag-nest parse-list*-tag s-expr-stx->hn-expr)
 
 (require #/only-in racket/list append*)
 
@@ -239,7 +239,7 @@
 (define (singleton-gen-helper lst)
   (expect lst (list elem)
     ; TODO: Improve this error.
-    (error "spliced more than one element where only one was expected")
+    (error "expected to splice exactly one element")
     elem))
 
 (define (box-immutable-gen-helper . args)
@@ -427,30 +427,8 @@
         (hnb-labeled 0 #/recur tail)))
   
   #/mat data (hn-tag-nest)
-    (expect
-      (snippet-sys-snippet-undone shape-ss #/hypernest-shape ss tails)
-      (just undone)
-      (error "Encountered an hn-tag-nest bump whose interior wasn't shaped like a snippet system identity element")
-    #/recur
-    ; We concatenate everything inside this `hn-tag-nest`, *including*
-    ; the bracket syntax, so that the bracket syntax is included in
-    ; the quoted part of the result.
-    #/dlog 'hqq-h6
-    #/w- joined
-      (snippet-sys-snippet-bind ss tails #/fn hole tail
-        (dissect
-          (snippet-sys-snippet-set-degree-maybe ss
-            (extended-with-top-dim-infinite)
-            tail)
-          (just tail)
-          tail))
-    #/dlog 'hqq-h7
-    #/dissect
-      (snippet-sys-snippet-set-degree-maybe ss
-        (dim-sys-morphism-sys-morph-dim n-d 2)
-        joined)
-      (just tails)
-      tails)
+    (error #/format "Encountered an hn-tag-nest bump when making an hn-expression into code that generates it as ~a"
+      err-phrase)
   #/error #/format "Encountered an unsupported bump value when making an hn-expression into code that generates it as ~a"
     err-phrase))
 
@@ -509,7 +487,8 @@
   #/dissect
     (dlog 'hqq-a4.1
     #/snippet-sys-snippet-zip-map ss tails
-      (dlog 'hqq-a4.1.1 #/hn-expr-2->result-generator quotation)
+      (dlog 'hqq-a4.1.1
+      #/hn-expr-2->result-generator #/hn-expr-forget-nests quotation)
     #/fn hole tail quotation-data
       (dissect quotation-data (trivial)
       #/dissect
@@ -527,7 +506,7 @@
   #/w- joined (snippet-sys-snippet-join ss zipped)
   #/expect
     (dlog 'hqq-a4.3
-    #/hn-expr->s-expr-stx-list
+    #/hn-expr->s-expr-stx-list #/hn-expr-forget-nests
       (dissect
         (dlog 'hqq-a4.4
         #/snippet-sys-snippet-set-degree-maybe ss
@@ -537,7 +516,7 @@
       #/dlog 'hqq-a4.5
         joined))
     (list result)
-    (error #/format "Encountered more than one ~a in ~a"
+    (error #/format "Expected exactly one ~a in ~a"
       err-phrase-s-expression
       err-phrase-invocation)
   #/dlog 'hqq-a5

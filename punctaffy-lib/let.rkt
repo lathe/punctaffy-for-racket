@@ -51,8 +51,8 @@
   snippet-sys-snippet-zip-map)
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
-  hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx hn-tag-nest
-  s-expr-stx->hn-expr)
+  hn-expr-forget-nests hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx
+  hn-tag-nest s-expr-stx->hn-expr)
 
 (require #/only-in racket/list append-map)
 (require #/only-in syntax/parse/define define-simple-macro)
@@ -132,22 +132,34 @@
       #/dissect
         (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1) d)
         #t
-        (expect (hn-expr->s-expr-stx-list tail) (list splice)
-          (error #/format "Encountered more than one ~a in a splice of ~a"
+        (expect (hn-expr->s-expr-stx-list #/hn-expr-forget-nests tail)
+          (list splice)
+          (error #/format "Expected exactly one ~a in a splice of ~a"
             err-phrase-expression
             err-phrase-invocation)
         #/w- temp (generate-temporary splice)
         #/list (just #/list temp splice)
           (hn-bracs-n-d ds n-d 2
             (hnb-open 0 #/hn-tag-0-s-expr-stx
-              ; TODO: Consider protecting it even more than this.
-              ; Currently, it can appear under a `quote`, but we can
-              ; quash some attempts to exploit that by inserting a
-              ; non-marshalable value into the expression.
-              (syntax-protect #`(#,temp)))
+              
+              ; TODO: Consider protecting this expression so it can
+              ; only be treated as an expression. Using
+              ; `syntax-protect` on it doesn't work well with
+              ; Punctaffy's other hyperbracketed operations, since the
+              ; act of calling `s-expr-stx->hn-expr` traverses the
+              ; whole syntax object and taints every expression
+              ; appearing throughout it. Even if we somehow could use
+              ; `syntax-protect`, it could still appear under a
+              ; `quote`. We could quash some attempts to `quote` it if
+              ; we inserted a non-marshalable value into the
+              ; expression.
+              ;
+              #`(#,temp))
             (hnb-labeled 0 #/trivial)))))
   #/dissect
-    (snippet-sys-snippet-zip-map ss tails-via-temporaries body
+    (snippet-sys-snippet-zip-map ss
+      tails-via-temporaries
+      (hn-expr-forget-nests body)
     #/fn hole tail-via-temporary body-data
       (dissect tail-via-temporary (list binding tail)
       #/dissect body-data (trivial)
@@ -163,7 +175,7 @@
         (just joined)
         joined))
     (list body)
-    (error #/format "Encountered more than one ~a in ~a"
+    (error #/format "Expected exactly one ~a in ~a"
       err-phrase-expression
       err-phrase-invocation)
   #/w- bindings

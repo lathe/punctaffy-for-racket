@@ -14,11 +14,18 @@ This is common with templating languages. For instance, a quasiquotation operati
 (define site-base-url "https://docs.racket-lang.org/")
 
 (define (make-sxml-site-link relative-url content)
-  `(a (@ (href ,(combine-url/relative site-base-url relative-url)))
+  `(a
+     (@
+       (href
+         ,(url->string
+            (combine-url/relative (string->url site-base-url)
+              relative-url))))
      ,@content))
 
 > (make-sxml-site-link "punctaffy/index.html" '("Punctaffy docs"))
-(a (@ (href "https://docs.racket-lang.org/punctaffy/index.html")) "Punctaffy docs")
+'(a
+  (@ (href "https://docs.racket-lang.org/punctaffy/index.html"))
+  "Punctaffy docs")
 ```
 
 Quasiquotation isn't the only example. Connection Machine Lisp (CM-Lisp) is a language that was once used for programming Connection Machine supercomputers, and it has a concept of "xappings," key-value data structures where each element resides on a different processor. It has ways to distribute the same behavior to each processor to transform these values, and it has a dedicated notation to assist with this:
@@ -43,8 +50,8 @@ In some programs, the two of them might be used together. Here's some code we ca
      ,@(for/list ([item (in-list items)])
          `(li ,item))))
 
-> (make-sxml-unordered-list "Strawberry" "Chocolate" "Vanilla")
-(ul (li "Strawberry") (li "Chocolate") (li "Vanilla"))
+> (make-sxml-unordered-list (list "Red" "Yellow" "Green"))
+'(ul (li "Red") (li "Yellow") (li "Green"))
 ```
 
 Here's the same code, using the `α` operator to do the list mapping operation:
