@@ -40,12 +40,12 @@
 
     (define (make-sxml-site-link relative-url content)
       `(a
-        (@
-          (href
-            ,(url->string
+         (@
+           (href
+             ,(url->string
                 (combine-url/relative (string->url site-base-url)
                   relative-url))))
-        ,@content))
+         ,@content))
 
     (make-sxml-site-link "punctaffy/index.html" '("Punctaffy docs")))
   
