@@ -19,6 +19,8 @@
 ;   language governing permissions and limitations under the License.
 
 
+; TODO NOW: Unquote all this.
+#|
 (require rackunit)
 (require #/only-in net/url
   combine-url/relative string->url url->string)
@@ -83,3 +85,4 @@
 (check-make-sxml-unordered-list items
   (with-datum ([(item ...) items])
     (datum (ul (li item) ...))))
+|#

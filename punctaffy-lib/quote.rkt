@@ -21,6 +21,8 @@
 ;   language governing permissions and limitations under the License.
 
 
+; TODO NOW: Unquote all this.
+#|
 (require #/for-syntax racket/base)
 
 (require #/for-syntax #/only-in racket/extflonum extflonum?)
@@ -588,7 +590,7 @@
         (fn expr #`(quote-syntax #,expr #:local))
         #'datum->quoted-syntax-local
         #'quotation)]))
-
+|#
 
 ; TODO: Define `taffy-datum` corresponding to `datum`/`quasidatum`,
 ; `taffy-syntax` corresponding to `syntax`/`quasisyntax`, and

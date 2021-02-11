@@ -81,14 +81,15 @@
   extended-with-top-dim-infinite extended-with-top-dim-sys
   extend-with-top-dim-sys-morphism-sys nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
-  hypernest-coil-hole hypernest-from-brackets hypernest-furl
-  hypernest-get-hole-zero-maybe
+  hnb-labeled hnb-open hnb-unlabeled hypernest-coil-hole
+  hypernest-coil-seam hypernest-from-brackets hypernest-furl
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof/ob-c
   hypernest-shape hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee-coil-hole hypertee-coil-zero
-  hypertee-from-brackets hypertee-furl hypertee-snippet-format-sys)
+  hypertee-from-brackets hypertee-furl hypertee-get-dim-sys
+  hypertee-snippet-format-sys hypertee-snippet-sys
+  hypertee-get-hole-zero-maybe)
 (require #/only-in punctaffy/hypersnippet/snippet
   selectable-map selected snippet-sys-dim-sys
   snippet-sys-shape-snippet-sys snippet-sys-snippet-bind-selective
@@ -100,7 +101,11 @@
   snippet-sys-snippet-select-if-degree<
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
   snippet-sys-snippet-with-degree=/c snippet-sys-snippet-zip-map
-  unselected)
+  snippet-sys-snippet-zip-map-selective unselected)
+; TODO NOW: Export this for real.
+(require #/only-in
+  (submod punctaffy/hypersnippet/snippet private/test)
+  snippet-sys-snippet-filter-maybe)
 
 (provide
   hn-tag-0-s-expr-stx)
@@ -403,6 +408,36 @@
             suffix))))
     (just result)
     result))
+
+; TODO: See if this should be an export of
+; `punctaffy/hypersnippet/snippet`.
+(define (unlabel-hypertee ht)
+  (w- ds (hypertee-get-dim-sys ht)
+  #/w- htss (hypertee-snippet-sys ds)
+  #/snippet-sys-snippet-map htss ht #/fn hole data #/trivial))
+
+; TODO: See if this should be an export of
+; `punctaffy/hypersnippet/snippet`. Maybe we should just define
+; `hypernest-coil-bump` again.
+(define (tails-hypernest->interior hnss bump-degree tails-hypernest)
+  (w- htss (snippet-sys-shape-snippet-sys hnss)
+  #/w- tails-hypernest-selected
+    (snippet-sys-snippet-select-if-degree< hnss bump-degree
+      tails-hypernest)
+  #/dissect
+    (snippet-sys-snippet-filter-maybe htss
+      (hypernest-shape hnss tails-hypernest-selected))
+    (just tails-hypertee-filtered)
+  #/dissect
+    (snippet-sys-snippet-set-degree-maybe htss bump-degree
+      tails-hypertee-filtered)
+    (just tails)
+  #/w- interior
+    (snippet-sys-snippet-map-selective hnss tails-hypernest-selected
+      (fn hole tail
+        (trivial)))
+  #/w- hole (unlabel-hypertee tails)
+  #/list hole tails interior))
 
 
 
@@ -933,33 +968,34 @@
       (dlog 'hqq-l4
       #/snippet-sys-snippet-map shape-ss tails #/fn d tail
         (hn-expr-forget-nests tail)))
-  #/dissect dropped (hypernest-coil-bump d data bump-degree tails)
+  #/dissect dropped (hypernest-coil-seam d hole data tails interior)
   #/dlog 'hqq-l5
+  #/w- bump-degree (snippet-sys-snippet-degree shape-ss hole)
   #/mat data (hn-tag-nest)
     (dlog 'hqq-l6
     #/dissect
       (snippet-sys-snippet-set-degree-maybe ss d
-        (snippet-sys-snippet-bind-selective ss tails #/fn hole data
-          (w- hole-degree (snippet-sys-snippet-degree shape-ss hole)
-          #/if (dim-sys-dim<? ds hole-degree bump-degree)
-            (dissect
-              (snippet-sys-snippet-set-degree-maybe ss
-                (extended-with-top-dim-infinite)
-                data)
-              (just tail)
-              (selected tail))
-            (unselected data))))
+        (snippet-sys-snippet-join-selective ss
+          (snippet-sys-snippet-select-if-degree< ss bump-degree
+            (snippet-sys-snippet-zip-map-selective ss
+              tails
+              (snippet-sys-snippet-select-if-degree< ss bump-degree
+                interior)
+              (fn hole tail interior-data
+                (dissect interior-data (trivial)
+                #/dissect
+                  (snippet-sys-snippet-set-degree-maybe ss
+                    (extended-with-top-dim-infinite)
+                    tail)
+                  (just tail)
+                #/just tail))))))
       (just tails)
       (hn-expr-forget-nests tails))
     (dlog 'hqq-l7
-    #/hypernest-furl ds #/hypernest-coil-bump d data bump-degree
-      (dlog 'hqq-l8
-      #/w- tails (hn-expr-forget-nests tails)
-      #/snippet-sys-snippet-map ss tails #/fn hole data
-        (w- hole-degree (snippet-sys-snippet-degree shape-ss hole)
-        #/if (dim-sys-dim<? ds hole-degree bump-degree)
-          (hn-expr-forget-nests data)
-          data)))))
+    #/hypernest-furl ds #/hypernest-coil-seam d hole data
+      (snippet-sys-snippet-map shape-ss tails #/fn hole tail
+        (hn-expr-forget-nests tail))
+      (hn-expr-forget-nests interior))))
 
 ; This converts an hn-expression back into a list of syntax objects,
 ; as long as it doesn't have any `hn-tag-nest` bumps.
@@ -980,11 +1016,12 @@
     (expect data (trivial)
       (error "Expected an hn-expr with a trivial value in its degree-0 hole")
     #/list)
-  #/dissect dropped (hypernest-coil-bump _ data bump-degree tails)
+  #/dissect dropped (hypernest-coil-seam _ hole data tails interior)
+  #/w- bump-degree (snippet-sys-snippet-degree shape-ss hole)
   #/mat data (hn-tag-0-s-expr-stx stx)
     (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
-    #/cons stx #/hn-expr->s-expr-stx-list tails)
+    #/cons stx #/hn-expr->s-expr-stx-list interior)
   #/w- process-listlike
     (fn stx-example list->whatever
       (expect
@@ -992,16 +1029,10 @@
           bump-degree)
         #t
         (error "Encountered a list-like hn-tag-1-... bump with a degree other than 1")
-      #/w- elems
-        (snippet-sys-snippet-map-selective ss
-          (snippet-sys-snippet-select-if-degree ss tails #/fn d
-            (dim-sys-dim=0? ds d))
-        #/fn hole tail
-          (trivial))
-      #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
+      #/dissect (hypertee-get-hole-zero-maybe tails) (just tail)
       #/cons
         (datum->syntax-with-everything stx-example
-          (list->whatever #/hn-expr->s-expr-stx-list elems))
+          (list->whatever #/hn-expr->s-expr-stx-list interior))
         (hn-expr->s-expr-stx-list tail)))
   #/mat data (hn-tag-1-box stx-example)
     (process-listlike stx-example #/fn lst
@@ -1077,44 +1108,37 @@
           #/next tail target-d
             (dim-sys-dim-max ds first-d-to-process d))))
     #/dissect dropped
-      (hypernest-coil-bump overall-degree data bump-degree
-        bracket-and-tails)
-    #/dlog 'hqq-g3 overall-degree bump-degree (snippet-sys-snippet-degree ss bracket-and-tails)
-    #/begin (verify-hn bracket-and-tails)
+      (hypernest-coil-seam overall-degree hole data tails bracket)
+    #/w- bump-degree (snippet-sys-snippet-degree shape-ss data)
+    #/dlog 'hqq-g3 overall-degree bump-degree (snippet-sys-snippet-degree ss bracket)
+    #/begin (verify-hn bracket)
     #/begin
-      (snippet-sys-snippet-each ss bracket-and-tails
-      #/fn hole tail #/begin0 (void)
-        (w- d (snippet-sys-snippet-degree shape-ss hole)
-        #/when (dim-sys-dim<? ds d bump-degree)
-          (dlog 'hqq-g3.1 (snippet-sys-snippet-degree ss tail)
-          #/verify-hn tail)))
+      (snippet-sys-snippet-each shape-ss tails
+      #/fn hole tail
+        (dlog 'hqq-g3.1 (snippet-sys-snippet-degree ss tail)
+        #/verify-hn tail))
     #/w- ignore
       (fn
-        (hypernest-furl ds #/hypernest-coil-bump
+        (hypernest-furl ds #/hypernest-coil-seam
           target-d
+          hole
           data
-          bump-degree
-        #/next
-          (snippet-sys-snippet-map ss bracket-and-tails #/fn hole tail
+          (snippet-sys-snippet-map shape-ss tails #/fn hole tail
             (w- d (snippet-sys-snippet-degree shape-ss hole)
-            #/if
-              (and
-                (dim-sys-dim<=? ds bump-degree d)
-                (dim-sys-dim<? ds d first-d-to-process))
+            #/if (dim-sys-dim<? ds d first-d-to-process)
               tail
-            #/next tail
-              (dim-sys-dim-max ds target-d d)
-              (dim-sys-dim-max ds first-d-to-process d)))
-          (dim-sys-dim-max ds target-d bump-degree)
-          (dim-sys-dim-max ds first-d-to-process bump-degree)))
+              (next tail
+                (dim-sys-dim-max ds target-d d)
+                (dim-sys-dim-max ds first-d-to-process d))))
+          (next bracket
+            (dim-sys-dim-max ds target-d bump-degree)
+            (dim-sys-dim-max ds first-d-to-process bump-degree))))
     #/expect data (hn-tag-unmatched-closing-bracket) (ignore)
     #/expect
       (dim-sys-dim=? ds (extended-with-top-dim-infinite) bump-degree)
       #t
       (error "Encountered an hn-tag-unmatched-closing-bracket bump of finite degree")
-    #/expect
-      (snippet-sys-snippet-undone shape-ss
-        (hypernest-shape ss bracket-and-tails))
+    #/expect (snippet-sys-snippet-undone shape-ss tails)
       (just undone-tails)
       (error "Encountered an hn-tag-unmatched-closing-bracket bump whose interior wasn't shaped like a snippet system identity element")
     #/dissect undone-tails
@@ -1124,14 +1148,17 @@
         represented-exterior-tail)
     #/w- represented-bump-degree
       (snippet-sys-snippet-degree shape-ss other-tails)
-    ; NOTE: By mapping selectively here, we keep the
-    ; `represented-exterior-tail` value intact in `bracket-syntax`.
-    #/w- bracket-syntax
-      (snippet-sys-snippet-map-selective ss
+    ; NOTE: By mapping selectively here, we transfer only the
+    ; `represented-exterior-tail` value.
+    #/dissect
+      (snippet-sys-snippet-zip-map-selective ss
         (snippet-sys-snippet-select-if-degree<
-          ss represented-bump-degree bracket-and-tails)
-        (fn hole data
-          (trivial)))
+          ss represented-bump-degree tails)
+        bracket
+        (fn hole represented-exterior-tail interior-data
+          (dissect interior-data (trivial)
+          #/just represented-exterior-tail)))
+      (just bracket-and-represented-exterior-tail)
     #/expect
       (and
         (dim-sys-dim<=? ds
@@ -1145,7 +1172,7 @@
     #/hypernest-furl ds #/hypernest-coil-hole target-d
       (snippet-sys-snippet-map shape-ss other-tails #/fn hole tail
         (trivial))
-      bracket-syntax
+      bracket-and-represented-exterior-tail
       (snippet-sys-snippet-map shape-ss other-tails #/fn hole tail
         (w- d (snippet-sys-snippet-degree shape-ss hole)
         #/next tail target-d
@@ -1183,10 +1210,23 @@
   #/dlog 'hqq-f6
   #/hypernest-furl ds
   #/dlog 'hqq-f7
-  #/hypernest-coil-bump
-    (dim-sys-morphism-sys-morph-dim n-d 1)
-    bump-value
+  
+  ; TODO NOW: In every non-legacy-code file...
+  ;
+  ; rename hypernest-coil-bump to hypernest-coil-seam (along with various other things like it)
+  ; remove hypernest-coil-bump-bump-degree and hypernest-coil-bump-tails-hypernest in favor of hypernest-coil-seam-hole, hypernest-coil-seam-tails, and hypernest-coil-seam-interior (along with local variables based on them)
+  ; rename hypernest-coil-hole-tails-hypertee to hypernest-coil-hole-tails (along with local variables named after it)
+  ;
+  ; Right here is a particular instance of `hypernest-coil-bump` that
+  ; we haven't gotten to yet. These are the only other files we'll
+  ; find these things in, none of which has been gotten to yet:
+  ;
+  ;   punctaffy-lib/quote.rkt
+  ;   punctaffy-doc/scribblings/punctaffy/hypersnippet.scrbl
+  ;
+  #/w- bump-degree
     (extended-with-top-dim-infinite)
+  #/w- tails-hypernest
     ; This is the syntax for the bracket itself, everything in the
     ; interior of the bump this bracket represents (noted at
     ; NOTE INSIDE), and everything beyond the closing brackets of this
@@ -1228,7 +1268,15 @@
       
       0
       (hnb-labeled 0 #/unselected
-        (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)))))
+        (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)))
+  #/dissect (tails-hypernest->interior ss bump-degree tails-hypernest)
+    (list hole tails interior)
+  #/hypernest-coil-seam
+    (dim-sys-morphism-sys-morph-dim n-d 1)
+    hole
+    bump-value
+    tails
+    interior))
 
 (define (^<d-expand err-dsl-stx stx)
   (dlog 'hqq-f1

@@ -56,15 +56,16 @@
   hypernest-coil-hole-overall-degree
   hypernest-coil-hole-hole
   hypernest-coil-hole-data
-  hypernest-coil-hole-tails-hypertee)
+  hypernest-coil-hole-tails)
 (provide
-  hypernest-coil-bump)
+  hypernest-coil-seam)
 (provide #/shim-recontract-out
-  hypernest-coil-bump?
-  hypernest-coil-bump-overall-degree
-  hypernest-coil-bump-data
-  hypernest-coil-bump-bump-degree
-  hypernest-coil-bump-tails-hypernest)
+  hypernest-coil-seam?
+  hypernest-coil-seam-overall-degree
+  hypernest-coil-seam-hole
+  hypernest-coil-seam-data
+  hypernest-coil-seam-tails
+  hypernest-coil-seam-interior)
 (provide #/shim-recontract-out
   hypernest-coil/c)
 (provide

@@ -25,14 +25,16 @@
 
 (require #/only-in lathe-comforts dissect fn mat w-)
 (require #/only-in lathe-comforts/list list-map)
+(require #/only-in lathe-comforts/maybe just)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require #/only-in punctaffy/hypersnippet/dim nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hn-bracs hnb-unlabeled hypernest-coil-bump
-  hypernest-coil/c hypernest-coil-hole hypernest-coil-zero
+  hnb-labeled hnb-open hn-bracs hnb-unlabeled hypernest-coil/c
+  hypernest-coil-hole hypernest-coil-seam hypernest-coil-zero
   hypernest-from-brackets hypernest-furl hypernest-get-brackets
-  hypernest-get-coil hypernest-shape hypernest-snippet-sys)
+  hypernest-get-dim-sys hypernest-get-coil hypernest-shape
+  hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee
   ht-bracs htb-labeled hypertee-coil-zero hypertee-furl
   hypertee-get-dim-sys hypertee-snippet-format-sys
@@ -41,7 +43,14 @@
   selected snippet-sys-shape-snippet-sys snippet-sys-snippet-degree
   snippet-sys-snippet-done snippet-sys-snippet-join
   snippet-sys-snippet-join-selective snippet-sys-snippet-map
-  snippet-sys-unlabeled-snippet/c unselected)
+  snippet-sys-snippet-map-selective
+  snippet-sys-snippet-select-if-degree<
+  snippet-sys-snippet-set-degree-maybe snippet-sys-unlabeled-snippet/c
+  unselected)
+; TODO NOW: Export this for real.
+(require #/only-in
+  (submod punctaffy/hypersnippet/snippet private/test)
+  snippet-sys-snippet-filter-maybe)
 
 ; (We provide nothing from this module.)
 
@@ -52,28 +61,56 @@
 
 (check-equal? (snippet-sys-shape-snippet-sys hnss) htss)
 
-(define (make-hypernest-coil-hole overall-degree data tails-hypertee)
-  (w- ds (hypertee-get-dim-sys tails-hypertee)
+; TODO: See if this should be an export of
+; `punctaffy/hypersnippet/snippet`.
+(define (unlabel-hypertee ht)
+  (w- ds (hypertee-get-dim-sys ht)
   #/w- htss (hypertee-snippet-sys ds)
+  #/snippet-sys-snippet-map htss ht #/fn hole data #/trivial))
+
+; TODO: See if this should be an export of
+; `punctaffy/hypersnippet/snippet`. Maybe we should just define
+; `hypernest-coil-bump` again.
+(define (tails-hypernest->interior hnss bump-degree tails-hypernest)
+  (w- htss (snippet-sys-shape-snippet-sys hnss)
+  #/w- tails-hypernest-selected
+    (snippet-sys-snippet-select-if-degree< hnss bump-degree
+      tails-hypernest)
+  #/dissect
+    (snippet-sys-snippet-filter-maybe htss
+      (hypernest-shape hnss tails-hypernest-selected))
+    (just tails-hypertee-filtered)
+  #/dissect
+    (snippet-sys-snippet-set-degree-maybe htss bump-degree
+      tails-hypertee-filtered)
+    (just tails)
+  #/w- interior
+    (snippet-sys-snippet-map-selective hnss tails-hypernest-selected
+      (fn hole tail
+        (trivial)))
+  #/w- hole (unlabel-hypertee tails)
+  #/list hole tails interior))
+
+(define (make-hypernest-coil-hole overall-degree data tails)
+  (w- ds (hypertee-get-dim-sys tails)
   #/hypernest-coil-hole
-    overall-degree
-    (snippet-sys-snippet-map htss tails-hypertee #/fn hole data
-      (trivial))
-    data
-    tails-hypertee))
+    overall-degree (unlabel-hypertee tails) data tails))
 
 (define (hnz)
   (hypernest-furl ds #/hypernest-coil-zero))
 
-(define (hnh overall-degree data tails-hypertee)
-  (w- ds (hypertee-get-dim-sys tails-hypertee)
-  #/hypernest-furl ds
-    (make-hypernest-coil-hole overall-degree data tails-hypertee)))
+(define (hnh overall-degree data tails)
+  (hypernest-furl ds #/make-hypernest-coil-hole
+    overall-degree data tails))
 
 (define (hno overall-degree data bump-degree tails-hypernest)
-  (hypernest-furl ds
-    (hypernest-coil-bump
-      overall-degree data bump-degree tails-hypernest)))
+  (w- ds (hypernest-get-dim-sys tails-hypernest)
+  #/w- htss (hypertee-snippet-sys ds)
+  #/dissect
+    (tails-hypernest->interior hnss bump-degree tails-hypernest)
+    (list hole tails interior)
+  #/hypernest-furl ds #/hypernest-coil-seam
+    overall-degree hole data tails interior))
 
 
 

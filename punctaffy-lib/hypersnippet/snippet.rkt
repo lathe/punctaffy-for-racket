@@ -1044,17 +1044,16 @@
   [hypernest-coil-hole-overall-degree (-> hypernest-coil-hole? any/c)]
   [hypernest-coil-hole-hole (-> hypernest-coil-hole? any/c)]
   [hypernest-coil-hole-data (-> hypernest-coil-hole? any/c)]
-  [hypernest-coil-hole-tails-hypertee
-    (-> hypernest-coil-hole? any/c)])
+  [hypernest-coil-hole-tails (-> hypernest-coil-hole? any/c)])
 (module+ private/hypernest #/provide
-  hypernest-coil-bump)
+  hypernest-coil-seam)
 (module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-coil-bump? (-> any/c boolean?)]
-  [hypernest-coil-bump-overall-degree (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-tails-hypernest
-    (-> hypernest-coil-bump? any/c)])
+  [hypernest-coil-seam? (-> any/c boolean?)]
+  [hypernest-coil-seam-overall-degree (-> hypernest-coil-seam? any/c)]
+  [hypernest-coil-seam-hole (-> hypernest-coil-seam? any/c)]
+  [hypernest-coil-seam-data (-> hypernest-coil-seam? any/c)]
+  [hypernest-coil-seam-interior (-> hypernest-coil-seam? any/c)]
+  [hypernest-coil-seam-tails (-> hypernest-coil-seam? any/c)])
 (module+ private/hypernest #/provide #/shim-contract-out
   [hypernest-coil/c (-> dim-sys? flat-contract?)])
 (module+ private/hypernest #/provide
@@ -4451,23 +4450,23 @@
     hypernest-coil-hole-overall-degree
     hypernest-coil-hole-hole
     hypernest-coil-hole-data
-    hypernest-coil-hole-tails-hypertee)
+    hypernest-coil-hole-tails)
   hypernest-coil-hole
   'hypernest-coil-hole (current-inspector) (auto-write) (auto-equal))
 (define-imitation-simple-struct
-  (hypernest-coil-bump?
-    hypernest-coil-bump-overall-degree
-    hypernest-coil-bump-data
-    hypernest-coil-bump-bump-degree
-    hypernest-coil-bump-tails-hypernest)
-  hypernest-coil-bump
-  'hypernest-coil-bump (current-inspector) (auto-write) (auto-equal))
+  (hypernest-coil-seam?
+    hypernest-coil-seam-overall-degree
+    hypernest-coil-seam-hole
+    hypernest-coil-seam-data
+    hypernest-coil-seam-tails
+    hypernest-coil-seam-interior)
+  hypernest-coil-seam
+  'hypernest-coil-seam (current-inspector) (auto-write) (auto-equal))
 
 ; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
 ; unattenuated version, this one has an extra `ds` argument.
 (define/contract
-  (attenuated-hypernest-coil-hole
-    ds overall-degree hole data tails-hypertee)
+  (attenuated-hypernest-coil-hole ds overall-degree hole data tails)
   (ifc debugging-with-contracts
     (->i
       (
@@ -4482,7 +4481,7 @@
             (snippet-sys-snippet-with-degree</c
               shape-ss overall-degree))]
         [data any/c]
-        [tails-hypertee (ds overall-degree hole)
+        [tails (ds overall-degree hole)
           (w- ss
             (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
           #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
@@ -4497,7 +4496,7 @@
                 (snippet-sys-snippet-fitting-shape/c ss hole))))])
       [_ any/c])
     any/c)
-  (hypernest-coil-hole overall-degree hole data tails-hypertee))
+  (hypernest-coil-hole overall-degree hole data tails))
 
 (define (hypernest-coil/c ds)
   (w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -4512,8 +4511,7 @@
           any/c
           any/c)
         (by-own-method/c #:obstinacy (flat-obstinacy)
-          (hypernest-coil-hole
-            overall-degree hole data tails-hypertee)
+          (hypernest-coil-hole overall-degree hole data tails)
           (match/c hypernest-coil-hole
             any/c
             (snippet-sys-snippet-with-degree</c
@@ -4529,42 +4527,49 @@
                     ss overall-degree)
                   (snippet-sys-snippet-fitting-shape/c ss hole)))))))
       (and/c
-        (match/c hypernest-coil-bump
+        (match/c hypernest-coil-seam
           (dim-sys-0<dim/c ds)
+          (snippet-sys-unlabeled-shape/c ss)
           any/c
-          (dim-sys-dim/c ds)
+          any/c
           any/c)
         (by-own-method/c #:obstinacy (flat-obstinacy)
-          (hypernest-coil-bump
-            overall-degree data bump-degree tails-hypernest)
-          (match/c hypernest-coil-bump
+          (hypernest-coil-seam
+            overall-degree hole data tails interior)
+          (w- bump-degree (snippet-sys-snippet-degree shape-ss hole)
+          #/match/c hypernest-coil-seam
             any/c
             any/c
             any/c
+            (snippet-sys-snippet-zip-selective/ob-c shape-ss
+              (flat-obstinacy)
+              hole
+              (fn hole subject-data #t)
+              (fn hole shape-data subject-data
+                (w- hole-d (snippet-sys-snippet-degree shape-ss hole)
+                #/and/c
+                  (snippet-sys-snippet-with-degree=/c ss
+                    
+                    ; TODO: Almost all of the unit tests in
+                    ; test-hypernest-2.rkt, with the exception of the
+                    ; `sample-hn-expr-shape-as-ast` test, continue to
+                    ; work if we just use `overall-degree` here. We
+                    ; should write more tests for this case (that is,
+                    ; the situation where a hypernest has a bump with
+                    ; a hole of degree greater than the overall
+                    ; hypernest).
+                    ;
+                    (dim-sys-dim-max ds overall-degree hole-d))
+                  (snippet-sys-snippet-fitting-shape/c ss hole))))
             (and/c
-              (snippet-sys-snippet-with-degree=/c ss
-                (dim-sys-dim-max ds overall-degree bump-degree))
+              (snippet-sys-snippet-with-degree=/c ss overall-degree)
               (snippet-sys-snippetof/ob-c ss (flat-obstinacy)
                 (fn hole
                   (w- hole-d
                     (snippet-sys-snippet-degree shape-ss hole)
-                  #/expect (dim-sys-dim<? ds hole-d bump-degree) #t
-                    any/c
-                  #/and/c
-                    (snippet-sys-snippet-with-degree=/c ss
-                      
-                      ; TODO: Almost all of the unit tests in
-                      ; test-hypernest-2.rkt, with the exception of
-                      ; the `sample-hn-expr-shape-as-ast` test,
-                      ; continue to work if we just use
-                      ; `overall-degree` here. We should write more
-                      ; tests for this case (that is, the situation
-                      ; where a hypernest has a bump with a hole of
-                      ; degree greater than the overall hypernest).
-                      ;
-                      (dim-sys-dim-max ds overall-degree hole-d))
-                    (snippet-sys-snippet-fitting-shape/c ss
-                      hole)))))))))
+                  #/if (dim-sys-dim<? ds hole-d bump-degree)
+                    trivial?
+                    any/c))))))))
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
 ; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
@@ -4589,8 +4594,8 @@
     (hypernest-zero-unchecked
       (unguarded-hypertee-furl uds #/hypertee-coil-zero))
   #/mat coil
-    (hypernest-coil-hole overall-degree hole data tails-hypertee)
-    (dlog 'l1.1 overall-degree tails-hypertee
+    (hypernest-coil-hole overall-degree hole data tails)
+    (dlog 'l1.1 overall-degree tails
     #/hypernest-nonzero-unchecked overall-degree
       (dlogr 'l1.2
       #/unguarded-hypertee-furl eds #/hypertee-coil-hole
@@ -4600,60 +4605,26 @@
         (dlog 'l1.3
         #/snippet-sys-snippet-map ehtss
           (dlog 'l1.4
-          #/hypertee-map-dim extend-dim tails-hypertee)
+          #/hypertee-map-dim extend-dim tails)
           (fn hole tail
             (dissect tail
               (hypernest-nonzero-unchecked _ tail-extended)
               tail-extended)))))
   #/dissect coil
-    (hypernest-coil-bump
-      overall-degree data bump-degree tails-hypernest)
+    (hypernest-coil-seam overall-degree hole data tails interior)
     (dlog 'l1.5
-    #/dissect tails-hypernest
-      (hypernest-nonzero-unchecked _ tails-extended)
-    #/dlog 'l1.6
-    #/dissect
-      (if (dim-sys-dim=0? uds bump-degree)
-        (just #/unguarded-hypertee-furl uds #/hypertee-coil-zero)
-        (maybe-bind
-          (snippet-sys-snippet-filter-maybe ehtss
-            (snippet-sys-snippet-select-if-degree< ehtss
-              (extended-with-top-dim-finite
-                (extended-with-top-dim-finite bump-degree))
-              tails-extended))
-        #/fn tails-shape
-        #/dlog 'l1.7 bump-degree tails-shape
-        #/snippet-sys-snippet-set-degree-maybe ehtss
-          (extended-with-top-dim-finite
-            (extended-with-top-dim-finite bump-degree))
-          tails-shape))
-      (just truncated-tails-shape)
-    #/dlog 'l1.8
     #/3:dlog 'zo1 data
-    #/w- interior
-      (4:dlog 'hqq-e1
-      #/snippet-sys-snippet-map-selective ehtss
-        ; TODO: We're computing this once already, during the
-        ; computation of `truncated-tails-shape`. Let's deduplicate
-        ; this effort.
-        (snippet-sys-snippet-select-if-degree< ehtss
-          (extended-with-top-dim-finite
-            (extended-with-top-dim-finite bump-degree))
-          tails-extended)
-        (fn hole tail
-          (trivial)))
     #/w- tails-assembled
       (4:dlog 'hqq-e2
       #/snippet-sys-snippet-done ehtss
         (extended-with-top-dim-finite
           (extended-with-top-dim-infinite))
         (4:dlog 'hqq-e3
-        #/snippet-sys-snippet-map ehtss truncated-tails-shape
-          (fn hole tail
-            (4:dlog 'hqq-e4 overall-degree bump-degree (snippet-sys-snippet-degree ehtss hole)
-            #/dissect tail
-              (hypernest-nonzero-unchecked _ tail-extended)
-              tail-extended)))
+        #/snippet-sys-snippet-map ehtss tails #/fn hole tail
+          (4:dlog 'hqq-e4 overall-degree (snippet-sys-snippet-degree ehtss hole)
+          #/dissect tail
+            (hypernest-nonzero-unchecked _ tail-extended)
+            tail-extended))
         interior)
     #/dlog 'l1.9 data
     #/3:dlog 'zo4
@@ -4725,38 +4696,28 @@
           (extended-with-top-dim-infinite))
         tails
         interior)
-    #/dlog 'n10
-    #/dissect (snippet-sys-snippet-degree ehtss tails)
-      (extended-with-top-dim-finite
-        (extended-with-top-dim-finite bump-degree))
     #/dlog 'n11
     #/w- interior-hypernest
-      (dlogr 'n12 bump-degree interior
-      #/hypernest-nonzero-unchecked
-        (dim-sys-dim-max uds overall-degree bump-degree)
-        interior)
+      (dlogr 'n12 interior
+      #/hypernest-nonzero-unchecked overall-degree interior)
     #/dlog 'n11.1 (hypertee-map-dim unextend-dim tails) interior-hypernest
-    #/dissect
+    #/w- tail-hypernests
       (dlog 'n13 hnss ; interior-hypernest
-      #/if (dim-sys-dim=0? uds bump-degree)
-        (just interior-hypernest)
-      #/snippet-sys-snippet-zip-map-selective hnss
+      #/snippet-sys-snippet-map htss
         (dlogr 'n14 tails
         #/hypertee-map-dim unextend-dim tails)
-        (snippet-sys-snippet-select-if-degree<
-          hnss bump-degree interior-hypernest)
-        (fn hole tail interior-data
-          (dlog 'n15 overall-degree
-          #/dissect interior-data (trivial)
-          #/dlog 'n16 tail
-          #/just #/hypernest-nonzero-unchecked
+        (fn hole tail
+          (dlog 'n15 overall-degree tail
+          #/hypernest-nonzero-unchecked
             (dim-sys-dim-max uds overall-degree
               (snippet-sys-snippet-degree htss hole))
             tail)))
-      (just tails-hypernest)
-    #/dlog 'n17 overall-degree bump-degree tails tails-hypernest
-    #/hypernest-coil-bump
-      overall-degree data bump-degree tails-hypernest)))
+    #/w- hole
+      (snippet-sys-snippet-map htss tail-hypernests #/fn hole tail
+        (trivial))
+    #/dlog 'n17 overall-degree tails tail-hypernests interior-hypernest
+    #/hypernest-coil-seam
+      overall-degree hole data tail-hypernests interior-hypernest)))
 
 ; TODO: See if we need to rename this to `hypernest-furl` for better
 ; error messages. If so, we might need to put it in a submodule to
@@ -4886,6 +4847,38 @@
   (mat bracket (hnb-labeled d data) (htb-labeled d data)
   #/dissect bracket (hnb-unlabeled d) (htb-unlabeled d)))
 
+; TODO: See if we should export this, since we use it elsewhere.
+(define (unlabel-hypertee ht)
+  (w- ds (hypertee-get-dim-sys ht)
+  #/w- htss (hypertee-snippet-sys ds)
+  #/snippet-sys-snippet-map htss ht #/fn hole data #/trivial))
+
+; TODO: See if we should export this, since we use it elsewhere. Maybe
+; we should just define `hypernest-coil-bump` again.
+(define (tails-hypernest->interior hnss bump-degree tails-hypernest)
+  (w- htss (snippet-sys-shape-snippet-sys hnss)
+  #/w- tails-hypernest-selected
+    (snippet-sys-snippet-select-if-degree< hnss bump-degree
+      tails-hypernest)
+  #/dlog 'l1.6
+  #/dissect
+    (snippet-sys-snippet-filter-maybe htss
+      (hypernest-shape hnss tails-hypernest-selected))
+    (just tails-hypertee-filtered)
+  #/dlog 'l1.7 bump-degree tails-hypertee-filtered
+  #/dissect
+    (snippet-sys-snippet-set-degree-maybe htss bump-degree
+      tails-hypertee-filtered)
+    (just tails)
+  #/dlog 'l1.8
+  #/w- interior
+    (4:dlog 'hqq-e1
+    #/snippet-sys-snippet-map-selective hnss tails-hypernest-selected
+      (fn hole tail
+        (trivial)))
+  #/w- hole (unlabel-hypertee tails)
+  #/list hole tails interior))
+
 (define
   (explicit-hypernest-from-hyperstack-and-brackets
     err-name err-normalize-bracket orig-brackets ds stack orig-d
@@ -4995,17 +4988,20 @@
         "brackets" (map err-normalize-bracket orig-brackets))
     #/w- stack
       (hyperstack-push bump-degree stack #/list #f bumps-allowed)
-    #/w- recursive-result
+    #/w- tails-hypernest
       (explicit-hypernest-from-hyperstack-and-brackets
         err-name err-normalize-bracket orig-brackets ds stack orig-d
         bumps-allowed brackets-remaining)
-    #/dlog 'ze1 brackets-remaining brackets recursive-result
+    #/dlog 'ze1 brackets-remaining brackets tails-hypernest
+    #/dissect
+      (tails-hypernest->interior hnss bump-degree tails-hypernest)
+      (list hole tails interior)
     ; TODO DEBUGGABILITY: Come up with a way to automatically change
     ; this to a `hypernest-furl` call when we activate one of the
     ; debugging modes. For now, it's just a commented-out alternative.
-;    #/hypernest-furl ds #/hypernest-coil-bump
-    #/unguarded-hypernest-furl ds #/hypernest-coil-bump
-      current-d data bump-degree recursive-result)
+;    #/hypernest-furl ds #/hypernest-coil-seam
+    #/unguarded-hypernest-furl ds #/hypernest-coil-seam
+      current-d hole data tails interior)
   #/mat bracket (hnb-labeled hole-degree data)
     (process-hole hole-degree data #t)
   #/dissect bracket (hnb-unlabeled hole-degree)
@@ -5109,8 +5105,18 @@
       recursive-result)
   #/dlog 'zh3
   #/dissect coil
-    (hypernest-coil-bump current-d data bump-degree tails-hypernest)
-    (w- stack (hyperstack-push bump-degree stack #f)
+    (hypernest-coil-seam current-d hole data tails interior)
+    (w- bump-degree (snippet-sys-snippet-degree htss hole)
+    #/dissect
+      (snippet-sys-snippet-zip-map-selective hnss
+        tails
+        (snippet-sys-snippet-select-if-degree<
+          hnss bump-degree interior)
+        (fn hole tail interior-data
+          (dissect interior-data (trivial)
+          #/just tail)))
+      (just tails-hypernest)
+    #/w- stack (hyperstack-push bump-degree stack #f)
     #/w- recursive-result
       (2:dlog 'zh4 current-d (hyperstack-dimension stack) (build-list (hyperstack-dimension stack) #/fn i #/hyperstack-peek stack i)
       #/hyperstack-and-hypernest-get-brackets

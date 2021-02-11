@@ -38,9 +38,9 @@
   extended-with-top-dim-infinite extended-with-top-dim-sys
   extend-with-top-dim-sys-morphism-sys nat-dim-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypernest
-  hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
-  hypernest-coil-hole hypernest-from-brackets hypernest-furl
-  hypernest-shape hypernest-snippet-sys)
+  hnb-labeled hnb-open hnb-unlabeled hypernest-coil-hole
+  hypernest-coil-seam hypernest-from-brackets hypernest-furl
+  hypernest-snippet-sys)
 (require #/for-syntax #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee-coil-zero hypertee-furl
   hypertee-get-brackets hypertee-snippet-format-sys)
@@ -94,18 +94,13 @@
   #/w- body-and-splices
     (s-expr-stx->hn-expr err-dsl-stx body-and-splices)
   #/expect body-and-splices
-    (hypernest-furl _ #/hypernest-coil-bump
-      overall-degree
-      (hn-tag-nest)
-      (extended-with-top-dim-infinite)
-      bracket-and-body-and-tails)
+    (hypernest-furl _ #/hypernest-coil-seam
+      overall-degree hole (hn-tag-nest) body-and-tails bracket)
     ; TODO: We should let `err-name` be more than one symbol.
     (error #/format "Expected ~a to be of the form (~s #/^< ...)"
       err-phrase-invocation
       err-name)
-  #/dissect
-    (snippet-sys-snippet-undone shape-ss
-      (hypernest-shape ss bracket-and-body-and-tails))
+  #/dissect (snippet-sys-snippet-undone shape-ss body-and-tails)
     (just #/list (extended-with-top-dim-infinite) tails body)
   #/w- represented-bump-degree
     (snippet-sys-snippet-degree shape-ss tails)
