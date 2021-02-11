@@ -25,6 +25,7 @@
 (define-for-syntax debugging-in-inexpensive-ways #f)
 (define-for-syntax debugging-with-prints
   debugging-in-inexpensive-ways)
+(define-for-syntax debugging-using-slow-bracs #f)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)
@@ -78,19 +79,23 @@
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
   dim-sys-dim/c dim-sys-dim-max dim-sys-morphism-sys-morph-dim
+  dim-sys-morphism-sys-source dim-sys-morphism-sys-target
   extended-with-top-dim-infinite extended-with-top-dim-sys
-  extend-with-top-dim-sys-morphism-sys nat-dim-sys)
+  extend-with-top-dim-sys-morphism-sys
+  functor-from-dim-sys-sys-apply-to-morphism nat-dim-sys)
 (require #/only-in punctaffy/hypersnippet/hypernest
   hnb-labeled hnb-open hnb-unlabeled hypernest-coil-bump
-  hypernest-coil-hole hypernest-from-brackets hypernest-furl
-  hypernest-get-hole-zero-maybe
+  hypernest-coil-hole hypernest-coil-zero hypernest-from-brackets
+  hypernest-furl hypernest-get-dim-sys hypernest-get-hole-zero-maybe
   hypernest-join-list-and-tail-along-0 hypernest? hypernestof/ob-c
-  hypernest-shape hypernest-snippet-sys)
+  hypernest-shape hypernest-snippet-format-sys hypernest-snippet-sys)
 (require #/only-in punctaffy/hypersnippet/hypertee
   htb-labeled htb-unlabeled hypertee-coil-hole hypertee-coil-zero
-  hypertee-from-brackets hypertee-furl hypertee-snippet-format-sys)
+  hypertee-from-brackets hypertee-furl hypertee-get-dim-sys
+  hypertee-snippet-sys hypertee-snippet-format-sys)
 (require #/only-in punctaffy/hypersnippet/snippet
-  selectable-map selected snippet-sys-dim-sys
+  selectable-map selected snippet-format-sys-functor
+  snippet-sys-dim-sys snippet-sys-morphism-sys-morph-snippet
   snippet-sys-shape-snippet-sys snippet-sys-snippet-bind-selective
   snippet-sys-snippet-degree snippet-sys-snippet-done
   snippet-sys-snippet-each snippet-sys-snippet-join-selective
@@ -333,6 +338,63 @@
 
 
 
+; NOTE: These are just here for optimization.
+
+(define (unlabel-hypertee ht)
+  (w- ds (hypertee-get-dim-sys ht)
+  #/w- htss (hypertee-snippet-sys ds)
+  #/snippet-sys-snippet-map htss ht #/fn hole data #/trivial))
+
+(define (make-hypertee-coil-hole overall-degree data tails-hypertee)
+  (hypertee-coil-hole
+    overall-degree
+    (unlabel-hypertee tails-hypertee)
+    data
+    tails-hypertee))
+
+(define (htz ds)
+  (hypertee-furl ds #/hypertee-coil-zero))
+
+(define (hth overall-degree data tails-hypertee)
+  (w- ds (hypertee-get-dim-sys tails-hypertee)
+  #/hypertee-furl ds
+    (make-hypertee-coil-hole overall-degree data tails-hypertee)))
+
+(define (make-hypernest-coil-hole overall-degree data tails-hypertee)
+  (hypernest-coil-hole
+    overall-degree
+    (unlabel-hypertee tails-hypertee)
+    data
+    tails-hypertee))
+
+(define (hnz ds)
+  (hypernest-furl ds #/hypernest-coil-zero))
+
+(define (hnh overall-degree data tails-hypertee)
+  (w- ds (hypertee-get-dim-sys tails-hypertee)
+  #/hypernest-furl ds
+    (make-hypernest-coil-hole overall-degree data tails-hypertee)))
+
+(define (hnb overall-degree data bump-degree tails-hypernest)
+  (w- ds (hypernest-get-dim-sys tails-hypernest)
+  #/hypernest-furl ds
+    (hypernest-coil-bump
+      overall-degree data bump-degree tails-hypernest)))
+
+(define (snippet-n-d sfs n-d snippet)
+  (w- ffdstsss (snippet-format-sys-functor sfs)
+  #/snippet-sys-morphism-sys-morph-snippet
+    (functor-from-dim-sys-sys-apply-to-morphism ffdstsss n-d)
+    snippet))
+
+(define (ht-n-d n-d snippet)
+  (snippet-n-d (hypertee-snippet-format-sys) n-d snippet))
+
+(define (hn-n-d n-d snippet)
+  (w- sfs (hypernest-snippet-format-sys #/hypertee-snippet-format-sys)
+  #/snippet-n-d sfs n-d snippet))
+
+
 ; TODO: See if we should add this to Lathe Comforts.
 (define (maybe-or a get-b)
   (mat a (just a) (just a)
@@ -379,9 +441,13 @@
     (dim-sys-morphism-sys-morph-dim n-d degree)
     brackets))
 
-(define (hypernest-join-0 ds n-d d elems)
-  (hypernest-join-list-and-tail-along-0 ds elems
-    (hn-bracs-n-d ds n-d d #/hnb-labeled 0 #/trivial)))
+(define (hypernest-join-0 n-d d elems)
+  (w- uds (dim-sys-morphism-sys-source n-d)
+  #/w- eds (dim-sys-morphism-sys-target n-d)
+  #/hypernest-join-list-and-tail-along-0 eds elems
+    (ifc debugging-using-slow-bracs
+      (hn-bracs-n-d eds n-d d #/hnb-labeled 0 #/trivial)
+      (hn-n-d n-d #/hnh d (trivial) #/htz uds))))
 
 (define
   (snippet-sys-snippet-set-degree-and-bind-highest-degrees
@@ -406,8 +472,9 @@
 
 
 
-(define en-ds (extended-with-top-dim-sys #/nat-dim-sys))
-(define en-n-d (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
+(define nds (nat-dim-sys))
+(define en-ds (extended-with-top-dim-sys nds))
+(define en-n-d (extend-with-top-dim-sys-morphism-sys nds))
 
 
 ; This structure type property indicates a syntax's behavior as the
@@ -572,12 +639,19 @@
 (define example-list*-shape
   (w- ds en-ds
   #/w- n-d en-n-d
-  #/ht-bracs-n-d ds n-d 2
-    (htb-labeled 1 #/trivial)
-    0
-    (htb-labeled 1 #/trivial)
-    0
-    (htb-labeled 0 #/trivial)))
+  #/ifc debugging-using-slow-bracs
+    (ht-bracs-n-d ds n-d 2
+      (htb-labeled 1 #/trivial)
+      0
+      (htb-labeled 1 #/trivial)
+      0
+      (htb-labeled 0 #/trivial))
+    (ht-n-d n-d
+      (hth 2 (trivial)
+        (hth 1
+          (hth 2 (trivial)
+            (hth 1 (hth 2 (trivial) #/htz nds) #/htz nds))
+          (htz nds))))))
 
 (define (is-list*-shape? bump-interior-shape)
   (w- ds en-ds
@@ -777,15 +851,21 @@
       #/snippet-sys-snippet-set-degree-and-bind-highest-degrees ss
         (dim-sys-morphism-sys-morph-dim n-d 1)
         (dlog 'hqq-c2
-        #/hn-bracs-n-d ds n-d 2
-          (hnb-open 1 metadata)
-          (hnb-labeled 1 #/trivial)
-          0
-          0
-        #/hnb-labeled 0 #/trivial)
+        #/ifc debugging-using-slow-bracs
+          (hn-bracs-n-d ds n-d 2
+            (hnb-open 1 metadata)
+            (hnb-labeled 1 #/trivial)
+            0
+            0
+            (hnb-labeled 0 #/trivial))
+          (hn-n-d n-d
+            (hnb 2 metadata 1
+              (hnh 2 (trivial)
+                (hth 1 (hnh 2 (hnh 2 (trivial) #/htz nds) #/htz nds)
+                  (htz nds))))))
       #/fn hole data
         (dlog 'hqq-c3
-        #/hypernest-join-0 ds n-d 1 elems)))
+        #/hypernest-join-0 n-d 1 elems)))
   
   ; We traverse into boxes.
   #/mat s (box elem)
@@ -844,20 +924,32 @@
       (snippet-sys-snippet-set-degree-and-bind-highest-degrees ss
         (dim-sys-morphism-sys-morph-dim n-d 1)
         (dlog 'hqq-c2
-        #/hn-bracs-n-d ds n-d 2
-          
-          (hnb-open 2 #/hn-tag-2-list* stx-example)
-          1
-            (hnb-labeled 1 #/hypernest-join-0 ds n-d 1 elems)
+        #/ifc debugging-using-slow-bracs
+          (hn-bracs-n-d ds n-d 2
+            
+            (hnb-open 2 #/hn-tag-2-list* stx-example)
+            1
+              (hnb-labeled 1 #/hypernest-join-0 n-d 1 elems)
+              0
             0
-          0
-          1
-            (hnb-labeled 1 tail)
+            1
+              (hnb-labeled 1 tail)
+              0
             0
-          0
-          0
-          
-          (hnb-labeled 0 #/trivial))
+            0
+            
+            (hnb-labeled 0 #/trivial))
+          (hn-n-d n-d
+            (hnb 2 (hn-tag-2-list* stx-example) 2
+              (hnh 2
+                (hnh 2 (hypernest-join-0 n-d 1 elems)
+                  (hth 1 (hnh 2 (trivial) #/htz nds) #/htz nds))
+                (hth 1
+                  (hnh 2
+                    (hnh 2 tail
+                      (hth 1 (hnh 2 (trivial) #/htz nds) #/htz nds))
+                    (hth 1 (hnh 2 #/htz nds) #/htz nds))
+                  (htz nds))))))
       #/fn hole data
         data))
   
@@ -884,9 +976,13 @@
       ; `stx` itself (put in a container so that it can be
       ; distinguished from degree-0 bumps that a user-defined syntax
       ; introduces for a different reason).
-      (hn-bracs-n-d ds n-d 1
-        (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
-        (hnb-labeled 0 #/trivial))]))
+      (ifc debugging-using-slow-bracs
+        (hn-bracs-n-d ds n-d 1
+          (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+          (hnb-labeled 0 #/trivial))
+        (hn-n-d n-d
+          (hnb 1 (hn-tag-0-s-expr-stx stx) 0
+            (hnh 1 (trivial) #/htz nds))))]))
 
 ; This recursively converts the given Racket syntax object into an
 ; degree-1 hypernest just like `s-expr-stx->hn-expr`, but it expects
@@ -902,7 +998,7 @@
   (-> syntax? syntax? #/hn-expr/c)
   (w- ds en-ds
   #/w- n-d en-n-d
-  #/hypernest-join-0 ds n-d 1 #/list-map (syntax->list stx) #/fn elem
+  #/hypernest-join-0 n-d 1 #/list-map (syntax->list stx) #/fn elem
     (s-expr-stx->hn-expr err-dsl-stx elem)))
 
 ; Given an hn-expression of any degree, removes its `hn-tag-nest`
@@ -1166,15 +1262,20 @@
       ;
       ; TODO: See if we'll ever need to rely on this functionality.
       ;
-      (hn-bracs-n-d ds n-d 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
-      #/hnb-labeled 0 #/trivial)]
+      (ifc debugging-using-slow-bracs
+        (hn-bracs-n-d ds n-d 1
+          (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+          (hnb-labeled 0 #/trivial))
+        (hn-n-d n-d
+          (hnb 1 (hn-tag-0-s-expr-stx stx) 0
+            (hnh 1 (trivial) #/htz nds))))]
   #/ (op:id degree-stx:exact-positive-integer interpolation ...)
   #/w- degree
     (dim-sys-morphism-sys-morph-dim n-d #/syntax-e #'degree-stx)
   #/dlog 'hqq-f4
   #/w- interior-and-closing-brackets
     (verify-hn #/unmatched-brackets->holes degree
-    #/hypernest-join-0 ds n-d 1
+    #/hypernest-join-0 n-d 1
     #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
       (verify-hn #/s-expr-stx->hn-expr err-dsl-stx interpolation))
   #/dlog 'hqq-f5
@@ -1193,6 +1294,7 @@
     ; bracket (noted at NOTE BEYOND).
     (dlog 'hqq-f8
     #/snippet-sys-snippet-join-selective ss
+    ; TODO NOW: Provide a non-bracs implementation.
     #/hn-bracs-n-d* ds n-d (extended-with-top-dim-infinite)
       (hnb-open 1
         (hn-tag-1-list #/datum->syntax-with-everything stx #/list))
@@ -1228,7 +1330,9 @@
       
       0
       (hnb-labeled 0 #/unselected
-        (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)))))
+        (ifc debugging-using-slow-bracs
+          (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)
+          (hn-n-d n-d #/hnh 1 (trivial) #/htz nds))))))
 
 (define (^<d-expand err-dsl-stx stx)
   (dlog 'hqq-f1

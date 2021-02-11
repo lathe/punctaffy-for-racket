@@ -33,6 +33,8 @@
 ; (We provide nothing from this module.)
 
 
+; TODO NOW: Uncomment these.
+#|
 (check-equal?
   (w- x 5
     (taffy-let ([x (+ 1 2)]) #/^<d 2
@@ -98,3 +100,4 @@
     (list (^>d 1 _/ list 1 3 5) (^>d 1 _/ list 2 4 6)))
   (list 1 2 3 4 5 6)
   "`list-taffy-bind` works [documentation example variant]")
+|#

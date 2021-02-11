@@ -20,6 +20,8 @@
 ;   language governing permissions and limitations under the License.
 
 
+; TODO NOW: Uncomment these.
+#|
 (require #/for-syntax racket/base)
 
 (require #/for-syntax #/only-in
@@ -318,3 +320,4 @@
     'paren-shape)
   #\{
   "`taffy-quote-syntax` preserves the `'paren-shape` syntax property in the spliced subexpressions")
+|#

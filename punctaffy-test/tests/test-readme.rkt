@@ -60,6 +60,8 @@
       (make-sxml-unordered-list (list "Red" "Yellow" "Green")))
     '(ul (li "Red") (li "Yellow") (li "Green"))))
 
+; TODO NOW: Uncomment these.
+#|
 (check-make-sxml-unordered-list items
   `(ul
     ,@(for/list ([item (in-list items)])
@@ -72,6 +74,7 @@
         (^>
           (list-taffy-map
             (^< (taffy-quote (^< (li (^> (list (^> items)))))))))))))
+|#
 
 (check-make-sxml-unordered-list items
   (taffy-quote #/^< #/ul #/^>
