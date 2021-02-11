@@ -64,6 +64,9 @@
   ; activate a safer (if far less readable) printing behavior that
   ; corresponds to the shapes of the underlying data structures.
   debugging-in-inexpensive-ways)
+(define-for-syntax
+  debugging-with-prints-for-unextend-finite-finite-dim
+  debugging-in-inexpensive-ways)
 (define-syntax (ifc stx)
   (syntax-protect
   #/syntax-case stx () #/ (_ condition then else)
@@ -96,6 +99,9 @@
 (ifc debugging-with-prints-for-hypernest-qq
   (require #/prefix-in 4: lathe-debugging)
   (require #/prefix-in 4: 'private/lathe-debugging/placebo))
+(ifc debugging-with-prints-for-unextend-finite-finite-dim
+  (require #/prefix-in 5: lathe-debugging)
+  (require #/prefix-in 5: 'private/lathe-debugging/placebo))
 (require #/for-syntax #/only-in racket/format ~a)
 (require #/only-in racket/contract/base contract)
 
@@ -1690,10 +1696,14 @@
   #/w- unextend-one-snippet
     (fn snippet
       (dissect
-        (snippet-sys-snippet-set-degree-maybe uss original-degree
-          (snippet-sys-morphism-sys-morph-snippet unextend snippet))
-        (just unextended-snippet)
-        unextended-snippet))
+        (snippet-sys-snippet-set-degree-maybe ess
+          (extended-with-top-dim-finite
+            (extended-with-top-dim-finite original-degree))
+          snippet)
+        (just snippet-with-original-degree)
+      #/5:dlog 'zr1
+      #/snippet-sys-morphism-sys-morph-snippet unextend
+        snippet-with-original-degree))
   #/w- extended-past-snippets
     (list-map past-snippets #/fn snippet #/extend-one-snippet snippet)
   #/w- extended-last-snippet (extend-one-snippet last-snippet)
@@ -3902,7 +3912,8 @@
                 (extended-with-top-dim-finite hole-d))
               (if (dim-sys-dim<? uds hole-d d)
                 (h-to-value/c #/fn
-                  (snippet-sys-morphism-sys-morph-snippet
+                  (5:dlog 'zr2
+                  #/snippet-sys-morphism-sys-morph-snippet
                     unextend-shape
                     hole))
                 none/c)
@@ -3916,7 +3927,8 @@
                 bump-interior-shape
                 (trivial))
               (b-to-value/c #/fn
-                (snippet-sys-morphism-sys-morph-snippet unextend-shape
+                (5:dlog 'zr3
+                #/snippet-sys-morphism-sys-morph-snippet unextend-shape
                   bump-interior-shape)))))))
     `(hypernestof-lazy/ob-c
        ,sfs ,uds ,ob ,b-to-value/c ,h-to-value/c)))
@@ -3965,7 +3977,8 @@
   #/mat hn (hypernest-zero-unchecked content)
     (hypernest-zero-unchecked #/original-map-dim dsms content)
   #/dissect hn (hypernest-nonzero-unchecked d hn-extended)
-    (hypernest-nonzero-unchecked d
+    (hypernest-nonzero-unchecked
+      (dim-sys-morphism-sys-morph-dim dsms d)
       (original-map-dim
         (extended-with-top-dim-sys-morphism-sys
           (extended-with-top-dim-sys-morphism-sys dsms))
@@ -4042,6 +4055,7 @@
               (extended-with-top-dim-finite d))
             shape)
           (just shape)
+        #/5:dlog 'zr4
         #/snippet-sys-morphism-sys-morph-snippet
           (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
             (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
@@ -4117,7 +4131,8 @@
       #/dissectfn (list (extended-with-top-dim-infinite) shape data)
         (list
           d
-          (snippet-sys-morphism-sys-morph-snippet
+          (5:dlog 'zr5
+          #/snippet-sys-morphism-sys-morph-snippet
             (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
               (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                 (dim-sys-morphism-sys-chain-two
@@ -4149,7 +4164,8 @@
             (just #/unselected data)
           #/maybe-map
             (hv-to-splice
-              (snippet-sys-morphism-sys-morph-snippet
+              (5:dlog 'zr6
+              #/snippet-sys-morphism-sys-morph-snippet
                 (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
                   (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                     (dim-sys-morphism-sys-chain-two
@@ -4173,7 +4189,8 @@
       #/w- extended-hvv-to-maybe-v
         (fn hole shape-data snippet-data
           (hvv-to-maybe-v
-            (snippet-sys-morphism-sys-morph-snippet
+            (5:dlog 'zr7
+            #/snippet-sys-morphism-sys-morph-snippet
               (snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
                 (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
                   (dim-sys-morphism-sys-chain-two
