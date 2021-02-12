@@ -8,7 +8,7 @@ Most programming languages are designed for programs to be structured in the for
 
 (TODO: Illustrate this graphically.)
 
-This is common with templating languages. For instance, a quasiquotation operation has a quoted body that begins with the initial `` `___`` tree node and ends with number of `,___` and `,@___` tree nodes. The quasiquotation operation also takes a number of expressions to compute what values should be inserted into those holes in the quoted body, and those expressions are maintained in the same place as the holes their results will be inserted into.
+This is common with templating languages. For instance, a quasiquotation operation has a quoted body that begins with the initial `` `...`` tree node and ends with number of `,...` and `,@...` tree nodes. The quasiquotation operation also takes a number of expressions to compute what values should be inserted into those holes in the quoted body, and those expressions are maintained in the same place as the holes their results will be inserted into.
 
 ```racket
 (define site-base-url "https://docs.racket-lang.org/")
@@ -58,7 +58,7 @@ Here's the same code, using the `α` operator to do the list mapping operation:
 
 ```racket
 (define (make-sxml-unordered-list items)
-  `(ul ,@α`(li ,•items))
+  `(ul ,@α`(li ,•items)))
 ```
 
 In the expression ``α`(li ,•items)``, we see the `` `...`` and `,...` tree nodes are nested in between the `α...` and `•...` tree nodes.
@@ -73,7 +73,7 @@ But Punctaffy is driven by syntax. Let's recall the above example of synthesizin
 
 ```racket
 (define (make-sxml-unordered-list items)
-  `(ul ,@α`(li ,•items))
+  `(ul ,@α`(li ,•items)))
 ```
 
 Here we have `` `...`` nested inside `α...`. We could also imagine the reverse of this; if we quote a piece of code which uses `α...`, then the `α...` appears nested inside the `` `...``.
@@ -84,7 +84,7 @@ What does this program do?
 α`(li •,items)
 ```
 
-This is analogous to writing the program `(while #t (println "Hello, world))"`. The delimiters are simply mismatched. We can try to come up with creative interpretations, but there's little reason to use the notations this way in the first place.
+This is analogous to writing the program `(while #t (displayln "Hello, world))"`. The delimiters are simply mismatched. We can try to come up with creative interpretations, but there's little reason to use the notations this way in the first place.
 
 So, where do we report the error? Racket's reader doesn't match occurrences of `` `...`` to occurrences of `,...` at read time; instead, these always read successfully as `(quasiquote ...)` and `(unquote ...)`, and it's up to the implementation of the `quasiquote` macro to search its tree-shaped input, looking for occurrences of `unquote`. So now do we extend that search so that it keeps track of the proper nesting of `α...` and `•...` hyperbrackets? Does every one of these higher-dimensional operations need to hardcode the grammar of every other?
 
@@ -102,7 +102,7 @@ Before:
 
 ```racket
 (define (make-sxml-unordered-list items)
-  `(ul ,@α`(li ,•items))
+  `(ul ,@α`(li ,•items)))
 ```
 
 After:

@@ -28,6 +28,7 @@
 
 
 
+@include-section["punctaffy/intro.scrbl"]
 @include-section["punctaffy/hypersnippet.scrbl"]
 @include-section["punctaffy/hyperbracket.scrbl"]
 @include-section["punctaffy/hyperbracketed-util.scrbl"]

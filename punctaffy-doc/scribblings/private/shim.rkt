@@ -20,56 +20,68 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/for-syntax racket/base)
+
+(require #/for-syntax #/only-in syntax/parse syntax-parse)
+
+(require #/for-syntax #/only-in lathe-comforts fn w-)
+
+
 (provide shim-require-various-for-label)
 
 
-(define-syntax-rule (shim-require-various-for-label)
-  (begin
-    
-    (require #/for-label racket/base)
-    (require #/for-label #/only-in racket/contract
-      struct-type-property/c)
-    (require #/for-label #/only-in racket/contract/base
-      -> </c and/c any/c contract? flat-contract? ->i list/c listof
-      or/c)
-    (require #/for-label #/only-in racket/extflonum extflonum?)
-    (require #/for-label #/only-in racket/flonum flvector?)
-    (require #/for-label #/only-in racket/fixnum fxvector?)
-    (require #/for-label #/only-in racket/list append-map)
-    (require #/for-label #/only-in racket/math natural?)
-    
-    (require #/for-label #/only-in lathe-comforts fn)
-    (require #/for-label #/only-in lathe-comforts/contract
-      flat-obstinacy obstinacy? obstinacy-contract/c)
-    (require #/for-label #/only-in lathe-comforts/list list-bind)
-    (require #/for-label #/only-in lathe-comforts/maybe
-      just? maybe? maybe/c nothing)
-    (require #/for-label #/only-in lathe-comforts/trivial trivial?)
-    (require #/for-label #/only-in lathe-morphisms/in-fp/category
-      category-sys? category-sys-morphism/c functor-sys?
-      functor-sys-apply-to-morphism functor-sys-apply-to-object
-      functor-sys/c functor-sys-impl? functor-sys-target
-      make-functor-sys-impl-from-apply
-      make-natural-transformation-sys-impl-from-apply
-      natural-transformation-sys-apply-to-morphism
-      natural-transformation-sys/c
-      natural-transformation-sys-endpoint-target
-      natural-transformation-sys-replace-source
-      natural-transformation-sys-replace-target
-      natural-transformation-sys-source
-      natural-transformation-sys-target prop:functor-sys)
-    (require #/for-label #/only-in lathe-morphisms/in-fp/mediary/set
-      ok/c)
-    (require #/for-label #/only-in parendown pd)
-    
-    (require #/for-label punctaffy)
-    (require #/for-label punctaffy/hypersnippet/dim)
-    (require #/for-label punctaffy/hypersnippet/hyperstack)
-    (require #/for-label punctaffy/hypersnippet/hypernest)
-    (require #/for-label punctaffy/hypersnippet/hypertee)
-    (require #/for-label punctaffy/hypersnippet/snippet)
-    (require #/for-label punctaffy/hyperbracket)
-    (require #/for-label punctaffy/quote)
-    (require #/for-label punctaffy/let)
-    
-    ))
+(define-syntax (shim-require-various-for-label stx)
+  (syntax-protect
+  #/syntax-parse stx #/ (_)
+  #/w- break (fn id #/datum->syntax stx id)
+    #`(require #/for-label
+        
+        #,(break 'racket/base)
+        
+        (only-in #,(break 'net/url)
+          combine-url/relative string->url url->string)
+        (only-in #,(break 'racket/contract) struct-type-property/c)
+        (only-in #,(break 'racket/contract/base)
+          -> </c and/c any/c contract? flat-contract? ->i list/c
+          listof or/c)
+        (only-in #,(break 'racket/extflonum) extflonum?)
+        (only-in #,(break 'racket/flonum) flvector?)
+        (only-in #,(break 'racket/fixnum) fxvector?)
+        (only-in #,(break 'racket/list) append-map)
+        (only-in #,(break 'racket/math) natural?)
+        (only-in #,(break 'syntax/datum) datum with-datum)
+        
+        (only-in #,(break 'lathe-comforts) fn)
+        (only-in #,(break 'lathe-comforts/contract)
+          flat-obstinacy obstinacy? obstinacy-contract/c)
+        (only-in #,(break 'lathe-comforts/list) list-bind)
+        (only-in #,(break 'lathe-comforts/maybe)
+          just? maybe? maybe/c nothing)
+        (only-in #,(break 'lathe-comforts/trivial) trivial?)
+        (only-in #,(break 'lathe-morphisms/in-fp/category)
+          category-sys? category-sys-morphism/c functor-sys?
+          functor-sys-apply-to-morphism functor-sys-apply-to-object
+          functor-sys/c functor-sys-impl? functor-sys-target
+          make-functor-sys-impl-from-apply
+          make-natural-transformation-sys-impl-from-apply
+          natural-transformation-sys-apply-to-morphism
+          natural-transformation-sys/c
+          natural-transformation-sys-endpoint-target
+          natural-transformation-sys-replace-source
+          natural-transformation-sys-replace-target
+          natural-transformation-sys-source
+          natural-transformation-sys-target prop:functor-sys)
+        (only-in #,(break 'lathe-morphisms/in-fp/mediary/set) ok/c)
+        (only-in #,(break 'parendown) pd)
+        
+        #,(break 'punctaffy)
+        #,(break 'punctaffy/hypersnippet/dim)
+        #,(break 'punctaffy/hypersnippet/hyperstack)
+        #,(break 'punctaffy/hypersnippet/hypernest)
+        #,(break 'punctaffy/hypersnippet/hypertee)
+        #,(break 'punctaffy/hypersnippet/snippet)
+        #,(break 'punctaffy/hyperbracket)
+        #,(break 'punctaffy/quote)
+        #,(break 'punctaffy/let)
+        
+        )))
