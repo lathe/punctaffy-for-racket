@@ -939,17 +939,17 @@
             0
             
             (hnb-labeled 0 #/trivial))
-          (hn-n-d n-d
+          (w- z (htz nds)
+          #/hn-n-d n-d
             (hnb 2 (hn-tag-2-list* stx-example) 2
               (hnh 2
                 (hnh 2 (hypernest-join-0 n-d 1 elems)
-                  (hth 1 (hnh 2 (trivial) #/htz nds) #/htz nds))
+                  (hth 1 (hnh 2 (trivial) z) z))
                 (hth 1
                   (hnh 2
-                    (hnh 2 tail
-                      (hth 1 (hnh 2 (trivial) #/htz nds) #/htz nds))
-                    (hth 1 (hnh 2 #/htz nds) #/htz nds))
-                  (htz nds))))))
+                    (hnh 2 tail #/hth 1 (hnh 2 (trivial) z) z)
+                    (hth 1 (hnh 2 (hnh 2 (trivial) z) z) z))
+                  z)))))
       #/fn hole data
         data))
   
