@@ -679,87 +679,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
 
 
 
-@section[#:tag "hyperstack"]{Hyperstacks}
-
-@defmodule[punctaffy/hypersnippet/hyperstack]
-
-A @deftech{hyperstack} is a stack-like abstraction that makes it easier to maintain the state of a computation that converts between structured @tech{hypersnippet} data and sequential representations of it (like parsing from text or pretty-printing). Hyperstacks generalize the way a more traditional parser might push onto a stack when it encounters an opening paren and pop from the stack when it finds a closing paren.
-
-In particular, hyperstack pops correspond to inititiating @tech{holes} in a hypersnippet being parsed. When a hole has @tech{degree} 0, this is simply a closing paren, but when it has some higher degree N, the hole itself is a degree-N hypersnippet that will have some closing brackets of its own later in the stream. In order to interact properly with all those brackets later on, a hyperstack pop at dimension N basically pushes at every dimension less than N at the same time. (See the description of @racket[hyperstack-pop] for more details.)
-
-Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, generalizing the way opening parens tend to correspond to the nodes of a syntax tree.
-
-
-@defproc[(hyperstack? [v any/c]) boolean?]{
-  Returns whether the given value is a @tech{hyperstack}. A hyperstack is a stack-like data structure that helps to keep track of nested @tech{hypersnippet} structure while traversing a stream of text and brackets. It helps in the same way that a stack helps to keep track of s-expression-like nesting while traversing a stream of text and parentheses.
-}
-
-@defproc[(hyperstack/c [ds dim-sys?]) contract?]{
-  Returns a contract which recognizes @tech{hyperstacks} whose @tech{dimension system} is an @racket[ok/c] match for the given one.
-}
-
-@defproc[(hyperstack-dim-sys [stack hyperstack?]) dim-sys?]{
-  Returns the @tech{dimension system} of the given @tech{hyperstack}.
-}
-
-@defproc[
-  (hyperstack-dimension [stack hyperstack?])
-  (dim-sys-dim/c (hyperstack-dim-sys stack))
-]{
-  Returns the @deftech{hyperstack dimension} of the given @tech{hyperstack}. This is a @tech{dimension number} describing which dimensions of popping the hyperstack currently offers. A hyperstack of dimension N can be popped at any dimension M as long as (M < N).
-  
-  Over the course of executing a hyperstack-based stream traversal, the dimension of the hyperstack may change as it's updated by pushes and pops. It's important to check up on the dimension sometimes as a way to detect errors in the stream. In particular, if the dimension isn't large enough before performing a @racket[hyperstack-pop] operation, that indicates an unmatched closing bracket in the stream, and if the dimension isn't 0 at the end of the stream, that indicates an unmatched opening bracket.
-}
-
-@defproc[
-  (make-hyperstack [ds dim-sys?] [dimension (dim-sys-dim/c ds)] [elem any/c])
-  (hyperstack/c ds)
-]{
-  Returns an @tech{hyperstack} (in some sense, an @emph{empty} hyperstack) which has the given @tech{hyperstack dimension}. When it's popped at some dimension N, it reveals the data @racket[elem] and an updated hyperstack that's no more detailed than the caller specifies.
-  
-  If the dimension is 0 (in the sense of @racket[dim-sys-dim-zero]), then it can't be popped since no dimension is less than that one, so the value of @racket[elem] makes no difference.
-  
-  Traditional empty stacks are always created with dimension 0. (Traditional nonempty stacks are created by pushing onto an empty one.)
-}
-
-@defproc[
-  (hyperstack-pop
-    [i
-      (let ([_ds (hyperstack-dim-sys stack)])
-        (dim-sys-dim</c _ds (hyperstack-dimension stack)))]
-    [stack hyperstack?]
-    [elem any/c])
-  (list/c any/c (hyperstack/c (hyperstack-dim-sys stack)))
-]{
-  Pops the given @tech{hyperstack} at dimension @racket[i], which must be less than the hyperstack's own @tech{hyperstack dimension}. Returns a two-element list consisting of the data value that was revealed by popping the hyperstack and an updated hyperstack.
-  
-  The updated hyperstack has dimension at least @racket[i], and popping it at dimensions less than @racket[i] will reveal data equal to the given @racket[elem] value and extra hyperstack detail based on @racket[stack].
-  
-  The updated hyperstack may have dimension greater than @racket[i]. The behavior when popping it at dimensions greater than @racket[i] corresponds to the extra hyperstack detail, if any, that was obtained when @racket[stack] was popped.
-  
-  Traditional stacks are always popped at dimension 0, so the entire resulting stack is comprised of this "extra information," and we can think of the extra information as representing the next stack frame that was uncovered. When we pop at a dimension greater than 0, we merely initiate a session of higher-dimensional popping. This session is higher-dimensional in the very sense that it may be bounded by several individual popping actions. A 1-dimensional session of popping has a beginning and an end. A 0-dimensional session is just a traditional, instantaneous pop.
-  
-  When a hyperstack is being used to parse a sequence of @tech{hypersnippet} brackets (such as @tech{hypertee} or @tech{hypernest} brackets), a popping session corresponds to a @tech{hole}, and each @tt{hyperstack-pop} call corresponds to one of the collection of higher-dimensional closing brackets that delimits that hole.
-}
-
-@defproc[
-  (hyperstack-push
-    [bump-degree (dim-sys-dim/c (hyperstack-dim-sys stack))]
-    [stack hyperstack?]
-    [elem any/c])
-  (hyperstack/c (hyperstack-dim-sys stack))
-]{
-  Returns a @tech{hyperstack} which has @tech{hyperstack dimension} equal to either the given hyperstack's dimension or @racket[bump-degree], whichever is greater. When it's popped at a dimension less than @racket[bump-degree], it reveals the given @racket[elem] as its data and reveals an updated hyperstack that's based on @racket[stack]. When it's popped at any other dimension, it reveals the same data and extra hyperstack detail that the given hyperstack would reveal.
-  
-  Traditional stacks are always pushed with a @racket[bump-degree] greater than 0, so that the effects of this push can be reversed later with a pop at dimension 0. If the @racket[bump-degree] is a @tech{dimension number} with more than one lesser dimension available to pop at, then this push essentially initiates an extended pushing session that can take more than one pop action to entirely reverse.
-  
-  For instance, if we push with a @racket[bump-degree] of 2 and then pop at dimension 1, then we need to pop at dimension 0 two more times before the traces of @racket[elem] are gone from the hyperstack. The first pop of dimension 0 finishes the popping session that was initiated by the pop of dimension 1, and the second pop of dimension 0 finishes the pushing session.
-  
-  When a hyperstack is being used to parse a sequence of @tech{hypernest} brackets, a pushing session corresponds to a @tech{bump}.
-}
-
-
-
 @section[#:tag "snippet-sys"]{Snippet Systems}
 
 @defmodule[punctaffy/hypersnippet/snippet]
@@ -2118,7 +2037,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 
 
-@section[#:tag "hypertee"]{Hypertees}
+@section[#:tag "hypertee"]{Hypertees: The Shape of a Hypersnippet of Text}
 
 @defmodule[punctaffy/hypersnippet/hypertee]
 
@@ -2378,7 +2297,7 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
 
 
 
-@section[#:tag "hypernest"]{Hypernests}
+@section[#:tag "hypernest"]{Hypernests: Nested Hypersnippets}
 
 @defmodule[punctaffy/hypersnippet/hypernest]
 
@@ -2856,4 +2775,85 @@ Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, g
   The shapes and snippets are related according to the same behavior as @racket[hypernest-snippet-sys]. In some sense, this is a generalization of @racket[hypernest-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypernest while leaving the rest of the structure alone.
   
   Two @tt{hypernest-snippet-format-sys} values are @racket[equal?] if they contain @racket[equal?] elements. One such value is an @racket[ok/c] match for another if the first's elements are @racket[ok/c] for the second's.
+}
+
+
+
+@section[#:tag "hyperstack"]{Hyperstacks: The State of a Text-to-Hypernest Parser}
+
+@defmodule[punctaffy/hypersnippet/hyperstack]
+
+A @deftech{hyperstack} is a stack-like abstraction that makes it easier to maintain the state of a computation that converts between structured @tech{hypersnippet} data and sequential representations of it (like parsing from text or pretty-printing). Hyperstacks generalize the way a more traditional parser might push onto a stack when it encounters an opening paren and pop from the stack when it finds a closing paren.
+
+In particular, hyperstack pops correspond to inititiating @tech{holes} in a hypersnippet being parsed. When a hole has @tech{degree} 0, this is simply a closing paren, but when it has some higher degree N, the hole itself is a degree-N hypersnippet that will have some closing brackets of its own later in the stream. In order to interact properly with all those brackets later on, a hyperstack pop at dimension N basically pushes at every dimension less than N at the same time. (See the description of @racket[hyperstack-pop] for more details.)
+
+Hyperstack pushes correspond to initiating @tech{bumps} in a @tech{hypernest}, generalizing the way opening parens tend to correspond to the nodes of a syntax tree.
+
+
+@defproc[(hyperstack? [v any/c]) boolean?]{
+  Returns whether the given value is a @tech{hyperstack}. A hyperstack is a stack-like data structure that helps to keep track of nested @tech{hypersnippet} structure while traversing a stream of text and brackets. It helps in the same way that a stack helps to keep track of s-expression-like nesting while traversing a stream of text and parentheses.
+}
+
+@defproc[(hyperstack/c [ds dim-sys?]) contract?]{
+  Returns a contract which recognizes @tech{hyperstacks} whose @tech{dimension system} is an @racket[ok/c] match for the given one.
+}
+
+@defproc[(hyperstack-dim-sys [stack hyperstack?]) dim-sys?]{
+  Returns the @tech{dimension system} of the given @tech{hyperstack}.
+}
+
+@defproc[
+  (hyperstack-dimension [stack hyperstack?])
+  (dim-sys-dim/c (hyperstack-dim-sys stack))
+]{
+  Returns the @deftech{hyperstack dimension} of the given @tech{hyperstack}. This is a @tech{dimension number} describing which dimensions of popping the hyperstack currently offers. A hyperstack of dimension N can be popped at any dimension M as long as (M < N).
+  
+  Over the course of executing a hyperstack-based stream traversal, the dimension of the hyperstack may change as it's updated by pushes and pops. It's important to check up on the dimension sometimes as a way to detect errors in the stream. In particular, if the dimension isn't large enough before performing a @racket[hyperstack-pop] operation, that indicates an unmatched closing bracket in the stream, and if the dimension isn't 0 at the end of the stream, that indicates an unmatched opening bracket.
+}
+
+@defproc[
+  (make-hyperstack [ds dim-sys?] [dimension (dim-sys-dim/c ds)] [elem any/c])
+  (hyperstack/c ds)
+]{
+  Returns an @tech{hyperstack} (in some sense, an @emph{empty} hyperstack) which has the given @tech{hyperstack dimension}. When it's popped at some dimension N, it reveals the data @racket[elem] and an updated hyperstack that's no more detailed than the caller specifies.
+  
+  If the dimension is 0 (in the sense of @racket[dim-sys-dim-zero]), then it can't be popped since no dimension is less than that one, so the value of @racket[elem] makes no difference.
+  
+  Traditional empty stacks are always created with dimension 0. (Traditional nonempty stacks are created by pushing onto an empty one.)
+}
+
+@defproc[
+  (hyperstack-pop
+    [i
+      (let ([_ds (hyperstack-dim-sys stack)])
+        (dim-sys-dim</c _ds (hyperstack-dimension stack)))]
+    [stack hyperstack?]
+    [elem any/c])
+  (list/c any/c (hyperstack/c (hyperstack-dim-sys stack)))
+]{
+  Pops the given @tech{hyperstack} at dimension @racket[i], which must be less than the hyperstack's own @tech{hyperstack dimension}. Returns a two-element list consisting of the data value that was revealed by popping the hyperstack and an updated hyperstack.
+  
+  The updated hyperstack has dimension at least @racket[i], and popping it at dimensions less than @racket[i] will reveal data equal to the given @racket[elem] value and extra hyperstack detail based on @racket[stack].
+  
+  The updated hyperstack may have dimension greater than @racket[i]. The behavior when popping it at dimensions greater than @racket[i] corresponds to the extra hyperstack detail, if any, that was obtained when @racket[stack] was popped.
+  
+  Traditional stacks are always popped at dimension 0, so the entire resulting stack is comprised of this "extra information," and we can think of the extra information as representing the next stack frame that was uncovered. When we pop at a dimension greater than 0, we merely initiate a session of higher-dimensional popping. This session is higher-dimensional in the very sense that it may be bounded by several individual popping actions. A 1-dimensional session of popping has a beginning and an end. A 0-dimensional session is just a traditional, instantaneous pop.
+  
+  When a hyperstack is being used to parse a sequence of @tech{hypersnippet} brackets (such as @tech{hypertee} or @tech{hypernest} brackets), a popping session corresponds to a @tech{hole}, and each @tt{hyperstack-pop} call corresponds to one of the collection of higher-dimensional closing brackets that delimits that hole.
+}
+
+@defproc[
+  (hyperstack-push
+    [bump-degree (dim-sys-dim/c (hyperstack-dim-sys stack))]
+    [stack hyperstack?]
+    [elem any/c])
+  (hyperstack/c (hyperstack-dim-sys stack))
+]{
+  Returns a @tech{hyperstack} which has @tech{hyperstack dimension} equal to either the given hyperstack's dimension or @racket[bump-degree], whichever is greater. When it's popped at a dimension less than @racket[bump-degree], it reveals the given @racket[elem] as its data and reveals an updated hyperstack that's based on @racket[stack]. When it's popped at any other dimension, it reveals the same data and extra hyperstack detail that the given hyperstack would reveal.
+  
+  Traditional stacks are always pushed with a @racket[bump-degree] greater than 0, so that the effects of this push can be reversed later with a pop at dimension 0. If the @racket[bump-degree] is a @tech{dimension number} with more than one lesser dimension available to pop at, then this push essentially initiates an extended pushing session that can take more than one pop action to entirely reverse.
+  
+  For instance, if we push with a @racket[bump-degree] of 2 and then pop at dimension 1, then we need to pop at dimension 0 two more times before the traces of @racket[elem] are gone from the hyperstack. The first pop of dimension 0 finishes the popping session that was initiated by the pop of dimension 1, and the second pop of dimension 0 finishes the pushing session.
+  
+  When a hyperstack is being used to parse a sequence of @tech{hypernest} brackets, a pushing session corresponds to a @tech{bump}.
 }
