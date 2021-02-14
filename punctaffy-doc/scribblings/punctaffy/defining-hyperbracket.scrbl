@@ -1,9 +1,9 @@
 #lang parendown scribble/manual
 
-@; punctaffy/scribblings/punctaffy/hyperbracket.scrbl
+@; punctaffy/scribblings/punctaffy/defining-hyperbracket.scrbl
 @;
-@; Hyperbracket notations, for denoting hypersnippet-shaped lexical
-@; regions.
+@; Infrastructure for defining hyperbracket notations, for denoting
+@; hypersnippet-shaped lexical regions.
 
 @;   Copyright 2021 The Lathe Authors
 @;
@@ -25,7 +25,7 @@
 @(shim-require-various-for-label)
 
 
-@title[#:tag "hyperbracket-notation"]{Definable Hyperbracket Notation}
+@title[#:tag "hyperbracket-notation"]{Defining Hyperbracket Notations for Racket}
 
 @defmodule[punctaffy/hyperbracket]
 

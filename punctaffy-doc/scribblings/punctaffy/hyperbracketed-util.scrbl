@@ -2,8 +2,7 @@
 
 @; punctaffy/scribblings/punctaffy/hyperbracketed-util.scrbl
 @;
-@; Baseline hyperbracket notations and various hyperbracketed
-@; operations designed for them.
+@; Various hyperbracketed operations.
 
 @;   Copyright 2021 The Lathe Authors
 @;
@@ -39,61 +38,6 @@
 
 
 @local-table-of-contents[]
-
-
-
-@section[#:tag "main"]{Baseline Punctaffy Hyperbracket Notations}
-
-@defmodule[punctaffy]
-
-Punctaffy is a framework for macros to have access to higher-dimensional structure in the code they operate on. Just as parentheses give more structure to 1-dimensional text streams to create s-expressions (or Racket syntax objects), @tech{hyperbrackets} can give more structure to Racket syntax objects to create infinite-dimensional higher-order nesting structure.
-
-Most programs will use only a few of the lower dimensions. For instance, quasiquotation is an operation that works with a 2-dimensional snippet (what we call a @tech{hypersnippet}) of literal code and several 1-dimensional expressions that will be interpolated into it. All it takes is 3-dimensional syntactic medium to represent any number of nested and juxtaposed 2-dimensional quasiquotation operations, just as all it takes is a 2-dimensional syntactic medium (s-expressions) to represent any nesting or juxtaposition of 1-dimensional function calls.
-
-Punctaffy's notation represents an infinite-dimensional syntactic medium. The goal of Punctaffy is to assist in defining higher-dimensional operations that play nicely with each other by building common tools and notations for them to build on. Punctaffy's notation generalizes far enough to be a common medium for notations of arbitrarily high dimension.
-
-Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation itself, which just about every higher-dimensional macro built on Punctaffy will use.
-
-(TODO: Demonstrate a higher-dimensional macro that uses this notation. We have some quasiquotation operations almost ready to go in quote.rkt.)
-
-
-@defform[(^<d degree term ...)]{
-  A hypernest notation that represents an opening @tech{hyperbracket} with a specified nonzero @tech{degree}. The degree must be a natural number literal.
-  
-  Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
-  
-  When writing a hyperbracket parser, this notation can be recognized using @racket[hyperbracket-open-with-degree?].
-}
-
-@defform[(^>d degree term ...)]{
-  A hypernest notation that represents a closing @tech{hyperbracket} with a specified nonzero @tech{degree}. The degree must be a natural number literal.
-  
-  This notation is not an expression. Using it as an expression is a syntax error.
-  
-  When writing a hyperbracket parser, this notation can be recognized using @racket[hyperbracket-close-with-degree?].
-}
-
-@defform[(^< term ...)]{
-  A hypernest notation shorthand that specifically represents an opening @tech{hyperbracket} of @tech{degree} 2. This is the lowest, and hence the most likely to be commonplace, degree of opening bracket that isn't already easy to represent in Racket's syntax.
-  
-  This represents the same thing as @racket[(^<d 2 term ...)].
-  
-  Note that while @tt{^<} involves a degree of 2, @racket[^>] involves a degree of 1. This may seem confusing out of context, but these two often match up with each other.
-  
-  Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
-}
-
-@defform[(^> term ...)]{
-  A hypernest notation that represents a closing @tech{hyperbracket} with a specified nonzero @tech{degree}. The degree must be a natural number literal.
-  
-  A hypernest notation shorthand that specifically represents a closing @tech{hyperbracket} of @tech{degree} 1. This is the lowest, and hence the most likely to be commonplace, degree of closing bracket that isn't already easy to represent in Racket's syntax.
-  
-  This represents the same thing as @racket[(^>d 1 term ...)].
-  
-  Note that while @tt{^>} involves a degree of 1, @racket[^<] involves a degree of 2. This may seem confusing out of context, but these two often match up with each other.
-  
-  This notation is not an expression. Using it as an expression is a syntax error.
-}
 
 
 
