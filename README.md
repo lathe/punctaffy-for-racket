@@ -6,8 +6,6 @@ Punctaffy is an experimental library for processing program syntax that has high
 
 Most programming languages are designed for programs to be structured in the form of trees, with some (or all) nodes of the tree being delimited using opening and closing brackets. However, occasionally some operations take that a dimension higher, opening with one tree node and closing with some number of tree nodes toward the leaves.
 
-(TODO: Illustrate this graphically.)
-
 This is common with templating languages. For instance, a quasiquotation operation has a quoted body that begins with the initial `` `...`` tree node and ends with number of `,...` and `,@...` tree nodes. The quasiquotation operation also takes a number of expressions to compute what values should be inserted into those holes in the quoted body, and those expressions are maintained in the same place as the holes their results will be inserted into.
 
 ```racket
@@ -178,6 +176,13 @@ In short, Punctaffy has essentially spent its entire performance budget on the c
 
 * In a [2017 invited talk at Clojure/Conj](https://www.youtube.com/watch?v=dCuZkaaou0Q), Guy Steele talks about the inconsistency of computer science notation. At 53m03s, he goes into detail about a combination underline/overline notation he proposes as a way to bring more rigor to schematic formulas which iterate over vectors. He compares it to quasiquotation and the CM-Lisp `α` notation.
 
+
+## Example future applications of hypersnippets
+
+* Hygienic macroexpansion usually generates code where certain variables are only in scope across some degree-2 hypersnippet of the code. For instance, Racket first colors all the input subforms of a macro call using a new scope tag, and then it inverts that color in the result so that the color winds up only occurring on the code the macro generates itself, not the code it merely passes through. Racket's strategy works, but it relies on the generation of unique tags and the creation of invisible annotations throughout the generated code. If we were to approach hygiene by using explicit hypersnippets instead, it might lead to more straightforward or less error-prone implementations of macro hygiene. If enough people find it convenient enough to do structural recursion over nested hypersnippets, then they may find this skill lets them easily keep a lid on the local details of each hypersnippet, just as traditional forms of structural recursion make it easy to keep the details of one branch of a tree data structure from interfering with unrelated branches.
+
+* In a language like Racket where programmers can write arbitrarily complex custom syntaxes, compilation can be expensive. This can drag down the experience of editing code the DrRacket IDE, where features like jump-to-definition can depend on performing background expansion to process the user's custom syntaxes. If macros weren't tree-to-tree transformations, but instead consumed only some small part of the tree and generated a degree-2 hypersnippet, then a modification of one local part of a file could lead to a pinpoint re-expansion of the specific macro call that processed that part of the file, rather than a costly re-expansion of every macro call in the whole file. Incidentally, this would bring s-expression macro calls into a closer analogy with reader macro calls, which themselves consume some bounded part of the source text stream and generate an s-expression.
+
 * The slide deck ["Type Theory and the Opetopes" by Eric Finster](https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf) gives a nice graphical overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions an inductive type `MTree` of labeled opetopes, which more or less corresponds to Punctaffy's hypertee type. To our knowledge, hyperbracketed notations have not been used in this context before, but they should be a good fit.
 
 * The paper ["Transpension: The Right Adjoint to the Pi-type" by Andreas Nuyts and Dominique Devriese](https://arxiv.org/pdf/2008.08533.pdf) discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of degree-2 hypersnippets in its syntax. More on this below.
@@ -187,11 +192,11 @@ In short, Punctaffy has essentially spent its entire performance budget on the c
 
 Essentially (and if we understand correctly), a transpension operation declares a variable that represents some unknown coordinate along a new dimension. At some point in the scope of that dimension variable, another operation takes ownership of it, taking the original dimension variable and all the variables that depended on it since then out of scope, but replacing the latter with reusable functions that can be applied repeatedly to different coordinate values of the user's choice.
 
-From a Punctaffy perspective, the dimension variable's original scope is a degree-2 hypersnippet, and the operation that replaces it with a function is one of the degree-1 closing hyperbrackets of that hypersnippet.
+From a Punctaffy perspective, the dimension variable's original scope is a degree-2 hypersnippet, and the operation that takes it out of scope (and converts other variables to functions) is one of the degree-1 closing hyperbrackets of that hypersnippet.
 
 Curiously, the degree-2 hypersnippet also gets closed by degree-1 closing hyperbrackets at the *type* level; we might say these type theories assign types to terms that have unmatched closing hyperbrackets. They also have lambdas that *abstract over* terms that have unmatched closing hyperbrackets, so the journey of a closing hyperbracket through the codebase to find its match can potentially be rather circuitous.
 
-At any rate, the affinely typed nature of these dimension variables sometimes gives the impression of an unfortunate quirk of these type theories, especially when the rest of their variables are Cartesian. By relating transpension operators to hyperbrackets, we may manage to express the affine typing in terms of a more intuitive metaphor: A "closing bracket" can't match up with an "opening bracket" that's already been closed.
+At any rate, these dimension variables have affine (use-at-most-once) types, which can sometimes seem odd in the context of a type theory where the rest of the variables are Cartesian (use-any-number-of-times). By relating transpension operators to hyperbrackets, we may give the affine typing situation some more clarity: A "closing bracket" can't match up with an "opening bracket" that's already been closed.
 
 
 ## Installation and use
