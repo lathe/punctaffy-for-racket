@@ -42,7 +42,7 @@
 
 
 
-@section[#:tag "main"]{Baseline Punctaffy Notations}
+@section[#:tag "main"]{Baseline Punctaffy Hyperbracket Notations}
 
 @defmodule[punctaffy]
 

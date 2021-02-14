@@ -1,10 +1,11 @@
 #lang parendown scribble/manual
 
-@; punctaffy/scribblings/punctaffy/hypersnippet.scrbl
+@; punctaffy/scribblings/punctaffy/motivation.scrbl
 @;
-@; Hypersnippet data structures and interfaces.
+@; Discussion of Punctaffy's high-level motivations, including an
+@; example-driven introduction.
 
-@;   Copyright 2020, 2021 The Lathe Authors
+@;   Copyright 2021 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -45,7 +46,7 @@
    @nested[#:style 'code-inset]{@verbatim[args ...]})
 
 
-@title[#:tag "concepts"]{Punctaffy Concepts}
+@title[#:tag "motivation"]{Motivation for Punctaffy}
 
 
 
