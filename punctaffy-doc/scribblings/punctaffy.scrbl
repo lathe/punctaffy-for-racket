@@ -24,7 +24,7 @@
 
 Punctaffy is an experimental library for working with a higher-dimensional notion of lexical syntactic structure. We call these generalized lexical regions @tech{hypersnippets}, we delimit them using @tech{hyperbrackets}, and we call our generalized s-expressions "hyperbracketed code."
 
-For a gradual introduction to 2-dimensional hypersnippets, see @secref["intro"]. Basically, Punctaffy embraces the analogy sometimes drawn between parentheses @racket[( )] and the notation of quasiquotation @racket[`( ,( ) )] and generalizes these as the 1-dimensional and 2-dimensional instances of a concept that can be instantiated at any dimension and used for various purposes aside from quotation.
+For a gradual introduction to 2-dimensional hypersnippets, see @secref["intro"]. Basically, Punctaffy embraces the analogy sometimes drawn between parentheses @tt{( )} and the notation of quasiquotation @tt{@literal{`}( ,( ) )} and generalizes these as the 1-dimensional and 2-dimensional instances of a concept that can be instantiated at any dimension and used for various purposes aside from quotation.
 
 The geometric shapes of hypersnippets don't appear to be new; they seem to coincide with the opetopes of opetopic higher category theory.
 
