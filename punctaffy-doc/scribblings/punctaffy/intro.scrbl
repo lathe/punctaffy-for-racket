@@ -38,6 +38,9 @@
     'punctaffy/let
     'punctaffy/quote))
 
+@(define brag-doc '(lib "brag/brag.scrbl"))
+@(define ragg-doc '(lib "ragg/ragg.scrbl"))
+
 @(define parendown-doc '(lib "parendown/scribblings/parendown.scrbl"))
 
 
@@ -243,11 +246,9 @@ In the process of explaining how Racket's template DSL works, we've described a 
 
 A common technique for DSLs in Racket is first to use a parser to preprocess a DSL into a similarly shaped Racket s-expression, then to expand it using a suite of Racket macros. In this case, what we've described isn't a translation into a mere s-expression so much as a translation into hyperbracketed code. In this way, regardless of the experience of using hyperbrackets directly, hyperbrackets provide infrastructure that can be helpful in the implementation of other DSLs.
 
+Unfortunately, we've begun to digress into ideas that aren't fully realized in Punctaffy yet. Most DSLs in Racket can use frameworks like @racket[match], @racket[syntax-parse], @seclink["top" #:doc ragg-doc]{@tt{ragg}}, and @seclink["top" #:doc brag-doc]{@tt{brag}} to parse and translate their tree-structured code, but Punctaffy doesn't yet have a parsing framework for hyperbracketed code. As such, implementing the @racket[datum] template DSL in terms of Punctaffy may still be trickier than implementing it the way Racket has.
 
-
-@; TODO: Figure out what to do with the "known shortcomings" section of the readme. If we don't include that whole section on this page (or perhaps on a sibling page?), we should probably at least mention Punctaffy's slowness somewhere on this page. Some of the more specific ideas for optimizations probably make more sense to write down in code comments or in tickets on an issue tracker.
-
-@; TODO: If Punctaffy ever overcomes its performance issues, stop discussing them here and in the readme.
+Punctaffy isn't short on unrealized ambitions; @secref["motivation"] describes several application areas where we expect Punctaffy's hypersnippet and hyperbracket concepts to come in handy. For now, our explorations have culminated in operations like @racket[taffy-quote] and @racket[list-taffy-map], which demonstrate a certain technique: the interoperation of multiple notations like these by means of a common hyperbracket notation. There's still much more exploration ahead.
 
 
 

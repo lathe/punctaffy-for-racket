@@ -150,53 +150,9 @@ In the process of explaining how Racket's template DSL works, we've described a 
 
 A common technique for DSLs in Racket is first to use a parser to preprocess a DSL into a similarly shaped Racket s-expression, then to expand it using a suite of Racket macros. In this case, what we've described isn't a translation into a mere s-expression so much as a translation into hyperbracketed code. In this way, regardless of the experience of using hyperbrackets directly, hyperbrackets provide infrastructure that can be helpful in the implementation of other DSLs.
 
+Unfortunately, we've begun to digress into ideas that aren't fully realized in Punctaffy yet. Most DSLs in Racket can use frameworks like `match`, `syntax-parse`, `ragg`, and `brag` to parse and translate their tree-structured code, but Punctaffy doesn't yet have a parsing framework for hyperbracketed code. As such, implementing the `datum` template DSL in terms of Punctaffy may still be trickier than implementing it the way Racket has.
 
-## Known shortcomings
-
-Unfortunately, translation layers like the one we just described won't yet be as easy as Racket programmers may have come to expect. While most DSLs in Racket can use frameworks like `match`, `syntax-parse`, `ragg`, and `brag` to parse and translate tree structure, Punctaffy doesn't currently provide any simple framework to parse and translate nested hypersnippet structure.
-
-For now, Punctaffy's hyperbracketed operations are implemented longhand as recursive descent parsers which use various special-purpose utility functions and algebraic translations to pull hypersnippets apart and put them back together. The situation is not dissimilar to writing low-tech macros full of calls to `caddadr` and `append` and `list*`, but instead of these operations, we have various detours into category theory. Hmm... `caddadr`gory theory...
-
-Punctaffy's hyperbracketed operations are also prohibitively slow at parsing even small examples. The compiled code is fine, but even a small example can take several minutes to compile.
-
-About 70% of the compile-time rigamarole seems attributable to defensive higher-order contract checking. We don't want all our `caddadr`gory theory to have bugs in it. Since we can simply disable the contracts once we're confident in them, this isn't so concerning... but we might need to spend some time making it easier to disable these contracts, especially the more redundant ones.
-
-Secondarily, we likely have a few too many traversals over hypersnippets. Each traversal over a hypersnippet involves doing several traversals over constituent hypersnippets of lower degree, so they can add up fast. There's likely to be some low-hanging fruit here; we might change the hypersnippet representations to avoid converting things back and forth and to give low-degree snippets some simpler internal representations that don't recur into hypersnippet after hypersnippet. In the long run, if we introduce parsing and template DSLs and use them everywhere, the optimization of the DSL implementation might take us a long way. Essentially, parsers and templates could together serve as higher-dimensional stream transducers, and they might be statically analyzable enough that we can perform stream fusion optimizations within the DSL.
-
-In short, Punctaffy has essentially spent its entire performance budget on the core functionality of parsing hypersnippet structure, and this functionality isn't even that easy to use yet. Low-hanging-fruit optimizations are Punctaffy's clearest path to improvement, followed by more convenient hypersnippet-matching utilities.
-
-
-## Hyperbracketed notations predating Punctaffy
-
-* Trivially, hyperbrackets of low degree are hyperbrackets too: If we find ourselves in a context where a program is usually just a "sequence of instructions," then a structured `while` loop is a degree-1-hyperbracketed operation. (An instruction by itself is a degree-0-hyperbracketed operation.) If we learn lessons about hygienic macro system design at higher degrees, there's a good chance they can be extrapolated downward to tell us something about s-expression macros (degree 1) and reader macros (degree 0).
-
-* The `quasiquote` or `backquote` operation is probably the most widespread example. Moreover, string interpolation is even more widespread, and it's basically quasiquotation for text-based code.
-
-* The "apply-to-all" notation `α(f •xs)` from Connection Machine Lisp (CM-Lisp) applies the same operation `(f _)` to every element of a xapping `xs` (where a xapping is a certain type of multiple-element collection). Pages 280-281 of ["Connection Machine Lisp" by Guy Steele](https://web.archive.org/web/20060219230046/http://fresh.homeunix.net/~luke/misc/ConnectionMachineLisp.pdf) go into detail on the functionality and motivation of this operation.
-
-* In a [2017 invited talk at Clojure/Conj](https://www.youtube.com/watch?v=dCuZkaaou0Q), Guy Steele talks about the inconsistency of computer science notation. At 53m03s, he goes into detail about a combination underline/overline notation he proposes as a way to bring more rigor to schematic formulas which iterate over vectors. He compares it to quasiquotation and the CM-Lisp `α` notation.
-
-
-## Potential application areas
-
-* Hygienic macroexpansion usually generates code where certain variables are only in scope across some degree-2 hypersnippet of the code. For instance, Racket first colors all the input subforms of a macro call using a new scope tag, and then it inverts that color in the result so that the color winds up only occurring on the code the macro generates itself, not the code it merely passes through. Racket's strategy works, but it relies on the generation of unique tags and the creation of invisible annotations throughout the generated code. If we were to approach hygiene by using explicit hypersnippets instead, it might lead to more straightforward or less error-prone implementations of macro hygiene. If enough people find it convenient enough to do structural recursion over nested hypersnippets, then they may find this skill lets them easily keep a lid on the local details of each hypersnippet, just as traditional forms of structural recursion make it easy to keep the details of one branch of a tree data structure from interfering with unrelated branches.
-
-* In a language like Racket where programmers can write arbitrarily complex custom syntaxes, compilation can be expensive. This can drag down the experience of editing code the DrRacket IDE, where features like jump-to-definition can depend on performing background expansion to process the user's custom syntaxes. If macros weren't tree-to-tree transformations, but instead consumed only some small part of the tree and generated a degree-2 hypersnippet, then a modification of one local part of a file could lead to a pinpoint re-expansion of the specific macro call that processed that part of the file, rather than a costly re-expansion of every macro call in the whole file. Incidentally, this would bring s-expression macro calls into a closer analogy with reader macro calls, which themselves consume some bounded part of the source text stream and generate an s-expression.
-
-* The slide deck ["Type Theory and the Opetopes" by Eric Finster](https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf) gives a nice graphical overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions an inductive type `MTree` of labeled opetopes, which more or less corresponds to Punctaffy's hypertee type. To our knowledge, hyperbracketed notations have not been used in this context before, but they should be a good fit.
-
-* The paper ["Transpension: The Right Adjoint to the Pi-type" by Andreas Nuyts and Dominique Devriese](https://arxiv.org/pdf/2008.08533.pdf) discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of degree-2 hypersnippets in its syntax. More on this below.
-
-
-### Notes on transpension
-
-Essentially (and if we understand correctly), a transpension operation declares a variable that represents some unknown coordinate along a new dimension. At some point in the scope of that dimension variable, another operation takes ownership of it, taking the original dimension variable and all the variables that depended on it since then out of scope, but replacing the latter with reusable functions that can be applied repeatedly to different coordinate values of the user's choice.
-
-From a Punctaffy perspective, the dimension variable's original scope is a degree-2 hypersnippet, and the operation that takes it out of scope (and converts other variables to functions) is one of the degree-1 closing hyperbrackets of that hypersnippet.
-
-Curiously, the degree-2 hypersnippet also gets closed by degree-1 closing hyperbrackets at the *type* level; we might say these type theories assign types to terms that have unmatched closing hyperbrackets. They also have lambdas that *abstract over* terms that have unmatched closing hyperbrackets, so the journey of a closing hyperbracket through the codebase to find its match can potentially be rather circuitous.
-
-At any rate, these dimension variables have affine (use-at-most-once) types, which can sometimes seem odd in the context of a type theory where the rest of the variables are Cartesian (use-any-number-of-times). By relating transpension operators to hyperbrackets, we may give the affine typing situation some more clarity: A "closing bracket" can't match up with an "opening bracket" that's already been closed.
+Punctaffy isn't short on unrealized ambitions; the ["Motivation for Punctaffy" section of the docs](http://docs.racket-lang.org/lathe-comforts/motivation.html) describes several application areas where we expect Punctaffy's hypersnippet and hyperbracket concepts to come in handy. For now, our explorations have culminated in operations like `taffy-quote` and `list-taffy-map`, which demonstrate a certain technique: the interoperation of multiple notations like these by means of a common hyperbracket notation. There's still much more exploration ahead.
 
 
 ## Installation and use

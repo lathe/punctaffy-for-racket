@@ -48,8 +48,10 @@
         (only-in #,(break 'racket/flonum) flvector?)
         (only-in #,(break 'racket/fixnum) fxvector?)
         (only-in #,(break 'racket/list) append-map)
+        (only-in #,(break 'racket/match) match)
         (only-in #,(break 'racket/math) natural?)
         (only-in #,(break 'syntax/datum) datum with-datum)
+        (only-in #,(break 'syntax/parse) syntax-parse)
         
         (only-in #,(break 'lathe-comforts) fn)
         (only-in #,(break 'lathe-comforts/contract)
