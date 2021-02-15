@@ -26,7 +26,7 @@ This is common with templating languages. For instance, a quasiquotation operati
   "Punctaffy docs")
 ```
 
-Quasiquotation isn't the only example. Connection Machine Lisp (CM-Lisp) is a language that was once used for programming Connection Machine supercomputers, and it has a concept of "xappings," key-value data structures where each element resides on a different processor. It has ways to distribute the same behavior to each processor to transform these values, and it has a dedicated notation to assist with this:
+Quasiquotation isn't the only example. Connection Machine Lisp is a language that was once used for programming Connection Machine supercomputers, and it has a concept of "xappings," key-value data structures where each element resides on a different processor. It has ways to distribute the same behavior to each processor to transform these values, and it has a dedicated notation to assist with this:
 
 ```lisp
 (defun celsius-to-fahrenheit (c)
@@ -166,18 +166,18 @@ Secondarily, we likely have a few too many traversals over hypersnippets. Each t
 In short, Punctaffy has essentially spent its entire performance budget on the core functionality of parsing hypersnippet structure, and this functionality isn't even that easy to use yet. Low-hanging-fruit optimizations are Punctaffy's clearest path to improvement, followed by more convenient hypersnippet-matching utilities.
 
 
-## Examples of existing hyperbracketed notations
+## Hyperbracketed notations predating Punctaffy
 
-* Hyperbrackets of low degree are hyperbrackets too: If we find ourselves in a context where a program is usually just a "sequence of instructions," then a structured `while` loop is a degree-1-hyperbracketed operation. (An instruction by itself is a degree-0-hyperbracketed operation.) If we learn lessons about hygienic macro system design at higher degrees, there's a good chance they can be extrapolated downward to tell us something about s-expression macros (degree 1) and reader macros (degree 0).
+* Trivially, hyperbrackets of low degree are hyperbrackets too: If we find ourselves in a context where a program is usually just a "sequence of instructions," then a structured `while` loop is a degree-1-hyperbracketed operation. (An instruction by itself is a degree-0-hyperbracketed operation.) If we learn lessons about hygienic macro system design at higher degrees, there's a good chance they can be extrapolated downward to tell us something about s-expression macros (degree 1) and reader macros (degree 0).
 
 * The `quasiquote` or `backquote` operation is probably the most widespread example. Moreover, string interpolation is even more widespread, and it's basically quasiquotation for text-based code.
 
-* Above, we mention the "apply-to-all" notation `α` from CM-Lisp. Pages 280-281 of ["Connection Machine Lisp" by Guy Steele](https://web.archive.org/web/20060219230046/http://fresh.homeunix.net/~luke/misc/ConnectionMachineLisp.pdf) go into detail on the functionality and motivation of this operation.
+* The "apply-to-all" notation `α(f •xs)` from Connection Machine Lisp (CM-Lisp) applies the same operation `(f _)` to every element of a xapping `xs` (where a xapping is a certain type of multiple-element collection). Pages 280-281 of ["Connection Machine Lisp" by Guy Steele](https://web.archive.org/web/20060219230046/http://fresh.homeunix.net/~luke/misc/ConnectionMachineLisp.pdf) go into detail on the functionality and motivation of this operation.
 
 * In a [2017 invited talk at Clojure/Conj](https://www.youtube.com/watch?v=dCuZkaaou0Q), Guy Steele talks about the inconsistency of computer science notation. At 53m03s, he goes into detail about a combination underline/overline notation he proposes as a way to bring more rigor to schematic formulas which iterate over vectors. He compares it to quasiquotation and the CM-Lisp `α` notation.
 
 
-## Example future applications of hypersnippets
+## Potential application areas
 
 * Hygienic macroexpansion usually generates code where certain variables are only in scope across some degree-2 hypersnippet of the code. For instance, Racket first colors all the input subforms of a macro call using a new scope tag, and then it inverts that color in the result so that the color winds up only occurring on the code the macro generates itself, not the code it merely passes through. Racket's strategy works, but it relies on the generation of unique tags and the creation of invisible annotations throughout the generated code. If we were to approach hygiene by using explicit hypersnippets instead, it might lead to more straightforward or less error-prone implementations of macro hygiene. If enough people find it convenient enough to do structural recursion over nested hypersnippets, then they may find this skill lets them easily keep a lid on the local details of each hypersnippet, just as traditional forms of structural recursion make it easy to keep the details of one branch of a tree data structure from interfering with unrelated branches.
 

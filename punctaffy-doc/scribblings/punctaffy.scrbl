@@ -38,6 +38,7 @@ For practical use, Punctaffy's main drawback is the amount of time it takes to c
 
 
 
+@include-section["punctaffy/intro.scrbl"]
 @include-section["punctaffy/motivation.scrbl"]
 @include-section["punctaffy/hypersnippet.scrbl"]
 @include-section["punctaffy/defining-hyperbracket.scrbl"]
