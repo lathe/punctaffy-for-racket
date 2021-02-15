@@ -1,4 +1,4 @@
-#lang parendown racket/base
+#lang parendown at-exp racket/base
 
 ; punctaffy/scribblings/private/shim
 ;
@@ -26,8 +26,12 @@
 
 (require #/for-syntax #/only-in lathe-comforts fn w-)
 
+(require scribble/base)
 
-(provide shim-require-various-for-label)
+
+(provide
+  shim-require-various-for-label
+  code-block)
 
 
 (define-syntax (shim-require-various-for-label stx)
@@ -48,10 +52,13 @@
         (only-in #,(break 'racket/flonum) flvector?)
         (only-in #,(break 'racket/fixnum) fxvector?)
         (only-in #,(break 'racket/list) append-map)
-        (only-in #,(break 'racket/match) match)
+        (only-in #,(break 'racket/match)
+          match-define match match/derived match-let)
         (only-in #,(break 'racket/math) natural?)
         (only-in #,(break 'syntax/datum) datum with-datum)
         (only-in #,(break 'syntax/parse) syntax-parse)
+        (only-in #,(break 'syntax/parse/experimental/template)
+          define-template-metafunction)
         
         (only-in #,(break 'lathe-comforts) fn)
         (only-in #,(break 'lathe-comforts/contract)
@@ -87,3 +94,7 @@
         #,(break 'punctaffy/let)
         
         )))
+
+
+(define-syntax-rule @code-block[args ...]
+  @nested[#:style 'code-inset]{@verbatim[args ...]})

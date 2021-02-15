@@ -44,10 +44,6 @@
 @(define parendown-doc '(lib "parendown/scribblings/parendown.scrbl"))
 
 
-@(define-syntax-rule @code-block[args ...]
-   @nested[#:style 'code-inset]{@verbatim[args ...]})
-
-
 @title[#:tag "intro"]{Introduction to Punctaffy}
 
 Punctaffy is an experimental library for processing program syntax that has higher-dimensional nested structure.
