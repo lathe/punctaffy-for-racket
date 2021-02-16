@@ -207,13 +207,13 @@ Punctaffy currently defines a @racket[taffy-quote-syntax] operation, but it corr
                  ...)))))]))
 ]
 
-This may be the one example we have where a degree-3 hypersnippet would come in handy for a purpose that specifically calls for it. Most of the things we say about hypersnippets of degree 3 would make just as much sense at degree 4, 5, etc., so this may be a rare example.
+This seems to be a rare example of where a degree-3 hypersnippet specifically would come in handy. Most of the things we say about hypersnippets of degree 3 aren't so specific; they would make just as much sense at degree 4, 5, etc.
 
-On the other hand, the basic principle of this example is that we want two different invocations of an embedded DSL to be part of the same "whole program" to allow some nonlocal interaction between them. The nonlocal interactions here aren't too exotic; they're basically lexically scoped variables (with ellipses acting as the binding sites). Other embedded DSLs with lexically scoped interactions may similarly benefit from degree-3 hyperbrackets.
+This example seems like an instance of a pattern, though: The basic principle of this example is that we want two different invocations of an embedded DSL to be part of the same "whole program" to allow some nonlocal interaction between them. The nonlocal interactions here aren't too exotic; they're basically lexically scoped variables, with ellipses acting as the binding sites.
+
+Other embedded DSLs with lexically scoped interactions, such as type inference and type-directed elaboration, may similarly benefit from degree-3 lexical structure.
 
 
-
-@; TODO: Consider writing a "Potential Application" section about one of the original (and ongoing) motivating goals of Punctaffy: The ability to have custom escape sequences in a quotation DSL that are suppressed if the quotation DSL appears inside itself. The "suppressed" behavior of a custom escape sequence conveys nothing but what part of the input is consumed, which is the same part that's consumed when it's not suppressed. When it's not suppressed, it additionally specifies what quoted content that input transforms into.
 
 @; TODO: Consider writing another "Potential Application" section related to the @racket[syntax] DSL, with the focus being this: If we change the reader to read hyperbracketed code instead of s-expressions (and change @racket[syntax-protect], the sets-of-scopes hygiene model, and the syntax property @racket[cons]-collecting logic, and the quotation operators to go along with this change), then we won't have to worry about reporting errors for unbound hyperbracket notations. Currently with Punctaffy's baseline notations, if the programmer neglects to import a certain notation or shadows its binding, then it'll silently be treated as an identifier in the code rather than as a hyperbracket. This problem exists for Racket's @racket[quasiquote] and @racket[unquote] and @racket[quasisyntax] and @racket[unsyntax], too.
 
@@ -238,3 +238,86 @@ Curiously, the degree-2 hypersnippet also gets closed by degree-1 closing hyperb
 At any rate, these dimension variables have affine (use-at-most-once) types, which can sometimes seem odd in the context of a type theory where the rest of the variables are Cartesian (use-any-number-of-times). By relating transpension operators to hyperbrackets, we may give the affine typing situation some more clarity: A "closing bracket" can't match up with an "opening bracket" that's already been closed.
 
 And conversely, by relating the two, we may find techniques for understanding Punctaffy's hyperbrackets in terms of affine variables in a type theory rather than the other way around. This kind of insight may come in handy for studying the categorical semantics of a calculus that has hyperbracketed operations, or even for implementing hyperbracket libraries like Punctaffy for typed languages.
+
+
+
+@subsection[#:tag "potential-use-case-custom-escape"]{Potential Application: User-Defined Escapes from Nestable Quotation}
+
+Pairs of @racket[quasiquote] and @racket[unquote] can be seamlessly nested within each other as long as they match up. The situation is less convenient for string literal syntaxes, which typically require nested occurrences to be escaped:
+
+@racketblock[
+  (displayln "(displayln \"(displayln \\\"Hello, world!\\\")\")")
+]
+
+A rethought design for string syntaxes, using more distinctive string delimiters like @tt{"@"{"} and @tt{@"}""}, can give strings the ability to recognize nested occurrences of @tt{"@"{"} the way @racket[quasiquote] does:
+
+@code-block{
+  (displayln "{(displayln "{(displayln "{Hello, world!}")}")}")
+}
+
+However, string syntaxes also complicate matters in a way that doesn't come up as often with @racket[quasiquote]: String syntaxes have a wide variety of escape sequences.
+
+In fact, if we take a look at s-expression quotation DSLs other than @racket[quasiquote], this @emph{does} come up: For instance, @racket[syntax] templates have the @racket[...], @racket[~@], and @racket[~?] directives, and @racket[syntax-parse] patterns have a wide variety of directives like @racket[~seq] and @racket[~optional]. Users can even define their own operations like @racket[~seq] and @racket[~optional] by using @racket[prop:pattern-expander]. (And from a certain point of view, most languages are trivial "quotation DSLs" where nothing at all is quoted and every single term is an escape sequence.)
+
+When an escape sequence appears inside multiple layers of quotation, there's an ambiguity issue: Which layer of quotation does it escape from? Should a string escape sequence be processed right away as part of the first string literal, or should it become part of the generated code to be processed as part of the next one (or the one after that)?
+
+While this suggests some ambiguity in the user's intent, there's no corresponding wiggle room in the design. When we consider the point of recognizing nested occurrences in the first place, one design stands out: If we associate escape sequences specifically with the innermost quotation, we can successfully write a string literal the same way whether we're inside or outside another string literal.
+
+That ambiguity in the user's intent does exist, though. Sometimes the user may @emph{intend} to escape from an outer quotation. In that case, they can use a more elaborate notation to specify what layer they have in mind, such as writing @tt{\[LABEL]x20} instead of @tt{\x20}:
+
+
+@code-block{
+  (displayln "[OUTER]{(displayln "{Hello,\[OUTER]x20world!}")}")
+}
+
+One implication of this design is that when we process an escape sequence like @tt{\x20}, we might treat it in two different ways depending on context: If it's associated with the outermost stage of quotation, we fully process it, turning @tt{\x20} into a space character. If it's associated with some inner stage of quotation, we suppress it, treating @tt{\x20} as the four characters @tt{\ x 2 0}.
+
+Note that even when we suppress an escape sequence, we still need to @emph{recognize} it to know where it ends. That means in the implementation of even our simplest escape sequences, we'll need a couple of behaviors:
+
+@itemlist[
+  
+  @item{Process an unbounded input to determine what prefix of it is the escape sequence's bounded input.}
+  
+  @item{Once we know the bounded input to determine what the interpretation of this escape sequence is (often just some escaped content, but sometimes a more sophisticated behavior like @racket[~optional]).}
+  
+]
+
+For string escape sequences, expressing the boundary is simple, and the bounded input is some substring of the string literal's code. For instance, in @racket["Hello,\x20world..."], the @tt{x} escape sequence might process the unbounded input @tt{20world...} and determine that its bounded input is @tt{20}. If the escape sequence is being suppressed, then we stop there and treat that bounded input as literal text. Otherwise, we invoke the @tt{x} escape sequence's second step to detemine what it represents (a space character). Either way, we then turn our attention to the rest of the input (@tt{world...}) and process the escape sequences we find there.
+
+Punctaffy's infrastructure starts to come in handy when we apply this design to s-expression escape sequences. There, the bounded input is a degree-2 hypersnippet of code.
+
+This quotation DSL design---specifically this particular way it leads to degree-2 hypersnippets---is actually the original motivating force behind Punctaffy.
+
+For a couple of other reasons, the infrastructure we need to complete a DSL like this is still not straightorward to build, even with Punctaffy's hypersnippets in our toolkit:
+
+@itemlist[
+  
+  @item{If we just have hyperbracketed code, how do we know which hyperbrackets delimit @emph{quoted} sections of code that should suppress our escape sequences? After all, in the examples above, we wouldn't expect the parentheses around the @racket[(displayln _...)] call to be delimiting a quoted section of code, and the same is true of degree-2 hyperbrackets when they're used in the @racket[list-taffy-map] or @racket[taffy-let] operations. We might want to create a slightly more complex analogue of hyperbracketed code where instead of just having an interoperable notation for hyperbracketed lexical structure, we also have interoperable notations for quotation boundaries and escape sequences.}
+  
+  @item{
+    One of the techniques we mention above is to use @tt{\[LABEL]x20} as a way to specify which quotation stage the escape sequence @tt{\x20} should be processed in. What happens if we want to apply that kind of label to an @racket[unquote]?
+    
+    @RACKETBLOCK[
+      (let ([_place "world"])
+        (writeln
+          (quasiquote #:label _OUTER
+            (writeln
+              ((UNSYNTAX @racket[quasiquote])
+                ("hello" (unquote #:to-label _OUTER _place)))))))
+    ]
+    
+    If we do that, we might expect our labeled @racket[unquote] to skip over one @racket[quasiquote] to match a labeled @racket[quasiquote] beyond it, but isn't obvious how to denote that interaction in terms of hyperbrackets or how to manipulate that kind of structure in terms of hypersnippet-shaped data.
+    
+    One approach we might take to this is to use hypersnippets of almost impredicatively infinite degree, where we don't quite get to say we have a degree that's "less than itself," but every time we use an unnamed degree, it's something that's less than the unnamed degree we used before. We can likely simulate this if we use a custom dimension system where instead of counting degrees up from zero using natural numbers, we count down from infinity using chains of symbolic names.
+    
+    We might say the outer @racket[quasiquote] is a quote-depth-increasing opening hyperbracket of degree @tt{/OUTER}, the inner @racket[quasiquote] is a quote-depth-increasing opening hyperbracket of degree @tt{/OUTER/GENSYM_ONE}, and the @racket[unquote] is a closing hyperbracket of degree @tt{/OUTER/GENSYM_TWO} --- not @tt{/OUTER/GENSYM_ONE/GENSYM_TWO}, because its explicit label specifies another parent to use. To see if one degree is less than another, we check that it's @emph{under the other's directory}. Since @tt{/OUTER/GENSYM_TWO} is under the @tt{/OUTER} directory, but not under the @tt{/OUTER/GENSYM_ONE} directory, the hyperbrackets match up just the way we want.
+    
+    Of course, we haven't put this plan into motion yet, so there may be lurking obstacles that we haven't uncovered.
+  }
+]
+
+Nestable quasiquotation with depth-labeled escape sequences seems to be a complex problem. While Punctaffy's notion of hyperbracketed code doesn't straightforwardly apply in all the ways we might hope for it to, the slightly more complex variations we've described seem viable, and Punctaffy's hyperbrackets are a milestone in those directions. Hypersnippet-shaped data does seem come in handy at least for representing the bounded input of an escape sequence.
+
+@; TODO: The above is very long-winded. The original plan to write this section had a much pithier description, which we might be able to pilfer from for an intro or summary paragraph:
+@;
+@; Consider writing a "Potential Application" section about one of the original (and ongoing) motivating goals of Punctaffy: The ability to have custom escape sequences in a quotation DSL that are suppressed if the quotation DSL appears inside itself. The "suppressed" behavior of a custom escape sequence conveys nothing but what part of the input is consumed, which is the same part that's consumed when it's not suppressed. When it's not suppressed, it additionally specifies what quoted content that input transforms into.

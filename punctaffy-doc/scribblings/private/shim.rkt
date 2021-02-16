@@ -56,7 +56,8 @@
           match-define match match/derived match-let)
         (only-in #,(break 'racket/math) natural?)
         (only-in #,(break 'syntax/datum) datum with-datum)
-        (only-in #,(break 'syntax/parse) syntax-parse)
+        (only-in #,(break 'syntax/parse)
+          ~optional prop:pattern-expander ~seq syntax-parse)
         (only-in #,(break 'syntax/parse/experimental/template)
           define-template-metafunction)
         
