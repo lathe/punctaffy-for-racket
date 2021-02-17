@@ -84,7 +84,7 @@ What does this program do?
 
 This is analogous to writing the program `(while #t (displayln "Hello, world))"`. The delimiters are simply mismatched. We can try to come up with creative interpretations, but there's little reason to use the notations this way in the first place.
 
-So, where do we report the error? Racket's reader doesn't match occurrences of `` `...`` to occurrences of `,...` at read time; instead, these always read successfully as `(quasiquote ...)` and `(unquote ...)`, and it's up to the implementation of the `quasiquote` macro to search its tree-shaped input, looking for occurrences of `unquote`. So now do we extend that search so that it keeps track of the proper nesting of `α...` and `•...` hyperbrackets? Does every one of these higher-dimensional operations need to hardcode the grammar of every other?
+So, where do we report the error? Racket's reader doesn't match occurrences of `` `...`` to occurrences of `,...` at read time; instead, these always read successfully as `(quasiquote ...)` and `(unquote ...)`, and it's up to the implementation of the `quasiquote` macro to search its tree-shaped input, looking for occurrences of `unquote`. So now do we extend that search so that it keeps track of the proper nesting of `α...` and `•...`? Does every one of these higher-dimensional operations need to hardcode the grammar of every other?
 
 Currently, in Racket:
 

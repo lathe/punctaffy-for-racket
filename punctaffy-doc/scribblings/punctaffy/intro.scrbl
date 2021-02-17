@@ -112,7 +112,7 @@ Here's the same code, using the @tt{α} operator to do the list mapping operatio
 
 In the expression @tt{α@literal{`}(li ,•items)}, we see the @racket[`_...] and @racket[,_...] tree nodes are nested in between the @tt{α...} and @tt{•...} tree nodes.
 
-In Punctaffy's terms, this is the nesting of one degree-2 hypersnippet inside another. It's just like the nesting of one parenthesized region of code inside another, but one dimension higher than usual.
+In Punctaffy's terms, this is the nesting of one @tech{degree}-2 @tech{hypersnippet} inside another. It's just like the nesting of one parenthesized region of code inside another, but one dimension higher than usual.
 
 In fact, the geometric shape of a hypersnippet is already studied under a different name: An opetope. Opeteopes are usually studied in higher-dimensional category theory and type theory as one way to work with algebraic structures where two things can be "equal" in more than one distinct way. For instance, in homotopy theory, in the place of equality there's a notion of path-connectedness, and the different "ways" things are path-connected are the various different paths between them.
 
@@ -135,7 +135,7 @@ What does this program do?
 
 This is analogous to writing the program @tt{(while #t (displayln "Hello, world))"}. The delimiters are simply mismatched. We can try to come up with creative interpretations, but there's little reason to use the notations this way in the first place.
 
-So, where do we report the error? Racket's reader doesn't match occurrences of @racket[`_...] to occurrences of @racket[,_...] at read time; instead, these always read successfully as @racket[(quasiquote _...)] and @racket[(unquote _...)], and it's up to the implementation of the @racket[quasiquote] macro to search its tree-shaped input, looking for occurrences of @racket[unquote]. So now do we extend that search so that it keeps track of the proper nesting of @tt{α...} and @tt{•...} hyperbrackets? Does every one of these higher-dimensional operations need to hardcode the grammar of every other?
+So, where do we report the error? Racket's reader doesn't match occurrences of @racket[`_...] to occurrences of @racket[,_...] at read time; instead, these always read successfully as @racket[(quasiquote _...)] and @racket[(unquote _...)], and it's up to the implementation of the @racket[quasiquote] macro to search its tree-shaped input, looking for occurrences of @racket[unquote]. So now do we extend that search so that it keeps track of the proper nesting of @tt{α...} and @tt{•...}? Does every one of these higher-dimensional operations need to hardcode the grammar of every other?
 
 Currently, in Racket:
 
@@ -189,7 +189,7 @@ After:
 
 Welcome to 2-dimensional parenthesis soup. Like s-expression notation, this notation isn't the easiest to follow if we're only concerned with a small number of familiar operations, but it does have the arguable advantage of giving programmers a smoother on-ramp to extending their language: Programmers can add new operations that build on the same infrastructure as the existing ones and blend right in.
 
-We refer to delimiters like @tt{(}@racket[^<] and @tt{(}@racket[^>] as hyperbrackets. There are hyperbrackets of any degree (dimension), and traditional brackets @tt{(} and @tt{)} are a special case of hyperbrackets.
+We refer to delimiters like @tt{(}@racket[^<] and @tt{(}@racket[^>] as @tech{hyperbrackets}. There are hyperbrackets of any degree (dimension), and traditional brackets @tt{(} and @tt{)} are a special case of hyperbrackets.
 
 In many cases, we might be able to draw attention to matching hyperbrackets a little bit better by making some judicious use of @other-doc[parendown-doc]:
 
@@ -240,7 +240,7 @@ In Racket's @racket[datum] template DSL, occurrences of @racket[...] cause an it
 
 In the process of explaining how Racket's template DSL works, we've described a *translation* of (a subset of) that DSL into other Racket code. Maybe @tt{α...} and @tt{•...} aren't actually implemented in Racket, but Punctaffy does implement @racket[(list-taffy-map (^< _...))] and @racket[(^> _...)] to serve their purpose here.
 
-A common technique for DSLs in Racket is first to use a parser to preprocess a DSL into a similarly shaped Racket s-expression, then to expand it using a suite of Racket macros. In this case, what we've described isn't a translation into a mere s-expression so much as a translation into hyperbracketed code. In this way, regardless of the experience of using hyperbrackets directly, hyperbrackets provide infrastructure that can be helpful in the implementation of other DSLs.
+A common technique for DSLs in Racket is first to use a parser to preprocess a DSL into a similarly shaped Racket s-expression, then to expand it using a suite of Racket macros. In this case, what we've described isn't a translation into a mere s-expression so much as a translation into @tech{hyperbracketed code}. In this way, regardless of the experience of using hyperbrackets directly, hyperbrackets provide infrastructure that can be helpful in the implementation of other DSLs.
 
 Unfortunately, we've begun to digress into ideas that aren't fully realized in Punctaffy yet. Most DSLs in Racket can use frameworks like @racket[match], @racket[syntax-parse], @seclink["top" #:doc ragg-doc]{@tt{ragg}}, and @seclink["top" #:doc brag-doc]{@tt{brag}} to parse and translate their tree-structured code, but Punctaffy doesn't yet have a parsing framework for hyperbracketed code. As such, implementing the @racket[datum] template DSL in terms of Punctaffy may still be trickier than implementing it the way Racket has.
 

@@ -22,13 +22,13 @@
 
 @title{Punctaffy}
 
-Punctaffy is an experimental library for working with a higher-dimensional notion of lexical syntactic structure. We call these generalized lexical regions @tech{hypersnippets}, we delimit them using @tech{hyperbrackets}, and we call our generalized s-expressions "hyperbracketed code."
+Punctaffy is an experimental library for working with a higher-dimensional notion of lexical syntactic structure. We call these generalized lexical regions @tech{hypersnippets}, we delimit them using @tech{hyperbrackets}, and we call our generalized s-expressions @tech{hyperbracketed code}.
 
 For a gradual introduction to 2-dimensional hypersnippets, see @secref["intro"]. Basically, Punctaffy embraces the analogy sometimes drawn between parentheses @tt{( )} and the notation of quasiquotation @tt{@literal{`}( ,( ) )} and generalizes these as the 1-dimensional and 2-dimensional instances of a concept that can be instantiated at any dimension and used for various purposes aside from quotation.
 
 The geometric shapes of hypersnippets don't appear to be new; they seem to coincide with the opetopes of opetopic higher category theory. (See @secref["potential-use-case-opetopes"].)
 
-For practical use, Punctaffy's main drawback is the amount of time it takes to compile hyperbracketed programs---even the simplest ones. This is something that can be improved over time. For now, Punctaffy serves mainly as a proof of concept.
+For practical use, Punctaffy's main drawback is the amount of time it takes to compile @tech{hyperbracketed} programs---even the simplest ones. This is something that can be improved over time. For now, Punctaffy serves mainly as a proof of concept.
 
 @; TODO: If Punctaffy ever overcomes its performance issues, stop discussing them here.
 

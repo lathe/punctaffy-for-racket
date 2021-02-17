@@ -36,19 +36,19 @@
 
 @itemlist[
   
-  @item{Trivially, hyperbrackets of low degree are hyperbrackets too: If we find ourselves in a context where a program is usually just a "sequence of instructions," then a structured @tt{while} loop is a degree-1-hyperbracketed operation. (An instruction by itself is a degree-0-hyperbracketed operation.) If we learn lessons about hygienic macro system design at higher degrees, there's a good chance they can be extrapolated downward to tell us something about s-expression macros (degree 1) and reader macros (degree 0).}
+  @item{Trivially, @tech{hyperbrackets} of low @tech{degree} are hyperbrackets too: If we find ourselves in a context where a program is usually just a "sequence of instructions," then a structured @tt{while} loop is a degree-1-@tech{hyperbracketed} operation. (An instruction by itself is a degree-0-hyperbracketed operation.) If we learn lessons about hygienic macro system design at higher degrees, there's a good chance they can be extrapolated downward to tell us something about s-expression macros (degree 1) and reader macros (degree 0).}
   
   @item{The @racket[quasiquote] or @tt{backquote} operation is probably the most widespread example. Moreover, string interpolation is even more widespread, and it's basically quasiquotation for text-based code.}
   
   @item{The "apply-to-all" notation @tt{α(f •xs)} from Connection Machine Lisp (CM-Lisp) applies the same operation @tt{(f _)} to every element of a xapping @tt{xs} (where a xapping is a certain type of multiple-element collection). Pages 280-281 of @hyperlink["https://web.archive.org/web/20060219230046/http://fresh.homeunix.net/~luke/misc/ConnectionMachineLisp.pdf"]{"Connection Machine Lisp" by Guy Steele} go into detail on the functionality and motivation of this operation.}
   
-  @item{Shadow DOM is an HTML feature which allows templates to be defined and instantiated. A template can have slots in it, which can have default content specified inside (in case the slot isn't filled at the instantiation site). The template looks like @tt{<template>...<slot name="x">...</slot>...</template>}, where the @tt{...} inside the @tt{<slot>} element is the degree-1 hypersnippet of default content for the slot, the slot's @tt{name} attribute identifies the slot when overriding it at the instantiation site, and the rest of the template is the degree-2 hypersnippet of content that doesn't vary.}
+  @item{Shadow DOM is an HTML feature which allows templates to be defined and instantiated. A template can have slots in it, which can have default content specified inside (in case the slot isn't filled at the instantiation site). The template looks like @tt{<template>...<slot name="x">...</slot>...</template>}, where the @tt{...} inside the @tt{<slot>} element is the @tech{degree}-1 @tech{hypersnippet} of default content for the slot, the slot's @tt{name} attribute identifies the slot when overriding it at the instantiation site, and the rest of the template is the degree-2 hypersnippet of content that doesn't vary.}
   
   @item{In a @hyperlink["https://www.youtube.com/watch?v=dCuZkaaou0Q"]{2017 invited talk at Clojure/Conj}, Guy Steele talks about the inconsistency of computer science notation. At 53m03s, he goes into detail about a combination underline/overline notation he proposes as a way to bring more rigor to schematic formulas which iterate over vectors. He compares it to quasiquotation and the CM-Lisp @tt{α} notation.}
   
 ]
 
-None of these existing examples involves a hypersnippet of degree 3 or greater. So, aside from the trivial degree-0 and degree-1 examples, all the examples above have degree 2.
+None of these existing examples involves a @tech{hypersnippet} of @tech{degree} 3 or greater. So, aside from the trivial degree-0 and degree-1 examples, all the examples above have degree 2.
 
 
 
@@ -58,7 +58,7 @@ None of these existing examples involves a hypersnippet of degree 3 or greater. 
 
 @subsection[#:tag "potential-use-case-hygiene"]{Potential Application: Hygiene}
 
-Hygienic macroexpansion usually generates code where certain variables are only in scope across some degree-2 hypersnippet of the code.
+Hygienic macroexpansion usually generates code where certain variables are only in scope across some @tech{degree}-2 @tech{hypersnippet} of the code.
 
 For instance, Racket first colors all the input subforms of a macro call using a new scope tag, and then it inverts that color in the result so that the color winds up only occurring on the code the macro generates itself, not the code it merely passes through.
 
@@ -82,7 +82,7 @@ This is a matter of @emph{dimension}, and we can find an analogous situation one
 
 In a language like Racket where programmers can write arbitrarily complex custom syntaxes, compilation can be expensive. This can drag down the experience of editing code the DrRacket IDE, where features like jump-to-definition can depend on performing background expansion to process the user's custom syntaxes.
 
-If macros weren't tree-to-tree transformations, but instead consumed only some small part of the tree and generated a degree-2 hypersnippet, then a modification of one local part of a file could lead to a pinpoint re-expansion of the specific macro call that processed that part of the file, rather than a costly re-expansion of every macro call in the whole file.
+If macros weren't tree-to-tree transformations, but instead consumed only some small part of the tree and generated a @tech{degree}-2 @tech{hypersnippet}, then a modification of one local part of a file could lead to a pinpoint re-expansion of the specific macro call that processed that part of the file, rather than a costly re-expansion of every macro call in the whole file.
 
 Incidentally, this would bring s-expression macro calls into a closer analogy with reader macro calls, which themselves consume some bounded part of the source text stream and generate an s-expression.
 
@@ -112,7 +112,7 @@ But this may be too much information if someone's not trying to debug the @racke
   ...
 }
 
-If call stacks were @tech{hyperstacks}, then the @racket[filter] and @racket[append-map] calls could be degree-2 hyperstack frames, essentially giving the call stack a nested structure:
+If call stacks were @tech{hyperstacks}, then the @racket[filter] and @racket[append-map] calls could be @tech{degree}-2 hyperstack frames, essentially giving the call stack a nested structure:
 
 @code-block{
   ...
@@ -129,7 +129,7 @@ With tools built on this infrastructure, the user could view the stack in as muc
 
 @subsection[#:tag "potential-use-case-ellipsis-unsyntax"]{Potential Application: Interactions Between @racket[unsyntax] and Ellipses}
 
-In @secref["intro"], we talk about the relationship between hypersnippets and Racket's @racket[syntax] DSL for syntax templates (or, more specifically, its @racket[datum] DSL for s-expression templates).
+In @secref["intro"], we talk about the relationship between @tech{hypersnippets} and Racket's @racket[syntax] DSL for syntax templates (or, more specifically, its @racket[datum] DSL for s-expression templates).
 
 The @racket[quasisyntax] form (abbreviated @tt{#@literal{`}}) introduces the quasiquotation-like ability to use @racket[unsyntax] and @racket[unsyntax-splicing] (abbreviated @tt{#,} and @tt{#,@"@"}) to interpolate arbitrary expression results into a template.
 
@@ -183,7 +183,7 @@ However, using @racket[define-template-metafunction] substantially rearranges th
 
 If for some reason we have a strong preference to arrange this code in the @racket[unsyntax] style, then what we really need here is for @racket[#'(_pat _val)] not to be a @emph{new} template but a @emph{resumption} of the original syntax. We need some kind of @tt{un-unsyntax}, perhaps abbreviated @tt{#,!}. Then we could replace @racket[#'(_pat _val)] with @tt{#,!}@racket[(_pat _val)] and be on our way.
 
-The concept of @tt{un-unsyntax} fits neatly into the hypersnippet concept we explore in Punctaffy. We can consider @racket[quasisyntax] to be opening a degree-3 hypersnippet, @racket[unsyntax] to be opening a degree-2 hole in that hypersnippet, and @tt{un-unsyntax} to be opening a degree-1 hole in that degree-2 hole.
+The concept of @tt{un-unsyntax} fits neatly into the hypersnippet concept we explore in Punctaffy. We can consider @racket[quasisyntax] to be opening a @tech{degree}-3 hypersnippet, @racket[unsyntax] to be opening a degree-2 @tech{hole} in that hypersnippet, and @tt{un-unsyntax} to be opening a degree-1 hole in that degree-2 hole.
 
 Punctaffy currently defines a @racket[taffy-quote-syntax] operation, but it corresponds to @racket[quote-syntax] rather than the @racket[syntax] template DSL. Suppose Punctaffy were to define a @tt{taffy-syntax} operation in that combined spirit, which used @seclink["baseline-notations"]{Punctaffy's baseline hyperbrackets} and had support for @racket[syntax] DSL features like ellipses. Using that operation, the above code could look like this:
 
@@ -221,23 +221,23 @@ Other embedded DSLs with lexically scoped interactions, such as type inference a
 
 @subsection[#:tag "potential-use-case-opetopes"]{Potential Application: Representing Opetopes}
 
-The slide deck @hyperlink["https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf"]{"Type Theory and the Opetopes" by Eric Finster} gives a nice graphical overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions an inductive type @tt{MTree} of labeled opetopes, which more or less corresponds to Punctaffy's hypertee type. To our knowledge, hyperbracketed notations have not been used in this context before, but they should be a good fit.
+The slide deck @hyperlink["https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf"]{"Type Theory and the Opetopes" by Eric Finster} gives a nice graphical overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions an inductive type @tt{MTree} of labeled opetopes, which more or less corresponds to Punctaffy's @tech{hypertee} data structure. To our knowledge, @tech{hyperbracketed} notations have not been used in this context before, but they should be a good fit.
 
 
 
 @subsection[#:tag "potential-use-case-transpension"]{Potential Application: Type Theories with Transpension}
 
-The paper @hyperlink["https://arxiv.org/pdf/2008.08533.pdf"]{"Transpension: The Right Adjoint to the Pi-type" by Andreas Nuyts and Dominique Devriese} discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of degree-2 hypersnippets in its syntax.
+The paper @hyperlink["https://arxiv.org/pdf/2008.08533.pdf"]{"Transpension: The Right Adjoint to the Pi-type" by Andreas Nuyts and Dominique Devriese} discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of @tech{degree}-2 @tech{hypersnippets} in its syntax.
 
 Essentially (and if we understand correctly), a transpension operation declares a variable that represents some unknown coordinate along a new dimension. At some point in the scope of that dimension variable, another operation takes ownership of it, taking the original dimension variable and all the variables that depended on it since then out of scope, but replacing the latter with reusable functions that can be applied repeatedly to different coordinate values of the user's choice.
 
-From a Punctaffy perspective, the dimension variable's original scope is a degree-2 hypersnippet, and the operation that takes it out of scope (and converts other variables to functions) is located at one of the degree-1 closing hyperbrackets of that hypersnippet.
+From a Punctaffy perspective, the dimension variable's original scope is a degree-2 hypersnippet, and the operation that takes it out of scope (and converts other variables to functions) is located at one of the degree-1 closing @tech{hyperbrackets} of that hypersnippet.
 
 Curiously, the degree-2 hypersnippet also gets closed by degree-1 closing hyperbrackets at the @emph{type} level; we might say these type theories assign types to terms that have unmatched closing hyperbrackets. They also have lambdas that @emph{abstract over} terms that have unmatched closing hyperbrackets, so the journey of a closing hyperbracket through the codebase to find its match can potentially be rather circuitous.
 
 At any rate, these dimension variables have affine (use-at-most-once) types, which can sometimes seem odd in the context of a type theory where the rest of the variables are Cartesian (use-any-number-of-times). By relating transpension operators to hyperbrackets, we may give the affine typing situation some more clarity: A "closing bracket" can't match up with an "opening bracket" that's already been closed.
 
-And conversely, by relating the two, we may find techniques for understanding Punctaffy's hyperbrackets in terms of affine variables in a type theory rather than the other way around. This kind of insight may come in handy for studying the categorical semantics of a calculus that has hyperbracketed operations, or even for implementing hyperbracket libraries like Punctaffy for typed languages.
+And conversely, by relating the two, we may find techniques for understanding Punctaffy's hyperbrackets in terms of affine variables in a type theory rather than the other way around. This kind of insight may come in handy for studying the categorical semantics of a calculus that has @tech{hyperbracketed} operations, or even for implementing hyperbracket libraries like Punctaffy for typed languages.
 
 
 
@@ -284,7 +284,7 @@ Note that even when we suppress an escape sequence, we still need to @emph{recog
 
 For string escape sequences, expressing the boundary is simple, and the bounded input is some substring of the string literal's code. For instance, in @racket["Hello,\x20world..."], the @tt{x} escape sequence might process the unbounded input @tt{20world...} and determine that its bounded input is @tt{20}. If the escape sequence is being suppressed, then we stop there and treat that bounded input as literal text. Otherwise, we invoke the @tt{x} escape sequence's second step to detemine what it represents (a space character). Either way, we then turn our attention to the rest of the input (@tt{world...}) and process the escape sequences we find there.
 
-Punctaffy's infrastructure starts to come in handy when we apply this design to s-expression escape sequences. There, the bounded input is a degree-2 hypersnippet of code.
+Punctaffy's infrastructure starts to come in handy when we apply this design to s-expression escape sequences. There, the bounded input is a @tech{degree}-2 @tech{hypersnippet} of code.
 
 This quotation DSL design---specifically this particular way it leads to degree-2 hypersnippets---is actually the original motivating force behind Punctaffy.
 
@@ -292,7 +292,7 @@ For a couple of other reasons, the infrastructure we need to complete a DSL like
 
 @itemlist[
   
-  @item{If we just have hyperbracketed code, how do we know which hyperbrackets delimit @emph{quoted} sections of code that should suppress our escape sequences? After all, in the examples above, we wouldn't expect the parentheses around the @racket[(displayln _...)] call to be delimiting a quoted section of code, and the same is true of degree-2 hyperbrackets when they're used in the @racket[list-taffy-map] or @racket[taffy-let] operations. We might want to create a slightly more complex analogue of hyperbracketed code where instead of just having an interoperable notation for hyperbracketed lexical structure, we also have interoperable notations for quotation boundaries and escape sequences.}
+  @item{If we just have @tech{hyperbracketed code}, how do we know which @tech{hyperbrackets} delimit @emph{quoted} sections of code that should suppress our escape sequences? After all, in the examples above, we wouldn't expect the parentheses around the @racket[(displayln _...)] call to be delimiting a quoted section of code, and the same is true of degree-2 hyperbrackets when they're used in the @racket[list-taffy-map] or @racket[taffy-let] operations. We might want to create a slightly more complex analogue of hyperbracketed code where instead of just having an interoperable notation for hyperbracketed lexical structure, we also have interoperable notations for quotation boundaries and escape sequences.}
   
   @item{
     One of the techniques we mention above is to use @tt{\[LABEL]x20} as a way to specify which quotation stage the escape sequence @tt{\x20} should be processed in. What happens if we want to apply that kind of label to an @racket[unquote]?
@@ -308,7 +308,7 @@ For a couple of other reasons, the infrastructure we need to complete a DSL like
     
     If we do that, we might expect our labeled @racket[unquote] to skip over one @racket[quasiquote] to match a labeled @racket[quasiquote] beyond it, but isn't obvious how to denote that interaction in terms of hyperbrackets or how to manipulate that kind of structure in terms of hypersnippet-shaped data.
     
-    One approach we might take to this is to use hypersnippets of almost impredicatively infinite degree, where we don't quite get to say we have a degree that's "less than itself," but every time we use an unnamed degree, it's something that's less than the unnamed degree we used before. We can likely simulate this if we use a custom dimension system where instead of counting degrees up from zero using natural numbers, we count down from infinity using chains of symbolic names.
+    One approach we might take to this is to use hypersnippets of almost impredicatively infinite degree, where we don't quite get to say we have a degree that's "less than itself," but every time we use an unnamed degree, it's something that's less than the unnamed degree we used before. We can likely simulate this if we use a custom @tech{dimension system} where instead of counting degrees up from zero using natural numbers, we count down from infinity using chains of symbolic names.
     
     We might say the outer @racket[quasiquote] is a quote-depth-increasing opening hyperbracket of degree @tt{/OUTER}, the inner @racket[quasiquote] is a quote-depth-increasing opening hyperbracket of degree @tt{/OUTER/GENSYM_ONE}, and the @racket[unquote] is a closing hyperbracket of degree @tt{/OUTER/GENSYM_TWO} --- not @tt{/OUTER/GENSYM_ONE/GENSYM_TWO}, because its explicit label specifies another parent to use. To see if one degree is less than another, we check that it's @emph{under the other's directory}. Since @tt{/OUTER/GENSYM_TWO} is under the @tt{/OUTER} directory, but not under the @tt{/OUTER/GENSYM_ONE} directory, the hyperbrackets match up just the way we want.
     

@@ -88,7 +88,7 @@ This design leads to a more regular experience than the current situation in Rac
       
       @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent.}
       
-      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
+      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
     ]
     
     Notable exclusions:
@@ -207,7 +207,7 @@ This design leads to a more regular experience than the current situation in Rac
 
 This module uses the higher-dimensional lexical structure afforded by @tech{hyperbrackets} to define operations that use a kind of higher-dimensional lexical scope.
 
-(TODO: Let's give an example of how hyperbracketed operations can nest with each other.)
+(TODO: Let's give an example of how @tech{hyperbracketed} operations can nest with each other.)
 
 
 @defform[
@@ -239,7 +239,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     @itemlist[
       @item{This operation accommodates subforms represented by @racket[string?], @racket[boolean?], @racket[flvector?], @racket[fxvector?], @racket[char?], @racket[bytes?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are representations with reader syntaxes, so they fit the description exactly.}
       
-      @item{This operation accommodates subforms represented by @racket[symbol?] values as long as they aren't hypernest notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
+      @item{This operation accommodates subforms represented by @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
     ]
     
     Notable exclusions:

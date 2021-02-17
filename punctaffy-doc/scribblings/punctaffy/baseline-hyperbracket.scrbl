@@ -36,11 +36,13 @@ Punctaffy's notation represents an infinite-dimensional syntactic medium. The go
 
 Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation itself, which just about every higher-dimensional macro built on Punctaffy will use.
 
+Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a straightforward analogue as an operaton that uses hyperbrackets, we call it a @deftech{hyperbracketed} operation. We refer to code where hyperbrackets can appear as @deftech{hyperbracketed code}.
+
 (TODO: Demonstrate a higher-dimensional macro that uses this notation. We have some quasiquotation operations almost ready to go in quote.rkt.)
 
 
 @defform[(^<d degree term ...)]{
-  A hypernest notation that represents an opening @tech{hyperbracket} with a specified nonzero @tech{degree}. The degree must be a natural number literal.
+  A @tech{hyperbracket} notation that represents an opening hyperbracket with a specified nonzero @tech{degree}. The degree must be a natural number literal.
   
   Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
   
@@ -48,7 +50,7 @@ Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation 
 }
 
 @defform[(^>d degree term ...)]{
-  A hypernest notation that represents a closing @tech{hyperbracket} with a specified nonzero @tech{degree}. The degree must be a natural number literal.
+  A @tech{hyperbracket} notation that represents a closing hyperbracket with a specified nonzero @tech{degree}. The degree must be a natural number literal.
   
   This notation is not an expression. Using it as an expression is a syntax error.
   
@@ -56,7 +58,7 @@ Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation 
 }
 
 @defform[(^< term ...)]{
-  A hypernest notation shorthand that specifically represents an opening @tech{hyperbracket} of @tech{degree} 2. This is the lowest, and hence the most likely to be commonplace, degree of opening bracket that isn't already easy to represent in Racket's syntax.
+  A @tech{hyperbracket} notation shorthand that specifically represents an opening hyperbracket of @tech{degree} 2. This is the lowest, and hence the most likely to be commonplace, degree of opening bracket that isn't already easy to represent in Racket's syntax.
   
   This represents the same thing as @racket[(^<d 2 term ...)].
   
@@ -66,9 +68,7 @@ Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation 
 }
 
 @defform[(^> term ...)]{
-  A hypernest notation that represents a closing @tech{hyperbracket} with a specified nonzero @tech{degree}. The degree must be a natural number literal.
-  
-  A hypernest notation shorthand that specifically represents a closing @tech{hyperbracket} of @tech{degree} 1. This is the lowest, and hence the most likely to be commonplace, degree of closing bracket that isn't already easy to represent in Racket's syntax.
+  A @tech{hyperbracket} notation shorthand that specifically represents a closing hyperbracket of @tech{degree} 1. This is the lowest, and hence the most likely to be commonplace, degree of closing bracket that isn't already easy to represent in Racket's syntax.
   
   This represents the same thing as @racket[(^>d 1 term ...)].
   
