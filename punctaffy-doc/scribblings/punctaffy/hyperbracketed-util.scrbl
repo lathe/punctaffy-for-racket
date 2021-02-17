@@ -49,14 +49,14 @@ Quasiquotation is perhaps the most widespread example of an operation with a sub
 
 The @racketmodname[punctaffy/quote] module is for variations of Racket's own quotation forms that have been redesigned to use Punctaffy's @tech{hyperbrackets} for their syntax. This allows them to gracefully support nesting, as in the quotation of code that is itself performing quotation, without requiring that code to be modified with escape sequences. Furthermore, since each of these quotation operators will use the @emph{same} hyperbracket syntax to represent its nesting structure, they can each gracefully nest within each other.
 
-This design leads to a more regular experience than the current situation in Racket: At the time of writing, Racket's @racket[quasiquote] and @racket[quasisyntax] can accommodate nested occurrences of themselves, but not of each other. Racket's @racket[quasisyntax/loc] can accommodate nested occurrences of @racket[quasisyntax], but not of itself.
+This design leads to a more consistent experience than the current situation in Racket: At the time of writing, Racket's @racket[quasiquote] and @racket[quasisyntax] can accommodate nested occurrences of themselves but not of each other. Racket's @racket[quasisyntax/loc] can accommodate nested occurrences of @racket[quasisyntax] but not of itself.
 
-(TODO: Let's give an example of how @racket[taffy-quote] and @racket[taffy-quote-syntax] can nest with each other.)
+For instance, @racket[list-taffy-map] can accommodate nested occurrences of @racket[taffy-quote], as demonstrated in @secref["intro"].
 
 
 @defform[
-  #:literals (^<d ^>d)
-  (taffy-quote (^<d 2 content-and-splices))
+  #:literals (^<d ^< ^>)
+  (taffy-quote (^< content-and-splices))
   #:grammar
   [
     (content-and-splices
@@ -67,7 +67,7 @@ This design leads to a more regular experience than the current situation in Rac
       #(content-and-splices ...)
       #s(prefab-key-datum content-and-splices ...)
       (^<d degree deeper-content-and-splices ...)
-      (^>d 1 spliced-list-expr ...))]
+      (^> spliced-list-expr ...))]
   #:contracts ([spliced-list-expr list?])
 ]{
   A variant of @racket[quote] or @racket[quasiquote] that uses @tech{hyperbrackets} to delimit a quoted @tech{degree}-2 @tech{hypersnippet} of datum values. Expressions can be supplied within the degree-1 @tech{holes} of this hypersnippet to cause their resulting lists to be spliced into the surrounding datum content.
@@ -135,7 +135,7 @@ This design leads to a more regular experience than the current situation in Rac
     (TODO: That's a mouthful. Can we reword this?)
   }
   
-  @specsubform[#:literals (^>d) (^>d 1 spliced-list-expr ...)]{
+  @specsubform[#:literals (^>) (^> spliced-list-expr ...)]{
     Evaluates the expressions @racket[spliced-list-expr ...] and produces whatever datum values they return. Each expression must return a list; the elements of the lists, appended together, are the datum values to return. The elements can be any type of value, even types that this operation doesn't allow in the quoted content.
   }
   
@@ -143,32 +143,20 @@ This design leads to a more regular experience than the current situation in Rac
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
-  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d] and @racket[^>d] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
+  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
   
   Out of the hyperbracket notations this operation does support, not all of them will necessarily be preserved in the quoted output; some may be replaced with other, equivalent hyperbracket notations. In general, this operation will strive to preserve the notations that were actually used at the call site. Where it fails to do that, it will use notations exported by the @racket[punctaffy] module (e.g. the @racket[^<d] and @racket[^>d] notations).
   
   At the moment, there is no particular notation that this operation is committed to preserving, so users should not rely on specific outputs. Users should only use this operation to generate code for informal visualization purposes, code that will be evaluated with the entire @racket[punctaffy] module in scope, and code that they're ready to process using a parser that understands all the hyperbracket notations currently exported by the @racket[punctaffy] module.
   
-  (TODO: Write some usage examples. Below is a scratch area.)
+  For examples of using @tt{taffy-quote}, see @secref["intro"].
   
-  @examples[
-    #:eval (example-eval)
-    '(println "hello")
-    (eval:alts
-      '(println "hello")
-      (println "hello"))
-    (eval:alts
-      (taffy-quote (^<d 2 (println "hello")))
-      '(println "hello"))
-    (eval:alts
-      (pd _/ taffy-quote _/ ^<d 2 _/ println "hello")
-      '(println "hello"))
-  ]
+  @; TODO: Even though we can link to examples in the intro, consider putting some examples on this page as well.
 }
 
 @defform[
-  #:literals (^<d ^>d)
-  (taffy-quote-syntax maybe-local (^<d 2 content-and-splices))
+  #:literals (^<d ^< ^>)
+  (taffy-quote-syntax maybe-local (^< content-and-splices))
   #:grammar
   [
     (maybe-local
@@ -182,7 +170,7 @@ This design leads to a more regular experience than the current situation in Rac
       #(content-and-splices ...)
       #s(prefab-key-datum content-and-splices ...)
       (^<d degree deeper-content-and-splices ...)
-      (^>d 1 spliced-list-expr ...))]
+      (^> spliced-list-expr ...))]
   #:contracts ([spliced-list-expr list?])
 ]{
   Like @racket[taffy-quote], but instead of producing a datum, produces a syntax object.
@@ -193,7 +181,7 @@ This design leads to a more regular experience than the current situation in Rac
   
   Whereas @racket[taffy-quote] imitates @racket[quote] and @racket[quasiquote], @racket[taffy-quote-syntax] imitates @racket[quote-syntax].
   
-  It may be tempting to compare the splicing support of @tt{taffy-quote-syntax} to the splicing support of @racket[quasisyntax]. However, @racket[quasisyntax] supports template variables and ellispes, and @tt{taffy-quote-syntax} does not. In the future, Punctaffy may offer a @tt{taffy-syntax} operation that works more like @racket[quasisyntax].
+  It may be tempting to compare the splicing support of @tt{taffy-quote-syntax} to the splicing support of @racket[quasisyntax]. However, @racket[quasisyntax] supports template variables and ellispes, and @tt{taffy-quote-syntax} does not. In the future, Punctaffy may offer a @tt{taffy-syntax} operation that works more like @racket[quasisyntax]. For a little more in-depth exploration of what @tt{taffy-syntax} would hypothetically look like, see @secref["potential-use-case-ellipsis-unsyntax"].
   
   @; TODO: Update that `taffy-syntax` remark if and when we implement `taffy-syntax`.
 }
@@ -207,12 +195,10 @@ This design leads to a more regular experience than the current situation in Rac
 
 This module uses the higher-dimensional lexical structure afforded by @tech{hyperbrackets} to define operations that use a kind of higher-dimensional lexical scope.
 
-(TODO: Let's give an example of how @tech{hyperbracketed} operations can nest with each other.)
-
 
 @defform[
-  #:literals (^<d ^>d)
-  (taffy-let ([id val-expr] ...) (^<d 2 body-expr-and-splices))
+  #:literals (^<d ^< ^>)
+  (taffy-let ([id val-expr] ...) (^< body-expr-and-splices))
   #:grammar
   [
     (body-expr-and-splices
@@ -223,7 +209,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
       #(body-expr-and-splices ...)
       #s(prefab-key-datum body-expr-and-splices ...)
       (^<d degree deeper-body-expr-and-splices ...)
-      (^>d 1 spliced-expr))]
+      (^> spliced-expr))]
 ]{
   A variant of @racket[let] that uses @tech{hyperbrackets} to delimit a lexical scope in the shape of a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet behave just as they would normally but without the variable bindings in scope.
   
@@ -292,7 +278,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     (TODO: That's a mouthful. Can we reword this?)
   }
   
-  @specsubform[#:literals (^>d) (^>d 1 spliced-expr)]{
+  @specsubform[#:literals (^>) (^> spliced-expr)]{
     Produces an expression which, when evaluated, is equivalent to @racket[spliced-expr].
     
     When this syntax object appears in a context where it's quoted, like as a subform of an expression that's a @racket[quote] form, a box, a vector, or a prefab struct, the result is unspecified.
@@ -302,7 +288,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
-  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d] and @racket[^>d] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
+  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
   
   Out of the hyperbracket notations this operation does support, not all of them will necessarily be preserved as-is; some may be replaced with other, equivalent hyperbracket notations, which may be detectable using @racket[quote]. In general, this operation will strive to preserve the notations that were actually used at the call site. Where it fails to do that, it will use notations exported by the @racket[punctaffy] module (e.g. the @racket[^<d] and @racket[^>d] notations).
   
@@ -310,21 +296,21 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     #:eval (example-eval)
     (eval:alts
       (pd _/ let ([x 5])
-        (taffy-let ([_x (+ 1 2)]) _/ ^<d 2
-          (+ (* 10 _x) _/ ^>d 1 _x)))
+        (taffy-let ([_x (+ 1 2)]) _/ ^<
+          (+ (* 10 _x) _/ ^> _x)))
       35)
     (eval:alts
-      (pd _/ taffy-let () _/ ^<d 2
+      (pd _/ taffy-let () _/ ^<
         (if #f
-          (^>d 1 _/ error "whoops")
+          (^> _/ error "whoops")
           "whew"))
       "whew")
   ]
 }
 
 @defform[
-  #:literals (^<d ^>d)
-  (list-taffy-map (^<d 2 body-expr-and-splices))
+  #:literals (^<d ^< ^>)
+  (list-taffy-map (^< body-expr-and-splices))
   #:grammar
   [
     (body-expr-and-splices
@@ -335,7 +321,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
       #(body-expr-and-splices ...)
       #s(prefab-key-datum body-expr-and-splices ...)
       (^<d degree deeper-body-expr-and-splices ...)
-      (^>d 1 lst-expr))]
+      (^> lst-expr))]
   #:contracts ([lst-expr list?])
 ]{
   A variant of @racket[map] that uses @tech{hyperbrackets} to delimit the transformation code in a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet are evaluated first, and they supply the lists to iterate over. There must be at least one list given to iterate over, and all the lists must be of the same length.
@@ -347,17 +333,17 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   @examples[
     #:eval (example-eval)
     (eval:alts
-      (pd _/ list-taffy-map _/ ^<d 2
+      (pd _/ list-taffy-map _/ ^<
         (format "~a, ~a!"
-          (^>d 1 _/ list "Goodbye" "Hello")
-          (^>d 1 _/ list "abyss" "world")))
+          (^> _/ list "Goodbye" "Hello")
+          (^> _/ list "abyss" "world")))
       (list "Goodbye, abyss!" "Hello, world!"))
   ]
 }
 
 @defform[
-  #:literals (^<d ^>d)
-  (list-taffy-bind (^<d 2 body-expr-and-splices))
+  #:literals (^<d ^< ^>)
+  (list-taffy-bind (^< body-expr-and-splices))
   #:grammar
   [
     (body-expr-and-splices
@@ -368,7 +354,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
       #(body-expr-and-splices ...)
       #s(prefab-key-datum body-expr-and-splices ...)
       (^<d degree deeper-body-expr-and-splices ...)
-      (^>d 1 lst-expr))]
+      (^> lst-expr))]
   #:contracts ([lst-expr list?])
 ]{
   A variant of @racket[append-map] (named like @racket[list-bind] from Lathe Comforts) that uses @tech{hyperbrackets} to delimit the transformation code in a @tech{degree}-2 @tech{hypersnippet}. Expressions supplied in the degree-1 @tech{holes} of this hypersnippet are evaluated first, and they supply the lists to iterate over. There must be at least one list given to iterate over, and all the lists must be of the same length.
@@ -380,8 +366,8 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   @examples[
     #:eval (example-eval)
     (eval:alts
-      (pd _/ list-taffy-bind _/ ^<d 2
-        (list (^>d 1 _/ list 1 3 5) (^>d 1 _/ list 2 4 6)))
+      (pd _/ list-taffy-bind _/ ^<
+        (list (^> _/ list 1 3 5) (^> _/ list 2 4 6)))
       (list 1 2 3 4 5 6))
   ]
 }

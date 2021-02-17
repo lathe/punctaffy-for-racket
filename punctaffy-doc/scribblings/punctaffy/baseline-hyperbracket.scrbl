@@ -38,8 +38,6 @@ Punctaffy's main module, @racket[punctaffy], provides the hyperbracket notation 
 
 Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a straightforward analogue as an operaton that uses hyperbrackets, we call it a @deftech{hyperbracketed} operation. We refer to code where hyperbrackets can appear as @deftech{hyperbracketed code}.
 
-(TODO: Demonstrate a higher-dimensional macro that uses this notation. We have some quasiquotation operations almost ready to go in quote.rkt.)
-
 
 @defform[(^<d degree term ...)]{
   A @tech{hyperbracket} notation that represents an opening hyperbracket with a specified nonzero @tech{degree}. The degree must be a natural number literal.
@@ -47,6 +45,8 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
   
   When writing a hyperbracket parser, this notation can be recognized using @racket[hyperbracket-open-with-degree?].
+  
+  For the common case where @racket[degree] is 2, see the shorthand @racket[^<], which has examples in @secref["intro"]. For a rare example of hypothetical code where @racket[degree] would be 3, see @secref["potential-use-case-ellipsis-unsyntax"].
 }
 
 @defform[(^>d degree term ...)]{
@@ -55,6 +55,8 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   This notation is not an expression. Using it as an expression is a syntax error.
   
   When writing a hyperbracket parser, this notation can be recognized using @racket[hyperbracket-close-with-degree?].
+  
+  For the common case where @racket[degree] is 1, see the shorthand @racket[^>], which has examples in @secref["intro"]. For a rare example of hypothetical code where @racket[degree] would be 2, see @secref["potential-use-case-ellipsis-unsyntax"].
 }
 
 @defform[(^< term ...)]{
@@ -65,6 +67,8 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   Note that while @tt{^<} involves a degree of 2, @racket[^>] involves a degree of 1. This may seem confusing out of context, but these two often match up with each other.
   
   Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
+  
+  For examples of how to use @racket[^<] and @racket[^>], see @secref["intro"].
 }
 
 @defform[(^> term ...)]{
@@ -75,4 +79,6 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   Note that while @tt{^>} involves a degree of 1, @racket[^<] involves a degree of 2. This may seem confusing out of context, but these two often match up with each other.
   
   This notation is not an expression. Using it as an expression is a syntax error.
+  
+  For examples of how to use @racket[^<] and @racket[^>], see @secref["intro"].
 }

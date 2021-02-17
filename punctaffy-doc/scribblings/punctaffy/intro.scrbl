@@ -173,14 +173,6 @@ After:
               (^>
                 (list-taffy-map
                   (^< (taffy-quote (^< (li (^> (list (^> _items))))))))))))))
-    #;
-    (define (_make-sxml-unordered-list _items)
-      (taffy-quote
-        (^<
-          (ul
-            (^>
-              (list-taffy-map
-                (^< (taffy-quote (^< (li (^> (list (^> _items)))))))))))))
     (define (_make-sxml-unordered-list _items)
       `(ul
         ,@(for/list ([_item (in-list _items)])
@@ -205,13 +197,6 @@ In many cases, we might be able to draw attention to matching hyperbrackets a li
             (^<
               (taffy-quote _/ ^< _/ li _/ ^> _/ list
                 (^> _items)))))))
-    #;
-    (pd _/ define (_make-sxml-unordered-list _items)
-      (taffy-quote _/ ^< _/ ul _/ ^>
-        (list-taffy-map
-          (^<
-            (taffy-quote _/ ^< _/ li _/ ^> _/ list
-              (^> _items))))))
     (define (_make-sxml-unordered-list _items)
       `(ul
         ,@(for/list ([_item (in-list _items)])

@@ -454,9 +454,6 @@
             (snippet-sys-snippet-degree ss snippet))
           (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
             selectable?))])]
-  ; TODO: See if the result contract should be more specific. The
-  ; resulting snippet should always be of the same shape as the given
-  ; one, and it should have `selectable?` values in its holes.
   [snippet-sys-snippet-select-if-degree
     (->i
       (

@@ -746,7 +746,7 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
 )]{
   Structure type property operations for @tech{hypersnippet systems} (aka @tech{snippet systems}). These are systems of traversal and concatenation operations over some form of @tech{hypersnippet} data, where the @tech{degrees} of the hypersnippets range over some decided-upon @tech{dimension system}.
   
-  @; TODO: Once the link works, add "See @racket[snippet-format-sys?] for a similar bundle of operations which allows the dimension system to be decided upon by the caller."
+  See @racket[snippet-format-sys?] for a similar bundle of operations which allows the dimension system to be decided upon by the caller.
 }
 
 @defproc[(snippet-sys-snippet/c [ss snippet-sys?]) flat-contract?]{
@@ -882,8 +882,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Given a @tech{hypersnippet} @tech{shape}, returns an content-free hypersnippet which has that shape. The result has carries all the same values in its @tech{holes}.
   
   This operation can be inverted using @racket[snippet-sys-snippet->maybe-shape].
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the input shape.
 }
 
 @defproc[
@@ -916,7 +914,7 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   
   This operation is invertible when it succeeds. The resulting snippet, if any, can be converted back by calling @tt{snippet-sys-snippet-set-degree-maybe} again with the snippet's original degree.
   
-  @; TODO: See if the result contract should be more specific. The result should always exist if the snippet already has the given degree, and it should always exist if the given degree is greater than that degree and that degree is nonzero. Moreover, the result should always have the same shape as the input.
+  @; TODO: See if the result contract should be more specific. The result should always exist if the snippet already has the given degree, and it should always exist if the given degree is greater than that degree and that degree is nonzero.
 }
 
 @defproc[
@@ -932,15 +930,11 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
 ]{
   Given a @tech{hypersnippet} @tech{shape}, returns a content-free hypersnippet that fits into a @tech{hole} of that shape and has its own hole of the same shape. The resulting snippet has the given @tech{degree}, which must be high enough that a hole of shape @racket[shape] is allowed. The resulting snippet's @racket[shape]-shaped hole carries the given data value, and its lower-degree holes carry the same data values carried by @racket[shape]'s holes.
   
-  The results of this operation are the identity elements of hypersnippet concatenation. It's the identity on both sides: Filling a hypersnippet's hole with one of these hypersnippets and concatenating has no effect, and filling this one's @racket[shape]-shaped hole with another hypersnippet and concatenating has no effect either.
-  
-  @; TODO: Once the link works, add a mention of @racket[ypersnippet-join] to the above paragraph.
+  The results of this operation are the identity elements of hypersnippet concatenation (@racket[snippet-sys-snippet-join]). It's the identity on both sides: Filling a hypersnippet's hole with one of these hypersnippets and concatenating has no effect, and filling this one's @racket[shape]-shaped hole with another hypersnippet and concatenating has no effect either.
   
   This operation can be inverted using @racket[snippet-sys-snippet-undone].
   
   The results of this operation are always content-free, so they can be successfully converted to shapes by @racket[snippet-sys-snippet->maybe-shape].
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given shape in its low-degree holes.
 }
 
 @defproc[
@@ -960,8 +954,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   This operation is invertible when it succeeds. The resulting shape, if any, can be converted back into a content-free hypersnippet by using @racket[snippet-sys-snippet-done].
   
   (TODO: Consider renaming this to have "maybe" in the name, bringing it closer to @racket[snippet-sys-snippet->maybe-shape] and @racket[snippet-sys-snippet-set-degree-maybe].)
-  
-  @; TODO: See if the result contract should be more specific. The resulting shape should always be of the same shape as the given snippet's low-degree holes.
 }
 
 @; TODO: Reconsider where to arrange this relative to the other operations here.
@@ -976,8 +968,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
       (fn _hole selected?)))
 ]{
   Returns a @tech{hypersnippet} like the given one, but where the data value carried in each @tech{hole} has been selected for traversal in the sense of @racket[selectable?].
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
 
 @defproc[
@@ -1038,8 +1028,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   This operation serves as a way to compare the shape of a snippet with a known shape. For example, when this operation is used with content-free snippets (those which correspond to shapes via @racket[snippet-sys-shape->snippet] and by @racket[snippet-sys-snippet->maybe-shape]), and when those snippets have all their data values selected, it effectively serves as a way to compare two shapes for equality. It can also serve as a way to compute whether a given snippet is a compatible fit for a given hole (even if the snippet has some high-@tech{degree} holes beyond those accounted for in the hole's shape).
   
   When the "comparison" is successful, that means the shape and snippet have sufficiently similar layouts to combine their data values. That allows this comparison to double as a sort of zipping operation.
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
 
 @defproc[
@@ -1062,8 +1050,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   This operation serves as a way to compare the shape of a snippet with a known shape. For example, when this operation is used with content-free snippets (those which correspond to shapes via @racket[snippet-sys-shape->snippet] and by @racket[snippet-sys-snippet->maybe-shape]), it effectively serves as a way to compare two shapes for equality.
   
   When the "comparison" is successful, that means the shape and snippet have sufficiently similar layouts to combine their data values. That allows this comparison to double as a sort of zipping operation.
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
 
 @defproc[
@@ -1115,8 +1101,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
       (snippet-sys-snippet-degree ss snippet)))
 ]{
   Iterates over the given @tech{hypersnippet}'s @tech{hole} data values in some order and calls the given function on each one, possibly stopping early if at least one invocation of the function returns @racket[(nothing)]. If any of these invocations of the function returns @racket[(nothing)], the result is @racket[(nothing)]. Otherwise, the result is a @racket[just?] of a hypersnippet where the values have been replaced with the corresponding @racket[hv-to-maybe-v] function results.
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
 
 @defproc[
@@ -1128,8 +1112,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     (snippet-sys-snippet-degree ss snippet))
 ]{
   Transforms the given @tech{hypersnippet}'s @tech{hole} data values by calling the given function on each one.
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
 
 @defproc[
@@ -1143,8 +1125,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     (snippet-sys-snippet-degree ss snippet))
 ]{
   Transforms the given @tech{hypersnippet}'s @tech{hole} data values by calling the given function on each @racket[selected?] one.
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one.
 }
 
 @defproc[
@@ -1160,8 +1140,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
       (fn _hole selectable?)))
 ]{
   Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by calling the given function to decide whether each one should be @racket[selected?].
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one, and it should have `selectable?` values in its holes.
 }
 
 @defproc[
@@ -1177,8 +1155,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
       (fn _hole selectable?)))
 ]{
   Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by calling the given function on each hole's @tech{degree} decide whether the value should be @racket[selected?].
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one, and it should have `selectable?` values in its holes.
 }
 
 @defproc[
@@ -1193,8 +1169,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
       (fn _hole selectable?)))
 ]{
   Turns the given @tech{hypersnippet}'s @tech{hole} data values into @racket[selectable?] values by selecting the values whose holes' @tech{degrees} are strictly less than the given one.
-  
-  @; TODO: See if the result contract should be more specific. The resulting snippet should always be of the same shape as the given one, and it should have `selectable?` values in its holes.
 }
 
 @defproc[
@@ -1470,8 +1444,6 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     (struct-type-property/c snippet-sys-morphism-sys-impl?)
   ]
 )]{
-  @; TODO: Figure out if we should put the 's inside the @deftech{...} brackets (even if that means we need to write out the link target explicitly).
-  
   Structure type property operations for structure-preserving transformations from one @tech{snippet system}'s @tech{dimension numbers}, hypersnippet @tech{shapes}, and @tech{hypersnippets} to another's. In particular, these preserve relatedness of these values under the various operations a snippet system supplies.
 }
 
@@ -2421,7 +2393,7 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
 
 @; TODO: Consider having a `hypertee-coil->hypernest-coil`, similar to `hypertee-bracket->hypernest-bracket`. This would probably need to take a callback that could recursively convert the tails.
 
-@; TODO: Consider having a `compatiable-hypernext-coil->hypertee-coil`, similar to `compatible-hypernest-bracket->hypertee-bracket`. This would probably need to take a callback that could recursively convert the tails.
+@; TODO: Consider having a `compatiable-hypernest-coil->hypertee-coil`, similar to `compatible-hypernest-bracket->hypertee-bracket`. This would probably need to take a callback that could recursively convert the tails.
 
 
 @subsection[#:tag "hypernest-bracket"]{Hypernest Brackets}
