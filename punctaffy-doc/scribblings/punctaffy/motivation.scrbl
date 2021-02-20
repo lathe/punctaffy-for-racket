@@ -219,15 +219,116 @@ Other embedded DSLs with lexically scoped interactions, such as type inference a
 
 
 
-@subsection[#:tag "potential-use-case-opetopes"]{Potential Application: Representing Opetopes}
+@subsection[#:tag "potential-use-case-opetopes"]{Potential Application: Opetopes and Higher Categories}
 
-The slide deck @hyperlink["https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf"]{"Type Theory and the Opetopes" by Eric Finster} gives a nice graphical overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions an inductive type @tt{MTree} of labeled opetopes, which more or less corresponds to Punctaffy's @tech{hypertee} data structure. To our knowledge, @tech{hyperbracketed} notations have not been used in this context before, but they should be a good fit.
+An opetope is a kind of geometric shape that arises in certain formulations of higher category theory.
+
+A category is like the collection of paths in a directed graph: Two paths (called morphisms) can match up end-to-end, and if they do, together they make a single path. Path-joining like this is associative; if we join some number of paths together this way, it doesn't matter which ones we join first.
+
+Higher category theory extends this to higher-dimensional shapes. If two paths share both their endpoints, we can think of a soap bubble where current flows across from one of them to the other, a path between paths (called a 2-cell). And given two of these, we can imagine a geometric solid where current flows from one of these faces to the other (called a 3-cell).
+
+We can study more subtle category-like systems this way: Instead of simply knowing whether two paths are equal or not, we can point to a 2-cell and say they're equivalent according to this specific equivalence that translates between them. This is appealing to many category theorists, because a lot of interesting category-theoretic results don't depend at all on whether paths have @emph{particular endpoints} (called objects), only that when joining paths, there's some equivalence-like way to join up one endpoint to another. Once we're looking at 2-cells, a lot of interesting results have nothing to do with what specific 1-cells/paths/morphisms they begin and end at.
+
+However, this kind of generalization also makes it quite a bit more difficult to formalize the meaning of a higher category. A number of different formalizations exist.
+
+What we've described just now is a @emph{globular} approach, where each cell of dimension (N + 1) begins at a cell of dimension N and ends at another cell of dimension N with the same endpoints.
+
+Perhaps we should instead take a @emph{cubical} approach, where the source and target don't necessarily have "the same" endpoints, just edges that are related by other cells. Then a 2-cell is shaped like a square, a 3-cell is a cube, and higher cells are hypercubes.
+
+Or perhaps we could take a @emph{simplicial} approach, where the higher cells that mediate compositions of two paths are triangles, the ones that mediate compositions of three paths are tetrahedra, and the ones that mediate compositions of more paths are higher-dimensional simplex polytopes.
+
+But one of the approaches is what we're here for, because it resembles Punctaffy's @tech{hypersnippets}: The @emph{opetopic} approach.
+
+@deftech{Opetopes} are another set of higher-dimensional shapes like hypercubes or simplexes. An @deftech{opetopic} cell of dimension (N + 1) has a target cell of dimension N and any number of source cells of dimension N that are in a composable arrangement. For instance, an opetopic 2-cell ends at a path, and it begins with any number of paths aligned end-to-end. This makes opetopic 2-cells just the right shape for saying "this arrangement of paths composes to make something that's related to this other path in this particular way." Opetopic 3-cells are good for the same thing, but they relate a composable arrangement of 2-cells (i.e. a tree) to a single 2-cell. Since these are many-input, single-output relations, a composition of 2-cells tends to look like a tree, and higher cells are composed along "higher-dimensional trees."
+
+The peculiar shape of opetopes lets us talk about composition at the same time as we talk about cells being related to each other. Instead of postulating ideas of composition and equivalence as separate ideas, we can define them both in terms of the existence of certain opetopic cells. If we're looking for a cell that acts as the composition of some composable arrangement of cells, all we need is for the arrangement to be the source of some equivalence-like cell; that way the target of that cell is the composition we're looking for (or equivalent to it, which is just as good). Once we have composition, we can also use cells like these to relate one arrangement to another, by first taking the composition of the target arrangement and making that the target cell of another opetope. In this fashion, we can build up a theory of weak higher categories by merely requiring that enough equivalence-like cells exist (and are actually equivalence-like in their relationships with each other).
+
+Now we can finally relate opetopes to hypersnippets, specifically @tech{hypertees}. At low dimensions, there's a striking resemblance: @tech{Degree}-2 hypertees are shaped like @racket[(^< (^> __) (^> __) (^> __) ...)] with some number of degree-1 @tech{holes} in sequence, which looks just like the way an opetopic 2-cell represents a composition of any number of paths. There's only one degree-0 hypertee, and only one degree-1 hypertee, and the same is true for dimension-0 and dimension-1 opetopes. At degree 3, the degree-2 holes of a hypertee can be arranged like a tree, and the source cells of a dimension-3 opetope are also arranged like a tree.
+
+However, there does seem to be a discrepancy. This is apparent when we look at algebraic data types that represent opetopes and hypersnippets.
+
+The slide deck @hyperlink["https://ncatlab.org/nlab/files/FinsterTypesAndOpetopes2012.pdf"]{"Type Theory and the Opetopes"} by Eric Finster gives a richly illustrated overview of opetopes as they're used in opetopic higher category theory and opetopic type theory. One slide mentions a type @tt{MTree} representing "possible ill-typed A-labeled pasting diagrams":
+
+@code-block{
+  data MTree (A : Set) : N → Set where
+    obj : MTree A 0
+    drop : {n : N} → MTree ⊤ n → MTree A (n + 2)
+    node : {n : N} → A → MTree (MTree A (n + 1)) n → MTree A (n + 1)
+}
+
+This corresponds to three mutually exclusive kinds of opetopes:
+
+@itemlist[
+  @item{An opetope can be the trivial dimension-0 opetope, which has no targets or sources.}
+  
+  @item{An dimension-(@emph{n} + 2) opetope's composable arrangement of dimension-(@emph{n} + 1) source cells can be a trivial arrangement of zero source cells. In that case, its dimension-(@emph{n} + 1) target cell is shaped like an identity element of dimension-(@emph{n} + 1) cell composition. That dimension-(@emph{n} + 1) target cell must have a single dimension-@emph{n} source cell of the same shape as its dimension-@emph{n} target cell. This kind of opetope is called a "drop" due to the teardrop-like way it can be illustrated: The zero source cells effectively pinch the two sides of the target cell together into a teardrop. There's one of these dimension-(@emph{n} + 2) opetopes for each of the dimension-@emph{n} opetopes (the endpoints that are pinched together).}
+  
+  @item{Finally, a dimension-(@emph{n} + 1) opetope's composable arrangement of source cells can consist of a nonzero number of cells. In this case, one of these dimension-@emph{n} source cells in the arrangement can be identified by its incidence with the the target cell's target cell (if dimension (@emph{n} + 1) is at least 2). The rest can be grouped into sub-arrangements of dimension (@emph{n} + 1), each of which targets one of the identified source cell's source cells. (If the dimension (@emph{n} + 1) is only 1, then there's precisely one dimension-@emph{n} source cell, which we can serendipitously talk about the same way since that source cell no source cells of its own for the sub-arrangements to target.)}
+]
+
+In short, an opetope falls into one of three cases: Either it's the trivial dimension-0 opetope where sources aren't allowed at all, it has no sources, or it has at least one source.
+
+As for hypersnippets, an analogous data type definition for possible ill-typed A-labeled hypertees would look like this:
+
+@code-block{
+  data Hypertee (A : Set) : N → Set where
+    zero : Hypertee A 0
+    hole :
+      {m, n : N} → {m < n} → A → Hypertee (Hypertee A n) m →
+        Hypertee A n
+}
+
+These cases correspond to @racket[hypertee-coil-zero] and @racket[hypertee-coil-hole], and we can describe them like this:
+
+@itemlist[
+  @item{A hypertee can be the trivial degree-0 hypertee, which has no holes.}
+  
+  @item{A degree-@emph{n} hypertee can have at least one hole. In that case, the first hole has some dimension @emph{m} such that (@emph{m} < @emph{n}). The rest of the hypertee's arrangement of holes can be grouped into sub-arrangements which correspond to other degree-@emph{n} hypertees.}
+]
+
+Going from opetopes to hypertees, we notably lose the existence of "drop" opetopes, but the "at least one" case has become more lenient and admits more hypertees to take the place of what we lost. Specifically, the "at least one" case no longer limites us to incrementing the dimension by precisely 1.
+
+This gives us all the shapes we had before. The degree-2 hypertee @racket[(^<)] has zero degree-1 holes @racket[(^> __)], and in this way it is exactly the same shape as the "drop" dimension-2 opetope which has zero degree-1 source cells. However, we don't represent it by a zero-hole "drop" case; we represent it as having at least one hole: Its @emph{degree-0} hole. The degree-0 hole corresponds not to one of the dimension-2 opetope's dimension-1 source cells, but to its dimension-1 target cell's dimension-0 source cell. We can similarly encode any other "drop" opetope as a hypertee by encoding its target cell (which is not itself a "drop" opetope since it has one source cell) and then adjusting that encoding to have a degree 1 greater.
+
+In fact, we have some hypertees that don't correspond to any opetopes. For instance, the degree-2 hypertee @racket[(^< (^> __) (^> __))] corresponds to an opetope, but setting its degree to 3 gives us a degree-3 hypertee @racket[(^<d 3 (^> __) (^> __))] that has no such correspondence. This hypertee isn't a drop, because a drop's target must have exactly one source (of the same shape as its target, so that it can represent an identity element that unimposingly slots into compositions along that shape).
+
+On the other hand, if we turn our attention to the role of these shapes as conceptual notations for higher category theory, then in some sense it makes sense for @racket[(^<d 3 (^> __) (^> __))] to be a "drop." That's because, while the degree-2 target @racket[(^< (^> __) (^> __))] isn't syntactically identity-shaped the way @racket[(^< (^> __))] is, it's still @emph{semantically} identity-shaped: A higher category has an equivalence-like cell of this shape---namely, one of the 2-cells that relates two composable paths to the combined path they become.
+
+The story isn't as simple as saying that there are more hypertees than opetopes. The two approaches seem to have an affinity for different kinds of generalization:
+
+@itemlist[
+  
+  @item{
+    Opetopes are typically defined by iterating a @emph{slice construction} taking one symmetric operad or symmetric multicategory to another. The "symmetric" part means there sources of an opetopic cell are an orderless collection.
+    
+    The Punctaffy authors don't yet (TODO) understand the reason for this. It seems the cells can be assigned an ordering by, for instance, iterating over each tree of a zoom complex in depth-first order according to the branch ordering we established in the previous tree, and numbering the circles as we first arrive at them to establish the branch ordering of the next tree. But we suppose the slice construction could potentially be applied to an operad or multicategory that isn't trivial enough for this to work. As long as most of the work on opetopic theories works with this kind of slice construction, its results will likely be transportable to those less trivial base operads/multicategories. (The paper @hyperlink["https://mat.uab.cat/~kock/cat/0706.1033v2.pdf"]{"Polynomial functors and opetopes"} by Joachim Kock, André Joyal, Michael Batanin, and Jean-François Mascari goes into detail on zoom complexes and might even contain information as to why the symmetric approach is necessary.)
+    
+    This kind of generality doesn't seem like a focus of hypersnippets. Hypersnippets are primarily motivated by giving structure to a text file, a context where the syntax does have an innate order that we can work with. In particular, the design of @tech{hyperbracket} notation and the @tech{hyperstacks} to parse it likely relies intrinsically on syntax having an ordering so that the brackets can be associated with their closest matches.
+  }
+  
+  @item{
+    Since the definition of hypertees doesn't rely on adding 1 or 2 to a dimension number, hypertees can be generalized across any @tech{dimension system}. (Dimension systems seem to be semilattices.) We sometimes make use of this as an implementation technique, by constructing a modified dimension system that gives us the hypertees we need for our intermediate representations. Typically when we do this, we simply add a new greatest element to the dimension system, giving us "degree-infinity" hypersnippets to work with.
+    
+    With opetopes, by defining them via the iteration of a slice construction on a base operad/multicategory, it's generally possible to prove things about them by doing induction on the dimension of an opetope. (TODO: Is that right?)
+    
+    In Punctaffy, since hypersnippets are motivated by syntax, and since programs have syntax of finite size, we can count on each hypersnippet to have a finite number of holes. This already seems to be a way to keep our recursive constructions well-founded, so induction over the degree of a hypersnippet doesn't seem to be as necessary.
+  }
+  
+]
+
+Still, hypertees and opetopes are two systems that seem to have a lot in common. This finally brings us to the potential applications:
+
+It's quite likely Punctaffy will be easier to explain if we borrow some of the graphical visualization techniques from the existing body of work on opetopes. Conversely, we suspect opetopic type theory in particular would benefit from hyperbrackets as a more intuitive notation for specifying opetopic shapes in textual code.
+
+If hypertees aren't quite the same as opetopes, then perhaps hypertees constitute yet another geometry for higher category theory, alongside shapes like hypercubes and simplexes. Perhaps this approach to higher category theory would be more appealing than the others in some ways, at least thanks to the ease of representing its higher-dimensional shapes in textual code if nothing else.
+
+If we pursue hypersnippet-shaped higher category theory, then Punctaffy's progress so far can give us some clues as to how that theory might be formulated. In particular, the @tech{snippet system} interface likely bears a strong resemblance to the interface of an internalized hypersnippet-based higher category, similar to the way the Haskell @tt{Category} type class can be seen as the interface of an internalized 1-category.
 
 
 
 @subsection[#:tag "potential-use-case-transpension"]{Potential Application: Type Theories with Transpension}
 
-The paper @hyperlink["https://arxiv.org/pdf/2008.08533.pdf"]{"Transpension: The Right Adjoint to the Pi-type" by Andreas Nuyts and Dominique Devriese} discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of @tech{degree}-2 @tech{hypersnippets} in its syntax.
+The paper @hyperlink["https://arxiv.org/pdf/2008.08533.pdf"]{"Transpension: The Right Adjoint to the Pi-type"} by Andreas Nuyts and Dominique Devriese discusses several type theories that have operations that we might hope to connect with what Punctaffy is doing. Transpension appears to be making use of @tech{degree}-2 @tech{hypersnippets} in its syntax.
 
 Essentially (and if we understand correctly), a transpension operation declares a variable that represents some unknown coordinate along a new dimension. At some point in the scope of that dimension variable, another operation takes ownership of it, taking the original dimension variable and all the variables that depended on it since then out of scope, but replacing the latter with reusable functions that can be applied repeatedly to different coordinate values of the user's choice.
 

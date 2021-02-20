@@ -63,26 +63,26 @@ In the expression ``α`(li ,•items)``, we see the `` `...`` and `,...` tree no
 
 In Punctaffy's terms, this is the nesting of one degree-2 hypersnippet inside another. It's just like the nesting of one parenthesized region of code inside another, but one dimension higher than usual.
 
-In fact, the geometric shape of a hypersnippet is already studied under a different name: An opetope. Opeteopes are usually studied in higher-dimensional category theory and type theory as one way to work with algebraic structures where two things can be "equal" in more than one distinct way. For instance, in homotopy theory, in the place of equality there's a notion of path-connectedness, and the different "ways" things are path-connected are the various different paths between them.
+In fact, the geometric shape of a hypersnippet seems to be deeply related to another higher-dimensional shape called an opetope, where the idea of "dimension" is more rigorously studied. Opeteopes are usually brought up in higher algebra (e.g. higher category theory and higher-dimensional type theory), where it's possible to ask whether two equivalence proofs of dimension N are themselves equivalent via some equivalence proof of dimension (N + 1). When trying to model this precisely, opetopes are one of many possible higher-dimensional geometric shapes that an equivalence proof can take on. Hypersnippets seem to be mostly the same as opetopes; it seems that every opetope is a hypersnippet, but not quite every hypersnippet is an opetope. For a more in-depth look at this, see [Potential Application: Opetopes and Higher Categories](https://docs.racket-lang.org/punctaffy/motivation.html#%28part._potential-use-case-opetopes%29).
 
-Our motivation for using these shapes in Punctaffy is different, but it's not a complete coincidence. In a way, the body of a quasiquotation is like the space swept out by the path from the `` `...`` tree node to the `,...` tree nodes, and if we think in terms of fully parenthesized s-expressions, each tree node corresponds to a line drawn from its opening parenthesis to its closing parenthesis.
+Our motivation for using hypersnippets in Punctaffy isn't because we're trying to talk about higher-dimensional algebraic relationships, but it's not unrelated either. In a program tree, a single tree node is like the 1-dimensional path that relates the place the node begins in the code to the place it ends, and the quoted body of a quasiquotation is like the 2-dimensional path swept out by taking the `,_...` tree nodes' 1-dimensional paths and pulling them down the tree until they reach the matching `` `_...` tree node.
 
-But Punctaffy is driven by syntax. Let's recall the above example of synthesizing quasiquotaton and apply-to-all notation in a single program:
-
-```racket
-(define (make-sxml-unordered-list items)
-  `(ul ,@α`(li ,•items)))
-```
-
-Here we have `` `...`` nested inside `α...`. We could also imagine the reverse of this; if we quote a piece of code which uses `α...`, then the `α...` appears nested inside the `` `...``.
-
-What does this program do?
+Regardless of that kind of algebraic interpretation, Punctaffy is driven by syntax. Where there's syntax, there are usability concerns like syntax errors and user-defined syntactic extensions. Let's recall the above example where we mix quasiquotaton and apply-to-all notation in a single program:
 
 ```racket
-α`(li •,items)
+  (define (make-sxml-unordered-list items)
+    `(ul ,@α`(li ,•items)))
 ```
 
-This is analogous to writing the program `(while #t (displayln "Hello, world))"`. The delimiters are simply mismatched. We can try to come up with creative interpretations, but there's little reason to use the notations this way in the first place.
+Here we have `` `_...`` nested inside `α...` to make ``α`...``. We could also imagine the reverse of this; to quote a piece of code which uses `α...`, we can write `` `α...``, letting the `α...` appear nested inside the `` `_...`.
+
+What happens when we nest improperly? For instance, what does this program do?
+
+```racket
+  α`(li •,items)
+```
+
+This is analogous to writing the program `(while #t (displayln "Hello, world))"`. While some language designers may try to force programs like these to work using creative interpretations, there's little reason to use these kinds of mismatched brackets in the first place. It's a good place to report an error.
 
 So, where do we report the error? Racket's reader doesn't match occurrences of `` `...`` to occurrences of `,...` at read time; instead, these always read successfully as `(quasiquote ...)` and `(unquote ...)`, and it's up to the implementation of the `quasiquote` macro to search its tree-shaped input, looking for occurrences of `unquote`. So now do we extend that search so that it keeps track of the proper nesting of `α...` and `•...`? Does every one of these higher-dimensional operations need to hardcode the grammar of every other?
 
