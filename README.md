@@ -65,7 +65,7 @@ In Punctaffy's terms, this is the nesting of one degree-2 hypersnippet inside an
 
 In fact, the geometric shape of a hypersnippet seems to be deeply related to another higher-dimensional shape called an opetope, where the idea of "dimension" is more rigorously studied. Opeteopes are usually brought up in higher algebra (e.g. higher category theory and higher-dimensional type theory), where it's possible to ask whether two equivalence proofs of dimension N are themselves equivalent via some equivalence proof of dimension (N + 1). When trying to model this precisely, opetopes are one of many possible higher-dimensional geometric shapes that an equivalence proof can take on. Hypersnippets seem to be mostly the same as opetopes; it seems that every opetope is a hypersnippet, but not quite every hypersnippet is an opetope. For a more in-depth look at this, see [Potential Application: Opetopes and Higher Categories](https://docs.racket-lang.org/punctaffy/motivation.html#%28part._potential-use-case-opetopes%29).
 
-Our motivation for using hypersnippets in Punctaffy isn't because we're trying to talk about higher-dimensional algebraic relationships, but it's not unrelated either. In a program tree, a single tree node is like the 1-dimensional path that relates the place the node begins in the code to the place it ends, and the quoted body of a quasiquotation is like the 2-dimensional path swept out by taking the `,_...` tree nodes' 1-dimensional paths and pulling them down the tree until they reach the matching `` `_...` tree node.
+Our motivation for using hypersnippets in Punctaffy isn't because we're trying to talk about higher-dimensional algebraic relationships, but it's not unrelated either. In a program tree, a single tree node is like the 1-dimensional path that relates the place the node begins in the code to the place it ends, and the quoted body of a quasiquotation is like the 2-dimensional path swept out by taking the `,...` tree nodes' 1-dimensional paths and pulling them down the tree until they reach the matching `` `...`` tree node.
 
 Regardless of that kind of algebraic interpretation, Punctaffy is driven by syntax. Where there's syntax, there are usability concerns like syntax errors and user-defined syntactic extensions. Let's recall the above example where we mix quasiquotaton and apply-to-all notation in a single program:
 
@@ -74,7 +74,7 @@ Regardless of that kind of algebraic interpretation, Punctaffy is driven by synt
     `(ul ,@α`(li ,•items)))
 ```
 
-Here we have `` `_...`` nested inside `α...` to make ``α`...``. We could also imagine the reverse of this; to quote a piece of code which uses `α...`, we can write `` `α...``, letting the `α...` appear nested inside the `` `_...`.
+Here we have `` `...`` nested inside `α...` to make ``α`...``. We could also imagine the reverse of this; to quote a piece of code which uses `α...`, we can write `` `α...``, letting the `α...` appear nested inside the `` `...``.
 
 What happens when we nest improperly? For instance, what does this program do?
 
