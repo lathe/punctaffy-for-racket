@@ -35,17 +35,17 @@
 
 (check-equal?
   (w- x 5
-    (taffy-let ([x (+ 1 2)]) #/^<d 2
-      (+ (* 10 x) #/^>d 1 x)))
+    (taffy-let ([x (+ 1 2)]) #/^<
+      (+ (* 10 x) #/^> x)))
   (w- x 5
     (let ([x2 (+ 1 2)])
       (+ (* 10 x2) x)))
   "the variable bindings of `taffy-let` only apply within its hyperbracketed body")
 
 (check-equal?
-  (taffy-let () #/^<d 2
+  (taffy-let () #/^<
     (if #f
-      (^>d 1 #/error "whoops")
+      (^> #/error "whoops")
       "whew"))
   (let ()
     (if #f
@@ -54,16 +54,16 @@
   "`taffy-let` only evaluates a spliced expression at the moment it occurs when evaluating the hyperbracketed body")
 
 (check-equal?
-  (list-taffy-map #/^<d 2
+  (list-taffy-map #/^<
     (format "~a, ~a!"
-      (^>d 1 #/list "Hello" "Goodnight")
-      (^>d 1 #/list "world" "everybody")))
+      (^> #/list "Hello" "Goodnight")
+      (^> #/list "world" "everybody")))
   (list "Hello, world!" "Goodnight, everybody!")
   "`list-taffy-map` works")
 
 (check-equal?
-  (list-taffy-bind #/^<d 2
-    (list (^>d 1 #/list 1 3 5) (^>d 1 #/list 2 4 6)))
+  (list-taffy-bind #/^<
+    (list (^> #/list 1 3 5) (^> #/list 2 4 6)))
   (list 1 2 3 4 5 6)
   "`list-taffy-bind` works")
 
@@ -72,29 +72,29 @@
 
 (check-equal?
   (pd _/ let ([_x 5])
-    (taffy-let ([_x (+ 1 2)]) _/ ^<d 2
-      (+ (* 10 _x) _/ ^>d 1 _x)))
+    (taffy-let ([_x (+ 1 2)]) _/ ^<
+      (+ (* 10 _x) _/ ^> _x)))
   35
   "the variable bindings of `taffy-let` only apply within its hyperbracketed body [documentation example variant]")
 
 (check-equal?
-  (pd _/ taffy-let () _/ ^<d 2
+  (pd _/ taffy-let () _/ ^<
     (if #f
-      (^>d 1 _/ error "whoops")
+      (^> _/ error "whoops")
       "whew"))
   "whew"
   "`taffy-let` only evaluates a spliced expression at the moment it occurs when evaluating the hyperbracketed body [documentation example variant]")
 
 (check-equal?
-  (pd _/ list-taffy-map _/ ^<d 2
+  (pd _/ list-taffy-map _/ ^<
     (format "~a, ~a!"
-      (^>d 1 _/ list "Hello" "Goodnight")
-      (^>d 1 _/ list "world" "everybody")))
+      (^> _/ list "Hello" "Goodnight")
+      (^> _/ list "world" "everybody")))
   (list "Hello, world!" "Goodnight, everybody!")
   "`list-taffy-map` works [documentation example variant]")
 
 (check-equal?
-  (pd _/ list-taffy-bind _/ ^<d 2
-    (list (^>d 1 _/ list 1 3 5) (^>d 1 _/ list 2 4 6)))
+  (pd _/ list-taffy-bind _/ ^<
+    (list (^> _/ list 1 3 5) (^> _/ list 2 4 6)))
   (list 1 2 3 4 5 6)
   "`list-taffy-bind` works [documentation example variant]")
