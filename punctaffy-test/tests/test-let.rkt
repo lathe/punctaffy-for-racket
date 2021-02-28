@@ -56,9 +56,9 @@
 (check-equal?
   (list-taffy-map #/^<d 2
     (format "~a, ~a!"
-      (^>d 1 #/list "Goodbye" "Hello")
-      (^>d 1 #/list "abyss" "world")))
-  (list "Goodbye, abyss!" "Hello, world!")
+      (^>d 1 #/list "Hello" "Goodnight")
+      (^>d 1 #/list "world" "everybody")))
+  (list "Hello, world!" "Goodnight, everybody!")
   "`list-taffy-map` works")
 
 (check-equal?
@@ -88,9 +88,9 @@
 (check-equal?
   (pd _/ list-taffy-map _/ ^<d 2
     (format "~a, ~a!"
-      (^>d 1 _/ list "Goodbye" "Hello")
-      (^>d 1 _/ list "abyss" "world")))
-  (list "Goodbye, abyss!" "Hello, world!")
+      (^>d 1 _/ list "Hello" "Goodnight")
+      (^>d 1 _/ list "world" "everybody")))
+  (list "Hello, world!" "Goodnight, everybody!")
   "`list-taffy-map` works [documentation example variant]")
 
 (check-equal?

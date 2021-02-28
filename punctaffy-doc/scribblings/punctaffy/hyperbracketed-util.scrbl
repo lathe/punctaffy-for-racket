@@ -335,9 +335,9 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     (eval:alts
       (pd _/ list-taffy-map _/ ^<
         (format "~a, ~a!"
-          (^> _/ list "Goodbye" "Hello")
-          (^> _/ list "abyss" "world")))
-      (list "Goodbye, abyss!" "Hello, world!"))
+          (^> _/ list "Hello" "Goodnight")
+          (^> _/ list "world" "everybody")))
+      (list "Hello, world!" "Goodnight, everybody!"))
   ]
 }
 
