@@ -152,7 +152,7 @@ A common technique for DSLs in Racket is first to use a parser to preprocess a D
 
 Unfortunately, we've begun to digress into ideas that aren't fully realized in Punctaffy yet. Most DSLs in Racket can use frameworks like `match`, `syntax-parse`, `ragg`, and `brag` to parse and translate their tree-structured code, but Punctaffy doesn't yet have a parsing framework for hyperbracketed code. As such, implementing the `datum` template DSL in terms of Punctaffy may still be trickier than implementing it the way Racket has.
 
-Punctaffy isn't short on unrealized ambitions; the ["Motivation for Punctaffy" section of the docs](http://docs.racket-lang.org/lathe-comforts/motivation.html) describes several application areas where we expect Punctaffy's hypersnippet and hyperbracket concepts to come in handy. For now, our explorations have culminated in operations like `taffy-quote` and `list-taffy-map`, which demonstrate a certain technique: the interoperation of multiple notations like these by means of a common hyperbracket notation. There's still much more exploration ahead.
+Punctaffy isn't short on unrealized ambitions; the ["Motivation for Punctaffy" section of the docs](https://docs.racket-lang.org/punctaffy/motivation.html) describes several application areas where we expect Punctaffy's hypersnippet and hyperbracket concepts to come in handy. For now, our explorations have culminated in operations like `taffy-quote` and `list-taffy-map`, which demonstrate a certain technique: the interoperation of multiple notations like these by means of a common hyperbracket notation. There's still much more exploration ahead.
 
 
 ## Installation and use
@@ -161,4 +161,4 @@ This is a library for Racket. To install it from the Racket package index, run `
 
 To install it from source, run `raco pkg install --deps search-auto` from the `punctaffy-lib/` directory.
 
-[Documentation for Punctaffy for Racket](http://docs.racket-lang.org/lathe-comforts/index.html) is available at the Racket documentation website, and it's maintained in the `punctaffy-doc/` directory.
+[Documentation for Punctaffy for Racket](https://docs.racket-lang.org/punctaffy/index.html) is available at the Racket documentation website, and it's maintained in the `punctaffy-doc/` directory.
