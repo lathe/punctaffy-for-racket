@@ -288,6 +288,11 @@
         (maybe/c
           (snippet-sys-snippet/c
             (snippet-sys-shape-snippet-sys ss)))])]
+  [snippet-sys-snippet-get-shape
+    (->i
+      ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+      [_ (ss)
+        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])]
   ; TODO: See if the result contract should be more specific. The
   ; result should always exist if the snippet already has the given
   ; degree, and it should always exist if the given degree is greater
@@ -593,6 +598,11 @@
           (maybe/c
             (snippet-sys-snippet/c
               (snippet-sys-shape-snippet-sys ss)))])
+      ; snippet-sys-snippet-get-shape
+      (->i
+        ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+        [_ (ss)
+          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
       ; snippet-sys-snippet-set-degree-maybe
       (->i
         (
@@ -1179,6 +1189,7 @@
   (#:method unguarded-snippet-sys-snippet-degree (#:this) ())
   (#:method snippet-sys-shape->snippet (#:this) ())
   (#:method snippet-sys-snippet->maybe-shape (#:this) ())
+  (#:method snippet-sys-snippet-get-shape (#:this) ())
   (#:method snippet-sys-snippet-set-degree-maybe (#:this) () ())
   (#:method unguarded-snippet-sys-snippet-done (#:this) () () ())
   (#:method snippet-sys-snippet-undone (#:this) ())
@@ -2469,6 +2480,9 @@
             (functor-from-dim-sys-sys-apply-to-morphism ffdstsss
               (unextend-with-top-dim-sys-morphism-sys uds)))
           shape)))
+    ; snippet-sys-snippet-get-shape
+    (fn ss snippet
+      (selective-snippet-get-shape ss snippet))
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss new-degree snippet
       (dissect ss (selective-snippet-sys sfs uds _)
@@ -2961,10 +2975,7 @@
       (fn es sfs #/selective-snippet-format-sys sfs)
       (fn es ms #/selective-snippet-format-sys-morphism-sys ms))))
 
-; TODO: See if this has a good design. The interface seems a little
-; sloppy since `content-shape` is set up to take any snippet system,
-; but we only supply it with some specific snippet systems.
-(define (selective-snippet-shape ss s content-shape)
+(define (selective-snippet-get-shape ss s)
   (dlog 'zc13
   #/dissect ss (selective-snippet-sys sfs uds _)
   #/w- eds (extended-with-top-dim-sys uds)
@@ -2972,7 +2983,8 @@
   #/w- uss (functor-sys-apply-to-object ffdstsss uds)
   #/w- ess (functor-sys-apply-to-object ffdstsss eds)
   #/w- e-shape-ss (snippet-sys-shape-snippet-sys ess)
-  #/mat s (selective-snippet-zero content) (content-shape uss content)
+  #/mat s (selective-snippet-zero content)
+    (snippet-sys-snippet-get-shape uss content)
   #/dlog 'zc14
   #/dissect s (selective-snippet-nonzero d content)
     (dlog 'zc14.1 d content
@@ -2985,7 +2997,7 @@
       #/snippet-sys-snippet-set-degree-maybe e-shape-ss
         (extended-with-top-dim-finite d)
         (dlogr 'zc16
-        #/content-shape ess filtered-content))
+        #/snippet-sys-snippet-get-shape ess filtered-content))
       (just shape)
     #/dlog 'zc16
     #/snippet-sys-morphism-sys-morph-snippet
@@ -3372,6 +3384,9 @@
     ; snippet-sys-snippet->maybe-shape
     (fn ss snippet
       (just snippet))
+    ; snippet-sys-snippet-get-shape
+    (fn ss snippet
+      snippet)
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss degree snippet
       (dissect ss (hypertee-snippet-sys ds)
@@ -3763,6 +3778,10 @@
           (snippet-> ss snippet))
       #/fn shape
         (->shape ss shape)))
+    ; snippet-sys-snippet-get-shape
+    (fn ss snippet
+      (->shape ss #/snippet-sys-snippet-get-shape (ss-> ss)
+        (snippet-> ss snippet)))
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss degree snippet
       (maybe-map
@@ -4061,6 +4080,12 @@
                   (extended-with-top-finite-dim-sys uds))
                 (unextend-with-top-dim-sys-morphism-sys uds))))
           shape)))
+    ; snippet-sys-snippet-get-shape
+    (fn ss snippet
+      ; TODO NOW: Consider removing `hypernest-shape` from the public
+      ; interface now that it's available as this
+      ; `snippet-sys-snippet-get-shape` method.
+      (hypernest-shape ss snippet))
     ; snippet-sys-snippet-set-degree-maybe
     (fn ss new-degree snippet
       (dissect ss (hypernest-snippet-sys sfs uds)
