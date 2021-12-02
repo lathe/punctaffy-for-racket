@@ -1,6 +1,6 @@
 # Punctaffy
 
-[![Travis build](https://travis-ci.org/lathe/punctaffy-for-racket.svg?branch=main)](https://travis-ci.org/lathe/punctaffy-for-racket)
+[![CI](https://github.com/lathe/punctaffy-for-racket/actions/workflows/ci.yml/badge.svg)](https://github.com/lathe/punctaffy-for-racket/actions/workflows/ci.yml)
 
 Punctaffy is an experimental library for processing program syntax that has higher-dimensional nested structure.
 
