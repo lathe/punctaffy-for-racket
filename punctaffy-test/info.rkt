@@ -6,7 +6,7 @@
 (define build-deps
   (list
     "lathe-comforts-lib"
-    "parendown"
+    "parendown-lib"
     "profile-lib"
     "punctaffy-lib"
     "rackunit-lib"))
