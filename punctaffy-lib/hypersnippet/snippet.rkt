@@ -160,7 +160,7 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
-(require punctaffy/private/shim)
+(require lathe-morphisms/private/shim)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-category-sys dim-sys-category-sys? dim-sys-dim<?
