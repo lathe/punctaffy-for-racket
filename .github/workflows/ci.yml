@@ -55,6 +55,10 @@ jobs:
       # https://github.com/Bogdanp/setup-racket-cache-example
       - name: Record the Racket version
         run: racket --version | tee .racket-version
+      - name: Record the Racket catalog URLs
+        run: echo "$SCRIPT_RACKET_CATALOGS" | tee .racket-catalogs
+        env:
+          SCRIPT_RACKET_CATALOGS: ${{ matrix.racket-catalogs }}
       - name: Obtain cached Racket packages, if available
         uses: actions/cache@v2
         with:
@@ -63,8 +67,7 @@ jobs:
             ~/.local/share/racket
           key: "\
             ${{ runner.os }}-\
-            ${{ hashFiles('.racket-version') }}-\
-            ${{ matrix.racket-catalogs-id }}"
+            ${{ hashFiles('.racket-version', '.racket-catalogs') }}"
       
       # We uninstall the packages if they're already installed. This
       # can happen if the GitHub Actions cache is already populated with
