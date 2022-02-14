@@ -67,7 +67,7 @@
 ; `shim-recontract-out`.
 (require lathe-morphisms/private/shim)
 (require punctaffy/private/shim)
-(shim-init)
+(init-shim)
 
 
 (provide #/own-contract-out
