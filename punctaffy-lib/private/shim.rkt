@@ -20,7 +20,16 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require /for-syntax /only-in racket/syntax format-id)
+(require /only-in reprovide/require-transformer/combine-in-fallback
+  combine-in/fallback)
+
+(require /for-syntax /combine-in/fallback
+  (combine-in
+    (only-in racket/syntax format-id)
+    (only-in syntax/parse ~optional ~seq this-syntax))
+  racket/base)
+
+(require /only-in syntax/parse/define define-syntax-parse-rule)
 
 (require /only-in reprovide/reprovide reprovide)
 
