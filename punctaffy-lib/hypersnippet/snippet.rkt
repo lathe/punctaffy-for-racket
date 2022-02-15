@@ -266,131 +266,34 @@
   prop:snippet-sys
   ; TODO: See if we can come up with a better name or interface for
   ; this.
-  make-snippet-sys-impl-from-various-1)
-(provide #/shim-contract-out
+  make-snippet-sys-impl-from-various-1
   
-  [snippet-sys-morphism-sys? (-> any/c boolean?)]
-  [snippet-sys-morphism-sys-impl? (-> any/c boolean?)]
-  [snippet-sys-morphism-sys-source
-    (-> snippet-sys-morphism-sys? snippet-sys?)]
-  [snippet-sys-morphism-sys-replace-source
-    (-> snippet-sys-morphism-sys? snippet-sys?
-      snippet-sys-morphism-sys?)]
-  [snippet-sys-morphism-sys-target
-    (-> snippet-sys-morphism-sys? snippet-sys?)]
-  [snippet-sys-morphism-sys-replace-target
-    (-> snippet-sys-morphism-sys? snippet-sys?
-      snippet-sys-morphism-sys?)]
-  [snippet-sys-morphism-sys-dim-sys-morphism-sys
-    (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?)]
-  [snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
-    (-> snippet-sys-morphism-sys? snippet-sys-morphism-sys?)]
-  [snippet-sys-morphism-sys-morph-snippet
-    (->i
-      (
-        [ms snippet-sys-morphism-sys?]
-        [s (ms)
-          (snippet-sys-snippet/c
-            (snippet-sys-morphism-sys-source ms))])
-      [_ (ms)
-        (snippet-sys-snippet/c
-          (snippet-sys-morphism-sys-target ms))])]
-  [snippet-sys-morphism-sys/c (-> contract? contract? contract?)]
-  [prop:snippet-sys-morphism-sys
-    (struct-type-property/c snippet-sys-morphism-sys-impl?)]
-  [make-snippet-sys-morphism-sys-impl-from-morph
-    (->
-      (-> snippet-sys-morphism-sys? snippet-sys?)
-      (-> snippet-sys-morphism-sys? snippet-sys?
-        snippet-sys-morphism-sys?)
-      (-> snippet-sys-morphism-sys? snippet-sys?)
-      (-> snippet-sys-morphism-sys? snippet-sys?
-        snippet-sys-morphism-sys?)
-      (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?)
-      (-> snippet-sys-morphism-sys? snippet-sys-morphism-sys?)
-      (->i
-        (
-          [ms snippet-sys-morphism-sys?]
-          [s (ms)
-            (snippet-sys-snippet/c
-              (snippet-sys-morphism-sys-source ms))])
-        [_ (ms)
-          (snippet-sys-snippet/c
-            (snippet-sys-morphism-sys-target ms))])
-      snippet-sys-morphism-sys-impl?)]
-  [snippet-sys-morphism-sys-identity
-    (->i ([endpoint snippet-sys?])
-      [_ (endpoint)
-        (snippet-sys-morphism-sys/c
-          (ok/c endpoint)
-          (ok/c endpoint))])]
-  [snippet-sys-morphism-sys-chain-two
-    (->i
-      (
-        [a snippet-sys-morphism-sys?]
-        [b (a)
-          (snippet-sys-morphism-sys/c
-            (ok/c #/snippet-sys-morphism-sys-target a)
-            any/c)])
-      [_ (a b)
-        (snippet-sys-morphism-sys/c
-          (ok/c #/snippet-sys-morphism-sys-source a)
-          (ok/c #/snippet-sys-morphism-sys-target b))])])
+  snippet-sys-morphism-sys?
+  snippet-sys-morphism-sys-impl?
+  snippet-sys-morphism-sys-source
+  snippet-sys-morphism-sys-replace-source
+  snippet-sys-morphism-sys-target
+  snippet-sys-morphism-sys-replace-target
+  snippet-sys-morphism-sys-dim-sys-morphism-sys
+  snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+  snippet-sys-morphism-sys-morph-snippet
+  snippet-sys-morphism-sys/c
+  prop:snippet-sys-morphism-sys
+  make-snippet-sys-morphism-sys-impl-from-morph
+  snippet-sys-morphism-sys-identity
+  snippet-sys-morphism-sys-chain-two)
 
 (provide
   snippet-sys-category-sys)
-(provide #/shim-contract-out
-  [snippet-sys-category-sys? (-> any/c boolean?)])
+(provide #/own-contract-out
+  snippet-sys-category-sys?)
 
-(provide #/shim-contract-out
-  [functor-from-dim-sys-to-snippet-sys-sys? (-> any/c boolean?)]
-  [make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
-    (->
-      (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
-        snippet-sys?)
-      (->i
-        (
-          [fs functor-from-dim-sys-to-snippet-sys-sys?]
-          [ms dim-sys-morphism-sys?])
-        [_ (fs ms)
-          (snippet-sys-morphism-sys/c
-            (ok/c
-              (functor-sys-apply-to-object fs
-                (dim-sys-morphism-sys-source ms)))
-            (ok/c
-              (functor-sys-apply-to-object fs
-                (dim-sys-morphism-sys-target ms))))])
-      functor-sys-impl?)]
+(provide #/own-contract-out
+  functor-from-dim-sys-to-snippet-sys-sys?
+  make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
   
-  [functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-    (-> any/c boolean?)]
-  [make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
-    (->
-      (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-        functor-from-dim-sys-to-snippet-sys-sys?)
-      (->
-        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-        functor-from-dim-sys-to-snippet-sys-sys?
-        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
-      (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-        functor-from-dim-sys-to-snippet-sys-sys?)
-      (->
-        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
-        functor-from-dim-sys-to-snippet-sys-sys?
-        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
-      (->i
-        (
-          [ms functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
-          [dsms dim-sys-morphism-sys?])
-        [_ (ms dsms)
-          (snippet-sys-morphism-sys/c
-            (functor-sys-apply-to-object
-              (natural-transformation-sys-source ms)
-              (dim-sys-morphism-sys-source dsms))
-            (functor-sys-apply-to-object
-              (natural-transformation-sys-target ms)
-              (dim-sys-morphism-sys-target dsms)))])
-      natural-transformation-sys-impl?)]
+  functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+  make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
   
   ; A `snippet-format-sys?` is a wrapped functor from the `dim-sys?`
   ; category to the `snippet-sys?` category that guarantees the
@@ -404,91 +307,33 @@
   ; We've already mentioned this in the docs, but we mention it again
   ; here as a reminder.
   ;
-  [snippet-format-sys? (-> any/c boolean?)]
-  [snippet-format-sys-impl? (-> any/c boolean?)]
-  [snippet-format-sys-functor
-    (-> snippet-format-sys? functor-from-dim-sys-to-snippet-sys-sys?)]
-  [prop:snippet-format-sys
-    (struct-type-property/c snippet-format-sys-impl?)]
-  [make-snippet-format-sys-impl-from-functor
-    (->
-      (-> snippet-format-sys?
-        functor-from-dim-sys-to-snippet-sys-sys?)
-      snippet-format-sys-impl?)]
+  snippet-format-sys?
+  snippet-format-sys-impl?
+  snippet-format-sys-functor
+  prop:snippet-format-sys
+  make-snippet-format-sys-impl-from-functor
   
-  [snippet-format-sys-morphism-sys? (-> any/c boolean?)]
-  [snippet-format-sys-morphism-sys-impl? (-> any/c boolean?)]
-  [snippet-format-sys-morphism-sys-source
-    (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
-  [snippet-format-sys-morphism-sys-replace-source
-    (-> snippet-format-sys-morphism-sys? snippet-format-sys?
-      snippet-format-sys-morphism-sys?)]
-  [snippet-format-sys-morphism-sys-target
-    (-> snippet-format-sys-morphism-sys? snippet-format-sys?)]
-  [snippet-format-sys-morphism-sys-replace-target
-    (-> snippet-format-sys-morphism-sys? snippet-format-sys?
-      snippet-format-sys-morphism-sys?)]
-  [snippet-format-sys-morphism-sys-functor-morphism
-    (-> snippet-format-sys-morphism-sys?
-      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)]
-  [snippet-format-sys-morphism-sys/c
-    (-> contract? contract? contract?)]
-  [prop:snippet-format-sys-morphism-sys
-    (struct-type-property/c snippet-format-sys-morphism-sys-impl?)]
-  [make-snippet-format-sys-morphism-sys-impl-from-morph
-    (->
-      (-> snippet-format-sys-morphism-sys? snippet-format-sys?)
-      (-> snippet-format-sys-morphism-sys? snippet-format-sys?
-        snippet-format-sys-morphism-sys?)
-      (-> snippet-format-sys-morphism-sys? snippet-format-sys?)
-      (-> snippet-format-sys-morphism-sys? snippet-format-sys?
-        snippet-format-sys-morphism-sys?)
-      (-> snippet-format-sys-morphism-sys?
-        functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
-      snippet-format-sys-morphism-sys-impl?)]
-  [snippet-format-sys-morphism-sys-identity
-    (->i ([endpoint snippet-format-sys?])
-      [_ (endpoint)
-        (snippet-format-sys-morphism-sys/c
-          (ok/c endpoint)
-          (ok/c endpoint))])]
-  [snippet-format-sys-morphism-sys-chain-two
-    (->i
-      (
-        [a snippet-format-sys-morphism-sys?]
-        [b (a)
-          (snippet-format-sys-morphism-sys/c
-            (ok/c #/snippet-format-sys-morphism-sys-target a)
-            any/c)])
-      [_ (a b)
-        (snippet-format-sys-morphism-sys/c
-          (ok/c #/snippet-format-sys-morphism-sys-source a)
-          (ok/c #/snippet-format-sys-morphism-sys-target b))])])
+  snippet-format-sys-morphism-sys?
+  snippet-format-sys-morphism-sys-impl?
+  snippet-format-sys-morphism-sys-source
+  snippet-format-sys-morphism-sys-replace-source
+  snippet-format-sys-morphism-sys-target
+  snippet-format-sys-morphism-sys-replace-target
+  snippet-format-sys-morphism-sys-functor-morphism
+  snippet-format-sys-morphism-sys/c
+  prop:snippet-format-sys-morphism-sys
+  make-snippet-format-sys-morphism-sys-impl-from-morph
+  snippet-format-sys-morphism-sys-identity
+  snippet-format-sys-morphism-sys-chain-two)
 
 (provide
   snippet-format-sys-category-sys)
-(provide #/shim-contract-out
-  [snippet-format-sys-category-sys? (-> any/c boolean?)])
+(provide #/own-contract-out
+  snippet-format-sys-category-sys?)
 
-(provide #/shim-contract-out
-  [snippet-format-sys-endofunctor-sys? (-> any/c boolean?)]
-  [make-snippet-format-sys-endofunctor-sys-impl-from-apply
-    (->
-      (-> snippet-format-sys-endofunctor-sys? snippet-format-sys?
-        snippet-format-sys?)
-      (->i
-        (
-          [es snippet-format-sys-endofunctor-sys?]
-          [ms snippet-format-sys-morphism-sys?])
-        [_ (es ms)
-          (snippet-format-sys-morphism-sys/c
-            (ok/c
-              (functor-sys-apply-to-object es
-                (snippet-format-sys-morphism-sys-source ms)))
-            (ok/c
-              (functor-sys-apply-to-object es
-                (snippet-format-sys-morphism-sys-target ms))))])
-      functor-sys-impl?)])
+(provide #/own-contract-out
+  snippet-format-sys-endofunctor-sys?
+  make-snippet-format-sys-endofunctor-sys-impl-from-apply)
 
 (module+ private/hypertee #/provide
   hypertee-coil-zero)
@@ -1660,8 +1505,54 @@
   prop:snippet-sys-morphism-sys
   make-snippet-sys-morphism-sys-impl-from-morph
   'snippet-sys-morphism-sys 'snippet-sys-morphism-sys-impl (list))
+(ascribe-own-contract snippet-sys-morphism-sys? (-> any/c boolean?))
+(ascribe-own-contract snippet-sys-morphism-sys-impl? (-> any/c boolean?))
+(ascribe-own-contract snippet-sys-morphism-sys-source
+  (-> snippet-sys-morphism-sys? snippet-sys?))
+(ascribe-own-contract snippet-sys-morphism-sys-replace-source
+  (-> snippet-sys-morphism-sys? snippet-sys?
+    snippet-sys-morphism-sys?))
+(ascribe-own-contract snippet-sys-morphism-sys-target
+  (-> snippet-sys-morphism-sys? snippet-sys?))
+(ascribe-own-contract snippet-sys-morphism-sys-replace-target
+  (-> snippet-sys-morphism-sys? snippet-sys?
+    snippet-sys-morphism-sys?))
+(ascribe-own-contract snippet-sys-morphism-sys-dim-sys-morphism-sys
+  (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?))
+(ascribe-own-contract snippet-sys-morphism-sys-shape-snippet-sys-morphism-sys
+  (-> snippet-sys-morphism-sys? snippet-sys-morphism-sys?))
+(ascribe-own-contract snippet-sys-morphism-sys-morph-snippet
+  (->i
+    (
+      [ms snippet-sys-morphism-sys?]
+      [s (ms)
+        (snippet-sys-snippet/c #/snippet-sys-morphism-sys-source ms)])
+    [_ (ms)
+      (snippet-sys-snippet/c #/snippet-sys-morphism-sys-target ms)]))
+(ascribe-own-contract prop:snippet-sys-morphism-sys
+  (struct-type-property/c snippet-sys-morphism-sys-impl?))
+(ascribe-own-contract make-snippet-sys-morphism-sys-impl-from-morph
+  (->
+    (-> snippet-sys-morphism-sys? snippet-sys?)
+    (-> snippet-sys-morphism-sys? snippet-sys?
+      snippet-sys-morphism-sys?)
+    (-> snippet-sys-morphism-sys? snippet-sys?)
+    (-> snippet-sys-morphism-sys? snippet-sys?
+      snippet-sys-morphism-sys?)
+    (-> snippet-sys-morphism-sys? dim-sys-morphism-sys?)
+    (-> snippet-sys-morphism-sys? snippet-sys-morphism-sys?)
+    (->i
+      (
+        [ms snippet-sys-morphism-sys?]
+        [s (ms)
+          (snippet-sys-snippet/c
+            (snippet-sys-morphism-sys-source ms))])
+      [_ (ms)
+        (snippet-sys-snippet/c #/snippet-sys-morphism-sys-target ms)])
+    snippet-sys-morphism-sys-impl?))
 
-(define (snippet-sys-morphism-sys/c source/c target/c)
+(define/own-contract (snippet-sys-morphism-sys/c source/c target/c)
+  (-> contract? contract? contract?)
   (w- source/c (coerce-contract 'snippet-sys-morphism-sys/c source/c)
   #/w- target/c (coerce-contract 'snippet-sys-morphism-sys/c target/c)
   #/w- name
@@ -1750,7 +1641,10 @@
       (fn ms s s))))
 
 ; TODO: Use this.
-(define (snippet-sys-morphism-sys-identity endpoint)
+(define/own-contract (snippet-sys-morphism-sys-identity endpoint)
+  (->i ([endpoint snippet-sys?])
+    [_ (endpoint)
+      (snippet-sys-morphism-sys/c (ok/c endpoint) (ok/c endpoint))])
   (identity-snippet-sys-morphism-sys endpoint))
 
 (define-imitation-simple-struct
@@ -1806,7 +1700,18 @@
           (snippet-sys-morphism-sys-morph-snippet a s))))))
 
 ; TODO: Use this.
-(define (snippet-sys-morphism-sys-chain-two a b)
+(define/own-contract (snippet-sys-morphism-sys-chain-two a b)
+  (->i
+    (
+      [a snippet-sys-morphism-sys?]
+      [b (a)
+        (snippet-sys-morphism-sys/c
+          (ok/c #/snippet-sys-morphism-sys-target a)
+          any/c)])
+    [_ (a b)
+      (snippet-sys-morphism-sys/c
+        (ok/c #/snippet-sys-morphism-sys-source a)
+        (ok/c #/snippet-sys-morphism-sys-target b))])
   (chain-two-snippet-sys-morphism-sys a b))
 
 
@@ -1842,18 +1747,36 @@
       ; category-sys-morphism-chain-two
       (fn cs a b c ab bc
         (snippet-sys-morphism-sys-chain-two ab bc)))))
+(ascribe-own-contract snippet-sys-category-sys? (-> any/c boolean?))
 
 
-(define (functor-from-dim-sys-to-snippet-sys-sys? v)
+(define/own-contract (functor-from-dim-sys-to-snippet-sys-sys? v)
+  (-> any/c boolean?)
   (
     (flat-contract-predicate
       (functor-sys/c dim-sys-category-sys? snippet-sys-category-sys?))
     v))
 
-(define
+(define/own-contract
   (make-functor-from-dim-sys-to-snippet-sys-sys-impl-from-apply
     apply-to-dim-sys
     apply-to-dim-sys-morphism-sys)
+  (->
+    (-> functor-from-dim-sys-to-snippet-sys-sys? dim-sys?
+      snippet-sys?)
+    (->i
+      (
+        [fs functor-from-dim-sys-to-snippet-sys-sys?]
+        [ms dim-sys-morphism-sys?])
+      [_ (fs ms)
+        (snippet-sys-morphism-sys/c
+          (ok/c
+            (functor-sys-apply-to-object fs
+              (dim-sys-morphism-sys-source ms)))
+          (ok/c
+            (functor-sys-apply-to-object fs
+              (dim-sys-morphism-sys-target ms))))])
+    functor-sys-impl?)
   (make-functor-sys-impl-from-apply
     ; functor-sys-source
     (fn fs #/dim-sys-category-sys)
@@ -1883,20 +1806,48 @@
     (fn fs a b ms #/apply-to-dim-sys-morphism-sys fs ms)))
 
 
-(define (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
+(define/own-contract
+  (functor-from-dim-sys-to-snippet-sys-sys-morphism-sys? v)
+  (-> any/c boolean?)
   (
     (flat-contract-predicate
       (natural-transformation-sys/c
         dim-sys? snippet-sys? any/c any/c))
     v))
 
-(define
+(define/own-contract
   (make-functor-from-dim-sys-to-snippet-sys-sys-morphism-sys-impl-from-apply
     source
     replace-source
     target
     replace-target
     apply-to-dim-sys-morphism-sys)
+  (->
+    (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      functor-from-dim-sys-to-snippet-sys-sys?)
+    (->
+      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      functor-from-dim-sys-to-snippet-sys-sys?
+      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
+    (-> functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      functor-from-dim-sys-to-snippet-sys-sys?)
+    (->
+      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?
+      functor-from-dim-sys-to-snippet-sys-sys?
+      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
+    (->i
+      (
+        [ms functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?]
+        [dsms dim-sys-morphism-sys?])
+      [_ (ms dsms)
+        (snippet-sys-morphism-sys/c
+          (functor-sys-apply-to-object
+            (natural-transformation-sys-source ms)
+            (dim-sys-morphism-sys-source dsms))
+          (functor-sys-apply-to-object
+            (natural-transformation-sys-target ms)
+            (dim-sys-morphism-sys-target dsms)))])
+    natural-transformation-sys-impl?)
   (make-natural-transformation-sys-impl-from-apply
     ; functor-sys-endpoint-source
     (fn nts #/dim-sys-category-sys)
@@ -1941,6 +1892,16 @@
   prop:snippet-format-sys
   make-snippet-format-sys-impl-from-functor
   'snippet-format-sys 'snippet-format-sys-impl (list))
+(ascribe-own-contract snippet-format-sys? (-> any/c boolean?))
+(ascribe-own-contract snippet-format-sys-impl? (-> any/c boolean?))
+(ascribe-own-contract snippet-format-sys-functor
+  (-> snippet-format-sys? functor-from-dim-sys-to-snippet-sys-sys?))
+(ascribe-own-contract prop:snippet-format-sys
+  (struct-type-property/c snippet-format-sys-impl?))
+(ascribe-own-contract make-snippet-format-sys-impl-from-functor
+  (->
+    (-> snippet-format-sys? functor-from-dim-sys-to-snippet-sys-sys?)
+    snippet-format-sys-impl?))
 
 
 (define-imitation-simple-generics
@@ -1960,8 +1921,41 @@
   'snippet-format-sys-morphism-sys
   'snippet-format-sys-morphism-sys-impl
   (list))
+(ascribe-own-contract snippet-format-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract snippet-format-sys-morphism-sys-impl?
+  (-> any/c boolean?))
+(ascribe-own-contract snippet-format-sys-morphism-sys-source
+  (-> snippet-format-sys-morphism-sys? snippet-format-sys?))
+(ascribe-own-contract snippet-format-sys-morphism-sys-replace-source
+  (-> snippet-format-sys-morphism-sys? snippet-format-sys?
+    snippet-format-sys-morphism-sys?))
+(ascribe-own-contract snippet-format-sys-morphism-sys-target
+  (-> snippet-format-sys-morphism-sys? snippet-format-sys?))
+(ascribe-own-contract snippet-format-sys-morphism-sys-replace-target
+  (-> snippet-format-sys-morphism-sys? snippet-format-sys?
+    snippet-format-sys-morphism-sys?))
+(ascribe-own-contract snippet-format-sys-morphism-sys-functor-morphism
+  (-> snippet-format-sys-morphism-sys?
+    functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?))
+(ascribe-own-contract prop:snippet-format-sys-morphism-sys
+  (struct-type-property/c snippet-format-sys-morphism-sys-impl?))
+(ascribe-own-contract
+  make-snippet-format-sys-morphism-sys-impl-from-morph
+  (->
+    (-> snippet-format-sys-morphism-sys? snippet-format-sys?)
+    (-> snippet-format-sys-morphism-sys? snippet-format-sys?
+      snippet-format-sys-morphism-sys?)
+    (-> snippet-format-sys-morphism-sys? snippet-format-sys?)
+    (-> snippet-format-sys-morphism-sys? snippet-format-sys?
+      snippet-format-sys-morphism-sys?)
+    (-> snippet-format-sys-morphism-sys?
+      functor-from-dim-sys-to-snippet-sys-sys-morphism-sys?)
+    snippet-format-sys-morphism-sys-impl?))
 
-(define (snippet-format-sys-morphism-sys/c source/c target/c)
+(define/own-contract
+  (snippet-format-sys-morphism-sys/c source/c target/c)
+  (-> contract? contract? contract?)
   (w- source/c
     (coerce-contract 'snippet-format-sys-morphism-sys/c source/c)
   #/w- target/c
@@ -2047,7 +2041,13 @@
           (snippet-format-sys-functor e))))))
 
 ; TODO: Use this.
-(define (snippet-format-sys-morphism-sys-identity endpoint)
+(define/own-contract
+  (snippet-format-sys-morphism-sys-identity endpoint)
+  (->i ([endpoint snippet-format-sys?])
+    [_ (endpoint)
+      (snippet-format-sys-morphism-sys/c
+        (ok/c endpoint)
+        (ok/c endpoint))])
   (identity-snippet-format-sys-morphism-sys endpoint))
 
 (define-imitation-simple-struct
@@ -2092,7 +2092,18 @@
           (snippet-format-sys-morphism-sys-functor-morphism b))))))
 
 ; TODO: Use this.
-(define (snippet-format-sys-morphism-sys-chain-two a b)
+(define/own-contract (snippet-format-sys-morphism-sys-chain-two a b)
+  (->i
+    (
+      [a snippet-format-sys-morphism-sys?]
+      [b (a)
+        (snippet-format-sys-morphism-sys/c
+          (ok/c #/snippet-format-sys-morphism-sys-target a)
+          any/c)])
+    [_ (a b)
+      (snippet-format-sys-morphism-sys/c
+        (ok/c #/snippet-format-sys-morphism-sys-source a)
+        (ok/c #/snippet-format-sys-morphism-sys-target b))])
   (chain-two-snippet-format-sys-morphism-sys a b))
 
 
@@ -2128,9 +2139,12 @@
       ; category-sys-morphism-chain-two
       (fn cs a b c ab bc
         (snippet-format-sys-morphism-sys-chain-two ab bc)))))
+(ascribe-own-contract snippet-format-sys-category-sys?
+  (-> any/c boolean?))
 
 
-(define (snippet-format-sys-endofunctor-sys? v)
+(define/own-contract (snippet-format-sys-endofunctor-sys? v)
+  (-> any/c boolean?)
   (
     (flat-contract-predicate
       (functor-sys/c
@@ -2138,10 +2152,26 @@
         snippet-format-sys-category-sys?))
     v))
 
-(define
+(define/own-contract
   (make-snippet-format-sys-endofunctor-sys-impl-from-apply
     apply-to-snippet-format-sys
     apply-to-snippet-format-sys-morphism-sys)
+  (->
+    (-> snippet-format-sys-endofunctor-sys? snippet-format-sys?
+      snippet-format-sys?)
+    (->i
+      (
+        [es snippet-format-sys-endofunctor-sys?]
+        [ms snippet-format-sys-morphism-sys?])
+      [_ (es ms)
+        (snippet-format-sys-morphism-sys/c
+          (ok/c
+            (functor-sys-apply-to-object es
+              (snippet-format-sys-morphism-sys-source ms)))
+          (ok/c
+            (functor-sys-apply-to-object es
+              (snippet-format-sys-morphism-sys-target ms))))])
+    functor-sys-impl?)
   (make-functor-sys-impl-from-apply
     ; functor-sys-source
     (fn fs #/snippet-format-sys-category-sys)
