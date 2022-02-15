@@ -5,7 +5,7 @@
 ; Import lists, debugging constants, and other utilities that are
 ; useful primarily for this codebase.
 
-;   Copyright 2021 The Lathe Authors
+;   Copyright 2021, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@
         (only-in #,(break 'racket/contract) struct-type-property/c)
         (only-in #,(break 'racket/contract/base)
           -> </c and/c any/c contract? flat-contract? ->i list/c
-          listof or/c)
+          listof not/c or/c)
         (only-in #,(break 'racket/extflonum) extflonum?)
         (only-in #,(break 'racket/flonum) flvector?)
         (only-in #,(break 'racket/fixnum) fxvector?)

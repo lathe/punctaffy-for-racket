@@ -5077,7 +5077,9 @@
     #:rest
     [brackets (ds)
       (w- dim/c (dim-sys-dim/c ds)
-      #/listof #/or/c (hypertee-bracket/c dim/c) dim/c)]
+      #/listof #/or/c
+        (hypertee-bracket/c dim/c)
+        (and/c (not/c hypertee-bracket?) dim/c))]
     [_ (ds) (hypertee/c ds)])
   (explicit-hypertee-from-brackets 'ht-bracs ds degree
     (list-map brackets #/fn closing-bracket

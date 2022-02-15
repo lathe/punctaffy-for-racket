@@ -4,7 +4,7 @@
 @;
 @; Hypersnippet data structures and interfaces.
 
-@;   Copyright 2020, 2021 The Lathe Authors
+@;   Copyright 2020-2022 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -2187,7 +2187,9 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     [degree (dim-sys-dim/c ds)]
     [bracket
       (let ([_dim/c (dim-sys-dim/c ds)])
-        (or/c (hypertee-bracket/c _dim/c) _dim/c))]
+        (or/c
+          (hypertee-bracket/c _dim/c)
+          (and/c (not/c hypertee-bracket?) _dim/c))]
     ...)
   (hypertee/c ds)
 ]{
