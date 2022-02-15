@@ -6,7 +6,7 @@
 ; hypersnippet-shaped data using "stripes" of low-dimensional
 ; hypertees.
 
-;   Copyright 2017-2019, 2021 The Lathe Authors
+;   Copyright 2017-2019, 2021-2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 (require #/only-in racket/contract/base -> ->i any any/c)
 (require #/only-in racket/contract/combinator
   contract-first-order-passes?)
-(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 
 (require #/only-in lathe-comforts
@@ -35,6 +34,9 @@
 (require #/only-in lathe-comforts/struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
+
+(require punctaffy/private/shim)
+(init-shim)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-dim-sys
@@ -50,14 +52,17 @@
   hypertee-get-brackets hypertee-increase-degree-to
   hypertee-map-highest-degree hypertee-v-map-highest-degree)
 
+
 (provide
   ; TODO: See if there's anything more abstract we can export in place
   ; of these structure types.
   (struct-out hyprid)
   (struct-out island-cane)
   (struct-out lake-cane)
-  (struct-out non-lake-cane)
-  hyprid-destripe-once hyprid-fully-destripe
+  (struct-out non-lake-cane))
+(provide #/own-contract-out
+  hyprid-destripe-once
+  hyprid-fully-destripe
   hyprid-stripe-once)
 
 
@@ -115,7 +120,7 @@
       #/unless (= pred-striped-degrees striped-degrees-2)
         (error "Expected striped-hypertee to be an island-cane of striped-degrees one less")))))
 
-(define/contract (hyprid-degree h)
+(define/own-contract (hyprid-degree h)
   (->i ([h hyprid?])
     [_ (h)
       (dim-sys-dim/c #/dim-successors-sys-dim-sys
@@ -187,7 +192,7 @@
 
 (struct-easy (non-lake-cane data) #:equal)
 
-(define/contract (hyprid-map-lakes-highest-degree h func)
+(define/own-contract (hyprid-map-lakes-highest-degree h func)
   (-> hyprid? (-> hypertee? any/c any/c) hyprid?)
   (dissect h
     (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
@@ -213,7 +218,7 @@
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
 
-(define/contract (hyprid-destripe-once h)
+(define/own-contract (hyprid-destripe-once h)
   (-> hyprid? hyprid?)
   (dissect h
     (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
@@ -259,14 +264,14 @@
     #/mat rest (non-lake-cane data) (non-lake-cane data)
     #/error "Internal error")))
 
-(define/contract (hyprid-fully-destripe h)
+(define/own-contract (hyprid-fully-destripe h)
   (-> hyprid? hypertee?)
   (dissect h
     (hyprid dss unstriped-degrees striped-degrees striped-hypertee)
   #/mat striped-degrees 0 striped-hypertee
   #/hyprid-fully-destripe #/hyprid-destripe-once h))
 
-(define/contract (hyprid-dv-each-lake-all-degrees h body)
+(define/own-contract (hyprid-dv-each-lake-all-degrees h body)
   (->i
     (
       [h hyprid?]
@@ -287,7 +292,7 @@
 ;
 ; TODO: Test this.
 ;
-(define/contract (hyprid-stripe-once h)
+(define/own-contract (hyprid-stripe-once h)
   (-> hyprid? hyprid?)
   
   (define (location-needs-state? location)
