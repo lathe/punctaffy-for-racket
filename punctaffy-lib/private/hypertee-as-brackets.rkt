@@ -6,7 +6,7 @@
 ; that occurs in higher quasiquotation (represented in a
 ; sequence-of-brackets style).
 
-;   Copyright 2017-2019 The Lathe Authors
+;   Copyright 2017-2020, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->i and/c any any/c contract? contract-name contract-out list/c
-  listof not/c or/c rename-contract)
+  -> ->i and/c any any/c contract? contract-name contract-out
+  flat-contract? list/c listof not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   coerce-contract contract-first-order-passes?)
 (require #/only-in racket/math natural?)
@@ -130,7 +130,7 @@
   [hypertee-get-brackets
     (->i ([ht hypertee?])
       [_ (ht)
-        (w- ds (hypertee-get-dim-sys ht)
+        (w- ds (hypertee-dim-sys ht)
         #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])]
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. If it
@@ -304,11 +304,13 @@
           (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
             any/c)])
       [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
-  ; TODO PARITY: Continue looking for things to bring into parity from
-  ; here. Once we're done looking for them here, continue looking in
-  ; `punctaffy/private/hypernest-as-ast`, and look for things exported
-  ; by `punctaffy/hypersnippet/hypertee` and
-  ; `punctaffy/hypersnippet/hypernest` that these don't export.
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypertee-snippet-sys` and
+  ; `snippet-sys-snippet-done`. If it did exist, it would pass the
+  ; hole shape argument before the data argument, and it would use a
+  ; more specific contract that asserted the result was of the
+  ; requested degree.
   [hypertee-done
     (->i
       (
@@ -316,6 +318,11 @@
         [data any/c]
         [hole hypertee?])
       [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])]
+  ; TODO PARITY: Continue looking for things to bring into parity from
+  ; here. Once we're done looking for them here, continue looking in
+  ; `punctaffy/private/hypernest-as-ast`, and look for things exported
+  ; by `punctaffy/hypersnippet/hypertee` and
+  ; `punctaffy/hypersnippet/hypernest` that these don't export.
   [hypertee-get-hole-zero (-> hypertee? maybe?)]
   [hypertee-furl
     (->i
