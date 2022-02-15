@@ -2142,13 +2142,13 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   @defidform[hypertee-furl]
   @defform[
     #:link-target? #f
-    (hypertee-furl dim-sys coil)
-    #:contracts ([dim-sys dim-sys?] [coil (hypertee-coil/c dim-sys)])
+    (hypertee-furl ds coil)
+    #:contracts ([ds dim-sys?] [coil (hypertee-coil/c ds)])
   ]
   @defform[
     #:kind "match expander"
     #:link-target? #f
-    (hypertee-furl dim-sys coil)
+    (hypertee-furl ds coil)
   ]
 )]{
   Constructs or deconstructs a @tech{hypertee} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypertee-coil/c] value.

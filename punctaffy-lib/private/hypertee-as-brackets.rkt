@@ -318,11 +318,9 @@
         [data any/c]
         [hole hypertee?])
       [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])]
-  ; TODO PARITY: Continue looking for things to bring into parity from
-  ; here. Once we're done looking for them here, continue looking in
-  ; `punctaffy/private/hypernest-as-ast`, and look for things exported
-  ; by `punctaffy/hypersnippet/hypertee` and
-  ; `punctaffy/hypersnippet/hypernest` that these don't export.
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it's called
+  ; `hypertee-get-hole-zero-maybe` and has a more specific contract.
   [hypertee-get-hole-zero (-> hypertee? maybe?)]
   [hypertee-furl
     (->i
@@ -330,7 +328,17 @@
         [ds dim-sys?]
         [coil (ds) (hypertee-coil/c ds)])
       [_ (ds) (hypertee/c ds)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypertee-snippet-sys` and
+  ; `snippet-sys-snippet-join`. If it did exist, it would be called
+  ; `hypertee-join`, and it would use a much more specific contract.
   [hypertee-join-all-degrees (-> hypertee? hypertee?)]
+  ; TODO PARITY: Continue looking for things to bring into parity from
+  ; here. Once we're done looking for them here, continue looking in
+  ; `punctaffy/private/hypernest-as-ast`, and look for things exported
+  ; by `punctaffy/hypersnippet/hypertee` and
+  ; `punctaffy/hypersnippet/hypernest` that these don't export.
   [hypertee-bind-all-degrees
     (->i
       (

@@ -3060,9 +3060,9 @@
     (define/contract (hypertee-furl dim-sys coil)
       (->i
         (
-          [dim-sys dim-sys?]
-          [coil (dim-sys) (hypertee-coil/c dim-sys)])
-        [_ hypertee?])
+          [ds dim-sys?]
+          [coil (ds) (hypertee-coil/c ds)])
+        [_ (ds) (hypertee/c ds)])
       (unguarded-hypertee-furl-orig dim-sys coil))
     hypertee-furl))
 #;
