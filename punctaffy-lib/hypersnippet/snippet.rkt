@@ -160,10 +160,6 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
-; TODO NOW: Remove uses of `lathe-morphisms/private/shim`,
-; particularly including `shim-contract-out` and
-; `shim-recontract-out`.
-(require lathe-morphisms/private/shim)
 (require punctaffy/private/shim)
 (init-shim)
 (module+ private/hypertee
@@ -393,160 +389,81 @@
   ht-bracs
   hypertee-get-brackets)
 
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest? (-> any/c boolean?)]
-  [hypernest/c (-> snippet-format-sys? dim-sys? flat-contract?)]
-  [hypernestof/ob-c
-    (->i
-      (
-        [sfs snippet-format-sys?]
-        [ds dim-sys?]
-        [ob obstinacy?]
-        [b-to-value/c (sfs ds ob)
-          (w- ffdstsss (snippet-format-sys-functor sfs)
-          #/w- ss (functor-sys-apply-to-object ffdstsss ds)
-          #/-> (snippet-sys-unlabeled-shape/c ss)
-            (obstinacy-contract/c ob))]
-        [h-to-value/c (sfs ds ob)
-          (w- ffdstsss (snippet-format-sys-functor sfs)
-          #/w- ss (functor-sys-apply-to-object ffdstsss ds)
-          #/-> (snippet-sys-unlabeled-shape/c ss)
-            (obstinacy-contract/c ob))])
-      [_ (ob) (obstinacy-contract/c ob)])]
-  [hypernest-get-dim-sys (-> hypernest? dim-sys?)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest?
+  hypernest/c
+  hypernestof/ob-c
+  hypernest-get-dim-sys)
 (module+ private/hypernest #/provide
   hypernest-snippet-sys)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-snippet-sys? (-> any/c boolean?)]
-  [hypernest-snippet-sys-snippet-format-sys
-    (-> hypernest-snippet-sys? snippet-format-sys?)]
-  [hypernest-snippet-sys-dim-sys
-    (-> hypernest-snippet-sys? dim-sys?)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-snippet-sys?
+  hypernest-snippet-sys-snippet-format-sys
+  hypernest-snippet-sys-dim-sys)
 (module+ private/hypernest #/provide
   hypernest-snippet-format-sys)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-snippet-format-sys? (-> any/c boolean?)]
-  [hypernest-snippet-format-sys-original
-    (-> hypernest-snippet-format-sys? snippet-format-sys?)])
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-shape
-    (->i
-      (
-        [ss hypernest-snippet-sys?]
-        [hn (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss)
-        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])]
-  [hypernest-get-hole-zero-maybe
-    (->
-      (and/c hypernest?
-        (by-own-method/c #:obstinacy (flat-obstinacy) hn
-          (hypernest/c (hypertee-snippet-format-sys)
-            (hypernest-get-dim-sys hn))))
-      maybe?)]
-  [hypernest-join-list-and-tail-along-0
-    (->i
-      (
-        [ds dim-sys?]
-        [past-snippets (ds last-snippet)
-          (w- ss
-            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/listof #/and/c
-            (snippet-sys-snippet-with-degree=/c ss
-              (snippet-sys-snippet-degree ss last-snippet))
-            (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
-              (if
-                (dim-sys-dim=0? ds
-                  (snippet-sys-snippet-degree shape-ss hole))
-                trivial?
-                any/c)))]
-        [last-snippet (ds)
-          (w- ss
-            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-          #/snippet-sys-snippet-with-0<degree/c ss)])
-      [_ (ds last-snippet)
-        (w- ss
-          (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-        #/snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss last-snippet))])])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-snippet-format-sys?
+  hypernest-snippet-format-sys-original)
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-shape
+  hypernest-get-hole-zero-maybe
+  hypernest-join-list-and-tail-along-0)
 
 (module+ private/hypernest #/provide
   hypernest-coil-zero)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-coil-zero? (-> any/c boolean?)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-coil-zero?)
 (module+ private/hypernest #/provide
   hypernest-coil-hole)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-coil-hole? (-> any/c boolean?)]
-  [hypernest-coil-hole-overall-degree (-> hypernest-coil-hole? any/c)]
-  [hypernest-coil-hole-hole (-> hypernest-coil-hole? any/c)]
-  [hypernest-coil-hole-data (-> hypernest-coil-hole? any/c)]
-  [hypernest-coil-hole-tails-hypertee
-    (-> hypernest-coil-hole? any/c)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-coil-hole?
+  hypernest-coil-hole-overall-degree
+  hypernest-coil-hole-hole
+  hypernest-coil-hole-data
+  hypernest-coil-hole-tails-hypertee)
 (module+ private/hypernest #/provide
   hypernest-coil-bump)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-coil-bump? (-> any/c boolean?)]
-  [hypernest-coil-bump-overall-degree (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-data (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-bump-degree (-> hypernest-coil-bump? any/c)]
-  [hypernest-coil-bump-tails-hypernest
-    (-> hypernest-coil-bump? any/c)])
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-coil/c (-> dim-sys? flat-contract?)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-coil-bump?
+  hypernest-coil-bump-overall-degree
+  hypernest-coil-bump-data
+  hypernest-coil-bump-bump-degree
+  hypernest-coil-bump-tails-hypernest)
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-coil/c)
 (module+ private/hypernest #/provide
   hypernest-furl)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-get-coil
-    (->i ([hn hypernest?])
-      [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])])
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-get-coil)
 
 (module+ private/hypernest #/provide
   hnb-open)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hnb-open? (-> any/c boolean?)]
-  [hnb-open-degree (-> hnb-open? any/c)]
-  [hnb-open-data (-> hnb-open? any/c)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hnb-open?
+  hnb-open-degree
+  hnb-open-data)
 (module+ private/hypernest #/provide
   hnb-labeled)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hnb-labeled? (-> any/c boolean?)]
-  [hnb-labeled-degree (-> hnb-labeled? any/c)]
-  [hnb-labeled-data (-> hnb-labeled? any/c)])
+(module+ private/hypernest #/provide #/own-contract-out
+  hnb-labeled?
+  hnb-labeled-degree
+  hnb-labeled-data)
 (module+ private/hypernest #/provide
   hnb-unlabeled)
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hnb-unlabeled? (-> any/c boolean?)]
-  [hnb-unlabeled-degree (-> hnb-unlabeled? any/c)])
-(module+ private/hypernest #/provide #/shim-contract-out
-  [hypernest-bracket? (-> any/c boolean?)]
-  [hypernest-bracket/c (-> contract? contract?)]
+(module+ private/hypernest #/provide #/own-contract-out
+  hnb-unlabeled?
+  hnb-unlabeled-degree)
+(module+ private/hypernest #/provide #/own-contract-out
+  hypernest-bracket?
+  hypernest-bracket/c
   ; TODO: Uncomment this export if we ever need it.
-;  [hypernest-bracket-degree (-> hypernest-bracket? any/c)]
-  [hypertee-bracket->hypernest-bracket
-    (-> hypertee-bracket? (or/c hnb-labeled? hnb-unlabeled?))]
-  [compatible-hypernest-bracket->hypertee-bracket
-    (-> (or/c hnb-labeled? hnb-unlabeled?) hypernest-bracket?)]
-  [hypernest-from-brackets
-    (->i
-      (
-        [ds dim-sys?]
-        [degree (ds) (dim-sys-dim/c ds)]
-        [brackets (ds)
-          (listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
-      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
-  [hn-bracs
-    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
-      #:rest
-      [brackets (ds)
-        (w- dim/c (dim-sys-dim/c ds)
-        #/listof #/or/c (hypernest-bracket/c dim/c) dim/c)]
-      [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])]
-  [hypernest-get-brackets
-    (->i ([hn hypernest?])
-      [_ (hn)
-        (w- ds (hypernest-get-dim-sys hn)
-        #/listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])])
+;  hypernest-bracket-degree
+  hypertee-bracket->hypernest-bracket
+  compatible-hypernest-bracket->hypertee-bracket
+  hypernest-from-brackets
+  hn-bracs
+  hypernest-get-brackets)
 
 (module+ private/test #/provide
   snippet-sys-snippet-filter-maybe)
@@ -3842,7 +3759,8 @@
 
 ; TODO: Export this.
 ; TODO: Use the things that use this.
-(define (hypernest? v)
+(define/own-contract (hypernest? v)
+  (-> any/c boolean?)
   (or
     (hypernest-zero? v)
     (hypernest-nonzero? v)))
@@ -3909,7 +3827,8 @@
        ,sfs ,uds ,ob ,b-to-value/c ,h-to-value/c)))
 
 ; TODO: Use the things that use this.
-(define (hypernest/c sfs uds)
+(define/own-contract (hypernest/c sfs uds)
+  (-> snippet-format-sys? dim-sys? flat-contract?)
   (rename-contract
     (hypernestof-lazy/ob-c sfs uds (flat-obstinacy)
       (fn get-bump-interior-shape any/c)
@@ -3917,7 +3836,24 @@
     `(hypernest/c ,sfs ,uds)))
 
 ; TODO: Use the things that use this.
-(define (hypernestof/ob-c sfs uds ob b-to-value/c h-to-value/c)
+(define/own-contract
+  (hypernestof/ob-c sfs uds ob b-to-value/c h-to-value/c)
+  (->i
+    (
+      [sfs snippet-format-sys?]
+      [ds dim-sys?]
+      [ob obstinacy?]
+      [b-to-value/c (sfs ds ob)
+        (w- ffdstsss (snippet-format-sys-functor sfs)
+        #/w- ss (functor-sys-apply-to-object ffdstsss ds)
+        #/-> (snippet-sys-unlabeled-shape/c ss)
+          (obstinacy-contract/c ob))]
+      [h-to-value/c (sfs ds ob)
+        (w- ffdstsss (snippet-format-sys-functor sfs)
+        #/w- ss (functor-sys-apply-to-object ffdstsss ds)
+        #/-> (snippet-sys-unlabeled-shape/c ss)
+          (obstinacy-contract/c ob))])
+    [_ (ob) (obstinacy-contract/c ob)])
   (rename-contract
     (hypernestof-lazy/ob-c sfs uds ob
       (fn get-bump-interior-shape
@@ -3925,7 +3861,8 @@
       (fn get-hole #/h-to-value/c #/get-hole))
     `(hypernestof/ob-c ,sfs ,uds ,ob ,b-to-value/c ,h-to-value/c)))
 
-(define (hypernest-get-dim-sys hn)
+(define/own-contract (hypernest-get-dim-sys hn)
+  (-> hypernest? dim-sys?)
   (dlog 'zk1 hn
   #/mat hn (hypernest-zero-unchecked content)
     (hypertee-get-dim-sys content)
@@ -4211,6 +4148,11 @@
           extended-hvv-to-maybe-v)
       #/fn result-extended
         (hypernest-nonzero-unchecked d result-extended)))))
+(ascribe-own-contract hypernest-snippet-sys? (-> any/c boolean?))
+(ascribe-own-contract hypernest-snippet-sys-snippet-format-sys
+  (-> hypernest-snippet-sys? snippet-format-sys?))
+(ascribe-own-contract hypernest-snippet-sys-dim-sys
+  (-> hypernest-snippet-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-hypernest-snippet-sys
   unguarded-hypernest-snippet-sys
@@ -4356,6 +4298,10 @@
       (dissectfn (hypernest-snippet-format-sys orig-sfs)
         (hypernest-functor-from-dim-sys-to-snippet-sys-sys
           orig-sfs)))))
+(ascribe-own-contract hypernest-snippet-format-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract hypernest-snippet-format-sys-original
+  (-> hypernest-snippet-format-sys? snippet-format-sys?))
 (define-match-expander-attenuated
   attenuated-hypernest-snippet-format-sys
   unguarded-hypernest-snippet-format-sys
@@ -4395,7 +4341,13 @@
     (just shape)
     shape))
 
-(define (hypernest-get-hole-zero-maybe hn)
+(define/own-contract (hypernest-get-hole-zero-maybe hn)
+  (->
+    (and/c hypernest?
+      (by-own-method/c #:obstinacy (flat-obstinacy) hn
+        (hypernest/c (hypertee-snippet-format-sys)
+          (hypernest-get-dim-sys hn))))
+    maybe?)
   (4:dlog 'hqq-j1
   #/mat hn (hypernest-zero-unchecked content)
     (nothing)
@@ -4404,8 +4356,32 @@
     (4:dlog 'hqq-j3
     #/hypertee-get-hole-zero-maybe hn-extended)))
 
-(define
+(define/own-contract
   (hypernest-join-list-and-tail-along-0 ds past-snippets last-snippet)
+  (->i
+    (
+      [ds dim-sys?]
+      [past-snippets (ds last-snippet)
+        (w- ss
+          (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+        #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+        #/listof #/and/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss last-snippet))
+          (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+            (if
+              (dim-sys-dim=0? ds
+                (snippet-sys-snippet-degree shape-ss hole))
+              trivial?
+              any/c)))]
+      [last-snippet (ds)
+        (w- ss
+          (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+        #/snippet-sys-snippet-with-0<degree/c ss)])
+    [_ (ds last-snippet)
+      (w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+      #/snippet-sys-snippet-with-degree=/c ss
+        (snippet-sys-snippet-degree ss last-snippet))])
   (w- sfs (hypernest-snippet-format-sys #/hypertee-snippet-format-sys)
   #/w- ffdstsss (snippet-format-sys-functor sfs)
   #/w- shape-zero
@@ -4433,6 +4409,7 @@
   (hypernest-coil-zero?)
   hypernest-coil-zero
   'hypernest-coil-zero (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypernest-coil-zero? (-> any/c boolean?))
 (define-imitation-simple-struct
   (hypernest-coil-hole?
     hypernest-coil-hole-overall-degree
@@ -4441,6 +4418,15 @@
     hypernest-coil-hole-tails-hypertee)
   hypernest-coil-hole
   'hypernest-coil-hole (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypernest-coil-hole? (-> any/c boolean?))
+(ascribe-own-contract hypernest-coil-hole-overall-degree
+  (-> hypernest-coil-hole? any/c))
+(ascribe-own-contract hypernest-coil-hole-hole
+  (-> hypernest-coil-hole? any/c))
+(ascribe-own-contract hypernest-coil-hole-data
+  (-> hypernest-coil-hole? any/c))
+(ascribe-own-contract hypernest-coil-hole-tails-hypertee
+  (-> hypernest-coil-hole? any/c))
 (define-imitation-simple-struct
   (hypernest-coil-bump?
     hypernest-coil-bump-overall-degree
@@ -4449,6 +4435,15 @@
     hypernest-coil-bump-tails-hypernest)
   hypernest-coil-bump
   'hypernest-coil-bump (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypernest-coil-bump? (-> any/c boolean?))
+(ascribe-own-contract hypernest-coil-bump-overall-degree
+  (-> hypernest-coil-bump? any/c))
+(ascribe-own-contract hypernest-coil-bump-data
+  (-> hypernest-coil-bump? any/c))
+(ascribe-own-contract hypernest-coil-bump-bump-degree
+  (-> hypernest-coil-bump? any/c))
+(ascribe-own-contract hypernest-coil-bump-tails-hypernest
+  (-> hypernest-coil-bump? any/c))
 
 ; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
 ; unattenuated version, this one has an extra `ds` argument.
@@ -4483,7 +4478,8 @@
     [_ any/c])
   (hypernest-coil-hole overall-degree hole data tails-hypertee))
 
-(define (hypernest-coil/c ds)
+(define/own-contract (hypernest-coil/c ds)
+  (-> dim-sys? flat-contract?)
   (w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/rename-contract
@@ -4834,21 +4830,31 @@
   (hnb-open? hnb-open-degree hnb-open-data)
   hnb-open
   'hnb-open (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hnb-open? (-> any/c boolean?))
+(ascribe-own-contract hnb-open-degree (-> hnb-open? any/c))
+(ascribe-own-contract hnb-open-data (-> hnb-open? any/c))
 (define-imitation-simple-struct
   (hnb-labeled? hnb-labeled-degree hnb-labeled-data)
   hnb-labeled
   'hnb-labeled (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hnb-labeled? (-> any/c boolean?))
+(ascribe-own-contract hnb-labeled-degree (-> hnb-labeled? any/c))
+(ascribe-own-contract hnb-labeled-data (-> hnb-labeled? any/c))
 (define-imitation-simple-struct
   (hnb-unlabeled? hnb-unlabeled-degree)
   hnb-unlabeled
   'hnb-unlabeled (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hnb-unlabeled? (-> any/c boolean?))
+(ascribe-own-contract hnb-unlabeled-degree (-> hnb-unlabeled? any/c))
 
 ; TODO: Use this.
-(define (hypernest-bracket? v)
+(define/own-contract (hypernest-bracket? v)
+  (-> any/c boolean?)
   (or (hnb-open? v) (hnb-labeled? v) (hnb-unlabeled? v)))
 
 ; TODO: Use this.
-(define (hypernest-bracket/c dim/c)
+(define/own-contract (hypernest-bracket/c dim/c)
+  (-> contract? contract?)
   (w- dim/c (coerce-contract 'hypernest-bracket/c dim/c)
   #/rename-contract
     (or/c
@@ -4858,18 +4864,22 @@
     `(hypernest-bracket/c ,(contract-name dim/c))))
 
 ; TODO: Use this.
-(define (hypernest-bracket-degree bracket)
+(define/own-contract (hypernest-bracket-degree bracket)
+  (-> hypernest-bracket? any/c)
   (mat bracket (hnb-open d data) d
   #/mat bracket (hnb-labeled d data) d
   #/dissect bracket (hnb-unlabeled d) d))
 
 ; TODO: Use this.
-(define (hypertee-bracket->hypernest-bracket bracket)
+(define/own-contract (hypertee-bracket->hypernest-bracket bracket)
+  (-> hypertee-bracket? (or/c hnb-labeled? hnb-unlabeled?))
   (mat bracket (htb-labeled d data) (hnb-labeled d data)
   #/dissect bracket (htb-unlabeled d) (hnb-unlabeled d)))
 
 ; TODO: Use this.
-(define (compatible-hypernest-bracket->hypertee-bracket bracket)
+(define/own-contract
+  (compatible-hypernest-bracket->hypertee-bracket bracket)
+  (-> (or/c hnb-labeled? hnb-unlabeled?) hypernest-bracket?)
   (mat bracket (hnb-labeled d data) (htb-labeled d data)
   #/dissect bracket (hnb-unlabeled d) (htb-unlabeled d)))
 
@@ -5009,12 +5019,25 @@
     degree #t brackets))
 
 ; TODO: Use this.
-(define (hypernest-from-brackets ds degree brackets)
+(define/own-contract (hypernest-from-brackets ds degree brackets)
+  (->i
+    (
+      [ds dim-sys?]
+      [degree (ds) (dim-sys-dim/c ds)]
+      [brackets (ds)
+        (listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
+    [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
   (explicit-hypernest-from-brackets
     'hypernest-from-brackets (fn hnb hnb) ds degree brackets))
 
 ; TODO: Use this.
-(define (hn-bracs ds degree . brackets)
+(define/own-contract (hn-bracs ds degree . brackets)
+  (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+    #:rest
+    [brackets (ds)
+      (w- dim/c (dim-sys-dim/c ds)
+      #/listof #/or/c (hypernest-bracket/c dim/c) dim/c)]
+    [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
   (4:dlog 'hqq-d1
   #/explicit-hypernest-from-brackets 'hn-bracs (fn hnb hnb) ds degree
     (list-map brackets #/fn closing-bracket
@@ -5117,7 +5140,11 @@
         stack orig-d tails-hypernest)
     #/cons (hnb-open bump-degree data) recursive-result)))
 
-(define (hypernest-get-brackets hn)
+(define/own-contract (hypernest-get-brackets hn)
+  (->i ([hn hypernest?])
+    [_ (hn)
+      (w- ds (hypernest-get-dim-sys hn)
+      #/listof #/hypernest-bracket/c #/dim-sys-dim/c ds)])
   (dlog 'zl1 hn
   #/w- ds (hypernest-get-dim-sys hn)
   #/w- hnss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
