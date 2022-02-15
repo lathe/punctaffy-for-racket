@@ -164,6 +164,8 @@
 ; particularly including `shim-contract-out` and
 ; `shim-recontract-out`.
 (require lathe-morphisms/private/shim)
+(require punctaffy/private/shim)
+(init-shim)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-category-sys dim-sys-category-sys? dim-sys-dim<?
@@ -1193,11 +1195,10 @@
 ; NOTE DEBUGGABILITY: This is here for debugging. If not for
 ; debugging, we would rename `unguarded-snippet-sys-snippet-degree` to
 ; be `snippet-sys-snippet-degree`.
-(define/contract (attenuated-fn-snippet-sys-snippet-degree ss snippet)
-  (ifc debugging-with-contracts
-    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
-    any/c)
+(define/own-contract
+  (attenuated-fn-snippet-sys-snippet-degree ss snippet)
+  (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+    [_ (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)])
   (unguarded-snippet-sys-snippet-degree ss snippet))
 (define-syntax (snippet-sys-snippet-degree stx)
   (syntax-case stx () #/ (_ ss snippet)
@@ -1207,20 +1208,18 @@
 ; NOTE DEBUGGABILITY: This is here for debugging. If not for
 ; debugging, we would rename `unguarded-snippet-sys-snippet-done` to
 ; be `snippet-sys-snippet-done`.
-(define/contract
+(define/own-contract
   (attenuated-fn-snippet-sys-snippet-done ss degree shape data)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
-        [shape (ss degree)
-          (snippet-sys-snippet-with-degree</c
-            (snippet-sys-shape-snippet-sys ss)
-            degree)]
-        [data any/c])
-      [_ (ss degree) (snippet-sys-snippet-with-degree=/c ss degree)])
-    any/c)
+  (->i
+    (
+      [ss snippet-sys?]
+      [degree (ss) (dim-sys-dim/c #/snippet-sys-dim-sys ss)]
+      [shape (ss degree)
+        (snippet-sys-snippet-with-degree</c
+          (snippet-sys-shape-snippet-sys ss)
+          degree)]
+      [data any/c])
+    [_ (ss degree) (snippet-sys-snippet-with-degree=/c ss degree)])
   (unguarded-snippet-sys-snippet-done ss degree shape data))
 (define-syntax (snippet-sys-snippet-done stx)
   (syntax-case stx () #/ (_ ss degree shape data)
@@ -1229,15 +1228,14 @@
           ss degree shape data))))
 
 ; NOTE DEBUGGABILITY: This is here for debugging.
-(define/contract (attenuated-snippet-sys-snippet-undone ss snippet)
-  (ifc debugging-with-contracts
-    (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss snippet)
-        (maybe/c #/list/c
-          (dim-sys-dim/c #/snippet-sys-dim-sys ss)
-          (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
-          any/c)])
-    any/c)
+(define/own-contract
+  (attenuated-snippet-sys-snippet-undone ss snippet)
+  (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
+    [_ (ss snippet)
+      (maybe/c #/list/c
+        (dim-sys-dim/c #/snippet-sys-dim-sys ss)
+        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)
+        any/c)])
   (snippet-sys-snippet-undone ss snippet))
 
 ; NOTE DEBUGGABILITY: This is here for debugging. If not for
@@ -1306,23 +1304,27 @@
       (unselected data))))
 
 ; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
+(define snippet-sys-snippet-map/explicit-sig-c
+  (->i
+    (
+      [ss snippet-sys?]
+      [snippet (ss) (snippet-sys-snippet/c ss)]
+      [hv-to-v (ss)
+        (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
+    [_ (ss snippet)
+      (snippet-sys-snippet-with-degree=/c ss
+        (snippet-sys-snippet-degree ss snippet))]))
 (define/contract (snippet-sys-snippet-map ss snippet hv-to-v)
   (ifc debugging-with-expensive-map-contract
-    (->i
-      (
-        [ss snippet-sys?]
-        [snippet (ss) (snippet-sys-snippet/c ss)]
-        [hv-to-v (ss)
-          (-> (snippet-sys-unlabeled-shape/c ss) any/c any/c)])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss snippet))])
+    snippet-sys-snippet-map/explicit-sig-c
     any/c)
   (dlog 'd1
   #/just-value
   #/snippet-sys-snippet-map-maybe ss snippet #/fn hole data
     (dlog 'd1.1 hv-to-v
     #/just #/hv-to-v hole data)))
+(ascribe-own-contract snippet-sys-snippet-map
+  snippet-sys-snippet-map/explicit-sig-c)
 
 (define (snippet-sys-snippet-select ss snippet check-hv?)
   (snippet-sys-snippet-map ss snippet #/fn hole data
@@ -1554,112 +1556,100 @@
     (dim-sys-dim<? ds actual-degree degree)))
 
 ; TODO: Use the things that use this.
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract
+(define/own-contract
   (snippet-sys-snippet-bind-selective ss prefix hv-to-suffix)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [prefix (ss) (snippet-sys-snippet/c ss)]
-        [hv-to-suffix (ss prefix)
-          (w- has-d/c
-            (snippet-sys-snippet-with-degree=/c ss
-              (snippet-sys-snippet-degree ss prefix))
-          #/->i
-            (
-              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
-              [data any/c])
-            [_ (prefix-hole)
-              (selectable/c any/c #/and/c
-                has-d/c
-                (snippet-sys-snippet-fitting-shape/c ss
-                  prefix-hole))])])
-      [_ (ss prefix)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss prefix))])
-    any/c)
+  (->i
+    (
+      [ss snippet-sys?]
+      [prefix (ss) (snippet-sys-snippet/c ss)]
+      [hv-to-suffix (ss prefix)
+        (w- has-d/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss prefix))
+        #/->i
+          (
+            [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
+            [data any/c])
+          [_ (prefix-hole)
+            (selectable/c any/c #/and/c
+              has-d/c
+              (snippet-sys-snippet-fitting-shape/c ss
+                prefix-hole))])])
+    [_ (ss prefix)
+      (snippet-sys-snippet-with-degree=/c ss
+        (snippet-sys-snippet-degree ss prefix))])
   (w- shape-ss (snippet-sys-shape-snippet-sys ss)
   #/dlog 'd2 prefix
   #/just-value #/dlog 'd2.1 #/snippet-sys-snippet-splice ss prefix #/fn hole data
     (just #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract (snippet-sys-snippet-join-selective ss snippet)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [snippet (ss)
-          (and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
-          #/w- has-d/c
-            (snippet-sys-snippet-with-degree=/c ss
-              (snippet-sys-snippet-degree ss snippet))
-          #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
-            (fn prefix-hole
-              (selectable/c any/c #/and/c
-                has-d/c
-                (snippet-sys-snippet-fitting-shape/c
-                  ss prefix-hole))))])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss snippet))])
-    any/c)
+(define/own-contract (snippet-sys-snippet-join-selective ss snippet)
+  (->i
+    (
+      [ss snippet-sys?]
+      [snippet (ss)
+        (and/c (snippet-sys-snippet/c ss)
+        #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
+        #/w- has-d/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet))
+        #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+          (fn prefix-hole
+            (selectable/c any/c #/and/c
+              has-d/c
+              (snippet-sys-snippet-fitting-shape/c
+                ss prefix-hole))))])
+    [_ (ss snippet)
+      (snippet-sys-snippet-with-degree=/c ss
+        (snippet-sys-snippet-degree ss snippet))])
   (snippet-sys-snippet-bind-selective ss snippet #/fn hole data data))
 
 ; TODO: Use the things that use this.
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract (snippet-sys-snippet-bind ss prefix hv-to-suffix)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [prefix (ss) (snippet-sys-snippet/c ss)]
-        [hv-to-suffix (ss prefix)
-          (w- has-d/c
-            (snippet-sys-snippet-with-degree=/c ss
-              (snippet-sys-snippet-degree ss prefix))
-          #/->i
-            (
-              [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
-              [data any/c])
-            [_ (prefix-hole)
-              (and/c
-                has-d/c
-                (snippet-sys-snippet-fitting-shape/c ss
-                  prefix-hole))])])
-      [_ (ss prefix)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss prefix))])
-    any/c)
+(define/own-contract (snippet-sys-snippet-bind ss prefix hv-to-suffix)
+  (->i
+    (
+      [ss snippet-sys?]
+      [prefix (ss) (snippet-sys-snippet/c ss)]
+      [hv-to-suffix (ss prefix)
+        (w- has-d/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss prefix))
+        #/->i
+          (
+            [prefix-hole (snippet-sys-unlabeled-shape/c ss)]
+            [data any/c])
+          [_ (prefix-hole)
+            (and/c
+              has-d/c
+              (snippet-sys-snippet-fitting-shape/c ss
+                prefix-hole))])])
+    [_ (ss prefix)
+      (snippet-sys-snippet-with-degree=/c ss
+        (snippet-sys-snippet-degree ss prefix))])
   (snippet-sys-snippet-bind-selective ss prefix #/fn hole data
     (selected #/hv-to-suffix hole data)))
 
 ; TODO: Use this.
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract (snippet-sys-snippet-join ss snippet)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss snippet-sys?]
-        [snippet (ss)
-          (and/c (snippet-sys-snippet/c ss)
-          #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
-          #/w- has-d/c
-            (snippet-sys-snippet-with-degree=/c ss
-              (snippet-sys-snippet-degree ss snippet))
-          #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
-            (fn prefix-hole
-              (and/c
-                has-d/c
-                (snippet-sys-snippet-fitting-shape/c
-                  ss prefix-hole))))])
-      [_ (ss snippet)
-        (snippet-sys-snippet-with-degree=/c ss
-          (snippet-sys-snippet-degree ss snippet))])
-    any/c)
+(define/own-contract (snippet-sys-snippet-join ss snippet)
+  (->i
+    (
+      [ss snippet-sys?]
+      [snippet (ss)
+        (and/c (snippet-sys-snippet/c ss)
+        #/by-own-method/c #:obstinacy (flat-obstinacy) snippet
+        #/w- has-d/c
+          (snippet-sys-snippet-with-degree=/c ss
+            (snippet-sys-snippet-degree ss snippet))
+        #/snippet-sys-snippetof/ob-c ss (flat-obstinacy)
+          (fn prefix-hole
+            (and/c
+              has-d/c
+              (snippet-sys-snippet-fitting-shape/c
+                ss prefix-hole))))])
+    [_ (ss snippet)
+      (snippet-sys-snippet-with-degree=/c ss
+        (snippet-sys-snippet-degree ss snippet))])
   (snippet-sys-snippet-bind ss snippet #/fn hole data data))
 
 
@@ -2287,37 +2277,34 @@
 
 ; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
 ; unattenuated version, this one has extra `sfs` and `uds` arguments.
-(define/contract
+(define/own-contract
   (attenuated-selective-snippet-nonzero sfs uds d content)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [sfs snippet-format-sys?]
-        [uds dim-sys?]
-        [d (uds) (dim-sys-0<dim/c uds)]
-        [content (sfs uds d)
-          (w- eds (extended-with-top-dim-sys uds)
-          #/w- ffdstsss (snippet-format-sys-functor sfs)
-          #/w- ess (functor-sys-apply-to-object ffdstsss eds)
-          #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
-          #/and/c
-            (snippet-sys-snippet-with-degree=/c ess
-              (extended-with-top-dim-infinite))
-            (snippet-sys-snippetof/ob-c ess (flat-obstinacy) #/fn hole
-              (dlog 'zdr1 (snippet-sys-snippet-degree shape-ess hole)
-                d
+  (->i
+    (
+      [sfs snippet-format-sys?]
+      [uds dim-sys?]
+      [d (uds) (dim-sys-0<dim/c uds)]
+      [content (sfs uds d)
+        (w- eds (extended-with-top-dim-sys uds)
+        #/w- ffdstsss (snippet-format-sys-functor sfs)
+        #/w- ess (functor-sys-apply-to-object ffdstsss eds)
+        #/w- shape-ess (snippet-sys-shape-snippet-sys ess)
+        #/and/c
+          (snippet-sys-snippet-with-degree=/c ess
+            (extended-with-top-dim-infinite))
+          (snippet-sys-snippetof/ob-c ess (flat-obstinacy) #/fn hole
+            (dlog 'zdr1 (snippet-sys-snippet-degree shape-ess hole) d
+              (dim-sys-dim<? eds
+                (snippet-sys-snippet-degree shape-ess hole)
+                (extended-with-top-dim-finite d))
+            #/selectable/c any/c
+              (if
                 (dim-sys-dim<? eds
                   (snippet-sys-snippet-degree shape-ess hole)
                   (extended-with-top-dim-finite d))
-              #/selectable/c any/c
-                (if
-                  (dim-sys-dim<? eds
-                    (snippet-sys-snippet-degree shape-ess hole)
-                    (extended-with-top-dim-finite d))
-                  any/c
-                  none/c))))])
-      [_ any/c])
-    any/c)
+                any/c
+                none/c))))])
+    [_ any/c])
   (selective-snippet-nonzero d content))
 
 (define (selective-snippet? v)
@@ -3072,30 +3059,28 @@
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
 
 ; NOTE DEBUGGABILITY: This is here for debugging.
-(define/contract
+(define/own-contract
   (attenuated-fn-hypertee-coil-hole ds overall-degree hole data tails)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ds dim-sys?]
-        [overall-degree (ds) (dim-sys-0<dim/c ds)]
-        [hole (ds overall-degree)
-          (w- ss (hypertee-snippet-sys ds)
-          #/and/c
-            (snippet-sys-unlabeled-snippet/c ss)
-            (snippet-sys-snippet-with-degree</c ss overall-degree))]
-        [data any/c]
-        [tails (ds overall-degree hole)
-          (w- ss (hypertee-snippet-sys ds)
-          #/snippet-sys-snippet-zip-selective/ob-c ss (flat-obstinacy)
-            hole
-            (fn hole subject-data #t)
-            (fn hole shape-data subject-data
-              (and/c
-                (snippet-sys-snippet-with-degree=/c ss overall-degree)
-                (snippet-sys-snippet-fitting-shape/c ss hole))))])
-      [_ any/c])
-    any/c)
+  (->i
+    (
+      [ds dim-sys?]
+      [overall-degree (ds) (dim-sys-0<dim/c ds)]
+      [hole (ds overall-degree)
+        (w- ss (hypertee-snippet-sys ds)
+        #/and/c
+          (snippet-sys-unlabeled-snippet/c ss)
+          (snippet-sys-snippet-with-degree</c ss overall-degree))]
+      [data any/c]
+      [tails (ds overall-degree hole)
+        (w- ss (hypertee-snippet-sys ds)
+        #/snippet-sys-snippet-zip-selective/ob-c ss (flat-obstinacy)
+          hole
+          (fn hole subject-data #t)
+          (fn hole shape-data subject-data
+            (and/c
+              (snippet-sys-snippet-with-degree=/c ss overall-degree)
+              (snippet-sys-snippet-fitting-shape/c ss hole))))])
+    [_ any/c])
   (hypertee-coil-hole overall-degree hole data tails))
 (define-syntax (attenuated-hypertee-coil-hole stx)
   (syntax-case stx () #/ (_ ds overall-degree hole data tails)
@@ -4392,16 +4377,11 @@
   attenuated-hypernest-snippet-format-sys
   attenuated-hypernest-snippet-format-sys)
 
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract (hypernest-shape ss hn)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ss hypernest-snippet-sys?]
-        [hn (ss) (snippet-sys-snippet/c ss)])
-      [_ (ss)
-        (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
-    any/c)
+(define/own-contract (hypernest-shape ss hn)
+  (->i
+    ([ss hypernest-snippet-sys?] [hn (ss) (snippet-sys-snippet/c ss)])
+    [_ (ss)
+      (snippet-sys-snippet/c #/snippet-sys-shape-snippet-sys ss)])
   (dlogr 'zc10
   #/dissect ss (hypernest-snippet-sys sfs uds)
   #/mat hn (hypernest-zero-unchecked content)
@@ -4482,38 +4462,35 @@
 
 ; NOTE DEBUGGABILITY: This is here for debugging. Unlike the
 ; unattenuated version, this one has an extra `ds` argument.
-(define/contract
+(define/own-contract
   (attenuated-hypernest-coil-hole
     ds overall-degree hole data tails-hypertee)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [ds dim-sys?]
-        [overall-degree (ds) (dim-sys-0<dim/c ds)]
-        [hole (ds overall-degree)
-          (w- ss
-            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/and/c
-            (snippet-sys-unlabeled-shape/c ss)
-            (snippet-sys-snippet-with-degree</c
-              shape-ss overall-degree))]
-        [data any/c]
-        [tails-hypertee (ds overall-degree hole)
-          (w- ss
-            (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
-          #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-          #/snippet-sys-snippet-zip-selective/ob-c shape-ss
-            (flat-obstinacy)
-            hole
-            (fn hole subject-data #t)
-            (fn hole shape-data subject-data
-              (and/c
-                (snippet-sys-snippet-with-degree=/c
-                  ss overall-degree)
-                (snippet-sys-snippet-fitting-shape/c ss hole))))])
-      [_ any/c])
-    any/c)
+  (->i
+    (
+      [ds dim-sys?]
+      [overall-degree (ds) (dim-sys-0<dim/c ds)]
+      [hole (ds overall-degree)
+        (w- ss
+          (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+        #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+        #/and/c
+          (snippet-sys-unlabeled-shape/c ss)
+          (snippet-sys-snippet-with-degree</c
+            shape-ss overall-degree))]
+      [data any/c]
+      [tails-hypertee (ds overall-degree hole)
+        (w- ss
+          (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
+        #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+        #/snippet-sys-snippet-zip-selective/ob-c shape-ss
+          (flat-obstinacy)
+          hole
+          (fn hole subject-data #t)
+          (fn hole shape-data subject-data
+            (and/c
+              (snippet-sys-snippet-with-degree=/c ss overall-degree)
+              (snippet-sys-snippet-fitting-shape/c ss hole))))])
+    [_ any/c])
   (hypernest-coil-hole overall-degree hole data tails-hypertee))
 
 (define (hypernest-coil/c ds)
@@ -4584,15 +4561,13 @@
                       hole)))))))))
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract (unguarded-fn-hypernest-furl dim-sys coil)
-  (ifc debugging-with-contracts
-    (->i
-      (
-        [dim-sys dim-sys?]
-        [coil (dim-sys) (hypernest-coil/c dim-sys)])
-      [_ hypernest?])
-    any/c)
+; NOTE DEBUGGABILITY: This is a `define/own-contract` for debugging.
+(define/own-contract (unguarded-fn-hypernest-furl dim-sys coil)
+  (->i
+    (
+      [dim-sys dim-sys?]
+      [coil (dim-sys) (hypernest-coil/c dim-sys)])
+    [_ hypernest?])
   (dlog 'l1
   #/w- uds dim-sys
   #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
@@ -4684,12 +4659,9 @@
         data
         tails-assembled))))
 
-; NOTE DEBUGGABILITY: This is a `define/contract` for debugging.
-(define/contract (hypernest-get-coil hn)
-  (ifc debugging-with-contracts
-    (->i ([hn hypernest?])
-      [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])
-    any/c)
+(define/own-contract (hypernest-get-coil hn)
+  (->i ([hn hypernest?])
+    [_ (hn) (hypernest-coil/c #/hypernest-get-dim-sys hn)])
   (let-syntax
     (
       [dlog
