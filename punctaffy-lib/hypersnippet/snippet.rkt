@@ -166,6 +166,12 @@
 (require lathe-morphisms/private/shim)
 (require punctaffy/private/shim)
 (init-shim)
+(module+ private/hypertee
+  (require punctaffy/private/shim)
+  (init-shim))
+(module+ private/hypernest
+  (require punctaffy/private/shim)
+  (init-shim))
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-category-sys dim-sys-category-sys? dim-sys-dim<?
@@ -337,79 +343,55 @@
 
 (module+ private/hypertee #/provide
   hypertee-coil-zero)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-coil-zero? (-> any/c boolean?)])
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee-coil-zero?)
 (module+ private/hypertee #/provide
   hypertee-coil-hole)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-coil-hole? (-> any/c boolean?)]
-  [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
-  [hypertee-coil-hole-hole (-> hypertee-coil-hole? any/c)]
-  [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
-  [hypertee-coil-hole-tails (-> hypertee-coil-hole? any/c)])
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-coil/c (-> dim-sys? flat-contract?)])
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee-coil-hole?
+  hypertee-coil-hole-overall-degree
+  hypertee-coil-hole-hole
+  hypertee-coil-hole-data
+  hypertee-coil-hole-tails)
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee-coil/c)
 (module+ private/hypertee #/provide
   hypertee-furl)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee? (-> any/c boolean?)]
-  [hypertee-get-dim-sys (-> hypertee? dim-sys?)]
-  [hypertee-get-coil
-    (->i ([ht hypertee?])
-      [_ (ht) (hypertee-coil/c #/hypertee-get-dim-sys ht)])]
-  [hypertee/c (-> dim-sys? flat-contract?)])
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee?
+  hypertee-get-dim-sys
+  hypertee-get-coil
+  hypertee/c)
 (module+ private/hypertee #/provide
   hypertee-snippet-sys)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-snippet-sys? (-> any/c boolean?)]
-  [hypertee-snippet-sys-dim-sys (-> hypertee-snippet-sys? dim-sys?)])
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee-snippet-sys?
+  hypertee-snippet-sys-dim-sys)
 (module+ private/hypertee #/provide
   hypertee-snippet-format-sys)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-snippet-format-sys? (-> any/c boolean?)]
-  [hypertee-get-hole-zero-maybe
-    (->
-      (and/c hypertee?
-        (by-own-method/c #:obstinacy (flat-obstinacy) ht
-          (hypertee/c #/hypertee-get-dim-sys ht)))
-      maybe?)])
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee-snippet-format-sys?
+  hypertee-get-hole-zero-maybe)
 
 (module+ private/hypertee #/provide
   htb-labeled)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [htb-labeled? (-> any/c boolean?)]
-  [htb-labeled-degree (-> htb-labeled? any/c)]
-  [htb-labeled-data (-> htb-labeled? any/c)])
+(module+ private/hypertee #/provide #/own-contract-out
+  htb-labeled?
+  htb-labeled-degree
+  htb-labeled-data)
 (module+ private/hypertee #/provide
   htb-unlabeled)
-(module+ private/hypertee #/provide #/shim-contract-out
-  [htb-unlabeled? (-> any/c boolean?)]
-  [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
-(module+ private/hypertee #/provide #/shim-contract-out
-  [hypertee-bracket? (-> any/c boolean?)]
-  [hypertee-bracket/c (-> contract? contract?)]
+(module+ private/hypertee #/provide #/own-contract-out
+  htb-unlabeled?
+  htb-unlabeled-degree)
+(module+ private/hypertee #/provide #/own-contract-out
+  hypertee-bracket?
+  hypertee-bracket/c
   ; TODO: Uncomment this export if we ever need it.
-;  [hypertee-bracket-degree (-> hypertee-bracket? any/c)]
-  [hypertee-from-brackets
-    (->i
-      (
-        [ds dim-sys?]
-        [degree (ds) (dim-sys-dim/c ds)]
-        [brackets (ds)
-          (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
-      [_ (ds) (hypertee/c ds)])]
-  [ht-bracs
-    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
-      #:rest
-      [brackets (ds)
-        (w- dim/c (dim-sys-dim/c ds)
-        #/listof #/or/c (hypertee-bracket/c dim/c) dim/c)]
-      [_ (ds) (hypertee/c ds)])]
-  [hypertee-get-brackets
-    (->i ([ht hypertee?])
-      [_ (ht)
-        (w- ds (hypertee-get-dim-sys ht)
-        #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])])
+;  hypertee-bracket-degree
+  hypertee-from-brackets
+  ht-bracs
+  hypertee-get-brackets)
 
 (module+ private/hypernest #/provide #/shim-contract-out
   [hypernest? (-> any/c boolean?)]
@@ -3030,6 +3012,7 @@
   (hypertee-coil-zero?)
   hypertee-coil-zero
   'hypertee-coil-zero (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypertee-coil-zero? (-> any/c boolean?))
 (define-imitation-simple-struct
   (hypertee-coil-hole?
     hypertee-coil-hole-overall-degree
@@ -3038,6 +3021,15 @@
     hypertee-coil-hole-tails)
   hypertee-coil-hole
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypertee-coil-hole? (-> any/c boolean?))
+(ascribe-own-contract hypertee-coil-hole-overall-degree
+  (-> hypertee-coil-hole? any/c))
+(ascribe-own-contract hypertee-coil-hole-hole
+  (-> hypertee-coil-hole? any/c))
+(ascribe-own-contract hypertee-coil-hole-data
+  (-> hypertee-coil-hole? any/c))
+(ascribe-own-contract hypertee-coil-hole-tails
+  (-> hypertee-coil-hole? any/c))
 
 ; NOTE DEBUGGABILITY: This is here for debugging.
 (define/own-contract
@@ -3073,7 +3065,8 @@
             #'(hypertee-coil-hole))
           overall-degree hole data tails))))
 
-(define (hypertee-coil/c ds)
+(define/own-contract (hypertee-coil/c ds)
+  (-> dim-sys? flat-contract?)
   (w- ss (hypertee-snippet-sys ds)
   #/rename-contract
     (or/c
@@ -3129,6 +3122,11 @@
                 (if (hypertee-bracket? d)
                   (htb-unlabeled d)
                   d)))))))))
+(ascribe-own-contract hypertee? (-> any/c boolean?))
+(ascribe-own-contract hypertee-get-dim-sys (-> hypertee? dim-sys?))
+(ascribe-own-contract hypertee-get-coil
+  (->i ([ht hypertee?])
+    [_ (ht) (hypertee-coil/c #/hypertee-get-dim-sys ht)]))
 ; TODO: We have a dilemma. The `define/contract` version of
 ; `attenuated-hypertee-furl` will give less precise source location
 ; information in its errors, and it won't catch applications with
@@ -3178,7 +3176,8 @@
     unguarded-hypertee-furl-orig))
 
 ; TODO: Use the things that use this.
-(define (hypertee/c ds)
+(define/own-contract (hypertee/c ds)
+  (-> dim-sys? flat-contract?)
   (rename-contract (match/c unguarded-hypertee-furl (ok/c ds) any/c)
     `(hypertee/c ,(value-name-for-contract ds))))
 
@@ -3570,6 +3569,9 @@
       #/fn hole data
         (dissect data (list i data)
         #/hash-ref env i)))))
+(ascribe-own-contract hypertee-snippet-sys? (-> any/c boolean?))
+(ascribe-own-contract hypertee-snippet-sys-dim-sys
+  (-> hypertee-snippet-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-hypertee-snippet-sys
   unguarded-hypertee-snippet-sys
@@ -3679,8 +3681,15 @@
       ; snippet-format-sys-functor
       (dissectfn _
         (hypertee-functor-from-dim-sys-to-snippet-sys-sys)))))
+(ascribe-own-contract hypertee-snippet-format-sys?
+  (-> any/c boolean?))
 
-(define (hypertee-get-hole-zero-maybe ht)
+(define/own-contract (hypertee-get-hole-zero-maybe ht)
+  (->
+    (and/c hypertee?
+      (by-own-method/c #:obstinacy (flat-obstinacy) ht
+        (hypertee/c #/hypertee-get-dim-sys ht)))
+    maybe?)
   (4:dlog 'hqq-j4
   #/dissect ht (unguarded-hypertee-furl ds coil)
   #/w- ss (hypertee-snippet-sys ds)
@@ -4789,17 +4798,24 @@
   (htb-labeled? htb-labeled-degree htb-labeled-data)
   htb-labeled
   'htb-labeled (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract htb-labeled? (-> any/c boolean?))
+(ascribe-own-contract htb-labeled-degree (-> htb-labeled? any/c))
+(ascribe-own-contract htb-labeled-data (-> htb-labeled? any/c))
 (define-imitation-simple-struct
   (htb-unlabeled? htb-unlabeled-degree)
   htb-unlabeled
   'htb-unlabeled (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract htb-unlabeled? (-> any/c boolean?))
+(ascribe-own-contract htb-unlabeled-degree (-> htb-unlabeled? any/c))
 
 ; TODO: Use this.
-(define (hypertee-bracket? v)
+(define/own-contract (hypertee-bracket? v)
+  (-> any/c boolean?)
   (or (htb-labeled? v) (htb-unlabeled? v)))
 
 ; TODO: Use this.
-(define (hypertee-bracket/c dim/c)
+(define/own-contract (hypertee-bracket/c dim/c)
+  (-> contract? contract?)
   (w- dim/c (coerce-contract 'hypertee-bracket/c dim/c)
   #/rename-contract
     (or/c
@@ -4808,7 +4824,8 @@
     `(hypertee-bracket/c ,(contract-name dim/c))))
 
 ; TODO: Use this.
-(define (hypertee-bracket-degree bracket)
+(define/own-contract (hypertee-bracket-degree bracket)
+  (-> hypertee-bracket? any/c)
   (mat bracket (htb-labeled d data) d
   #/dissect bracket (htb-unlabeled d) d))
 
@@ -5020,12 +5037,25 @@
           (hypertee-bracket->hypernest-bracket htb))))))
 
 ; TODO: Use this.
-(define (hypertee-from-brackets ds degree brackets)
+(define/own-contract (hypertee-from-brackets ds degree brackets)
+  (->i
+    (
+      [ds dim-sys?]
+      [degree (ds) (dim-sys-dim/c ds)]
+      [brackets (ds)
+        (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
+    [_ (ds) (hypertee/c ds)])
   (explicit-hypertee-from-brackets
     'hypertee-from-brackets ds degree brackets))
 
 ; TODO: Use this.
-(define (ht-bracs ds degree . brackets)
+(define/own-contract (ht-bracs ds degree . brackets)
+  (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+    #:rest
+    [brackets (ds)
+      (w- dim/c (dim-sys-dim/c ds)
+      #/listof #/or/c (hypertee-bracket/c dim/c) dim/c)]
+    [_ (ds) (hypertee/c ds)])
   (explicit-hypertee-from-brackets 'ht-bracs ds degree
     (list-map brackets #/fn closing-bracket
       (if (hypertee-bracket? closing-bracket)
@@ -5098,7 +5128,11 @@
 
 ; TODO: Export this.
 ; TODO: Use this.
-(define (hypertee-get-brackets ht)
+(define/own-contract (hypertee-get-brackets ht)
+  (->i ([ht hypertee?])
+    [_ (ht)
+      (w- ds (hypertee-get-dim-sys ht)
+      #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
   (dissect ht (unguarded-hypertee-furl ds coil)
   #/list-map
     (hypernest-get-brackets #/snippet-sys-shape->snippet

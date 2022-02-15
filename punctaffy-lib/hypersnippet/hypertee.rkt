@@ -20,58 +20,55 @@
 ;   language governing permissions and limitations under the License.
 
 
-; TODO NOW: Remove uses of `lathe-morphisms/private/shim`,
-; particularly including `shim-contract-out` and
-; `shim-recontract-out`.
-(require lathe-morphisms/private/shim)
+(require #/only-in racket/contract/base recontract-out)
 
 (require #/submod punctaffy/hypersnippet/snippet private/hypertee)
 
 
 (provide
   hypertee-coil-zero)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee-coil-zero?)
 (provide
   hypertee-coil-hole)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee-coil-hole?
   hypertee-coil-hole-overall-degree
   hypertee-coil-hole-hole
   hypertee-coil-hole-data
   hypertee-coil-hole-tails)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee-coil/c)
 (provide
   hypertee-furl)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee?
   hypertee-get-dim-sys
   hypertee-get-coil
   hypertee/c)
 (provide
   hypertee-snippet-sys)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee-snippet-sys?
   hypertee-snippet-sys-dim-sys)
 (provide
   hypertee-snippet-format-sys)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee-snippet-format-sys?
   hypertee-get-hole-zero-maybe)
 
 (provide
   htb-labeled)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   htb-labeled?
   htb-labeled-degree
   htb-labeled-data)
 (provide
   htb-unlabeled)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   htb-unlabeled?
   htb-unlabeled-degree)
-(provide #/shim-recontract-out
+(provide #/recontract-out
   hypertee-bracket?
   hypertee-bracket/c
   ; TODO: Uncomment this export if we ever need it.
