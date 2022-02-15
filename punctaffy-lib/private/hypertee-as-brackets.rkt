@@ -26,7 +26,6 @@
   listof not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   coerce-contract contract-first-order-passes?)
-(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 (require #/only-in racket/struct make-constructor-style-printer)
 
@@ -46,6 +45,9 @@
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
 
+(require punctaffy/private/shim)
+(init-shim)
+
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-dim-from-int
   dim-successors-sys-dim-plus-int dim-successors-sys-dim=plus-int?
@@ -57,6 +59,7 @@
   hyperstack-push make-hyperstack-trivial make-hyperstack)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
+
 
 (provide
   htb-labeled)
@@ -1044,7 +1047,7 @@
       (func data)
       data)))
 
-(define/contract (hypertee-v-map-pred-degree dss degree ht func)
+(define/own-contract (hypertee-v-map-pred-degree dss degree ht func)
   (->i
     (
       [dss dim-successors-sys?]
@@ -1439,7 +1442,7 @@
       (func hole data)
       data)))
 
-(define/contract (hypertee-map-pred-degree dss degree ht func)
+(define/own-contract (hypertee-map-pred-degree dss degree ht func)
   (->i
     (
       [dss dim-successors-sys?]
@@ -1527,7 +1530,7 @@
   
   #/hypertee-bind-one-degree pred-degree ht func))
 
-(define/contract (hypertee-bind-highest-degree dss ht func)
+(define/own-contract (hypertee-bind-highest-degree dss ht func)
   (->i
     (
       [dss dim-successors-sys?]
@@ -1597,7 +1600,7 @@
     #/func d data)))
 
 ; TODO: See if we'll use this.
-(define/contract (hypertee-v-any-one-degree degree ht func)
+(define/own-contract (hypertee-v-any-one-degree degree ht func)
   (->i
     (
       [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
@@ -1609,7 +1612,7 @@
     (and (dim-sys-dim=? ds degree d)
     #/func data)))
 
-(define/contract (hypertee-any-all-degrees ht func)
+(define/own-contract (hypertee-any-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) any/c)
   (hypertee-dv-any-all-degrees
     (hypertee-map-all-degrees ht #/fn hole data
@@ -1624,7 +1627,7 @@
     (expect bracket (htb-labeled d data) #t
     #/func d data)))
 
-(define/contract (hypertee-all-all-degrees ht func)
+(define/own-contract (hypertee-all-all-degrees ht func)
   (-> hypertee? (-> hypertee? any/c any/c) any/c)
   (hypertee-dv-all-all-degrees
     (hypertee-map-all-degrees ht #/fn hole data
@@ -1675,7 +1678,7 @@
       (trivial))
     tails))
 
-(define/contract (hypertee-contour? dss ht)
+(define/own-contract (hypertee-contour? dss ht)
   (->i
     (
       [dss dim-successors-sys?]
@@ -1753,7 +1756,7 @@
     (hypertee ds d closing-brackets)
   #/hypertee ds new-degree closing-brackets))
 
-(define/contract (hypertee-zip-map a b func)
+(define/own-contract (hypertee-zip-map a b func)
   (->i
     (
       [a (b) (hypertee/c #/hypertee-dim-sys b)]
@@ -1798,7 +1801,7 @@
     #/func hole a b)))
 
 ; TODO: See if we should add this to Lathe Comforts.
-(define/contract (list-fold-map-any state lst on-elem)
+(define/own-contract (list-fold-map-any state lst on-elem)
   (-> any/c list? (-> any/c any/c #/list/c any/c #/maybe/c any/c)
     (list/c any/c #/maybe/c list?))
   (w-loop next state state lst lst rev-result (list)

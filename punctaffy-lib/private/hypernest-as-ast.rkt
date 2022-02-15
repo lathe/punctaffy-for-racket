@@ -24,7 +24,6 @@
   -> ->i and/c any any/c contract? contract-name contract-out list/c
   listof not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator coerce-contract)
-(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 (require #/only-in racket/struct make-constructor-style-printer)
 
@@ -40,6 +39,9 @@
   auto-equal auto-write define-imitation-simple-struct struct-easy)
 (require #/only-in lathe-comforts/trivial trivial)
 (require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
+
+(require punctaffy/private/shim)
+(init-shim)
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-sys? dim-successors-sys-dim-from-int
@@ -61,6 +63,7 @@
   unsafe-hypertee-from-brackets)
 (require #/only-in punctaffy/private/suppress-internal-errors
   punctaffy-suppress-internal-errors)
+
 
 (provide
   hnb-open)
@@ -720,7 +723,7 @@
 
 ; TODO: See if we'll ever use this. For now, we just have it here as
 ; an analogue to `unsafe-hypertee-from-brackets`.
-(define/contract (unsafe-hypernest-furl ds coil)
+(define/own-contract (unsafe-hypernest-furl ds coil)
   (-> dim-sys? any/c any)
   (unless (punctaffy-suppress-internal-errors)
     ; NOTE: At this point we don't expect
@@ -1056,7 +1059,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract
+(define/own-contract
   (hypernest-dv-fold-map-any-all-degrees state hn on-hole)
   (->i
     (
@@ -1115,7 +1118,7 @@
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
 ;
-(define/contract
+(define/own-contract
   (hypernest-selective-holes-zip-map smaller bigger should-zip? func)
   (->i
     (
@@ -1168,7 +1171,7 @@
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
 ;
-(define/contract
+(define/own-contract
   (hypernest-low-degree-holes-zip-map smaller bigger func)
   (->i
     (
@@ -1197,7 +1200,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-dgv-map-all-degrees hn func)
+(define/own-contract (hypernest-dgv-map-all-degrees hn func)
   (->i
     (
       [hn hypernest?]
@@ -1513,7 +1516,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract
+(define/own-contract
   (hypernest-set-degree-and-bind-all-degrees new-degree hn hole-to-hn)
   (->i
     (
@@ -1566,7 +1569,7 @@
 ; TODO IMPLEMENT: Implement an operation analogous to this, but for
 ; hypertees instead of hypernests.
 ;
-(define/contract
+(define/own-contract
   (hypernest-set-degree-and-dv-bind-all-degrees
     new-degree hn dv-to-hn)
   (->i
@@ -1649,7 +1652,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-dv-any-all-degrees hn func)
+(define/own-contract (hypernest-dv-any-all-degrees hn func)
   (->i
     (
       [hn hypernest?]
@@ -1677,7 +1680,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-dv-each-all-degrees hn body)
+(define/own-contract (hypernest-dv-each-all-degrees hn body)
   (->i
     (
       [hn hypernest?]
@@ -1695,7 +1698,7 @@
 
 ; TODO IMPLEMENT: Implement operations analogous to this, but for
 ; bumps instead of holes.
-(define/contract (hypernest-each-all-degrees hn body)
+(define/own-contract (hypernest-each-all-degrees hn body)
   (-> hypernest? (-> hypertee? any/c any) void?)
   (hypernest-dv-each-all-degrees
     (hypernest-map-all-degrees hn #/fn hole data
