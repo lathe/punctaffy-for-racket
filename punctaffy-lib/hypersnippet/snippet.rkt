@@ -119,7 +119,8 @@
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
   -> ->i and/c any any/c contract? contract-name flat-contract?
-  flat-contract-predicate list/c listof none/c or/c rename-contract)
+  flat-contract-predicate list/c listof none/c not/c or/c
+  rename-contract)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract raise-blame-error)
