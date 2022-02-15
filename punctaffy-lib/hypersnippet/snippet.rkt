@@ -4,7 +4,7 @@
 ;
 ; An interface for data structures that are hypersnippet-shaped.
 
-;   Copyright 2019-2021 The Lathe Authors
+;   Copyright 2019-2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -160,6 +160,9 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
+; TODO NOW: Remove uses of `lathe-morphisms/private/shim`,
+; particularly including `shim-contract-out` and
+; `shim-recontract-out`.
 (require lathe-morphisms/private/shim)
 
 (require #/only-in punctaffy/hypersnippet/dim

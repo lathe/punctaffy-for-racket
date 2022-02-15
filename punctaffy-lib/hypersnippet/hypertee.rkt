@@ -5,7 +5,7 @@
 ; A data structure for encoding the kind of higher-order structure
 ; that occurs in higher quasiquotation.
 
-;   Copyright 2017-2021 The Lathe Authors
+;   Copyright 2017-2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@
 ;   language governing permissions and limitations under the License.
 
 
+; TODO NOW: Remove uses of `lathe-morphisms/private/shim`,
+; particularly including `shim-contract-out` and
+; `shim-recontract-out`.
 (require lathe-morphisms/private/shim)
 
 (require #/submod punctaffy/hypersnippet/snippet private/hypertee)
