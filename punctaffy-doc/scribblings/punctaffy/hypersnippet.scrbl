@@ -2189,7 +2189,7 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
       (let ([_dim/c (dim-sys-dim/c ds)])
         (or/c
           (hypertee-bracket/c _dim/c)
-          (and/c (not/c hypertee-bracket?) _dim/c))]
+          (and/c (not/c hypertee-bracket?) _dim/c)))]
     ...)
   (hypertee/c ds)
 ]{
