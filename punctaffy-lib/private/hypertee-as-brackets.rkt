@@ -202,8 +202,10 @@
     (->i ([ht hypertee?])
       [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])]
   ; TODO PARITY: Bring this into parity with
-  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. If it
-  ; did exist, it would be called `hypertee-map`, it would pass its
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.  It
+  ; would probably be accommodated through a mix of
+  ; `hypertee-snippet-sys` and `snippet-sys-snippet-map`. If it did
+  ; exist, it would be called `hypertee-map`, it would pass its
   ; callback a hole shape rather than merely a degree, and it would
   ; use a more specific contract that asserted the result was of the
   ; same degree as the original.
@@ -257,7 +259,7 @@
       [_ any/c])])
 (provide
   ; TODO PARITY: Bring this into parity with
-  ; `punctaffy/hypersnippet/hypertee`, where it's called `selected`.
+  ; `punctaffy/hypersnippet/snippet`, where it's called `selected`.
   hypertee-join-selective-interpolation)
 (provide #/contract-out
   [hypertee-join-selective-interpolation? (-> any/c boolean?)]
@@ -265,7 +267,7 @@
     (-> hypertee-join-selective-interpolation? any/c)])
 (provide
   ; TODO PARITY: Bring this into parity with
-  ; `punctaffy/hypersnippet/hypertee`, where it's called `unselected`.
+  ; `punctaffy/hypersnippet/snippet`, where it's called `unselected`.
   hypertee-join-selective-non-interpolation)
 (provide #/contract-out
   [hypertee-join-selective-non-interpolation? (-> any/c boolean?)]

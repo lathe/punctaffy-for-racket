@@ -135,7 +135,7 @@
   [hypernest/c (-> dim-sys? flat-contract?)]
   ; TODO PARITY: Bring `punctaffy/hypersnippet/hypernest`'s
   ; `hypernestof/ob-c`, `hypernest-snippet-sys`,
-  ; `hypernest-snippet-format-sys`, `hypernest-shape`,
+  ; `hypernest-snippet-format-sys`,
   ; `hypertee-bracket->hypernest-bracket`, and
   ; `compatible-hypernest-bracket->hypertee-bracket` into parity with
   ; this module, where they don't exist.
@@ -190,19 +190,43 @@
         [new-degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
         [hn hypernest?])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
-  ; TODO PARITY: Continue looking for things to bring into parity from
-  ; here.
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. If it
+  ; did exist, it would use a more specific contract that asserted the
+  ; result was of the requested degree.
   [hypernest-set-degree-force
     (->i
       (
         [new-degree (hn) (dim-sys-0<dim/c #/hypernest-dim-sys hn)]
         [hn hypernest?])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-shape->snippet`. If it did exist, it would use a more
+  ; specific contract that asserted that the input abided by its own
+  ; dimension system and that the result abided by the same dimension
+  ; system and was of the same degree.
   [hypertee->hypernest (-> hypertee? hypernest?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet->maybe-shape`. If it did exist, it would use
+  ; a more specific contract that asserted that the input abided by
+  ; its own dimension system and that the result abided by the same
+  ; dimension system and was of the same degree.
   [hypernest->maybe-hypertee (-> hypernest? #/maybe/c hypertee?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it's called
+  ; `hypernest-shape` and takes an `hypernest-snippet-sys?` along with
+  ; its other argument.
   [hypernest-filter-to-hypertee
     (->i ([hn hypernest?])
       [_ (hn) (hypertee/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist.
+  ; Lately, we've preferred `snippet-sys-snippet-done` for this
+  ; purpose rather than associating dimensions with successors.
   [hypernest-contour
     (->i
       (
@@ -210,6 +234,15 @@
         [hole-value any/c]
         [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
       [_ (dss) (hypernest/c #/dim-successors-sys-dim-sys dss)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet-zip-map`. If it did exist, it would be called
+  ; `hypernest-zip-map`, it would allow its hypertee argument to have
+  ; a degree less than that of its hypernest argument, it would allow
+  ; the transformer function to return a maybe value for early
+  ; exiting, and it would use a more specific contract that asserted
+  ; the result was of the same degree as the hypernest argument.
   [hypernest-holes-zip-map
     (->i
       (
@@ -218,9 +251,20 @@
         [func (hn)
           (-> (hypertee/c #/hypernest-dim-sys hn) any/c any/c any/c)])
       [_ (hn) (maybe/c #/hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it's called
+  ; `hypernest-get-coil`.
   [hypernest-unfurl
     (->i ([hn hypernest?])
       [_ (hn) (hypernest-coil/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypernest-snippet-sys` and `snippet-sys-snippet-map`. If it did
+  ; exist, it would be called `hypernest-map`, it would pass its
+  ; callback a hole shape rather than merely a degree, and it would
+  ; use a more specific contract that asserted the result was of the
+  ; same degree as the original.
   [hypernest-dv-map-all-degrees
     (->i
       (
@@ -228,6 +272,8 @@
         [func (hn)
           (-> (dim-sys-dim/c #/hypernest-dim-sys hn) any/c any/c)])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Continue looking for things to bring into parity from
+  ; here.
   [hypernest-v-map-one-degree
     (->i
       (

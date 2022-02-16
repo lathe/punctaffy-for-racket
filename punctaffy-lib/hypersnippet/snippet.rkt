@@ -571,6 +571,8 @@
           (snippet-sys-shape-snippet-sys ss)
           shape))]))
 (ascribe-own-contract snippet-sys-snippet->maybe-shape
+  ; TODO SPECIFIC: See if the result contract should be more specific.
+  ; The result should always be of the same degree as the input.
   (->i ([ss snippet-sys?] [snippet (ss) (snippet-sys-snippet/c ss)])
     [_ (ss snippet)
       (maybe/c
@@ -4315,6 +4317,8 @@
   attenuated-hypernest-snippet-format-sys)
 
 (define/own-contract (hypernest-shape ss hn)
+  ; TODO SPECIFIC: See if the result contract should be more specific.
+  ; The result should always be of the same degree as the input.
   (->i
     ([ss hypernest-snippet-sys?] [hn (ss) (snippet-sys-snippet/c ss)])
     [_ (ss)
