@@ -3060,10 +3060,7 @@
 (define attenuated-hypertee-furl
   (let ()
     (define/contract (hypertee-furl dim-sys coil)
-      (->i
-        (
-          [ds dim-sys?]
-          [coil (ds) (hypertee-coil/c ds)])
+      (->i ([ds dim-sys?] [coil (ds) (hypertee-coil/c ds)])
         [_ (ds) (hypertee/c ds)])
       (unguarded-hypertee-furl-orig dim-sys coil))
     hypertee-furl))
@@ -4553,14 +4550,11 @@
     `(hypernest-coil/c ,(value-name-for-contract ds))))
 
 ; NOTE DEBUGGABILITY: This is a `define/own-contract` for debugging.
-(define/own-contract (unguarded-fn-hypernest-furl dim-sys coil)
-  (->i
-    (
-      [dim-sys dim-sys?]
-      [coil (dim-sys) (hypernest-coil/c dim-sys)])
+(define/own-contract (unguarded-fn-hypernest-furl ds coil)
+  (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
     [_ hypernest?])
   (dlog 'l1
-  #/w- uds dim-sys
+  #/w- uds ds
   #/w- eds (extended-with-top-dim-sys #/extended-with-top-dim-sys uds)
   #/w- ehtss (hypertee-snippet-sys eds)
   #/w- extend-dim
@@ -4772,13 +4766,10 @@
 ; function-like side and not actually the match expander.
 (define attenuated-fn-hypernest-furl
   (let ()
-    (define/contract (hypernest-furl dim-sys coil)
-      (->i
-        (
-          [dim-sys dim-sys?]
-          [coil (dim-sys) (hypernest-coil/c dim-sys)])
+    (define/contract (hypernest-furl ds coil)
+      (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
         [_ hypernest?])
-      (unguarded-hypernest-furl dim-sys coil))
+      (unguarded-hypernest-furl ds coil))
     hypernest-furl))
 #;
 (define-match-expander-attenuated

@@ -311,10 +311,20 @@
   ; called `hypernest-join-selective`, and it would use a much more
   ; specific contract.
   [hypernest-join-all-degrees-selective (-> hypernest? hypernest?)]
-  ; TODO PARITY: Continue looking for things to bring into parity from
-  ; here.
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet-map`. If it did exist, it would be called
+  ; `hypernest-map`, and it would use a much more specific contract.
   [hypernest-map-all-degrees
     (-> hypernest? (-> hypertee? any/c any/c) hypernest?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet-done`. If it did exist, it would pass the
+  ; hole shape argument before the data argument, and it would use a
+  ; more specific contract that asserted the result was of the
+  ; requested degree.
   [hypernest-done
     (->i
       (
@@ -326,9 +336,21 @@
   ; `punctaffy/hypersnippet/hypernest`, where it's called
   ; `hypernest-get-hole-zero-maybe` and has a more specific contract.
   [hypernest-get-hole-zero (-> hypernest? maybe?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet-join`. If it did exist, it would be called
+  ; `hypernest-join`, and it would use a much more specific contract.
   [hypernest-join-all-degrees
     (->i ([hn hypernest?])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypernest-snippet-sys` and `snippet-sys-snippet-bind`. If it did
+  ; exist, it would be called `hypernest-bind`, it would pass its
+  ; callback a hole shape rather than merely a degree, and it would
+  ; use a much more specific contract.
   [hypernest-dv-bind-all-degrees
     (->i
       (
@@ -337,6 +359,11 @@
           (w- ds (hypernest-dim-sys hn)
           #/-> (dim-sys-dim/c ds) any/c (hypernest/c ds))])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet-bind`. If it did exist, it would be called
+  ; `hypernest-bind`, and it would use a much more specific contract.
   [hypernest-bind-all-degrees
     (->i
       (
@@ -345,6 +372,13 @@
           (w- ds (hypernest-dim-sys hn)
           #/-> (hypertee/c ds) any/c (hypernest/c ds))])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys`,
+  ; `snippet-sys-snippet-select-if-degree`, and
+  ; `snippet-sys-snippet-bind-selective`. If it did exist, it would be
+  ; called `hypernest-bind-if-degree=`, and it would use a much more
+  ; specific contract.
   [hypernest-bind-one-degree
     (->i
       (
@@ -354,12 +388,26 @@
           (w- ds (hypernest-dim-sys hn)
           #/-> (hypertee/c ds) any/c (hypernest/c ds))])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys`,
+  ; `snippet-sys-snippet-select-if-degree`, and
+  ; `snippet-sys-snippet-join-selective`. If it did exist, it would be
+  ; called `hypernest-join-if-degree=`, and it would use a much more
+  ; specific contract.
   [hypernest-join-one-degree
     (->i
       (
         [degree (hn) (dim-sys-dim/c #/hypernest-dim-sys hn)]
         [hn hypernest?])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypernest-snippet-sys`, `snippet-sys-snippet-bind`, and
+  ; `snippet-sys-snippet-set-degree-maybe`. If it did exist, it might
+  ; be called `hypernest-set-degree-and-bind`, and it would use a much
+  ; more specific contract.
   [hypernest-set-degree-and-bind-highest-degrees
     (->i
       (
@@ -369,6 +417,13 @@
           (w- ds (hypernest-dim-sys hn)
           #/-> (hypertee/c ds) any/c (hypernest/c ds))])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypernest-snippet-sys`, `snippet-sys-snippet-join`, and
+  ; `snippet-sys-snippet-set-degree-maybe`. If it did exist, it might
+  ; be called `hypernest-set-degree-and-join`, and it would use a much
+  ; more specific contract.
   [hypernest-set-degree-and-join-all-degrees
     (->i
       (
@@ -390,6 +445,9 @@
         [degree (ds) (dim-sys-0<dim/c ds)]
         [hns (ds) (listof #/hypernest/c ds)])
       [_ (ds) (hypernest/c ds)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't have as
+  ; strict a result contract and it has a match expander.
   [hypernest-furl
     (->i ([ds dim-sys?] [coil (ds) (hypernest-coil/c ds)])
       [_ (ds) (hypernest/c ds)])])

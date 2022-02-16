@@ -2522,13 +2522,13 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   @defidform[hypernest-furl]
   @defform[
     #:link-target? #f
-    (hypernest-furl dim-sys coil)
-    #:contracts ([dim-sys dim-sys?] [coil (hypernest-coil/c dim-sys)])
+    (hypernest-furl ds coil)
+    #:contracts ([ds dim-sys?] [coil (hypernest-coil/c ds)])
   ]
   @defform[
     #:kind "match expander"
     #:link-target? #f
-    (hypernest-furl dim-sys coil)
+    (hypernest-furl ds coil)
   ]
 )]{
   Constructs or deconstructs a @tech{hypernest} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypernest-coil/c] value.

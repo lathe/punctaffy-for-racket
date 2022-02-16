@@ -282,9 +282,10 @@
   ; specific contract.
   [hypertee-join-all-degrees-selective (-> hypertee? hypertee?)]
   ; TODO PARITY: Bring this into parity with
-  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. If it
-  ; did exist, it would be called `hypertee-map`, and it would use a
-  ; much more specific contract.
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypertee-snippet-sys` and
+  ; `snippet-sys-snippet-map`. If it did exist, it would be called
+  ; `hypertee-map`, and it would use a much more specific contract.
   [hypertee-map-all-degrees
     (-> hypertee? (-> hypertee? any/c any/c) hypertee?)]
   ; TODO PARITY: Bring this into parity with
@@ -331,11 +332,11 @@
   ; `punctaffy/hypersnippet/hypertee`, where it's called
   ; `hypertee-get-hole-zero-maybe` and has a more specific contract.
   [hypertee-get-hole-zero (-> hypertee? maybe?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't have as strict
+  ; a result contract and it has a match expander.
   [hypertee-furl
-    (->i
-      (
-        [ds dim-sys?]
-        [coil (ds) (hypertee-coil/c ds)])
+    (->i ([ds dim-sys?] [coil (ds) (hypertee-coil/c ds)])
       [_ (ds) (hypertee/c ds)])]
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
