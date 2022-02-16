@@ -272,8 +272,15 @@
         [func (hn)
           (-> (dim-sys-dim/c #/hypernest-dim-sys hn) any/c any/c)])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])]
-  ; TODO PARITY: Continue looking for things to bring into parity from
-  ; here.
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypernest-snippet-sys`, `snippet-sys-snippet-select-if-degree`,
+  ; and `snippet-sys-snippet-map-selective`. If it did exist, it would
+  ; be called `hypernest-map-if-degree=`, it would pass its callback a
+  ; hole shape in addition to the value, and it would use a more
+  ; specific contract that asserted the result was of the same degree
+  ; as the original.
   [hypernest-v-map-one-degree
     (->i
       (
@@ -282,18 +289,30 @@
         [func (-> any/c any/c)])
       [_ (hn) (hypernest/c #/hypernest-dim-sys hn)])])
 (provide
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/snippet`, where it's called `selected`.
   hypernest-join-selective-interpolation)
 (provide #/contract-out
   [hypernest-join-selective-interpolation? (-> any/c boolean?)]
   [hypernest-join-selective-interpolation-val
     (-> hypernest-join-selective-interpolation? any/c)])
 (provide
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/snippet`, where it's called `unselected`.
   hypernest-join-selective-non-interpolation)
 (provide #/contract-out
   [hypernest-join-selective-non-interpolation? (-> any/c boolean?)]
   [hypernest-join-selective-non-interpolation-val
     (-> hypernest-join-selective-interpolation? any/c)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypernest`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypernest-snippet-sys` and
+  ; `snippet-sys-snippet-join-selective`. If it did exist, it would be
+  ; called `hypernest-join-selective`, and it would use a much more
+  ; specific contract.
   [hypernest-join-all-degrees-selective (-> hypernest? hypernest?)]
+  ; TODO PARITY: Continue looking for things to bring into parity from
+  ; here.
   [hypernest-map-all-degrees
     (-> hypernest? (-> hypertee? any/c any/c) hypernest?)]
   [hypernest-done
