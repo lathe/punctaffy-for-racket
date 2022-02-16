@@ -5037,7 +5037,9 @@
     #:rest
     [brackets (ds)
       (w- dim/c (dim-sys-dim/c ds)
-      #/listof #/or/c (hypernest-bracket/c dim/c) dim/c)]
+      #/listof #/or/c
+        (hypernest-bracket/c dim/c)
+        (and/c (not/c hypernest-bracket?) dim/c))]
     [_ (ds) (hypernest/c (hypertee-snippet-format-sys) ds)])
   (4:dlog 'hqq-d1
   #/explicit-hypernest-from-brackets 'hn-bracs (fn hnb hnb) ds degree

@@ -75,6 +75,8 @@
 (provide #/contract-out
   [hypertee-bracket? (-> any/c boolean?)]
   [hypertee-bracket/c (-> contract? contract?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it's not exported.
   [hypertee-bracket-degree (-> hypertee-bracket? any/c)]
   [hypertee? (-> any/c boolean?)]
   ; TODO PARITY: Bring this into parity with
@@ -163,7 +165,9 @@
         [ht hypertee?])
       [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
   ; TODO PARITY: Bring this into parity with
-  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. Lately,
+  ; we've preferred `snippet-sys-snippet-done` for this purpose rather
+  ; than associating dimensions with successors.
   [hypertee-contour
     (->i
       (
@@ -210,6 +214,9 @@
         [func (ht)
           (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
       [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  ; TODO PARITY: Bring `punctaffy/hypersnippet/hypertee`'s
+  ; `hypertee-snippet-sys` and `hypertee-snippet-format-sys` into
+  ; parity with this module, where they don't exist.
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -485,11 +492,10 @@
   ; would use a more specific contract.
   [hypertee-each-all-degrees
     (-> hypertee? (-> hypertee? any/c any) void?)]
-  ; TODO PARITY: Continue looking for things to bring into parity from
-  ; here. Once we're done looking for them here, continue looking in
-  ; `punctaffy/private/hypernest-as-ast`, and look for things exported
-  ; by `punctaffy/hypersnippet/hypertee` and
-  ; `punctaffy/hypersnippet/hypernest` that these don't export.
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. Lately,
+  ; we've preferred `snippet-sys-snippet-undone` for this purpose
+  ; rather than associating dimensions with successors.
   [hypertee-uncontour
     (->i
       (
@@ -499,14 +505,33 @@
         (maybe/c #/list/c
           any/c
           (hypertee/c #/dim-successors-sys-dim-sys dss))])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypertee-snippet-sys`, `snippet-sys-snippet-select`, and the
+  ; not-yet-exported `snippet-sys-snippet-filter-maybe`. If it did
+  ; exist, `hypertee-filter` is a fair name for it, and
+  ; `snippet-sys-snippet-filter-maybe` would probably be called
+  ; something else.
   [hypertee-filter
     (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would probably be accommodated through a mix of
+  ; `hypertee-snippet-sys`, `snippet-sys-snippet-select-if-degree<`,
+  ; and the not-yet-exported `snippet-sys-snippet-filter-maybe`. If it
+  ; did exist, it would use a more specific contract that asserted the
+  ; result was of the requested degree.
   [hypertee-filter-degree-to
     (->i
       (
         [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
         [ht hypertee?])
       [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; might be related to the not-yet-exported `hypertee-map-cps` and
+  ; `hypertee-each-cps`.
   [hypertee-dv-fold-map-any-all-degrees
     (->i
       (
@@ -517,6 +542,17 @@
             (list/c any/c #/maybe/c any/c))])
       [_ (ht)
         (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypertee-snippet-sys` and
+  ; `snippet-sys-snippet-zip-map-selective`. If it did exist, it would
+  ; be called `hypertee-zip-map-selective`, it would allow its smaller
+  ; argument to have a degree less than that of its bigger argument,
+  ; it would expect its bigger argument to contain `selectable?`
+  ; values instead of taking a separate predicate, it would allow the
+  ;  transformer function to return a maybe value for early exiting,
+  ; and it would use a more specific contract that asserted the result
+  ; was of the same degree as the bigger argument.
   [hypertee-selective-holes-zip-map
     (->i
       (
@@ -529,6 +565,16 @@
           (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
             any/c)])
       [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])]
+  ; TODO PARITY: Bring this into parity with
+  ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
+  ; would be accommodated through a mix of `hypertee-snippet-sys`,
+  ; `snippet-sys-snippet-select-if-degree<`, and
+  ; `snippet-sys-snippet-zip-map-selective`. If it did exist, it would
+  ; be called `hypertee-zip-map-if-degree<`, it would allow its
+  ; smaller argument to have a degree less than that of its bigger
+  ; argument, it would allow the transformer function to return a
+  ; maybe value for early exiting, and it would use a much more
+  ; specific contract.
   [hypertee-low-degree-holes-zip-map
     (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
       (maybe/c hypertee?))])

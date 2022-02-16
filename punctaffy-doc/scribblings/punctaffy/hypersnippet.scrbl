@@ -2569,7 +2569,9 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     [degree (dim-sys-dim/c ds)]
     [bracket
       (let ([_dim/c (dim-sys-dim/c ds)])
-        (or/c (hypernest-bracket/c _dim/c) _dim/c))]
+        (or/c
+          (hypernest-bracket/c _dim/c)
+          (and/c (not/c hypernest-bracket?) _dim/c)))]
     ...)
   (hypernest/c (hypertee-snippet-format-sys) ds)
 ]{
