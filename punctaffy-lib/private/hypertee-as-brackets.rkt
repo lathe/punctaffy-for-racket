@@ -22,8 +22,8 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->i and/c any any/c contract? contract-name contract-out
-  flat-contract? list/c listof not/c or/c rename-contract)
+  -> ->i and/c any any/c contract? contract-name flat-contract? list/c
+  listof not/c or/c rename-contract)
 (require #/only-in racket/contract/combinator
   coerce-contract contract-first-order-passes?)
 (require #/only-in racket/math natural?)
