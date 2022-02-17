@@ -47,6 +47,9 @@
 
 (require punctaffy/private/shim)
 (init-shim)
+(module+ unsafe
+  (require punctaffy/private/shim)
+  (init-shim))
 
 (require #/only-in punctaffy/hypersnippet/dim
   dim-successors-sys? dim-successors-sys-dim-from-int
@@ -63,144 +66,84 @@
 
 (provide
   htb-labeled)
-(provide #/contract-out
-  [htb-labeled? (-> any/c boolean?)]
-  [htb-labeled-degree (-> htb-labeled? any/c)]
-  [htb-labeled-data (-> htb-labeled? any/c)])
+(provide #/own-contract-out
+  htb-labeled?
+  htb-labeled-degree
+  htb-labeled-data)
 (provide
   htb-unlabeled)
-(provide #/contract-out
-  [htb-unlabeled? (-> any/c boolean?)]
-  [htb-unlabeled-degree (-> htb-unlabeled? any/c)])
-(provide #/contract-out
-  [hypertee-bracket? (-> any/c boolean?)]
-  [hypertee-bracket/c (-> contract? contract?)]
+(provide #/own-contract-out
+  htb-unlabeled?
+  htb-unlabeled-degree)
+(provide #/own-contract-out
+  hypertee-bracket?
+  hypertee-bracket/c
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it's not exported.
-  [hypertee-bracket-degree (-> hypertee-bracket? any/c)]
-  [hypertee? (-> any/c boolean?)]
+  hypertee-bracket-degree
+  hypertee?
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it's called
   ; `hypertee-get-dim-sys`.
-  [hypertee-dim-sys (-> hypertee? dim-sys?)]
+  hypertee-dim-sys
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it isn't exported.
-  [hypertee-degree
-    (->i ([ht hypertee?])
-      [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)])]
+  hypertee-degree
   ; TODO DOCS: Consider more expressive hypertee contract combinators
   ; than `hypertee/c`, and come up with a new name for it.
-  [hypertee/c (-> dim-sys? flat-contract?)])
-(module+ unsafe #/provide #/contract-out
-  [unsafe-hypertee-from-brackets (-> dim-sys? any/c any/c any)])
-(provide #/contract-out
-  [hypertee-from-brackets
-    (->i
-      (
-        [ds dim-sys?]
-        [degree (ds) (dim-sys-dim/c ds)]
-        [brackets (ds)
-          (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
-      [_ (ds) (hypertee/c ds)])]
-  [ht-bracs
-    (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
-      #:rest
-      [brackets (ds)
-        (w- dim/c (dim-sys-dim/c ds)
-        #/listof #/or/c
-          (hypertee-bracket/c dim/c)
-          (and/c (not/c hypertee-bracket?) dim/c))]
-      [_ (ds) (hypertee/c ds)])]
+  hypertee/c)
+(module+ unsafe #/provide #/own-contract-out
+  unsafe-hypertee-from-brackets)
+(provide #/own-contract-out
+  hypertee-from-brackets
+  ht-bracs
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.
-  [ht-bracs-dss
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [degree (dss)
-          (or/c natural?
-          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
-      #:rest
-      [brackets (dss)
-        (w- dim/c
-          (or/c natural?
-          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)
-        #/listof #/or/c
-          (hypertee-bracket/c dim/c)
-          (and/c (not/c hypertee-bracket?) dim/c))]
-      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
-  [hypertee-get-brackets
-    (->i ([ht hypertee?])
-      [_ (ht)
-        (w- ds (hypertee-dim-sys ht)
-        #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])]
+  ht-bracs-dss
+  hypertee-get-brackets
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. If it
   ; did exist, it would use a more specific contract that asserted the
   ; result was of the requested degree.
-  [hypertee-increase-degree-to
-    (->i
-      (
-        [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-increase-degree-to
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. If it
   ; did exist, it would use a more specific contract that asserted the
   ; result was of the requested degree.
-  [hypertee-set-degree-maybe
-    (->i
-      (
-        [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?])
-      [_ (ht) (maybe/c #/hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-set-degree-maybe
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. If it
   ; did exist, it would use a more specific contract that asserted the
   ; result was of the requested degree.
-  [hypertee-set-degree-force
-    (->i
-      (
-        [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-set-degree-force
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. Lately,
   ; we've preferred `snippet-sys-snippet-done` for this purpose rather
   ; than associating dimensions with successors.
-  [hypertee-contour
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [hole-value any/c]
-        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
-      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])])
+  hypertee-contour)
 (provide
   hypertee-coil-zero)
-(provide #/contract-out
-  [hypertee-coil-zero? (-> any/c boolean?)])
+(provide #/own-contract-out
+  hypertee-coil-zero?)
 (provide
   hypertee-coil-hole)
-(provide #/contract-out
+(provide #/own-contract-out
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where there's an extra
   ; `hypertee-coil-hole-hole` field and
   ; `hypertee-coil-hole-tails-hypertee` is called
   ; `hypertee-coil-hole-tails`.
-  [hypertee-coil-hole? (-> any/c boolean?)]
-  [hypertee-coil-hole-overall-degree (-> hypertee-coil-hole? any/c)]
-  [hypertee-coil-hole-data (-> hypertee-coil-hole? any/c)]
-  [hypertee-coil-hole-tails-hypertee
-    (-> hypertee-coil-hole? any/c)])
-(provide #/contract-out
-  [hypertee-coil/c (-> dim-sys? flat-contract?)])
-(provide #/contract-out
+  hypertee-coil-hole?
+  hypertee-coil-hole-overall-degree
+  hypertee-coil-hole-data
+  hypertee-coil-hole-tails-hypertee)
+(provide #/own-contract-out
+  hypertee-coil/c)
+(provide #/own-contract-out
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it's called
   ; `hypertee-get-coil`.
-  [hypertee-unfurl
-    (->i ([ht hypertee?])
-      [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])]
+  hypertee-unfurl
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.  It
   ; would probably be accommodated through a mix of
@@ -209,13 +152,7 @@
   ; callback a hole shape rather than merely a degree, and it would
   ; use a more specific contract that asserted the result was of the
   ; same degree as the original.
-  [hypertee-dv-map-all-degrees
-    (->i
-      (
-        [ht hypertee?]
-        [func (ht)
-          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-dv-map-all-degrees
   ; TODO PARITY: Bring `punctaffy/hypersnippet/hypertee`'s
   ; `hypertee-snippet-sys` and `hypertee-snippet-format-sys` into
   ; parity with this module, where they don't exist.
@@ -228,66 +165,41 @@
   ; hole shape in addition to the value, and it would use a more
   ; specific contract that asserted the result was of the same degree
   ; as the original.
-  [hypertee-v-map-one-degree
-    (->i
-      (
-        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?]
-        [func (-> any/c any/c)])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-v-map-one-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.
-  [hypertee-v-map-highest-degree
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
-        [func (-> any/c any/c)])
-      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
+  hypertee-v-map-highest-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.
-  [hypertee-fold
-    (->i
-      (
-        [first-nontrivial-d (ht)
-          (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?]
-        [on-zero (-> any/c)]
-        [on-hole (ht)
-          (w- ds (hypertee-dim-sys ht)
-          #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
-      [_ any/c])])
+  hypertee-fold)
 (provide
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/snippet`, where it's called `selected`.
   hypertee-join-selective-interpolation)
-(provide #/contract-out
-  [hypertee-join-selective-interpolation? (-> any/c boolean?)]
-  [hypertee-join-selective-interpolation-val
-    (-> hypertee-join-selective-interpolation? any/c)])
+(provide #/own-contract-out
+  hypertee-join-selective-interpolation?
+  hypertee-join-selective-interpolation-val)
 (provide
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/snippet`, where it's called `unselected`.
   hypertee-join-selective-non-interpolation)
-(provide #/contract-out
-  [hypertee-join-selective-non-interpolation? (-> any/c boolean?)]
-  [hypertee-join-selective-non-interpolation-val
-    (-> hypertee-join-selective-interpolation? any/c)])
-(provide #/contract-out
+(provide #/own-contract-out
+  hypertee-join-selective-non-interpolation?
+  hypertee-join-selective-non-interpolation-val)
+(provide #/own-contract-out
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys` and
   ; `snippet-sys-snippet-join-selective`. If it did exist, it would be
   ; called `hypertee-join-selective`, and it would use a much more
   ; specific contract.
-  [hypertee-join-all-degrees-selective (-> hypertee? hypertee?)]
+  hypertee-join-all-degrees-selective
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys` and
   ; `snippet-sys-snippet-map`. If it did exist, it would be called
   ; `hypertee-map`, and it would use a much more specific contract.
-  [hypertee-map-all-degrees
-    (-> hypertee? (-> hypertee? any/c any/c) hypertee?)]
+  hypertee-map-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys`,
@@ -296,24 +208,10 @@
   ; called `hypertee-map-if-degree=`, and it would use a more specific
   ; contract that asserted the result was of the same degree as the
   ; original.
-  [hypertee-map-one-degree
-    (->i
-      (
-        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?]
-        [func (ht) (-> (hypertee/c #/hypertee-dim-sys ht) any/c any/c)])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-map-one-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.
-  [hypertee-map-highest-degree
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
-        [func (dss)
-          (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
-            any/c)])
-      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
+  hypertee-map-highest-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys` and
@@ -321,42 +219,27 @@
   ; hole shape argument before the data argument, and it would use a
   ; more specific contract that asserted the result was of the
   ; requested degree.
-  [hypertee-done
-    (->i
-      (
-        [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
-        [data any/c]
-        [hole hypertee?])
-      [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])]
+  hypertee-done
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it's called
   ; `hypertee-get-hole-zero-maybe` and has a more specific contract.
-  [hypertee-get-hole-zero (-> hypertee? maybe?)]
+  hypertee-get-hole-zero
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't have as strict
   ; a result contract and it has a match expander.
-  [hypertee-furl
-    (->i ([ds dim-sys?] [coil (ds) (hypertee-coil/c ds)])
-      [_ (ds) (hypertee/c ds)])]
+  hypertee-furl
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys` and
   ; `snippet-sys-snippet-join`. If it did exist, it would be called
   ; `hypertee-join`, and it would use a much more specific contract.
-  [hypertee-join-all-degrees (-> hypertee? hypertee?)]
+  hypertee-join-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys` and
   ; `snippet-sys-snippet-bind`. If it did exist, it would be called
   ; `hypertee-bind`, and it would use a much more specific contract.
-  [hypertee-bind-all-degrees
-    (->i
-      (
-        [ht hypertee?]
-        [func (ht)
-          (-> (hypertee/c #/hypertee-dim-sys ht) any/c
-            (hypertee/c #/hypertee-dim-sys ht))])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-bind-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys`,
@@ -364,27 +247,10 @@
   ; `snippet-sys-snippet-bind-selective`. If it did exist, it would be
   ; called `hypertee-bind-if-degree=`, and it would use a much more
   ; specific contract.
-  [hypertee-bind-one-degree
-    (->i
-      (
-        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?]
-        [func (ht)
-          (-> (hypertee/c #/hypertee-dim-sys ht) any/c
-            (hypertee/c #/hypertee-dim-sys ht))])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-bind-one-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist.
-  [hypertee-bind-pred-degree
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
-        [ht hypertee?]
-        [func (dss)
-          (w- ds (dim-successors-sys-dim-sys dss)
-          #/-> (hypertee/c ds) any/c (hypertee/c ds))])
-      [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])]
+  hypertee-bind-pred-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys`,
@@ -392,12 +258,7 @@
   ; `snippet-sys-snippet-join-selective`. If it did exist, it would be
   ; called `hypertee-join-if-degree=`, and it would use a much more
   ; specific contract.
-  [hypertee-join-one-degree
-    (->i
-      (
-        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-join-one-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -405,15 +266,7 @@
   ; `snippet-sys-snippet-set-degree-maybe`. If it did exist, it might
   ; be called `hypertee-set-degree-and-bind`, and it would use a much
   ; more specific contract.
-  [hypertee-set-degree-and-bind-all-degrees
-    (->i
-      (
-        [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?]
-        [hole-to-ht (ht)
-          (w- ds (hypertee-dim-sys ht)
-          #/-> (hypertee/c ds) any/c (hypertee/c ds))])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-set-degree-and-bind-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -422,13 +275,7 @@
   ; it might be called `hypertee-join-list-and-tail-along-0`, it
   ; wouldn't take a `degree` argument, it would take a `last-snippet`
   ; argument, and it would use a much more specific contract.
-  [hypertee-append-zero
-    (->i
-      (
-        [ds dim-sys?]
-        [degree (ds) (dim-sys-0<dim/c ds)]
-        [hts (ds) (listof #/hypertee/c ds)])
-      [_ (ds) (hypertee/c ds)])]
+  hypertee-append-zero
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -436,13 +283,7 @@
   ; exist, it would be called `hypertee-any?`, it would pass its
   ; callback a hole shape rather than merely a degree, and it wouldn't
   ; allow non-boolean results.
-  [hypertee-dv-any-all-degrees
-    (->i
-      (
-        [ht hypertee?]
-        [func (ht)
-          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
-      [_ any/c])]
+  hypertee-dv-any-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -450,13 +291,7 @@
   ; exist, it would be called `hypertee-all?`, it would pass its
   ; callback a hole shape rather than merely a degree, and it wouldn't
   ; allow non-boolean results.
-  [hypertee-dv-all-all-degrees
-    (->i
-      (
-        [ht hypertee?]
-        [func (ht)
-          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
-      [_ any/c])]
+  hypertee-dv-all-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -464,13 +299,7 @@
   ; the not-yet-exported `hypertee-each-ltr`. If it did exist, it
   ; would be called `hypertee-each` or `hypertee-each-ltr`, and it
   ; would pass its callback a hole shape rather than merely a degree.
-  [hypertee-dv-each-all-degrees
-    (->i
-      (
-        [ht hypertee?]
-        [func (ht)
-          (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any)])
-      [_ void?])]
+  hypertee-dv-each-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -479,13 +308,7 @@
   ; would be called `hypertee-each-if-degree=` or
   ; `hypertee-each-ltr-if-degree=`, and it would pass its callback a
   ; hole shape in addition to the value.
-  [hypertee-v-each-one-degree
-    (->i
-      (
-        [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?]
-        [body (ht) (-> any/c any)])
-      [_ void?])]
+  hypertee-v-each-one-degree
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -493,21 +316,12 @@
   ; the not-yet-exported `hypertee-each-ltr`. If it did exist, it
   ; would be called `hypertee-each` or `hypertee-each-ltr`, and it
   ; would use a more specific contract.
-  [hypertee-each-all-degrees
-    (-> hypertee? (-> hypertee? any/c any) void?)]
+  hypertee-each-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. Lately,
   ; we've preferred `snippet-sys-snippet-undone` for this purpose
   ; rather than associating dimensions with successors.
-  [hypertee-uncontour
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
-      [_ (dss)
-        (maybe/c #/list/c
-          any/c
-          (hypertee/c #/dim-successors-sys-dim-sys dss))])]
+  hypertee-uncontour
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -516,8 +330,7 @@
   ; exist, `hypertee-filter` is a fair name for it, and
   ; `snippet-sys-snippet-filter-maybe` would probably be called
   ; something else.
-  [hypertee-filter
-    (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)]
+  hypertee-filter
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would probably be accommodated through a mix of
@@ -525,26 +338,12 @@
   ; and the not-yet-exported `snippet-sys-snippet-filter-maybe`. If it
   ; did exist, it would use a more specific contract that asserted the
   ; result was of the requested degree.
-  [hypertee-filter-degree-to
-    (->i
-      (
-        [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
-        [ht hypertee?])
-      [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-filter-degree-to
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; might be related to the not-yet-exported `hypertee-map-cps` and
   ; `hypertee-each-cps`.
-  [hypertee-dv-fold-map-any-all-degrees
-    (->i
-      (
-        [state any/c]
-        [ht hypertee?]
-        [on-hole (ht)
-          (-> any/c (dim-sys-dim/c #/hypertee-dim-sys ht) any/c
-            (list/c any/c #/maybe/c any/c))])
-      [_ (ht)
-        (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])]
+  hypertee-dv-fold-map-any-all-degrees
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys` and
@@ -556,18 +355,7 @@
   ;  transformer function to return a maybe value for early exiting,
   ; and it would use a more specific contract that asserted the result
   ; was of the same degree as the bigger argument.
-  [hypertee-selective-holes-zip-map
-    (->i
-      (
-        [smaller (bigger) (hypertee/c #/hypertee-dim-sys bigger)]
-        [bigger hypertee?]
-        [should-zip? (bigger)
-          (-> (hypertee/c #/hypertee-dim-sys bigger) any/c
-            boolean?)]
-        [func (bigger)
-          (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
-            any/c)])
-      [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])]
+  hypertee-selective-holes-zip-map
   ; TODO PARITY: Bring this into parity with
   ; `punctaffy/hypersnippet/hypertee`, where it doesn't exist. It
   ; would be accommodated through a mix of `hypertee-snippet-sys`,
@@ -578,9 +366,7 @@
   ; argument, it would allow the transformer function to return a
   ; maybe value for early exiting, and it would use a much more
   ; specific contract.
-  [hypertee-low-degree-holes-zip-map
-    (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
-      (maybe/c hypertee?))])
+  hypertee-low-degree-holes-zip-map)
 
 
 ; ===== Hypertees ====================================================
@@ -919,15 +705,22 @@
   (htb-labeled? htb-labeled-degree htb-labeled-data)
   htb-labeled
   'htb-labeled (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract htb-labeled? (-> any/c boolean?))
+(ascribe-own-contract htb-labeled-degree (-> htb-labeled? any/c))
+(ascribe-own-contract htb-labeled-data (-> htb-labeled? any/c))
 (define-imitation-simple-struct
   (htb-unlabeled? htb-unlabeled-degree)
   htb-unlabeled
   'htb-unlabeled (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract htb-unlabeled? (-> any/c boolean?))
+(ascribe-own-contract htb-unlabeled-degree (-> htb-unlabeled? any/c))
 
-(define (hypertee-bracket? v)
+(define/own-contract (hypertee-bracket? v)
+  (-> any/c boolean?)
   (or (htb-labeled? v) (htb-unlabeled? v)))
 
-(define (hypertee-bracket/c dim/c)
+(define/own-contract (hypertee-bracket/c dim/c)
+  (-> contract? contract?)
   (w- dim/c (coerce-contract 'hypertee-bracket/c dim/c)
   #/rename-contract
     (or/c
@@ -935,7 +728,8 @@
       (match/c htb-unlabeled dim/c))
     `(hypertee-bracket/c ,(contract-name dim/c))))
 
-(define (hypertee-bracket-degree closing-bracket)
+(define/own-contract (hypertee-bracket-degree closing-bracket)
+  (-> hypertee-bracket? any/c)
   (mat closing-bracket (htb-labeled d data) d
   #/dissect closing-bracket (htb-unlabeled d) d))
 
@@ -1001,6 +795,11 @@
         #/if (hypertee-bracket? bracket)
           (htb-unlabeled bracket)
           bracket)))))
+(ascribe-own-contract hypertee? (-> any/c boolean?))
+(ascribe-own-contract hypertee-dim-sys (-> hypertee? dim-sys?))
+(ascribe-own-contract hypertee-degree
+  (->i ([ht hypertee?])
+    [_ (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]))
 
 (define-match-expander-attenuated
   attenuated-hypertee unguarded-hypertee
@@ -1015,11 +814,14 @@
 (define-match-expander-from-match-and-make
   hypertee unguarded-hypertee attenuated-hypertee attenuated-hypertee)
 
-(define (hypertee/c ds)
+(define/own-contract (hypertee/c ds)
+  (-> dim-sys? flat-contract?)
   (rename-contract (match/c hypertee (ok/c ds) any/c any/c)
     `(hypertee/c ,ds)))
 
-(define (unsafe-hypertee-from-brackets ds degree closing-brackets)
+(define/own-contract
+  (unsafe-hypertee-from-brackets ds degree closing-brackets)
+  (-> dim-sys? any/c any/c any)
   (unless (punctaffy-suppress-internal-errors)
     (assert-valid-hypertee-brackets 'unsafe-hypertee-from-brackets
       ds degree closing-brackets))
@@ -1029,18 +831,48 @@
   (assert-valid-hypertee-brackets err-name ds degree brackets)
   (unguarded-hypertee ds degree brackets))
 
-(define (hypertee-from-brackets ds degree brackets)
+(define/own-contract (hypertee-from-brackets ds degree brackets)
+  (->i
+    (
+      [ds dim-sys?]
+      [degree (ds) (dim-sys-dim/c ds)]
+      [brackets (ds)
+        (listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
+    [_ (ds) (hypertee/c ds)])
   (explicit-hypertee-from-brackets 'hypertee-from-brackets
     ds degree brackets))
 
-(define (ht-bracs ds degree . brackets)
+(define/own-contract (ht-bracs ds degree . brackets)
+  (->i ([ds dim-sys?] [degree (ds) (dim-sys-dim/c ds)])
+    #:rest
+    [brackets (ds)
+      (w- dim/c (dim-sys-dim/c ds)
+      #/listof #/or/c
+        (hypertee-bracket/c dim/c)
+        (and/c (not/c hypertee-bracket?) dim/c))]
+    [_ (ds) (hypertee/c ds)])
   (explicit-hypertee-from-brackets 'ht-bracs ds degree
   #/list-map brackets #/fn closing-bracket
     (if (hypertee-bracket? closing-bracket)
       closing-bracket
       (htb-unlabeled closing-bracket))))
 
-(define (ht-bracs-dss dss degree . brackets)
+(define/own-contract (ht-bracs-dss dss degree . brackets)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [degree (dss)
+        (or/c natural?
+        #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
+    #:rest
+    [brackets (dss)
+      (w- dim/c
+        (or/c natural?
+        #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)
+      #/listof #/or/c
+        (hypertee-bracket/c dim/c)
+        (and/c (not/c hypertee-bracket?) dim/c))]
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   (w- ds (dim-successors-sys-dim-sys dss)
   #/w- n-d
     (fn n
@@ -1056,13 +888,22 @@
     #/mat bracket (htb-unlabeled d) (htb-unlabeled (n-d d))
     #/htb-unlabeled (n-d bracket))))
 
-(define (hypertee-get-brackets ht)
+(define/own-contract (hypertee-get-brackets ht)
+  (->i ([ht hypertee?])
+    [_ (ht)
+      (w- ds (hypertee-dim-sys ht)
+      #/listof #/hypertee-bracket/c #/dim-sys-dim/c ds)])
   (dissect ht (hypertee ds d closing-brackets)
     closing-brackets))
 
 ; Takes a hypertee of any nonzero degree N and upgrades it to any
 ; degree N or greater, while leaving its holes the way they are.
-(define (hypertee-increase-degree-to new-degree ht)
+(define/own-contract (hypertee-increase-degree-to new-degree ht)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (dissect ht (hypertee ds d closing-brackets)
   #/if (dim-sys-dim=0? ds d)
     (raise-arguments-error 'hypertee-increase-degree-to
@@ -1079,7 +920,12 @@
 ; hypertee with the same holes if possible. If this isn't possible
 ; (because some holes in the original are of degree N or greater),
 ; this returns `(nothing)`.
-(define (hypertee-set-degree-maybe new-degree ht)
+(define/own-contract (hypertee-set-degree-maybe new-degree ht)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
   (dissect ht (hypertee ds d closing-brackets)
   #/if (dim-sys-dim=0? ds d)
     (raise-arguments-error 'hypertee-set-degree-maybe
@@ -1095,7 +941,12 @@
 
 ; Takes a nonzero-degree hypertee with no holes of degree N or greater
 ; and returns a degree-N hypertee with the same holes.
-(define (hypertee-set-degree-force new-degree ht)
+(define/own-contract (hypertee-set-degree-force new-degree ht)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (expect (hypertee-set-degree-maybe new-degree ht) (just result)
     (error "Expected ht to have no holes of degree new-degree or greater")
     result))
@@ -1104,7 +955,13 @@
 ; N+1 with all the same degree-less-than-N holes as well as a single
 ; degree-N hole in the shape of the original hypertee. This should
 ; be useful as something like a monadic return.
-(define (hypertee-contour dss hole-value ht)
+(define/own-contract (hypertee-contour dss hole-value ht)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [hole-value any/c]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   (w- ds (dim-successors-sys-dim-sys dss)
   #/expect
     (dim-successors-sys-dim-plus-int dss (hypertee-degree ht) 1)
@@ -1117,6 +974,7 @@
 (define-imitation-simple-struct (hypertee-coil-zero?)
   hypertee-coil-zero
   'hypertee-coil-zero (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypertee-coil-zero? (-> any/c boolean?))
 (define-imitation-simple-struct
   (hypertee-coil-hole?
     hypertee-coil-hole-overall-degree
@@ -1124,12 +982,20 @@
     hypertee-coil-hole-tails-hypertee)
   hypertee-coil-hole
   'hypertee-coil-hole (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hypertee-coil-hole? (-> any/c boolean?))
+(ascribe-own-contract hypertee-coil-hole-overall-degree
+  (-> hypertee-coil-hole? any/c))
+(ascribe-own-contract hypertee-coil-hole-data
+  (-> hypertee-coil-hole? any/c))
+(ascribe-own-contract hypertee-coil-hole-tails-hypertee
+  (-> hypertee-coil-hole? any/c))
 
 ; TODO PARITY: Bring this into parity with
 ; `punctaffy/hypersnippet/hypertee`, where it checks that the tails in
 ; the tails hypertee fit into the holes they're in.
 ;
-(define (hypertee-coil/c ds)
+(define/own-contract (hypertee-coil/c ds)
+  (-> dim-sys? flat-contract?)
   (rename-contract
     (or/c
       (match/c hypertee-coil-zero)
@@ -1137,7 +1003,9 @@
         (hypertee/c ds)))
     `(hypertee-coil/c ,ds)))
 
-(define (hypertee-unfurl ht)
+(define/own-contract (hypertee-unfurl ht)
+  (->i ([ht hypertee?])
+    [_ (ht) (hypertee-coil/c #/hypertee-dim-sys ht)])
   
   (struct-easy (loc-outside))
   (struct-easy (loc-dropped))
@@ -1251,13 +1119,25 @@
           (cons closing-bracket rev-result)))
     #/error "Internal error: Entered an unexpected kind of region in hypertee-unfurl")))
 
-(define (hypertee-dv-map-all-degrees ht func)
+(define/own-contract (hypertee-dv-map-all-degrees ht func)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (dissect ht (hypertee ds degree closing-brackets)
   #/hypertee ds degree #/list-map closing-brackets #/fn bracket
     (expect bracket (htb-labeled d data) bracket
     #/htb-labeled d #/func d data)))
 
-(define (hypertee-v-map-one-degree degree ht func)
+(define/own-contract (hypertee-v-map-one-degree degree ht func)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (-> any/c any/c)])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-dv-map-all-degrees ht #/fn hole-degree data
     (if (dim-sys-dim=? ds degree hole-degree)
@@ -1282,10 +1162,26 @@
   
   #/hypertee-v-map-one-degree pred-degree ht func))
 
-(define (hypertee-v-map-highest-degree dss ht func)
+(define/own-contract (hypertee-v-map-highest-degree dss ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (-> any/c any/c)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   (hypertee-v-map-pred-degree dss (hypertee-degree ht) ht func))
 
-(define (hypertee-fold first-nontrivial-d ht on-zero on-hole)
+(define/own-contract
+  (hypertee-fold first-nontrivial-d ht on-zero on-hole)
+  (->i
+    (
+      [first-nontrivial-d (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [on-zero (-> any/c)]
+      [on-hole (ht)
+        (w- ds (hypertee-dim-sys ht)
+        #/-> (dim-sys-dim/c ds) any/c (hypertee/c ds) any/c)])
+    [_ any/c])
   (w- ds (hypertee-dim-sys ht)
   #/expect (hypertee-unfurl ht)
     (hypertee-coil-hole overall-degree data tails)
@@ -1358,6 +1254,10 @@
   (current-inspector)
   (auto-write)
   (auto-equal))
+(ascribe-own-contract hypertee-join-selective-interpolation?
+  (-> any/c boolean?))
+(ascribe-own-contract hypertee-join-selective-interpolation-val
+  (-> hypertee-join-selective-interpolation? any/c))
 (define-imitation-simple-struct
   (hypertee-join-selective-non-interpolation?
     hypertee-join-selective-non-interpolation-val)
@@ -1366,6 +1266,10 @@
   (current-inspector)
   (auto-write)
   (auto-equal))
+(ascribe-own-contract hypertee-join-selective-non-interpolation?
+  (-> any/c boolean?))
+(ascribe-own-contract hypertee-join-selective-non-interpolation-val
+  (-> hypertee-join-selective-interpolation? any/c))
 
 ; This takes a hypertee of degree N where each hole value of each
 ; degree M is either a `hypertee-join-selective-interpolation`
@@ -1378,7 +1282,8 @@
 ; all the non-interpolations of the interpolations and the
 ; non-interpolations of the root.
 ;
-(define (hypertee-join-all-degrees-selective ht)
+(define/own-contract (hypertee-join-all-degrees-selective ht)
+  (-> hypertee? hypertee?)
   
   (struct-easy (state-in-root))
   (struct-easy (state-in-interpolation i))
@@ -1570,7 +1475,8 @@
       (list (state-in-interpolation root-bracket-i) histories)
       rev-result)))
 
-(define (hypertee-map-all-degrees ht func)
+(define/own-contract (hypertee-map-all-degrees ht func)
+  (-> hypertee? (-> hypertee? any/c any/c) hypertee?)
   (dissect ht (hypertee ds overall-degree closing-brackets)
   ; NOTE: This special case is necessary. Most of the code below goes
   ; smoothly for an `overall-degree` equal to `0`, but the loop ends
@@ -1652,7 +1558,13 @@
     #/htb-labeled d
       (func (hypertee ds d #/reverse rev-brackets) data))))
 
-(define (hypertee-map-one-degree degree ht func)
+(define/own-contract (hypertee-map-one-degree degree ht func)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht) (-> (hypertee/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-map-all-degrees ht #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
@@ -1679,10 +1591,24 @@
   
   #/hypertee-map-one-degree pred-degree ht func))
 
-(define (hypertee-map-highest-degree dss ht func)
+(define/own-contract (hypertee-map-highest-degree dss ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)]
+      [func (dss)
+        (-> (hypertee/c #/dim-successors-sys-dim-sys dss) any/c
+          any/c)])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   (hypertee-map-pred-degree dss (hypertee-degree ht) ht func))
 
-(define (hypertee-done degree data hole)
+(define/own-contract (hypertee-done degree data hole)
+  (->i
+    (
+      [degree (hole) (dim-sys-dim/c #/hypertee-dim-sys hole)]
+      [data any/c]
+      [hole hypertee?])
+    [_ (hole) (hypertee/c #/hypertee-dim-sys hole)])
   (dissect hole (hypertee ds old-degree closing-brackets)
   #/expect (dim-sys-dim<? ds old-degree degree) #t
     (raise-arguments-error 'hypertee-done
@@ -1696,7 +1622,8 @@
       (htb-unlabeled #/hypertee-bracket-degree closing-bracket)
       closing-bracket)))
 
-(define (hypertee-get-hole-zero ht)
+(define/own-contract (hypertee-get-hole-zero ht)
+  (-> hypertee? maybe?)
   (dissect ht (hypertee ds degree closing-brackets)
   #/if (dim-sys-dim=0? ds degree) (nothing)
   #/dissect (reverse closing-brackets) (cons (htb-labeled d data) _)
@@ -1710,7 +1637,8 @@
 ; which has holes for all the degree-M-or-greater holes of the
 ; interpolations of each degree M.
 ;
-(define (hypertee-join-all-degrees ht)
+(define/own-contract (hypertee-join-all-degrees ht)
+  (-> hypertee? hypertee?)
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-join-all-degrees-selective
   #/hypertee-dv-map-all-degrees ht #/fn root-hole-degree data
@@ -1725,18 +1653,42 @@
         (hypertee-join-selective-non-interpolation data)
       #/hypertee-join-selective-interpolation data))))
 
-(define (hypertee-bind-all-degrees ht hole-to-ht)
+(define/own-contract (hypertee-bind-all-degrees ht hole-to-ht)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+          (hypertee/c #/hypertee-dim-sys ht))])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (hypertee-join-all-degrees
   #/hypertee-map-all-degrees ht hole-to-ht))
 
-(define (hypertee-bind-one-degree degree ht func)
+(define/own-contract (hypertee-bind-one-degree degree ht func)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [func (ht)
+        (-> (hypertee/c #/hypertee-dim-sys ht) any/c
+          (hypertee/c #/hypertee-dim-sys ht))])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (dim-sys-dim=? ds degree #/hypertee-degree hole)
       (func hole data)
       (hypertee-done (hypertee-degree ht) data hole))))
 
-(define (hypertee-bind-pred-degree dss degree ht func)
+(define/own-contract (hypertee-bind-pred-degree dss degree ht func)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [degree (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [ht hypertee?]
+      [func (dss)
+        (w- ds (dim-successors-sys-dim-sys dss)
+        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
+    [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   
   ; If the degree is 0 or something like a limit ordinal, we're done.
   ; No hole's degree has the given degree as its successor, so there
@@ -1758,12 +1710,25 @@
     [_ (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
   (hypertee-bind-pred-degree dss (hypertee-degree ht) ht func))
 
-(define (hypertee-join-one-degree degree ht)
+(define/own-contract (hypertee-join-one-degree degree ht)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (hypertee-bind-one-degree degree ht #/fn hole data
     data))
 
-(define
+(define/own-contract
   (hypertee-set-degree-and-bind-all-degrees new-degree ht hole-to-ht)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-0<dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [hole-to-ht (ht)
+        (w- ds (hypertee-dim-sys ht)
+        #/-> (hypertee/c ds) any/c (hypertee/c ds))])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (w- ds (hypertee-dim-sys ht)
   #/w- intermediate-degree
     (dim-sys-dim-max ds new-degree (hypertee-degree ht))
@@ -1784,7 +1749,13 @@
         "hole-to-ht-result" result)
     #/hypertee-increase-degree-to intermediate-degree result)))
 
-(define (hypertee-append-zero ds degree hts)
+(define/own-contract (hypertee-append-zero ds degree hts)
+  (->i
+    (
+      [ds dim-sys?]
+      [degree (ds) (dim-sys-0<dim/c ds)]
+      [hts (ds) (listof #/hypertee/c ds)])
+    [_ (ds) (hypertee/c ds)])
   (begin
     ; TODO DOCS: See if we can verify these things in the contract.
     (list-each hts #/fn ht
@@ -1810,7 +1781,13 @@
       (dissect data (trivial)
         tail))))
 
-(define (hypertee-dv-any-all-degrees ht func)
+(define/own-contract (hypertee-dv-any-all-degrees ht func)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ any/c])
   (dissect ht (hypertee ds degree closing-brackets)
   #/list-any closing-brackets #/fn bracket
     (expect bracket (htb-labeled d data) #f
@@ -1838,7 +1815,13 @@
     (dissect hole-and-data (list hole data)
     #/func hole data)))
 
-(define (hypertee-dv-all-all-degrees ht func)
+(define/own-contract (hypertee-dv-all-all-degrees ht func)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any/c)])
+    [_ any/c])
   (dissect ht (hypertee ds degree closing-brackets)
   #/list-all closing-brackets #/fn bracket
     (expect bracket (htb-labeled d data) #t
@@ -1853,25 +1836,40 @@
     (dissect hole-and-data (list hole data)
     #/func hole data)))
 
-(define (hypertee-dv-each-all-degrees ht body)
+(define/own-contract (hypertee-dv-each-all-degrees ht body)
+  (->i
+    (
+      [ht hypertee?]
+      [func (ht)
+        (-> (dim-sys-dim/c #/hypertee-dim-sys ht) any/c any)])
+    [_ void?])
   (hypertee-dv-any-all-degrees ht #/fn d data #/begin
     (body d data)
     #f)
   (void))
 
-(define (hypertee-v-each-one-degree degree ht body)
+(define/own-contract (hypertee-v-each-one-degree degree ht body)
+  (->i
+    (
+      [degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?]
+      [body (ht) (-> any/c any)])
+    [_ void?])
   (w- ds (hypertee-dim-sys ht)
   #/hypertee-dv-each-all-degrees ht #/fn d data
     (when (dim-sys-dim=? ds degree d)
       (body data))))
 
-(define (hypertee-each-all-degrees ht body)
+(define/own-contract (hypertee-each-all-degrees ht body)
+  (-> hypertee? (-> hypertee? any/c any) void?)
   (hypertee-any-all-degrees ht #/fn hole data #/begin
     (body hole data)
     #f)
   (void))
 
-(define (hypertee-furl ds coil)
+(define/own-contract (hypertee-furl ds coil)
+  (->i ([ds dim-sys?] [coil (ds) (hypertee-coil/c ds)])
+    [_ (ds) (hypertee/c ds)])
   (expect coil (hypertee-coil-hole degree data tails)
     (hypertee ds (dim-sys-dim-zero ds) #/list)
   #/expect (dim-sys-dim<? ds (hypertee-degree tails) degree) #t
@@ -1914,7 +1912,15 @@
     #/hypertee-dv-all-all-degrees tails #/fn d tail
       (next (fn d2 #/dim-sys-dim=? ds d d2) tail))))
 
-(define (hypertee-uncontour dss ht)
+(define/own-contract (hypertee-uncontour dss ht)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [ht (dss) (hypertee/c #/dim-successors-sys-dim-sys dss)])
+    [_ (dss)
+      (maybe/c #/list/c
+        any/c
+        (hypertee/c #/dim-successors-sys-dim-sys dss))])
   (expect (hypertee-contour? dss ht) #t (nothing)
   #/dissect (hypertee-unfurl ht)
     (hypertee-coil-hole overall-degree data tails)
@@ -1946,7 +1952,8 @@
 
 ; This takes a hypertee and removes all holes which don't satisfy the
 ; given predicate.
-(define (hypertee-filter ht should-keep?)
+(define/own-contract (hypertee-filter ht should-keep?)
+  (-> hypertee? (-> hypertee? any/c boolean?) hypertee?)
   (dissect ht (hypertee ds d closing-brackets)
   #/hypertee-bind-all-degrees ht #/fn hole data
     (if (should-keep? hole data)
@@ -1959,7 +1966,12 @@
 ; greater than a given degree, and demotes the hypertee to that
 ; degree. The given degree must not be greater than the hypertee's
 ; existing degree.
-(define (hypertee-filter-degree-to new-degree ht)
+(define/own-contract (hypertee-filter-degree-to new-degree ht)
+  (->i
+    (
+      [new-degree (ht) (dim-sys-dim/c #/hypertee-dim-sys ht)]
+      [ht hypertee?])
+    [_ (ht) (hypertee/c #/hypertee-dim-sys ht)])
   (dissect ht (hypertee ds d closing-brackets)
   #/expect (dim-sys-dim<=? ds new-degree d) #t
     (error "Expected ht to be a hypertee of degree no less than new-degree")
@@ -2028,7 +2040,17 @@
     #/expect maybe-elem (just elem) (list state #/nothing)
     #/next state lst (cons elem rev-result))))
 
-(define (hypertee-dv-fold-map-any-all-degrees state ht on-hole)
+(define/own-contract
+  (hypertee-dv-fold-map-any-all-degrees state ht on-hole)
+  (->i
+    (
+      [state any/c]
+      [ht hypertee?]
+      [on-hole (ht)
+        (-> any/c (dim-sys-dim/c #/hypertee-dim-sys ht) any/c
+          (list/c any/c #/maybe/c any/c))])
+    [_ (ht)
+      (list/c any/c #/maybe/c #/hypertee/c #/hypertee-dim-sys ht)])
   (dissect ht (hypertee ds d closing-brackets)
   #/dissect
     (list-fold-map-any state closing-brackets #/fn state bracket
@@ -2045,8 +2067,18 @@
 ; if the hypertees have the same shape when certain holes of the
 ; higher-degree hypertee are removed -- namely, the holes of degree N
 ; or greater and the holes that don't match the given predicate.
-(define
+(define/own-contract
   (hypertee-selective-holes-zip-map smaller bigger should-zip? func)
+  (->i
+    (
+      [smaller (bigger) (hypertee/c #/hypertee-dim-sys bigger)]
+      [bigger hypertee?]
+      [should-zip? (bigger)
+        (-> (hypertee/c #/hypertee-dim-sys bigger) any/c boolean?)]
+      [func (bigger)
+        (-> (hypertee/c #/hypertee-dim-sys bigger) any/c any/c
+          any/c)])
+    [_ (bigger) (maybe/c #/hypertee/c #/hypertee-dim-sys bigger)])
   (dissect smaller (hypertee _ d-smaller closing-brackets-smaller)
   #/dissect bigger (hypertee ds d-bigger closing-brackets-bigger)
   #/expect (dim-sys-dim<=? ds d-smaller d-bigger) #t
@@ -2088,6 +2120,9 @@
 
 ; This zips a degree-N hypertee with a same-degree-or-higher hypertee
 ; if the hypertees have the same shape when truncated to degree N.
-(define (hypertee-low-degree-holes-zip-map smaller bigger func)
+(define/own-contract
+  (hypertee-low-degree-holes-zip-map smaller bigger func)
+  (-> hypertee? hypertee? (-> hypertee? any/c any/c any/c)
+    (maybe/c hypertee?))
   (hypertee-selective-holes-zip-map
     smaller bigger (fn hole data #t) func))
