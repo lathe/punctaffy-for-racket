@@ -7,7 +7,7 @@
 ; straightforward to define dictiaonries that are comparable by
 ; `equal?`.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2018, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -23,11 +23,14 @@
 
 
 (require #/only-in racket/contract/base -> any any/c)
-(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/generic define-generics)
 
 (require #/only-in lathe-comforts expect)
 (require #/only-in lathe-comforts/struct struct-easy)
+
+(require punctaffy/private/shim)
+(init-shim)
+
 
 (provide gen:monoid monoid? monoid/c monoid-empty monoid-append)
 
@@ -54,7 +57,7 @@
         (error "Expected this to be a monoid-trivial")
         null))
     
-    (define/contract (monoid-append this prefix suffix)
+    (define/own-contract (monoid-append this prefix suffix)
       (-> any/c null? null? any)
       (expect this (monoid-trivial)
         (error "Expected this to be a monoid-trivial")

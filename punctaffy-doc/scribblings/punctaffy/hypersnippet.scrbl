@@ -4,7 +4,7 @@
 @;
 @; Hypersnippet data structures and interfaces.
 
-@;   Copyright 2020, 2021 The Lathe Authors
+@;   Copyright 2020-2022 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -2142,13 +2142,13 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   @defidform[hypertee-furl]
   @defform[
     #:link-target? #f
-    (hypertee-furl dim-sys coil)
-    #:contracts ([dim-sys dim-sys?] [coil (hypertee-coil/c dim-sys)])
+    (hypertee-furl ds coil)
+    #:contracts ([ds dim-sys?] [coil (hypertee-coil/c ds)])
   ]
   @defform[
     #:kind "match expander"
     #:link-target? #f
-    (hypertee-furl dim-sys coil)
+    (hypertee-furl ds coil)
   ]
 )]{
   Constructs or deconstructs a @tech{hypertee} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypertee-coil/c] value.
@@ -2187,7 +2187,9 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     [degree (dim-sys-dim/c ds)]
     [bracket
       (let ([_dim/c (dim-sys-dim/c ds)])
-        (or/c (hypertee-bracket/c _dim/c) _dim/c))]
+        (or/c
+          (hypertee-bracket/c _dim/c)
+          (and/c (not/c hypertee-bracket?) _dim/c)))]
     ...)
   (hypertee/c ds)
 ]{
@@ -2520,13 +2522,13 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   @defidform[hypernest-furl]
   @defform[
     #:link-target? #f
-    (hypernest-furl dim-sys coil)
-    #:contracts ([dim-sys dim-sys?] [coil (hypernest-coil/c dim-sys)])
+    (hypernest-furl ds coil)
+    #:contracts ([ds dim-sys?] [coil (hypernest-coil/c ds)])
   ]
   @defform[
     #:kind "match expander"
     #:link-target? #f
-    (hypernest-furl dim-sys coil)
+    (hypernest-furl ds coil)
   ]
 )]{
   Constructs or deconstructs a @tech{hypernest} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypernest-coil/c] value.
@@ -2567,7 +2569,9 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
     [degree (dim-sys-dim/c ds)]
     [bracket
       (let ([_dim/c (dim-sys-dim/c ds)])
-        (or/c (hypernest-bracket/c _dim/c) _dim/c))]
+        (or/c
+          (hypernest-bracket/c _dim/c)
+          (and/c (not/c hypernest-bracket?) _dim/c)))]
     ...)
   (hypernest/c (hypertee-snippet-format-sys) ds)
 ]{

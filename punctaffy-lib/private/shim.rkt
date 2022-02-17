@@ -1,11 +1,11 @@
-#lang parendown racket/base
+#lang parendown/slash racket/base
 
 ; shim.rkt
 ;
 ; Import lists, debugging constants, and other utilities that are
 ; useful primarily for this codebase.
 
-;   Copyright 2021 The Lathe Authors
+;   Copyright 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -20,48 +20,56 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/for-syntax racket/base)
+(require /only-in reprovide/require-transformer/combine-in-fallback
+  combine-in/fallback)
 
-(require #/for-syntax #/only-in racket/syntax syntax-local-eval)
-(require #/for-syntax #/only-in syntax/parse expr id syntax-parse)
+(require /for-syntax /combine-in/fallback
+  (combine-in
+    (only-in racket/syntax format-id)
+    (only-in syntax/parse ~optional ~seq this-syntax))
+  racket/base)
 
+(require /only-in syntax/parse/define define-syntax-parse-rule)
+
+(require /only-in reprovide/reprovide reprovide)
+
+(require /only-in lathe-comforts/own-contract
+  define-own-contract-policies)
+
+(reprovide punctaffy/private/codebasewide-requires)
 
 (provide
-  shim-contract-out
-  shim-recontract-out)
+  (for-syntax
+    suppressing-external-contracts?
+    activating-internal-contracts?)
+  init-shim)
 
 
-; NOTE DEBUGGABILITY: These are here for debugging.
-(define-for-syntax debugging-with-contracts-suppressed #f)
+; Should be `#f` unless we're debugging to determine if contracts are
+; a performance bottleneck.
+;
+(define-for-syntax suppressing-external-contracts? #f)
 
-(define-syntax (ifc stx)
-  (syntax-protect
-  #/syntax-parse stx #/ (_ condition:expr then:expr else:expr)
-  #/if (syntax-local-eval #'condition)
-    #'then
-    #'else))
+; Should be `#f` unless we're debugging this library's internal call
+; graph.
+;
+(define-for-syntax activating-internal-contracts? #f)
 
-; TODO: Figure out what to do with this section. Should we provide
-; `.../with-contracts-suppressed/...` modules? For now, we have this
-; here for testing.
-
-(ifc debugging-with-contracts-suppressed
-  (begin
-    (require #/for-syntax #/only-in racket/provide-transform
-      expand-export make-provide-transformer)
-    
-    (require #/for-syntax #/only-in lathe-comforts fn)
-    
-    (define-syntax shim-contract-out
-      (make-provide-transformer #/fn stx modes
-        (syntax-parse stx #/ (_ [var:id contract:expr] ...)
-        #/expand-export #'(combine-out var ...) modes)))
-    
-    (define-syntax shim-recontract-out
-      (make-provide-transformer #/fn stx modes
-        (syntax-parse stx #/ (_ var:id ...)
-        #/expand-export #'(combine-out var ...) modes))))
-  (begin
-    (require #/only-in racket/contract/base
-      [contract-out shim-contract-out]
-      [recontract-out shim-recontract-out])))
+(define-syntax-parse-rule
+  (init-shim
+    {~optional {~seq #:antecedent-land antecedent-land}
+      #:defaults ([antecedent-land (datum->syntax this-syntax '())])})
+  
+  #:with result
+  #`(define-own-contract-policies #:antecedent-land antecedent-land
+      
+      #:make-signature-contract-id
+      (lambda (orig) /format-id orig "~a/sig-c" orig #:subs? #t)
+      
+      #:suppressing-external-contracts?
+      #,(datum->syntax #'() suppressing-external-contracts?)
+      
+      #:activating-internal-contracts?
+      #,(datum->syntax #'() activating-internal-contracts?))
+  
+  result)

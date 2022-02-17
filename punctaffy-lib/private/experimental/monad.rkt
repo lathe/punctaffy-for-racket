@@ -7,7 +7,7 @@
 ; straightforward to define dictiaonries that are comparable by
 ; `equal?`.
 
-;   Copyright 2017-2019 The Lathe Authors
+;   Copyright 2017-2019, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -23,13 +23,17 @@
 
 
 (require #/only-in racket/contract/base -> any any/c cons/c)
-(require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/generic define-generics)
 
 (require #/only-in lathe-comforts dissect expect)
 (require #/only-in lathe-comforts/struct struct-easy)
 
-(require #/only-in "monoid.rkt" monoid-empty monoid-append)
+(require punctaffy/private/shim)
+(init-shim)
+
+(require #/only-in punctaffy/private/experimental/monoid
+  monoid-empty monoid-append)
+
 
 (provide gen:monad monad? monad/c
   monad-done monad-bind monad-map monad-join)
@@ -61,13 +65,13 @@
         (error "Expected this to be a monad-identity")
         leaf))
     
-    (define/contract (monad-bind this prefix leaf-to-suffix)
+    (define/own-contract (monad-bind this prefix leaf-to-suffix)
       (-> any/c any/c (-> any/c any) any)
       (expect this (monad-identity)
         (error "Expected this to be a monad-identity")
       #/leaf-to-suffix prefix))
     
-    (define/contract (monad-map this tree leaf-to-leaf)
+    (define/own-contract (monad-map this tree leaf-to-leaf)
       (-> any/c any/c (-> any/c any) any)
       (expect this (monad-identity)
         (error "Expected this to be a monad-identity")
@@ -96,7 +100,7 @@
         (error "Expected this to be a monad-from-monoid")
       #/cons (monoid-empty monoid) leaf))
     
-    (define/contract (monad-bind this prefix leaf-to-suffix)
+    (define/own-contract (monad-bind this prefix leaf-to-suffix)
       (-> any/c (cons/c any/c any/c) (-> any/c #/cons/c any/c any/c)
         any)
       (expect this (monad-from-monoid monoid)
@@ -105,7 +109,7 @@
       #/dissect (leaf-to-suffix leaf) (cons suffix leaf)
       #/cons (monoid-append monoid prefix suffix) leaf))
     
-    (define/contract (monad-map this tree leaf-to-leaf)
+    (define/own-contract (monad-map this tree leaf-to-leaf)
       (-> any/c (cons/c any/c any/c) (-> any/c any/c) any)
       (expect this (monad-from-monoid monoid)
         (error "Expected this to be a monad-from-monoid")

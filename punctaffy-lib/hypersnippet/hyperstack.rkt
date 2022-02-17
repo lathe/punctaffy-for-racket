@@ -5,7 +5,7 @@
 ; Data structures to help with traversing a sequence of brackets of
 ; various degrees to manipulate hypersnippet-shaped data.
 
-;   Copyright 2018-2019 The Lathe Authors
+;   Copyright 2018-2020, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 
 (require #/only-in racket/contract/base
-  -> ->i any/c contract? contract-out list/c rename-contract)
+  -> ->i any/c contract? list/c rename-contract)
 (require #/only-in racket/math natural?)
 
 (require #/only-in lathe-comforts dissect dissectfn expect fn w-)
@@ -32,140 +32,50 @@
 (require #/only-in lathe-morphisms/in-fp/mediary/set ok/c)
 
 (require #/only-in punctaffy/hypersnippet/dim
-  dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim/c dim-sys-dim</c
-  dim-sys-dim-max dim-sys-dim-zero)
+  dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim/c
+  dim-sys-dim</c dim-sys-dim-max dim-sys-dim-zero)
+
+(require punctaffy/private/shim)
+(init-shim)
+
 
 ; TODO: If we ever need these exports, document and uncomment them,
 ; and move them to the `punctaffy/hypersnippet/dim` module. For now,
 ; dimension-indexed lists are an implementation detail of hyperstacks.
 #;
-(provide #/contract-out
-  [dim-sys-dimlist/c (-> dim-sys? contract?)]
-  [dim-sys-dimlist-build
-    (->i
-      (
-        [ds dim-sys?]
-        [length (ds) (dim-sys-dim/c ds)]
-        [func (ds) (-> (dim-sys-dim/c ds) any/c)])
-      [_ (ds) (dim-sys-dimlist/c ds)])]
-  [dim-sys-dimlist-uniform
-    (->i ([ds dim-sys?] [length (ds) (dim-sys-dim/c ds)] [elem any/c])
-      [_ (ds) (dim-sys-dimlist/c ds)])]
-  [dim-sys-dimlist-length
-    (->i ([ds dim-sys?] [lst (ds) (dim-sys-dimlist/c ds)])
-      [_ (ds) (dim-sys-dim/c ds)])]
-  [dim-sys-dimlist-map
-    (->i
-      (
-        [ds dim-sys?]
-        [lst (ds) (dim-sys-dimlist/c ds)]
-        [v->v (-> any/c any/c)])
-      [_ (ds) (dim-sys-dimlist/c ds)])]
-  [dim-sys-dimlist-zip-map
-    (->i
-      (
-        [ds dim-sys?]
-        [a (ds) (dim-sys-dimlist/c ds)]
-        [b (ds) (dim-sys-dimlist/c ds)]
-        [func (-> any/c any/c any/c)])
-      
-      #:pre (ds a b)
-      (dim-sys-dim=? ds
-        (dim-sys-dimlist-length ds a)
-        (dim-sys-dimlist-length ds b))
-      
-      [_ (ds) (dim-sys-dimlist/c ds)])]
-  [dim-sys-dimlist-zero
-    (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dimlist/c ds)])]
-  [dim-sys-dimlist-chevrons
-    ; TODO: See if we should make this contract more specific. The
-    ; result value is a dimension-indexed list of dimension-indexed
-    ; lists.
-    (->i ([ds dim-sys?] [lst (ds) (dim-sys-dimlist/c ds)])
-      [_ (ds) (dim-sys-dimlist/c ds)])])
+(provide #/own-contract-out
+  dim-sys-dimlist/c
+  dim-sys-dimlist-build
+  dim-sys-dimlist-uniform
+  dim-sys-dimlist-length
+  dim-sys-dimlist-map
+  dim-sys-dimlist-zip-map
+  dim-sys-dimlist-zero
+  dim-sys-dimlist-chevrons)
 
-(provide #/contract-out
+(provide #/own-contract-out
   
-  [hyperstack? (-> any/c boolean?)]
-  [hyperstack/c (-> dim-sys? contract?)]
-  [hyperstack-dim-sys (-> hyperstack? dim-sys?)]
-  [hyperstack-dimension
-    (->i ([stack hyperstack?])
-      [_ (stack) (dim-sys-dim/c #/hyperstack-dim-sys stack)])]
-  [hyperstack-peek
-    (->i
-      (
-        [stack hyperstack?]
-        [i (stack)
-          (w- ds (hyperstack-dim-sys stack)
-          #/dim-sys-dim</c ds #/hyperstack-dimension stack)])
-      [_ any/c])]
+  hyperstack?
+  hyperstack/c
+  hyperstack-dim-sys
+  hyperstack-dimension
+  hyperstack-peek
   
   ; TODO: If we ever need these exports, document and uncomment them.
   ; For now, dimension-indexed lists are an implementation detail of
   ; hyperstacks.
   #;
-  [make-hyperstack-dimlist
-    (->i ([ds dim-sys?] [elems (ds) (dim-sys-dimlist/c ds)])
-      [_ (ds) (hyperstack/c ds)])]
+  make-hyperstack-dimlist
   #;
-  [hyperstack-push-dimlist
-    (->i
-      (
-        [stack hyperstack?]
-        [elems-to-push (stack)
-          (dim-sys-dimlist/c #/hyperstack-dim-sys stack)])
-      [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])]
+  hyperstack-push-dimlist
   #;
-  [hyperstack-pop-dimlist
-    (->i
-      (
-        [stack hyperstack?]
-        [elems-to-push (stack)
-          (dim-sys-dimlist/c #/hyperstack-dim-sys stack)])
-      
-      #:pre (stack elems-to-push)
-      (w- ds (hyperstack-dim-sys stack)
-      #/dim-sys-dim<? ds
-        (dim-sys-dimlist-length ds elems-to-push)
-        (hyperstack-dimension stack))
-      
-      [_ (stack)
-        (list/c any/c (hyperstack/c #/hyperstack-dim-sys stack))])]
+  hyperstack-pop-dimlist
   
-  [make-hyperstack
-    (->i
-      ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)] [elem any/c])
-      [_ (ds) (hyperstack/c ds)])]
-  [hyperstack-push
-    (->i
-      (
-        [bump-degree (stack)
-          (dim-sys-dim/c #/hyperstack-dim-sys stack)]
-        [stack hyperstack?]
-        [elem any/c])
-      [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])]
-  [hyperstack-pop
-    (->i
-      (
-        [i (stack)
-          (w- ds (hyperstack-dim-sys stack)
-          #/dim-sys-dim</c ds #/hyperstack-dimension stack)]
-        [stack hyperstack?]
-        [elem any/c])
-      [_ (stack)
-        (list/c any/c (hyperstack/c #/hyperstack-dim-sys stack))])]
-  [make-hyperstack-trivial
-    (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
-      [_ (ds) (hyperstack/c ds)])]
-  [hyperstack-pop-trivial
-    (->i
-      (
-        [i (stack)
-          (w- ds (hyperstack-dim-sys stack)
-          #/dim-sys-dim</c ds #/hyperstack-dimension stack)]
-        [stack hyperstack?])
-      [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])]
+  make-hyperstack
+  hyperstack-push
+  hyperstack-pop
+  make-hyperstack-trivial
+  hyperstack-pop-trivial
   
   )
 
@@ -174,28 +84,58 @@
   (dimlist? dimlist-dim-sys dimlist-length dimlist-func)
   dimlist 'dimlist (current-inspector) (auto-write))
 
-(define (dim-sys-dimlist/c ds)
+(define/own-contract (dim-sys-dimlist/c ds)
+  (-> dim-sys? contract?)
   (rename-contract (match/c dimlist (ok/c ds) any/c any/c)
     `(dim-sys-dimlist/c ,ds)))
 
-(define (dim-sys-dimlist-build ds length func)
+(define/own-contract (dim-sys-dimlist-build ds length func)
+  (->i
+    (
+      [ds dim-sys?]
+      [length (ds) (dim-sys-dim/c ds)]
+      [func (ds) (-> (dim-sys-dim/c ds) any/c)])
+    [_ (ds) (dim-sys-dimlist/c ds)])
   (dimlist ds length func))
 
-(define (dim-sys-dimlist-uniform ds length elem)
+(define/own-contract (dim-sys-dimlist-uniform ds length elem)
+  (->i ([ds dim-sys?] [length (ds) (dim-sys-dim/c ds)] [elem any/c])
+    [_ (ds) (dim-sys-dimlist/c ds)])
   (dim-sys-dimlist-build ds length #/dissectfn _ elem))
 
 (define (dim-sys-dimlist-ref-and-call ds lst i)
   (dissect lst (dimlist ds length func)
   #/func i))
 
-(define (dim-sys-dimlist-length ds lst)
+(define/own-contract (dim-sys-dimlist-length ds lst)
+  (->i ([ds dim-sys?] [lst (ds) (dim-sys-dimlist/c ds)])
+    [_ (ds) (dim-sys-dim/c ds)])
   (dimlist-length lst))
 
-(define (dim-sys-dimlist-map ds lst v->v)
+(define/own-contract (dim-sys-dimlist-map ds lst v->v)
+  (->i
+    (
+      [ds dim-sys?]
+      [lst (ds) (dim-sys-dimlist/c ds)]
+      [v->v (-> any/c any/c)])
+    [_ (ds) (dim-sys-dimlist/c ds)])
   (dissect lst (dimlist ds length func)
   #/dimlist ds length #/fn i #/v->v #/func i))
 
-(define (dim-sys-dimlist-zip-map ds a b func)
+(define/own-contract (dim-sys-dimlist-zip-map ds a b func)
+  (->i
+    (
+      [ds dim-sys?]
+      [a (ds) (dim-sys-dimlist/c ds)]
+      [b (ds) (dim-sys-dimlist/c ds)]
+      [func (-> any/c any/c any/c)])
+    
+    #:pre (ds a b)
+    (dim-sys-dim=? ds
+      (dim-sys-dimlist-length ds a)
+      (dim-sys-dimlist-length ds b))
+    
+    [_ (ds) (dim-sys-dimlist/c ds)])
   (dissect a (dimlist _ length a-func)
   #/dissect b (dimlist _ _ b-func)
   #/dimlist ds length #/fn i #/func (a-func i) (b-func i)))
@@ -209,7 +149,8 @@
       (shadower-func i)
       (orig-func i))))
 
-(define (dim-sys-dimlist-zero ds)
+(define/own-contract (dim-sys-dimlist-zero ds)
+  (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dimlist/c ds)])
   (w- zero (dim-sys-dim-zero ds)
   #/dim-sys-dimlist-build ds zero #/fn value-less-than-zero
     (raise-arguments-error 'dim-sys-dimlist-zero-result
@@ -239,34 +180,59 @@
 ; eliminate information that would only be distracting during
 ; debugging.
 ;
-(define (dim-sys-dimlist-chevrons ds lst)
+(define/own-contract (dim-sys-dimlist-chevrons ds lst)
+  ; TODO SPECIFIC: See if we should make this contract more specific.
+  ; The result value is a dimension-indexed list of dimension-indexed
+  ; lists.
+  (->i ([ds dim-sys?] [lst (ds) (dim-sys-dimlist/c ds)])
+    [_ (ds) (dim-sys-dimlist/c ds)])
   (dim-sys-dimlist-uniform ds (dim-sys-dimlist-length ds lst) lst))
 
 
 (define-imitation-simple-struct
   (hyperstack? hyperstack-dim-sys hyperstack-rep)
   hyperstack 'hyperstack (current-inspector) (auto-write))
+(ascribe-own-contract hyperstack? (-> any/c boolean?))
+(ascribe-own-contract hyperstack-dim-sys (-> hyperstack? dim-sys?))
 
-(define (hyperstack/c ds)
+(define/own-contract (hyperstack/c ds)
+  (-> dim-sys? contract?)
   (rename-contract (match/c hyperstack (ok/c ds) any/c)
     `(hyperstack/c ,ds)))
 
-(define (hyperstack-dimension stack)
+(define/own-contract (hyperstack-dimension stack)
+  (->i ([stack hyperstack?])
+    [_ (stack) (dim-sys-dim/c #/hyperstack-dim-sys stack)])
   (dissect stack (hyperstack ds rep)
   #/dim-sys-dimlist-length ds rep))
 
-(define (hyperstack-peek stack i)
+(define/own-contract (hyperstack-peek stack i)
+  (->i
+    (
+      [stack hyperstack?]
+      [i (stack)
+        (w- ds (hyperstack-dim-sys stack)
+        #/dim-sys-dim</c ds #/hyperstack-dimension stack)])
+    [_ any/c])
   (dissect stack (hyperstack ds rep)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
     (list elem suspended-chevron)
     elem))
 
 
-(define (make-hyperstack-dimlist ds elems)
+(define/own-contract (make-hyperstack-dimlist ds elems)
+  (->i ([ds dim-sys?] [elems (ds) (dim-sys-dimlist/c ds)])
+    [_ (ds) (hyperstack/c ds)])
   (hyperstack ds #/dim-sys-dimlist-map ds elems #/fn elem
     (list elem #/dim-sys-dimlist-zero ds)))
 
-(define (hyperstack-push-dimlist stack elems-to-push)
+(define/own-contract (hyperstack-push-dimlist stack elems-to-push)
+  (->i
+    (
+      [stack hyperstack?]
+      [elems-to-push (stack)
+        (dim-sys-dimlist/c #/hyperstack-dim-sys stack)])
+    [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])
   (dissect stack (hyperstack ds rep)
   #/hyperstack ds #/dim-sys-dimlist-shadow ds
     (dim-sys-dimlist-zip-map ds
@@ -276,7 +242,21 @@
         (list elem rep-chevron)))
     rep))
 
-(define (hyperstack-pop-dimlist stack elems-to-push)
+(define/own-contract (hyperstack-pop-dimlist stack elems-to-push)
+  (->i
+    (
+      [stack hyperstack?]
+      [elems-to-push (stack)
+        (dim-sys-dimlist/c #/hyperstack-dim-sys stack)])
+    
+    #:pre (stack elems-to-push)
+    (w- ds (hyperstack-dim-sys stack)
+    #/dim-sys-dim<? ds
+      (dim-sys-dimlist-length ds elems-to-push)
+      (hyperstack-dimension stack))
+    
+    [_ (stack)
+      (list/c any/c (hyperstack/c #/hyperstack-dim-sys stack))])
   (dissect stack (hyperstack ds rep)
   #/w- i (dim-sys-dimlist-length ds elems-to-push)
   #/dissect (dim-sys-dimlist-ref-and-call ds rep i)
@@ -291,24 +271,51 @@
       suspended-chevron)))
 
 
-(define (make-hyperstack ds dimension elem)
+(define/own-contract (make-hyperstack ds dimension elem)
+  (->i
+    ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)] [elem any/c])
+    [_ (ds) (hyperstack/c ds)])
   (make-hyperstack-dimlist ds
   #/dim-sys-dimlist-uniform ds dimension elem))
 
-(define (hyperstack-push bump-degree stack elem)
+(define/own-contract (hyperstack-push bump-degree stack elem)
+  (->i
+    (
+      [bump-degree (stack) (dim-sys-dim/c #/hyperstack-dim-sys stack)]
+      [stack hyperstack?]
+      [elem any/c])
+    [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])
   (w- ds (hyperstack-dim-sys stack)
   #/hyperstack-push-dimlist stack
   #/dim-sys-dimlist-uniform ds bump-degree elem))
 
-(define (hyperstack-pop i stack elem)
+(define/own-contract (hyperstack-pop i stack elem)
+  (->i
+    (
+      [i (stack)
+        (w- ds (hyperstack-dim-sys stack)
+        #/dim-sys-dim</c ds #/hyperstack-dimension stack)]
+      [stack hyperstack?]
+      [elem any/c])
+    [_ (stack)
+      (list/c any/c (hyperstack/c #/hyperstack-dim-sys stack))])
   (w- ds (hyperstack-dim-sys stack)
   #/hyperstack-pop-dimlist stack #/dim-sys-dimlist-uniform ds i elem))
 
 
-(define (make-hyperstack-trivial ds dimension)
+(define/own-contract (make-hyperstack-trivial ds dimension)
+  (->i ([ds dim-sys?] [dimension (ds) (dim-sys-dim/c ds)])
+    [_ (ds) (hyperstack/c ds)])
   (make-hyperstack ds dimension #/trivial))
 
-(define (hyperstack-pop-trivial i stack)
+(define/own-contract (hyperstack-pop-trivial i stack)
+  (->i
+    (
+      [i (stack)
+        (w- ds (hyperstack-dim-sys stack)
+        #/dim-sys-dim</c ds #/hyperstack-dimension stack)]
+      [stack hyperstack?])
+    [_ (stack) (hyperstack/c #/hyperstack-dim-sys stack)])
   (w- ds (hyperstack-dim-sys stack)
   #/dissect (hyperstack-pop i stack #/trivial) (list elem rest)
   #/expect elem (trivial)

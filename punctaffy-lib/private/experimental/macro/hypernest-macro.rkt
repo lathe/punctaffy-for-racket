@@ -4,7 +4,7 @@
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 
-;   Copyright 2018-2019, 2021 The Lathe Authors
+;   Copyright 2018-2019, 2021-2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -50,9 +50,8 @@
   (require 'private/lathe-debugging/placebo))
 
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract-out flat-contract? list/c listof none/c
-  or/c rename-contract)
-(require #/only-in racket/contract/region define/contract)
+  -> ->i and/c any/c flat-contract? list/c listof none/c or/c
+  rename-contract)
 (require #/only-in racket/math natural?)
 (require #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
@@ -69,6 +68,9 @@
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
+
+(require punctaffy/private/shim)
+(init-shim)
 
 (require #/only-in punctaffy/hyperbracket
   hyperbracket-close-with-degree hyperbracket-notation?
@@ -104,102 +106,54 @@
 
 (provide
   hn-tag-0-s-expr-stx)
-(provide #/contract-out
-  [hn-tag-0-s-expr-stx? (-> any/c boolean?)]
-  [hn-tag-0-s-expr-stx-stx (-> hn-tag-0-s-expr-stx? syntax?)])
+(provide #/own-contract-out
+  hn-tag-0-s-expr-stx?
+  hn-tag-0-s-expr-stx-stx)
 (provide
   hn-tag-1-box)
-(provide #/contract-out
-  [hn-tag-1-box? (-> any/c boolean?)]
-  [hn-tag-1-box-stx-example (-> hn-tag-1-box? syntax?)])
+(provide #/own-contract-out
+  hn-tag-1-box?
+  hn-tag-1-box-stx-example)
 (provide
   hn-tag-1-list)
-(provide #/contract-out
-  [hn-tag-1-list? (-> any/c boolean?)]
-  [hn-tag-1-list-stx-example (-> hn-tag-1-list? syntax?)])
+(provide #/own-contract-out
+  hn-tag-1-list?
+  hn-tag-1-list-stx-example)
 (provide
   hn-tag-1-vector)
-(provide #/contract-out
-  [hn-tag-1-vector? (-> any/c boolean?)]
-  [hn-tag-1-vector-stx-example (-> hn-tag-1-vector? syntax?)])
+(provide #/own-contract-out
+  hn-tag-1-vector?
+  hn-tag-1-vector-stx-example)
 (provide
   hn-tag-1-prefab)
-(provide #/contract-out
-  [hn-tag-1-prefab? (-> any/c boolean?)]
-  [hn-tag-1-prefab-key (-> hn-tag-1-prefab? prefab-key?)]
-  [hn-tag-1-prefab-stx-example (-> hn-tag-1-prefab? syntax?)])
+(provide #/own-contract-out
+  hn-tag-1-prefab?
+  hn-tag-1-prefab-key
+  hn-tag-1-prefab-stx-example)
 (provide
   hn-tag-2-list*)
-(provide #/contract-out
-  [hn-tag-2-list*? (-> any/c boolean?)]
-  [hn-tag-2-list*-stx-example (-> hn-tag-2-list*? syntax?)])
+(provide #/own-contract-out
+  hn-tag-2-list*?
+  hn-tag-2-list*-stx-example)
 (provide
   hn-tag-unmatched-closing-bracket)
-(provide #/contract-out
-  [hn-tag-unmatched-closing-bracket? (-> any/c boolean?)])
+(provide #/own-contract-out
+  hn-tag-unmatched-closing-bracket?)
 (provide
   hn-tag-nest)
-(provide #/contract-out
-  [hn-tag-nest? (-> any/c boolean?)])
+(provide #/own-contract-out
+  hn-tag-nest?)
 (provide
   hn-tag-other)
-(provide #/contract-out
-  [hn-tag-other? (-> any/c boolean?)]
-  [hn-tag-other-val (-> hn-tag-other? any/c)]
-  
-  ; TODO: We should constrain this contract more. It should be
-  ;
-  ; (->i
-  ;   (
-  ;     [bump-degree (dim-sys-dim/c en-ds)]
-  ;     [tag any/c]
-  ;     [tails (bump-degree)
-  ;       (w- ss (hypernest-snippet-sys en-sfs en-ds)
-  ;       #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  ;       #/and/c (snippet-sys-snippetof/c ss)
-  ;       #/by-own-method/c #:obstinacy (flat-obstinacy) tails
-  ;       #/w- d (snippet-sys-snippet-degree ss tails)
-  ;       #/w- has-d/c (snippet-sys-snippet-with-degree/c ss d)
-  ;       #/snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
-  ;         (if
-  ;           (dim-sys-dim<? en-ds
-  ;             (snippet-sys-snippet-degree shape-ss hole)
-  ;             bump-degree)
-  ;           (and/c
-  ;             has-d/c
-  ;             (snippet-sys-snippet-fitting-shape/c ss hole))
-  ;           any/c))]
-  ;   [_ (bump-degree tails)
-  ;     (w- ss (hypernest-snippet-sys en-sfs en-ds)
-  ;     #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
-  ;     #/w- d (snippet-sys-snippet-degree ss tails)
-  ;     #/w- has-d/c (snippet-sys-snippet-with-degree/c ss d)
-  ;     #/w- exprlike/c
-  ;       (and/c has-d/c
-  ;         (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
-  ;           (if
-  ;             (dim-sys-dim=0? en-ds
-  ;               (snippet-sys-snippet-degree shape-ss hole))
-  ;             trivial?
-  ;             any/c)))
-  ;     #/maybe/c #/list/c syntax?
-  ;       (and/c exprlike/c exprlike/c has-d/c))])
-  ;
-  ; In order for this to make complete sense as a contract, we should
-  ; probably be exporting `en-sfs` and `en-ds`. We might want to
-  ; export the derived `ss` and `shape-ss` as well.
-  ;
-  [parse-list*-tag
-    (-> any/c any/c any/c
-      (maybe/c #/list/c syntax? any/c any/c any/c))]
-  
-  [hn-expr/c (-> flat-contract?)]
-  [unlabeled-hn-expr-with-degree-1/c (-> flat-contract?)]
-  [s-expr-stx->hn-expr
-    (-> syntax? syntax? #/unlabeled-hn-expr-with-degree-1/c)]
-  [hn-expr-forget-nests (-> (hn-expr/c) #/hn-expr/c)]
-  [hn-expr->s-expr-stx-list
-    (-> (unlabeled-hn-expr-with-degree-1/c) #/listof syntax?)])
+(provide #/own-contract-out
+  hn-tag-other?
+  hn-tag-other-val
+  parse-list*-tag
+  hn-expr/c
+  unlabeled-hn-expr-with-degree-1/c
+  s-expr-stx->hn-expr
+  hn-expr-forget-nests
+  hn-expr->s-expr-stx-list)
 
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
@@ -211,13 +165,13 @@
     (require punctaffy/hypersnippet/hypernest)
     (require punctaffy/hypersnippet/hypertee)
     (require punctaffy/hypersnippet/snippet)
-    (define/contract (verify-ht ht)
+    (define/own-contract (verify-ht ht)
       (->
         (and/c hypertee?
           (by-own-method/c ht #/hypertee/c #/hypertee-get-dim-sys ht))
         any/c)
       ht)
-    (define/contract (verify-hn hn)
+    (define/own-contract (verify-hn hn)
       (->
         (and/c hypernest?
           (by-own-method/c hn
@@ -344,7 +298,7 @@
   #/w- prop stx-example
   #/datum->syntax ctxt datum srcloc prop))
 
-(define/contract (syntax-local-maybe identifier)
+(define/own-contract (syntax-local-maybe identifier)
   (-> any/c maybe?)
   (if (identifier? identifier)
     (w- dummy (box #/trivial)
@@ -436,6 +390,9 @@
   (hn-tag-0-s-expr-stx? hn-tag-0-s-expr-stx-stx)
   unguarded-hn-tag-0-s-expr-stx
   'hn-tag-0-s-expr-stx (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-0-s-expr-stx? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-0-s-expr-stx-stx
+  (-> hn-tag-0-s-expr-stx? syntax?))
 (define-match-expander-attenuated
   attenuated-hn-tag-0-s-expr-stx
   unguarded-hn-tag-0-s-expr-stx
@@ -450,6 +407,9 @@
   (hn-tag-1-box? hn-tag-1-box-stx-example)
   unguarded-hn-tag-1-box
   'hn-tag-1-box (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-1-box? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-1-box-stx-example
+  (-> hn-tag-1-box? syntax?))
 (define-match-expander-attenuated
   attenuated-hn-tag-1-box
   unguarded-hn-tag-1-box
@@ -464,6 +424,9 @@
   (hn-tag-1-list? hn-tag-1-list-stx-example)
   unguarded-hn-tag-1-list
   'hn-tag-1-list (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-1-list? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-1-list-stx-example
+  (-> hn-tag-1-list? syntax?))
 (define-match-expander-attenuated
   attenuated-hn-tag-1-list
   unguarded-hn-tag-1-list
@@ -478,6 +441,9 @@
   (hn-tag-1-vector? hn-tag-1-vector-stx-example)
   unguarded-hn-tag-1-vector
   'hn-tag-1-vector (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-1-vector? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-1-vector-stx-example
+  (-> hn-tag-1-vector? syntax?))
 (define-match-expander-attenuated
   attenuated-hn-tag-1-vector
   unguarded-hn-tag-1-vector
@@ -492,6 +458,11 @@
   (hn-tag-1-prefab? hn-tag-1-prefab-key hn-tag-1-prefab-stx-example)
   unguarded-hn-tag-1-prefab
   'hn-tag-1-prefab (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-1-prefab? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-1-prefab-key
+  (-> hn-tag-1-prefab? prefab-key?))
+(ascribe-own-contract hn-tag-1-prefab-stx-example
+  (-> hn-tag-1-prefab? syntax?))
 (define-match-expander-attenuated
   attenuated-hn-tag-1-prefab
   unguarded-hn-tag-1-prefab
@@ -507,6 +478,9 @@
   (hn-tag-2-list*? hn-tag-2-list*-stx-example)
   unguarded-hn-tag-2-list*
   'hn-tag-2-list* (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-2-list*? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-2-list*-stx-example
+  (-> hn-tag-2-list*? syntax?))
 (define-match-expander-attenuated
   attenuated-hn-tag-2-list*
   unguarded-hn-tag-2-list*
@@ -539,6 +513,8 @@
   'hn-tag-unmatched-closing-bracket (current-inspector)
   (auto-write)
   (auto-equal))
+(ascribe-own-contract hn-tag-unmatched-closing-bracket?
+  (-> any/c boolean?))
 
 ; The `hn-tag-nest` tag can occur as a bump of degree infinity
 ; (in the sense of `(extended-with-top-dim-infinite)` in the system
@@ -560,6 +536,7 @@
   (hn-tag-nest?)
   hn-tag-nest
   'hn-tag-nest (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-nest? (-> any/c boolean?))
 
 ; This is a value designated to let hn-expression users put custom
 ; kinds of data into an hn-expression. It can occur as a bump or a
@@ -568,6 +545,8 @@
   (hn-tag-other? hn-tag-other-val)
   hn-tag-other
   'hn-tag-other (current-inspector) (auto-write) (auto-equal))
+(ascribe-own-contract hn-tag-other? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-other-val (-> hn-tag-other? any/c))
 
 (define example-list*-shape
   (w- ds en-ds
@@ -593,7 +572,54 @@
       #/dissect example-data (trivial)
       #/just #/trivial))))
 
-(define (parse-list*-tag bump-degree tag tails)
+(define/own-contract (parse-list*-tag bump-degree tag tails)
+  
+  ; TODO SPECIFIC: We should constrain this contract more. It should
+  ; be
+  ;
+  ; (->i
+  ;   (
+  ;     [bump-degree (dim-sys-dim/c en-ds)]
+  ;     [tag any/c]
+  ;     [tails (bump-degree)
+  ;       (w- ss (hypernest-snippet-sys en-sfs en-ds)
+  ;       #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  ;       #/and/c (snippet-sys-snippetof/c ss)
+  ;       #/by-own-method/c #:obstinacy (flat-obstinacy) tails
+  ;       #/w- d (snippet-sys-snippet-degree ss tails)
+  ;       #/w- has-d/c (snippet-sys-snippet-with-degree/c ss d)
+  ;       #/snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+  ;         (if
+  ;           (dim-sys-dim<? en-ds
+  ;             (snippet-sys-snippet-degree shape-ss hole)
+  ;             bump-degree)
+  ;           (and/c
+  ;             has-d/c
+  ;             (snippet-sys-snippet-fitting-shape/c ss hole))
+  ;           any/c))]
+  ;   [_ (bump-degree tails)
+  ;     (w- ss (hypernest-snippet-sys en-sfs en-ds)
+  ;     #/w- shape-ss (snippet-sys-shape-snippet-sys ss)
+  ;     #/w- d (snippet-sys-snippet-degree ss tails)
+  ;     #/w- has-d/c (snippet-sys-snippet-with-degree/c ss d)
+  ;     #/w- exprlike/c
+  ;       (and/c has-d/c
+  ;         (snippet-sys-snippetof/ob-c ss (flat-obstinacy) #/fn hole
+  ;           (if
+  ;             (dim-sys-dim=0? en-ds
+  ;               (snippet-sys-snippet-degree shape-ss hole))
+  ;             trivial?
+  ;             any/c)))
+  ;     #/maybe/c #/list/c syntax?
+  ;       (and/c exprlike/c exprlike/c has-d/c))])
+  ;
+  ; In order for this to make complete sense as a contract, we should
+  ; probably be exporting `en-sfs` and `en-ds`. We might want to
+  ; export the derived `ss` and `shape-ss` as well.
+  ;
+  (-> any/c any/c any/c
+    (maybe/c #/list/c syntax? any/c any/c any/c))
+  
   (w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- n-d en-n-d
@@ -633,7 +659,8 @@
   
   #/just #/list stx-example list*-elems list*-tail tail))
 
-(define (hn-expr/c)
+(define/own-contract (hn-expr/c)
+  (-> flat-contract?)
   (w- ds en-ds
   #/w- n-d en-n-d
   #/w- sfs (hypertee-snippet-format-sys)
@@ -679,7 +706,8 @@
       (fn hole any/c))
     '(hn-expr/c)))
 
-(define (unlabeled-hn-expr-with-degree-1/c)
+(define/own-contract (unlabeled-hn-expr-with-degree-1/c)
+  (-> flat-contract?)
   (w- ds en-ds
   #/w- n-d en-n-d
   #/w- sfs (hypertee-snippet-format-sys)
@@ -707,7 +735,8 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(define (s-expr-stx->hn-expr err-dsl-stx stx)
+(define/own-contract (s-expr-stx->hn-expr err-dsl-stx stx)
+  (-> syntax? syntax? #/unlabeled-hn-expr-with-degree-1/c)
   (dlog 'hqq-b1
   #/w- ds en-ds
   #/w- n-d en-n-d
@@ -898,7 +927,7 @@
 ; reminder that hn-expressions aren't quite "expressions" so much as
 ; snippets of expression-like data.
 ;
-(define/contract (splicing-s-expr-stx->hn-expr err-dsl-stx stx)
+(define/own-contract (splicing-s-expr-stx->hn-expr err-dsl-stx stx)
   (-> syntax? syntax? #/hn-expr/c)
   (w- ds en-ds
   #/w- n-d en-n-d
@@ -920,7 +949,8 @@
 ; structure we use... unless the data structure we use is made of
 ; cons-cell-based Racket syntax objects.
 ;
-(define (hn-expr-forget-nests hn)
+(define/own-contract (hn-expr-forget-nests hn)
+  (-> (hn-expr/c) #/hn-expr/c)
   (dlog 'hqq-l1
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -963,7 +993,8 @@
 
 ; This converts an hn-expression back into a list of syntax objects,
 ; as long as it doesn't have any `hn-tag-nest` bumps.
-(define (hn-expr->s-expr-stx-list hn)
+(define/own-contract (hn-expr->s-expr-stx-list hn)
+  (-> (unlabeled-hn-expr-with-degree-1/c) #/listof syntax?)
   (w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
   #/w- shape-ss (snippet-sys-shape-snippet-sys ss)

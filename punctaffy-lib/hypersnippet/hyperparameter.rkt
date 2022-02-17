@@ -5,7 +5,7 @@
 ; Utilities for Racket parameters that allow the dynamic extents to be
 ; hypersnippet-shaped sections of the execution timeline.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -22,13 +22,16 @@
 
 (require #/only-in racket/contract/base
   -> any any/c contract? recursive-contract)
-(require #/only-in racket/contract/region define/contract)
 
 (require #/only-in lathe-comforts expect fn w-)
 (require #/only-in lathe-comforts/maybe just nothing)
 
+(require punctaffy/private/shim)
+(init-shim)
+
+
 ; TODO: Document all of these exports.
-(provide
+(provide #/own-contract-out
   hyperbody/c
   call-hyperbody-while-updating-parameterization
   call-hyperbody-while-parameterizing)
@@ -46,7 +49,7 @@
 ; uninstallation and reinstallation.
 
 
-(define/contract hyperbody/c
+(define/own-contract hyperbody/c
   contract?
   ; NOTE: While this is equivalent to having only one `(-> ... any)`
   ; layer instead of two, we keep them both around because they
@@ -59,7 +62,7 @@
   ; dimension instead of taking it as a parameter.
   (-> (-> (recursive-contract hyperbody/c) any) any))
 
-(define/contract
+(define/own-contract
   (call-hyperbody-while-updating-parameterization func body)
   (-> (-> parameterization? parameterization?) hyperbody/c any)
   (w- current-p (current-parameterization)
@@ -76,7 +79,7 @@
         #/call-hyperbody-while-updating-parameterization (fn _ old-p)
           body)))))
 
-(define/contract
+(define/own-contract
   (call-hyperbody-while-parameterizing pr value body)
   (-> parameter? any/c hyperbody/c any)
   (call-hyperbody-while-updating-parameterization (fn pn pn) #/fn esc

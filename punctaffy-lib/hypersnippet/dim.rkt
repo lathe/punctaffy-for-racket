@@ -5,7 +5,7 @@
 ; Interfaces to represent numbers that represent the dimensionality of
 ; hypersnippets.
 
-;   Copyright 2019, 2020 The Lathe Authors
+;   Copyright 2019-2020, 2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -62,355 +62,174 @@
   make-atomic-set-element-sys-impl-from-contract ok/c
   prop:atomic-set-element-sys)
 
-(require lathe-morphisms/private/shim)
+(require punctaffy/private/shim)
+(init-shim)
 
 
-(provide #/shim-contract-out
+(provide #/own-contract-out
   
-  [dim-sys? (-> any/c boolean?)]
-  [dim-sys-impl? (-> any/c boolean?)]
-  [dim-sys-dim/c (-> dim-sys? flat-contract?)]
-  [dim-sys-dim-max
-    (->i ([ds dim-sys?])
-      #:rest [args (ds) (listof #/dim-sys-dim/c ds)]
-      [_ (ds) (dim-sys-dim/c ds)])]
-  [dim-sys-dim-zero (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dim/c ds)])]
-  [dim-sys-dim-max-of-two
-    (->i
-      (
-        [ds dim-sys?]
-        [a (ds) (dim-sys-dim/c ds)]
-        [b (ds) (dim-sys-dim/c ds)])
-      [_ (ds) (dim-sys-dim/c ds)])]
-  [dim-sys-dim=?
-    (->i
-      (
-        [ds dim-sys?]
-        [a (ds) (dim-sys-dim/c ds)]
-        [b (ds) (dim-sys-dim/c ds)])
-      [_ boolean?])]
-  [dim-sys-dim<=?
-    (->i
-      (
-        [ds dim-sys?]
-        [a (ds) (dim-sys-dim/c ds)]
-        [b (ds) (dim-sys-dim/c ds)])
-      [_ boolean?])]
-  [dim-sys-dim<?
-    (->i
-      (
-        [ds dim-sys?]
-        [a (ds) (dim-sys-dim/c ds)]
-        [b (ds) (dim-sys-dim/c ds)])
-      [_ boolean?])]
-  [dim-sys-dim</c
-    (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ flat-contract?])]
-  [dim-sys-dim=/c
-    (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
-      [_ flat-contract?])]
-  [dim-sys-dim=0?
-    (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])]
-  [dim-sys-0<dim/c (-> dim-sys? flat-contract?)]
-  [prop:dim-sys (struct-type-property/c dim-sys-impl?)]
-  [make-dim-sys-impl-from-max-of-two
-    (->
-      (-> dim-sys? flat-contract?)
-      (->i
-        (
-          [ds dim-sys?]
-          [a (ds) (dim-sys-dim/c ds)]
-          [b (ds) (dim-sys-dim/c ds)])
-        [_ boolean?])
-      (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dim/c ds)])
-      (->i
-        (
-          [ds dim-sys?]
-          [a (ds) (dim-sys-dim/c ds)]
-          [b (ds) (dim-sys-dim/c ds)])
-        [_ (ds) (dim-sys-dim/c ds)])
-      dim-sys-impl?)]
+  dim-sys?
+  dim-sys-impl?
+  dim-sys-dim/c
+  dim-sys-dim-max
+  dim-sys-dim-zero
+  dim-sys-dim-max-of-two
+  dim-sys-dim=?
+  dim-sys-dim<=?
+  dim-sys-dim<?
+  dim-sys-dim</c
+  dim-sys-dim=/c
+  dim-sys-dim=0?
+  dim-sys-0<dim/c
+  prop:dim-sys
+  make-dim-sys-impl-from-max-of-two
   
-  [dim-sys-morphism-sys? (-> any/c boolean?)]
-  [dim-sys-morphism-sys-impl? (-> any/c boolean?)]
-  [dim-sys-morphism-sys-source (-> dim-sys-morphism-sys? dim-sys?)]
-  [dim-sys-morphism-sys-replace-source
-    (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
-  [dim-sys-morphism-sys-target (-> dim-sys-morphism-sys? dim-sys?)]
-  [dim-sys-morphism-sys-replace-target
-    (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)]
-  [dim-sys-morphism-sys-morph-dim
-    (->i
-      (
-        [ms dim-sys-morphism-sys?]
-        [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
-      [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])]
-  [dim-sys-morphism-sys/c (-> contract? contract? contract?)]
-  [prop:dim-sys-morphism-sys
-    (struct-type-property/c dim-sys-morphism-sys-impl?)]
-  [make-dim-sys-morphism-sys-impl-from-morph
-    (->
-      (-> dim-sys-morphism-sys? dim-sys?)
-      (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
-      (-> dim-sys-morphism-sys? dim-sys?)
-      (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
-      (->i
-        (
-          [ms dim-sys-morphism-sys?]
-          [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
-        [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])
-      dim-sys-morphism-sys-impl?)]
-  [dim-sys-morphism-sys-identity (-> dim-sys? dim-sys-morphism-sys?)]
-  [dim-sys-morphism-sys-chain-two
-    (->i
-      (
-        [ab dim-sys-morphism-sys?]
-        [bc (ab)
-          (dim-sys-morphism-sys/c
-            (ok/c #/dim-sys-morphism-sys-target ab)
-            any/c)])
-      [_ (ab bc)
-        (dim-sys-morphism-sys/c
-          (ok/c #/dim-sys-morphism-sys-source ab)
-          (ok/c #/dim-sys-morphism-sys-target bc))])])
+  dim-sys-morphism-sys?
+  dim-sys-morphism-sys-impl?
+  dim-sys-morphism-sys-source
+  dim-sys-morphism-sys-replace-source
+  dim-sys-morphism-sys-target
+  dim-sys-morphism-sys-replace-target
+  dim-sys-morphism-sys-morph-dim
+  dim-sys-morphism-sys/c
+  prop:dim-sys-morphism-sys
+  make-dim-sys-morphism-sys-impl-from-morph
+  dim-sys-morphism-sys-identity
+  dim-sys-morphism-sys-chain-two)
 
 (provide
   dim-sys-category-sys)
-(provide #/shim-contract-out
-  [dim-sys-category-sys? (-> any/c boolean?)]
-  [functor-from-dim-sys-sys-apply-to-morphism
-    (->i
-      (
-        [fs (functor-sys/c dim-sys-category-sys? any/c)]
-        [dsms dim-sys-morphism-sys?])
-      [_ (fs dsms)
-        (category-sys-morphism/c (functor-sys-target fs)
-          (functor-sys-apply-to-object fs
-            (dim-sys-morphism-sys-source dsms))
-          (functor-sys-apply-to-object fs
-            (dim-sys-morphism-sys-target dsms)))])]
-  [natural-transformation-from-from-dim-sys-sys-apply-to-morphism
-    (->i
-      (
-        [nts
-          (natural-transformation-sys/c
-            dim-sys-category-sys? any/c any/c any/c)]
-        [dsms dim-sys-morphism-sys?])
-      [_ (nts dsms)
-        (category-sys-morphism/c
-          (natural-transformation-sys-endpoint-target nts)
-          (functor-sys-apply-to-object
-            (natural-transformation-sys-source nts)
-            (dim-sys-morphism-sys-source dsms))
-          (functor-sys-apply-to-object
-            (natural-transformation-sys-target nts)
-            (dim-sys-morphism-sys-target dsms)))])]
-  [dim-sys-endofunctor-sys? (-> any/c boolean?)]
-  [make-dim-sys-endofunctor-sys-impl-from-apply
-    (->
-      (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)
-      (->i
-        (
-          [es dim-sys-endofunctor-sys?]
-          [ms dim-sys-morphism-sys?])
-        [_ (es ms)
-          (dim-sys-morphism-sys/c
-            (ok/c
-              (functor-sys-apply-to-object es
-                (dim-sys-morphism-sys-source ms)))
-            (ok/c
-              (functor-sys-apply-to-object es
-                (dim-sys-morphism-sys-target ms))))])
-      functor-sys-impl?)])
+(provide #/own-contract-out
+  dim-sys-category-sys?
+  functor-from-dim-sys-sys-apply-to-morphism
+  natural-transformation-from-from-dim-sys-sys-apply-to-morphism
+  dim-sys-endofunctor-sys?
+  make-dim-sys-endofunctor-sys-impl-from-apply)
 
 ; TODO: Document these exports if we ever need them. We would comment
 ; them out, but they're currently in use by some internal experiments.
 ;#;
-(provide #/shim-contract-out
-  [dim-successors-sys? (-> any/c boolean?)]
-  [dim-successors-sys-impl? (-> any/c boolean?)]
-  [dim-successors-sys-dim-sys (-> dim-successors-sys? dim-sys?)]
-  [dim-successors-sys-dim-plus-int
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [d (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
-        [n exact-integer?])
-      [_ (dss)
-        (maybe/c #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])]
-  [dim-successors-sys-dim-from-int
-    (->i ([dss dim-successors-sys?] [n exact-integer?])
-      [_ (dss)
-        (maybe/c #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])]
-  [dim-successors-sys-dim=plus-int?
-    (->i
-      (
-        [dss dim-successors-sys?]
-        [candidate (dss)
-          (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
-        [d (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
-        [n exact-integer?])
-      [_ boolean?])]
-  [prop:dim-successors-sys
-    (struct-type-property/c dim-successors-sys-impl?)]
-  [make-dim-successors-sys-impl-from-dim-plus-int
-    (->
-      (-> dim-successors-sys? dim-sys?)
-      (->i
-        (
-          [dss dim-successors-sys?]
-          [d (dss)
-            (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
-          [n exact-integer?])
-        [_ (dss n)
-          (maybe/c
-          #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
-      dim-successors-sys-impl?)]
+(provide #/own-contract-out
+  dim-successors-sys?
+  dim-successors-sys-impl?
+  dim-successors-sys-dim-sys
+  dim-successors-sys-dim-plus-int
+  dim-successors-sys-dim-from-int
+  dim-successors-sys-dim=plus-int?
+  prop:dim-successors-sys
+  make-dim-successors-sys-impl-from-dim-plus-int
   
   )
 
 ; TODO: Uncomment these exports if we ever need them.
 ;(provide successorless-dim-successors-sys)
-;(provide #/shim-contract-out
-;  [successorless-dim-successors-sys? (-> any/c boolean?)])
+;(provide #/own-contract-out
+;  successorless-dim-successors-sys?)
 (provide
   nat-dim-sys)
-(provide #/shim-contract-out
-  [nat-dim-sys? (-> any/c boolean?)])
+(provide #/own-contract-out
+  nat-dim-sys?)
 ; TODO: Document this export if we ever need it. We would comment it
 ; out, but it's currently in use by some internal experiments.
 ;#;
 (provide
   nat-dim-successors-sys)
 ; TODO: Uncomment this export if we ever need it.
-;(provide #/shim-contract-out
-;  [nat-dim-successors-sys? (-> any/c boolean?)])
+;(provide #/own-contract-out
+;  nat-dim-successors-sys?)
 (provide
   extended-with-top-dim-finite)
-(provide #/shim-contract-out
-  [extended-with-top-dim-finite? (-> any/c boolean?)]
-  [extended-with-top-dim-finite-original
-    (-> extended-with-top-dim-finite? any/c)])
+(provide #/own-contract-out
+  extended-with-top-dim-finite?
+  extended-with-top-dim-finite-original)
 (provide
   extended-with-top-dim-infinite)
-(provide #/shim-contract-out
-  [extended-with-top-dim-infinite? (-> any/c boolean?)])
-(provide #/shim-contract-out
-  [extended-with-top-dim? (-> any/c boolean?)]
-  [extended-with-top-dim/c (-> contract? contract?)]
-  [extended-with-top-dim=?
-    (->
-      (-> any/c any/c boolean?)
-      extended-with-top-dim?
-      extended-with-top-dim?
-      boolean?)])
+(provide #/own-contract-out
+  extended-with-top-dim-infinite?)
+(provide #/own-contract-out
+  extended-with-top-dim?
+  extended-with-top-dim/c
+  extended-with-top-dim=?)
 (provide
   extended-with-top-dim-sys)
-(provide #/shim-contract-out
-  [extended-with-top-dim-sys? (-> any/c boolean?)]
-  [extended-with-top-dim-sys-original
-    (-> extended-with-top-dim-sys? dim-sys?)])
+(provide #/own-contract-out
+  extended-with-top-dim-sys?
+  extended-with-top-dim-sys-original)
 (provide
   extended-with-top-dim-sys-morphism-sys)
-(provide #/shim-contract-out
-  [extended-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
-  [extended-with-top-dim-sys-morphism-sys-original
-    (-> extended-with-top-dim-sys-morphism-sys?
-      dim-sys-morphism-sys?)])
+(provide #/own-contract-out
+  extended-with-top-dim-sys-morphism-sys?
+  extended-with-top-dim-sys-morphism-sys-original)
 (provide
   extended-with-top-dim-sys-endofunctor-sys)
-(provide #/shim-contract-out
-  [extended-with-top-dim-sys-endofunctor-sys? (-> any/c boolean?)])
+(provide #/own-contract-out
+  extended-with-top-dim-sys-endofunctor-sys?)
 (provide
   extend-with-top-dim-sys-morphism-sys)
-(provide #/shim-contract-out
-  [extend-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
-  [extend-with-top-dim-sys-morphism-sys-source
-    (-> extend-with-top-dim-sys-morphism-sys? dim-sys?)])
+(provide #/own-contract-out
+  extend-with-top-dim-sys-morphism-sys?
+  extend-with-top-dim-sys-morphism-sys-source)
 (provide
   extended-with-top-finite-dim-sys)
-(provide #/shim-contract-out
-  [extended-with-top-finite-dim-sys? (-> any/c boolean?)]
-  [extended-with-top-finite-dim-sys-original
-    (-> extended-with-top-finite-dim-sys? dim-sys?)])
+(provide #/own-contract-out
+  extended-with-top-finite-dim-sys?
+  extended-with-top-finite-dim-sys-original)
 (provide
   unextend-with-top-dim-sys-morphism-sys)
-(provide #/shim-contract-out
-  [unextend-with-top-dim-sys-morphism-sys? (-> any/c boolean?)]
-  [unextend-with-top-dim-sys-morphism-sys-target
-    (-> unextend-with-top-dim-sys-morphism-sys? dim-sys?)])
+(provide #/own-contract-out
+  unextend-with-top-dim-sys-morphism-sys?
+  unextend-with-top-dim-sys-morphism-sys-target)
 (provide
   extended-with-top-dim-successors-sys)
-(provide #/shim-contract-out
-  [extended-with-top-dim-successors-sys? (-> any/c boolean?)]
-  [extended-with-top-dim-successors-sys-original
-    (-> extended-with-top-dim-successors-sys? dim-successors-sys?)])
+(provide #/own-contract-out
+  extended-with-top-dim-successors-sys?
+  extended-with-top-dim-successors-sys-original)
 ; TODO: Uncomment these exports if we ever need them.
 #|
 (provide
   fin-multiplied-dim)
-(provide #/shim-contract-out
-  [fin-multiplied-dim? (-> any/c boolean?)]
-  [fin-multiplied-dim-index (-> fin-multiplied-dim? natural?)]
-  [fin-multiplied-dim-original (-> fin-multiplied-dim? any/c)]
-  [fin-multiplied-dim/c
-    (-> exact-positive-integer? contract? contract?)]
-  [fin-multiplied-dim=?
-    (-> (-> any/c any/c boolean?) any/c any/c boolean?)])
+(provide #/own-contract-out
+  fin-multiplied-dim?
+  fin-multiplied-dim-index
+  fin-multiplied-dim-original
+  fin-multiplied-dim/c
+  fin-multiplied-dim=?)
 (provide
   fin-multiplied-dim-sys)
-(provide #/shim-contract-out
-  [fin-multiplied-dim-sys? (-> any/c boolean?)]
-  [fin-multiplied-dim-sys-bound
-    (-> fin-multiplied-dim-sys? exact-positive-integer?)]
-  [fin-multiplied-dim-sys-original
-    (-> fin-multiplied-dim-sys? dim-sys?)])
+(provide #/own-contract-out
+  fin-multiplied-dim-sys?
+  fin-multiplied-dim-sys-bound
+  fin-multiplied-dim-sys-original)
 (provide
   fin-multiplied-dim-sys-morphism-sys)
-(provide #/shim-contract-out
-  [fin-multiplied-dim-sys-morphism-sys? (-> any/c boolean?)]
-  [fin-multiplied-dim-sys-morphism-sys-bound
-    (-> fin-multiplied-dim-sys-morphism-sys? exact-positive-integer?)]
-  [fin-multiplied-dim-sys-morphism-sys-original
-    (-> fin-multiplied-dim-sys-morphism-sys?
-      dim-sys-morphism-sys?)])
+(provide #/own-contract-out
+  fin-multiplied-dim-sys-morphism-sys?
+  fin-multiplied-dim-sys-morphism-sys-bound
+  fin-multiplied-dim-sys-morphism-sys-original)
 (provide
   fin-multiplied-dim-sys-endofunctor-sys)
-(provide #/shim-contract-out
-  [fin-multiplied-dim-sys-endofunctor-sys? (-> any/c boolean?)]
-  [fin-multiplied-dim-sys-endofunctor-sys-bound
-    (-> fin-multiplied-dim-sys-endofunctor-sys?
-      exact-positive-integer?)])
+(provide #/own-contract-out
+  fin-multiplied-dim-sys-endofunctor-sys?
+  fin-multiplied-dim-sys-endofunctor-sys-bound)
 (provide
   fin-times-dim-sys-morphism-sys)
-(provide #/shim-contract-out
-  [fin-times-dim-sys-morphism-sys? (-> any/c boolean?)]
-  [fin-times-dim-sys-morphism-sys-bound
-    (-> fin-times-dim-sys-morphism-sys? exact-positive-integer?)]
-  [fin-times-dim-sys-morphism-sys-source
-    (-> fin-times-dim-sys-morphism-sys? dim-sys?)]
-  [fin-times-dim-sys-morphism-sys-dim-to-index
-    (->i ([ms fin-times-dim-sys-morphism-sys?])
-      [_ (ms)
-        (-> (dim-sys-dim/c #/fin-times-dim-sys-morphism-sys-source ms)
-          (and/c natural?
-            (</c #/fin-times-dim-sys-morphism-sys-bound ms)))])])
+(provide #/own-contract-out
+  fin-times-dim-sys-morphism-sys?
+  fin-times-dim-sys-morphism-sys-bound
+  fin-times-dim-sys-morphism-sys-source
+  fin-times-dim-sys-morphism-sys-dim-to-index)
 (provide
   fin-untimes-dim-sys-morphism-sys)
-(provide #/shim-contract-out
-  [fin-untimes-dim-sys-morphism-sys? (-> any/c boolean?)]
-  [fin-untimes-dim-sys-morphism-sys-bound
-    (-> fin-untimes-dim-sys-morphism-sys? exact-positive-integer?)]
-  [fin-untimes-dim-sys-morphism-sys-target
-    (-> fin-untimes-dim-sys-morphism-sys? dim-sys?)])
+(provide #/own-contract-out
+  fin-untimes-dim-sys-morphism-sys?
+  fin-untimes-dim-sys-morphism-sys-bound
+  fin-untimes-dim-sys-morphism-sys-target)
 (provide
   fin-multiplied-dim-successors-sys)
-(provide #/shim-contract-out
-  [fin-multiplied-dim-successors-sys? (-> any/c boolean?)]
-  [fin-multiplied-dim-successors-sys-bound
-    (-> fin-multiplied-dim-successors-sys? exact-positive-integer?)]
-  [fin-multiplied-dim-successors-sys-original
-    (-> fin-multiplied-dim-successors-sys? dim-successors-sys?)])
+(provide #/own-contract-out
+  fin-multiplied-dim-successors-sys?
+  fin-multiplied-dim-successors-sys-bound
+  fin-multiplied-dim-successors-sys-original)
 |#
 
 
@@ -421,6 +240,44 @@
   (#:method dim-sys-dim-max-of-two (#:this) () ())
   prop:dim-sys make-dim-sys-impl-from-max-of-two
   'dim-sys 'dim-sys-impl (list))
+(ascribe-own-contract dim-sys? (-> any/c boolean?))
+(ascribe-own-contract dim-sys-impl? (-> any/c boolean?))
+(ascribe-own-contract dim-sys-dim/c (-> dim-sys? flat-contract?))
+(ascribe-own-contract dim-sys-dim=?
+  (->i
+    (
+      [ds dim-sys?]
+      [a (ds) (dim-sys-dim/c ds)]
+      [b (ds) (dim-sys-dim/c ds)])
+    [_ boolean?]))
+(ascribe-own-contract dim-sys-dim-zero
+  (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dim/c ds)]))
+(ascribe-own-contract dim-sys-dim-max-of-two
+  (->i
+    (
+      [ds dim-sys?]
+      [a (ds) (dim-sys-dim/c ds)]
+      [b (ds) (dim-sys-dim/c ds)])
+    [_ (ds) (dim-sys-dim/c ds)]))
+(ascribe-own-contract prop:dim-sys
+  (struct-type-property/c dim-sys-impl?))
+(ascribe-own-contract make-dim-sys-impl-from-max-of-two
+  (->
+    (-> dim-sys? flat-contract?)
+    (->i
+      (
+        [ds dim-sys?]
+        [a (ds) (dim-sys-dim/c ds)]
+        [b (ds) (dim-sys-dim/c ds)])
+      [_ boolean?])
+    (->i ([ds dim-sys?]) [_ (ds) (dim-sys-dim/c ds)])
+    (->i
+      (
+        [ds dim-sys?]
+        [a (ds) (dim-sys-dim/c ds)]
+        [b (ds) (dim-sys-dim/c ds)])
+      [_ (ds) (dim-sys-dim/c ds)])
+    dim-sys-impl?))
 
 (define (dim-sys-dim-max-of-dim-and-list ds d lst)
   (expect lst (cons first rest)
@@ -434,32 +291,52 @@
 
 ; NOTE OPTIMIZATION: The use of `case-lambda` gives this a substantial
 ; boost.
-(define dim-sys-dim-max
+(define/own-contract dim-sys-dim-max
+  (->i ([ds dim-sys?]) #:rest [args (ds) (listof #/dim-sys-dim/c ds)]
+    [_ (ds) (dim-sys-dim/c ds)])
   (case-lambda
     [(ds a b) (dim-sys-dim-max-of-two ds a b)]
     [(ds) (dim-sys-dim-zero ds)]
     [(ds d . args) (dim-sys-dim-max-of-dim-and-list ds d args)]))
 
-(define (dim-sys-dim<=? ds a b)
+(define/own-contract (dim-sys-dim<=? ds a b)
+  (->i
+    (
+      [ds dim-sys?]
+      [a (ds) (dim-sys-dim/c ds)]
+      [b (ds) (dim-sys-dim/c ds)])
+    [_ boolean?])
   (dim-sys-dim=? ds b #/dim-sys-dim-max ds a b))
 
-(define (dim-sys-dim<? ds a b)
+(define/own-contract (dim-sys-dim<? ds a b)
+  (->i
+    (
+      [ds dim-sys?]
+      [a (ds) (dim-sys-dim/c ds)]
+      [b (ds) (dim-sys-dim/c ds)])
+    [_ boolean?])
   (and (not #/dim-sys-dim=? ds a b) (dim-sys-dim<=? ds a b)))
 
-(define (dim-sys-dim</c ds bound)
+(define/own-contract (dim-sys-dim</c ds bound)
+  (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
+    [_ flat-contract?])
   (rename-contract
     (and/c (dim-sys-dim/c ds) (fn v #/dim-sys-dim<? ds v bound))
     `(dim-sys-dim</c ,ds ,bound)))
 
-(define (dim-sys-dim=/c ds bound)
+(define/own-contract (dim-sys-dim=/c ds bound)
+  (->i ([ds dim-sys?] [bound (ds) (dim-sys-dim/c ds)])
+    [_ flat-contract?])
   (rename-contract
     (and/c (dim-sys-dim/c ds) (fn v #/dim-sys-dim=? ds v bound))
     `(dim-sys-dim=/c ,ds ,bound)))
 
-(define (dim-sys-dim=0? ds d)
+(define/own-contract (dim-sys-dim=0? ds d)
+  (->i ([ds dim-sys?] [d (ds) (dim-sys-dim/c ds)]) [_ boolean?])
   (dim-sys-dim=? ds (dim-sys-dim-zero ds) d))
 
-(define (dim-sys-0<dim/c ds)
+(define/own-contract (dim-sys-0<dim/c ds)
+  (-> dim-sys? flat-contract?)
   (rename-contract
     (and/c (dim-sys-dim/c ds) (fn v #/not #/dim-sys-dim=0? ds v))
     `(dim-sys-0<dim/c ,ds)))
@@ -474,8 +351,39 @@
   (#:method dim-sys-morphism-sys-morph-dim (#:this) ())
   prop:dim-sys-morphism-sys make-dim-sys-morphism-sys-impl-from-morph
   'dim-sys-morphism-sys 'dim-sys-morphism-sys-impl (list))
+(ascribe-own-contract dim-sys-morphism-sys? (-> any/c boolean?))
+(ascribe-own-contract dim-sys-morphism-sys-impl? (-> any/c boolean?))
+(ascribe-own-contract dim-sys-morphism-sys-source
+  (-> dim-sys-morphism-sys? dim-sys?))
+(ascribe-own-contract dim-sys-morphism-sys-replace-source
+  (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?))
+(ascribe-own-contract dim-sys-morphism-sys-target
+  (-> dim-sys-morphism-sys? dim-sys?))
+(ascribe-own-contract dim-sys-morphism-sys-replace-target
+  (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?))
+(ascribe-own-contract dim-sys-morphism-sys-morph-dim
+  (->i
+    (
+      [ms dim-sys-morphism-sys?]
+      [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
+    [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)]))
+(ascribe-own-contract prop:dim-sys-morphism-sys
+  (struct-type-property/c dim-sys-morphism-sys-impl?))
+(ascribe-own-contract make-dim-sys-morphism-sys-impl-from-morph
+  (->
+    (-> dim-sys-morphism-sys? dim-sys?)
+    (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
+    (-> dim-sys-morphism-sys? dim-sys?)
+    (-> dim-sys-morphism-sys? dim-sys? dim-sys-morphism-sys?)
+    (->i
+      (
+        [ms dim-sys-morphism-sys?]
+        [d (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-source ms)])
+      [_ (ms) (dim-sys-dim/c #/dim-sys-morphism-sys-target ms)])
+    dim-sys-morphism-sys-impl?))
 
-(define (dim-sys-morphism-sys/c source/c target/c)
+(define/own-contract (dim-sys-morphism-sys/c source/c target/c)
+  (-> contract? contract? contract?)
   (w- source/c (coerce-contract 'dim-sys-morphism-sys/c source/c)
   #/w- target/c (coerce-contract 'dim-sys-morphism-sys/c target/c)
   #/w- name
@@ -556,7 +464,8 @@
       ; dim-sys-morphism-sys-morph-dim
       (fn ms d d))))
 
-(define (dim-sys-morphism-sys-identity endpoint)
+(define/own-contract (dim-sys-morphism-sys-identity endpoint)
+  (-> dim-sys? dim-sys-morphism-sys?)
   (identity-dim-sys-morphism-sys endpoint))
 
 (define-imitation-simple-struct
@@ -600,7 +509,18 @@
         #/dim-sys-morphism-sys-morph-dim bc
           (dim-sys-morphism-sys-morph-dim ab d))))))
 
-(define (dim-sys-morphism-sys-chain-two ab bc)
+(define/own-contract (dim-sys-morphism-sys-chain-two ab bc)
+  (->i
+    (
+      [ab dim-sys-morphism-sys?]
+      [bc (ab)
+        (dim-sys-morphism-sys/c
+          (ok/c #/dim-sys-morphism-sys-target ab)
+          any/c)])
+    [_ (ab bc)
+      (dim-sys-morphism-sys/c
+        (ok/c #/dim-sys-morphism-sys-source ab)
+        (ok/c #/dim-sys-morphism-sys-target bc))])
   (chain-two-dim-sys-morphism-sys ab bc))
 
 
@@ -634,31 +554,71 @@
       ; category-sys-morphism-chain-two
       (fn cs a b c ab bc
         (dim-sys-morphism-sys-chain-two ab bc)))))
+(ascribe-own-contract dim-sys-category-sys? (-> any/c boolean?))
 
-(define (functor-from-dim-sys-sys-apply-to-morphism fs dsms)
+(define/own-contract
+  (functor-from-dim-sys-sys-apply-to-morphism fs dsms)
+  (->i
+    (
+      [fs (functor-sys/c dim-sys-category-sys? any/c)]
+      [dsms dim-sys-morphism-sys?])
+    [_ (fs dsms)
+      (category-sys-morphism/c (functor-sys-target fs)
+        (functor-sys-apply-to-object fs
+          (dim-sys-morphism-sys-source dsms))
+        (functor-sys-apply-to-object fs
+          (dim-sys-morphism-sys-target dsms)))])
   (functor-sys-apply-to-morphism fs
     (dim-sys-morphism-sys-source dsms)
     (dim-sys-morphism-sys-target dsms)
     dsms))
 
-(define
+(define/own-contract
   (natural-transformation-from-from-dim-sys-sys-apply-to-morphism
     nts dsms)
+  (->i
+    (
+      [nts
+        (natural-transformation-sys/c
+          dim-sys-category-sys? any/c any/c any/c)]
+      [dsms dim-sys-morphism-sys?])
+    [_ (nts dsms)
+      (category-sys-morphism/c
+        (natural-transformation-sys-endpoint-target nts)
+        (functor-sys-apply-to-object
+          (natural-transformation-sys-source nts)
+          (dim-sys-morphism-sys-source dsms))
+        (functor-sys-apply-to-object
+          (natural-transformation-sys-target nts)
+          (dim-sys-morphism-sys-target dsms)))])
   (natural-transformation-sys-apply-to-morphism nts
     (dim-sys-morphism-sys-source dsms)
     (dim-sys-morphism-sys-target dsms)
     dsms))
 
-(define (dim-sys-endofunctor-sys? v)
+(define/own-contract (dim-sys-endofunctor-sys? v)
+  (-> any/c boolean?)
   (
     (flat-contract-predicate
       (functor-sys/c dim-sys-category-sys? dim-sys-category-sys?))
     v))
 
-(define
+(define/own-contract
   (make-dim-sys-endofunctor-sys-impl-from-apply
     apply-to-dim-sys
     apply-to-dim-sys-morphism-sys)
+  (->
+    (-> dim-sys-endofunctor-sys? dim-sys? dim-sys?)
+    (->i ([es dim-sys-endofunctor-sys?] [ms dim-sys-morphism-sys?])
+      [_ (es ms)
+        (dim-sys-morphism-sys/c
+          (ok/c
+            (functor-sys-apply-to-object es
+              (dim-sys-morphism-sys-source ms)))
+          (ok/c
+            (functor-sys-apply-to-object es
+              (dim-sys-morphism-sys-target ms))))])
+    functor-sys-impl?)
   (make-functor-sys-impl-from-apply
     ; functor-sys-source
     (fn fs #/dim-sys-category-sys)
@@ -695,12 +655,51 @@
   prop:dim-successors-sys
   make-dim-successors-sys-impl-from-dim-plus-int
   'dim-successors-sys 'dim-successors-sys-impl (list))
+(ascribe-own-contract dim-successors-sys? (-> any/c boolean?))
+(ascribe-own-contract dim-successors-sys-impl? (-> any/c boolean?))
+(ascribe-own-contract dim-successors-sys-dim-sys
+  (-> dim-successors-sys? dim-sys?))
+(ascribe-own-contract dim-successors-sys-dim-plus-int
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [d (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [n exact-integer?])
+    [_ (dss)
+      (maybe/c #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]))
+(ascribe-own-contract prop:dim-successors-sys
+  (struct-type-property/c dim-successors-sys-impl?))
+(ascribe-own-contract make-dim-successors-sys-impl-from-dim-plus-int
+  (->
+    (-> dim-successors-sys? dim-sys?)
+    (->i
+      (
+        [dss dim-successors-sys?]
+        [d (dss)
+          (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+        [n exact-integer?])
+      [_ (dss n)
+        (maybe/c
+        #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
+    dim-successors-sys-impl?))
 
-(define (dim-successors-sys-dim-from-int dss n)
+(define/own-contract (dim-successors-sys-dim-from-int dss n)
+  (->i ([dss dim-successors-sys?] [n exact-integer?])
+    [_ (dss)
+      (maybe/c #/dim-sys-dim/c #/dim-successors-sys-dim-sys dss)])
   (w- ds (dim-successors-sys-dim-sys dss)
   #/dim-successors-sys-dim-plus-int dss (dim-sys-dim-zero ds) n))
 
-(define (dim-successors-sys-dim=plus-int? dss candidate d n)
+(define/own-contract
+  (dim-successors-sys-dim=plus-int? dss candidate d n)
+  (->i
+    (
+      [dss dim-successors-sys?]
+      [candidate (dss)
+        (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [d (dss) (dim-sys-dim/c #/dim-successors-sys-dim-sys dss)]
+      [n exact-integer?])
+    [_ boolean?])
   (w- ds (dim-successors-sys-dim-sys dss)
   #/expect (dim-successors-sys-dim-plus-int dss d n) (just result) #f
   #/dim-sys-dim=? ds candidate result))
@@ -726,6 +725,8 @@
       (fn dss d n
         (mat n 0 (just d)
         #/nothing)))))
+(ascribe-own-contract successorless-dim-successors-sys?
+  (-> any/c boolean?))
 
 (define-imitation-simple-struct (nat-dim-sys?) nat-dim-sys
   'nat-dim-sys (current-inspector) (auto-write) (auto-equal)
@@ -742,6 +743,7 @@
     (fn ds 0)
     ; dim-sys-dim-max-of-two
     (fn ds a b #/max a b)))
+(ascribe-own-contract nat-dim-sys? (-> any/c boolean?))
 (define-imitation-simple-struct (nat-dim-successors-sys?)
   nat-dim-successors-sys 'nat-dim-successors-sys (current-inspector)
   (auto-write)
@@ -759,6 +761,7 @@
         (w- result (+ d n)
         #/if (< result 0) (nothing)
         #/just result)))))
+(ascribe-own-contract nat-dim-successors-sys? (-> any/c boolean?))
 
 
 (define-imitation-simple-struct
@@ -768,16 +771,24 @@
   'extended-with-top-dim-finite (current-inspector)
   (auto-write)
   (auto-equal))
+(ascribe-own-contract extended-with-top-dim-finite?
+  (-> any/c boolean?))
+(ascribe-own-contract extended-with-top-dim-finite-original
+  (-> extended-with-top-dim-finite? any/c))
 (define-imitation-simple-struct (extended-with-top-dim-infinite?)
   extended-with-top-dim-infinite
   'extended-with-top-dim-infinite (current-inspector)
   (auto-write)
   (auto-equal))
-(define (extended-with-top-dim? v)
+(ascribe-own-contract extended-with-top-dim-infinite?
+  (-> any/c boolean?))
+(define/own-contract (extended-with-top-dim? v)
+  (-> any/c boolean?)
   (or
     (extended-with-top-dim-finite? v)
     (extended-with-top-dim-infinite? v)))
-(define (extended-with-top-dim/c original-dim/c)
+(define/own-contract (extended-with-top-dim/c original-dim/c)
+  (-> contract? contract?)
   (w- original-dim/c
     (coerce-contract 'extended-with-top-dim/c original-dim/c)
   #/rename-contract
@@ -785,7 +796,12 @@
       (match/c extended-with-top-dim-finite original-dim/c)
       extended-with-top-dim-infinite?)
     `(extended-with-top-dim/c ,(contract-name original-dim/c))))
-(define (extended-with-top-dim=? original-dim=? a b)
+(define/own-contract (extended-with-top-dim=? original-dim=? a b)
+  (->
+    (-> any/c any/c boolean?)
+    extended-with-top-dim?
+    extended-with-top-dim?
+    boolean?)
   (mat a (extended-with-top-dim-finite orig-a)
     (expect b (extended-with-top-dim-finite orig-b) #f
     #/original-dim=? orig-a orig-b)
@@ -823,6 +839,9 @@
       #/expect b (extended-with-top-dim-finite orig-b) b
       #/extended-with-top-dim-finite
         (dim-sys-dim-max-of-two orig-ds orig-a orig-b)))))
+(ascribe-own-contract extended-with-top-dim-sys? (-> any/c boolean?))
+(ascribe-own-contract extended-with-top-dim-sys-original
+  (-> extended-with-top-dim-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-extended-with-top-dim-sys
   unguarded-extended-with-top-dim-sys
@@ -891,6 +910,10 @@
           (extended-with-top-dim-infinite)
         #/extended-with-top-dim-finite
           (dim-sys-morphism-sys-morph-dim orig d))))))
+(ascribe-own-contract extended-with-top-dim-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract extended-with-top-dim-sys-morphism-sys-original
+  (-> extended-with-top-dim-sys-morphism-sys? dim-sys-morphism-sys?))
 (define-match-expander-attenuated
   attenuated-extended-with-top-dim-sys-morphism-sys
   unguarded-extended-with-top-dim-sys-morphism-sys
@@ -915,6 +938,8 @@
     (make-dim-sys-endofunctor-sys-impl-from-apply
       (fn es ds #/extended-with-top-dim-sys ds)
       (fn es ms #/extended-with-top-dim-sys-morphism-sys ms))))
+(ascribe-own-contract extended-with-top-dim-sys-endofunctor-sys?
+  (-> any/c boolean?))
 (define-imitation-simple-struct
   (extend-with-top-dim-sys-morphism-sys?
     extend-with-top-dim-sys-morphism-sys-source)
@@ -953,6 +978,10 @@
         #/extend-with-top-dim-sys-morphism-sys new-s))
       ; dim-sys-morphism-sys-morph-dim
       (fn ms d #/extended-with-top-dim-finite d))))
+(ascribe-own-contract extend-with-top-dim-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract extend-with-top-dim-sys-morphism-sys-source
+  (-> extend-with-top-dim-sys-morphism-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-extend-with-top-dim-sys-morphism-sys
   unguarded-extend-with-top-dim-sys-morphism-sys
@@ -996,6 +1025,10 @@
       #/dissect b (extended-with-top-dim-finite orig-b)
       #/extended-with-top-dim-finite
         (dim-sys-dim-max-of-two orig-ds orig-a orig-b)))))
+(ascribe-own-contract extended-with-top-finite-dim-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract extended-with-top-finite-dim-sys-original
+  (-> extended-with-top-finite-dim-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-extended-with-top-finite-dim-sys
   unguarded-extended-with-top-finite-dim-sys
@@ -1046,6 +1079,10 @@
       (fn ms d
         (dissect d (extended-with-top-dim-finite d)
           d)))))
+(ascribe-own-contract unextend-with-top-dim-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract unextend-with-top-dim-sys-morphism-sys-target
+  (-> unextend-with-top-dim-sys-morphism-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-unextend-with-top-dim-sys-morphism-sys
   unguarded-unextend-with-top-dim-sys-morphism-sys
@@ -1094,6 +1131,10 @@
           (dim-successors-sys-dim-plus-int orig-dss orig-d n)
         #/fn result
           (extended-with-top-dim-finite result))))))
+(ascribe-own-contract extended-with-top-dim-successors-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract extended-with-top-dim-successors-sys-original
+  (-> extended-with-top-dim-successors-sys? dim-successors-sys?))
 (define-match-expander-attenuated
   attenuated-extended-with-top-dim-successors-sys
   unguarded-extended-with-top-dim-successors-sys
@@ -1140,6 +1181,11 @@
   unguarded-fin-multiplied-dim 'fin-multiplied-dim (current-inspector)
   (auto-write)
   (auto-equal))
+(ascribe-own-contract fin-multiplied-dim? (-> any/c boolean?))
+(ascribe-own-contract fin-multiplied-dim-index
+  (-> fin-multiplied-dim? natural?))
+(ascribe-own-contract fin-multiplied-dim-original
+  (-> fin-multiplied-dim? any/c))
 (define-match-expander-attenuated
   attenuated-fin-multiplied-dim
   unguarded-fin-multiplied-dim
@@ -1151,7 +1197,8 @@
   unguarded-fin-multiplied-dim
   attenuated-fin-multiplied-dim
   attenuated-fin-multiplied-dim)
-(define (fin-multiplied-dim/c bound original-dim/c)
+(define/own-contract (fin-multiplied-dim/c bound original-dim/c)
+  (-> exact-positive-integer? contract? contract?)
   (w- original-dim/c
     (coerce-contract 'fin-multiplied-dim/c original-dim/c)
   #/rename-contract
@@ -1159,7 +1206,8 @@
       (and/c natural? #/</c bound)
       original-dim/c)
     `(fin-multiplied-dim/c ,bound ,(contract-name original-dim/c))))
-(define (fin-multiplied-dim=? original-dim=? a b)
+(define/own-contract (fin-multiplied-dim=? original-dim=? a b)
+  (-> (-> any/c any/c boolean?) any/c any/c boolean?)
   (dissect a (fin-multiplied-dim a-i a-orig)
   #/dissect b (fin-multiplied-dim b-i b-orig)
   
@@ -1204,6 +1252,11 @@
       #/expect (dim-sys-dim=? orig-ds max-orig b-orig) #t
         a
       #/fin-multiplied-dim (max a-i b-i) max-orig))))
+(ascribe-own-contract fin-multiplied-dim-sys? (-> any/c boolean?))
+(ascribe-own-contract fin-multiplied-dim-sys-bound
+  (-> fin-multiplied-dim-sys? exact-positive-integer?))
+(ascribe-own-contract fin-multiplied-dim-sys-original
+  (-> fin-multiplied-dim-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-fin-multiplied-dim-sys
   unguarded-fin-multiplied-dim-sys
@@ -1296,6 +1349,12 @@
         #/dissect d (fin-multiplied-dim i d)
         #/fin-multiplied-dim i
           (dim-sys-morphism-sys-morph-dim orig d))))))
+(ascribe-own-contract fin-multiplied-dim-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract fin-multiplied-dim-sys-morphism-sys-bound
+  (-> fin-multiplied-dim-sys-morphism-sys? exact-positive-integer?))
+(ascribe-own-contract fin-multiplied-dim-sys-morphism-sys-original
+  (-> fin-multiplied-dim-sys-morphism-sys? dim-sys-morphism-sys?))
 (define-match-expander-attenuated
   attenuated-fin-multiplied-dim-sys-morphism-sys
   unguarded-fin-multiplied-dim-sys-morphism-sys
@@ -1328,6 +1387,11 @@
       (fn es ms
         (dissect es (fin-multiplied-dim-sys-endofunctor-sys bound)
         #/fin-multiplied-dim-sys bound ms)))))
+(ascribe-own-contract fin-multiplied-dim-sys-endofunctor-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract fin-multiplied-dim-sys-endofunctor-sys-bound
+  (-> fin-multiplied-dim-sys-endofunctor-sys?
+    exact-positive-integer?))
 (define-match-expander-attenuated
   attenuated-fin-multiplied-dim-sys-endofunctor-sys
   unguarded-fin-multiplied-dim-sys-endofunctor-sys
@@ -1391,6 +1455,18 @@
       (fn ms d
         (dissect ms (fin-times-dim-sys-morphism-sys bound source d->i)
         #/fin-multiplied-dim (d->i d) d)))))
+(ascribe-own-contract fin-times-dim-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract fin-times-dim-sys-morphism-sys-bound
+  (-> fin-times-dim-sys-morphism-sys? exact-positive-integer?))
+(ascribe-own-contract fin-times-dim-sys-morphism-sys-source
+  (-> fin-times-dim-sys-morphism-sys? dim-sys?))
+(ascribe-own-contract fin-times-dim-sys-morphism-sys-dim-to-index
+  (->i ([ms fin-times-dim-sys-morphism-sys?])
+    [_ (ms)
+      (-> (dim-sys-dim/c #/fin-times-dim-sys-morphism-sys-source ms)
+        (and/c natural?
+          (</c #/fin-times-dim-sys-morphism-sys-bound ms)))]))
 ; TODO: We have a dilemma. The `define/contract` version of
 ; `attenuated-fin-times-dim-sys-morphism-sys` will give less precise
 ; source location information in its errors, and it won't catch
@@ -1480,6 +1556,12 @@
       (fn ms d
         (dissect d (fin-multiplied-dim i d)
           d)))))
+(ascribe-own-contract fin-untimes-dim-sys-morphism-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract fin-untimes-dim-sys-morphism-sys-bound
+  (-> fin-untimes-dim-sys-morphism-sys? exact-positive-integer?))
+(ascribe-own-contract fin-untimes-dim-sys-morphism-sys-target
+  (-> fin-untimes-dim-sys-morphism-sys? dim-sys?))
 (define-match-expander-attenuated
   attenuated-fin-untimes-dim-sys-morphism-sys
   unguarded-fin-untimes-dim-sys-morphism-sys
@@ -1533,6 +1615,12 @@
             orig-dss orig-d n-to-add-to-orig)
         #/fn orig-result
           (fin-multiplied-dim i orig-result))))))
+(ascribe-own-contract fin-multiplied-dim-successors-sys?
+  (-> any/c boolean?))
+(ascribe-own-contract fin-multiplied-dim-successors-sys-bound
+  (-> fin-multiplied-dim-successors-sys? exact-positive-integer?))
+(ascribe-own-contract fin-multiplied-dim-successors-sys-original
+  (-> fin-multiplied-dim-successors-sys? dim-successors-sys?))
 (define-match-expander-attenuated
   attenuated-fin-multiplied-dim-successors-sys
   unguarded-fin-multiplied-dim-successors-sys
