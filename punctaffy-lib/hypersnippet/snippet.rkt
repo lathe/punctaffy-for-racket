@@ -3061,7 +3061,7 @@
   (let ()
     (define/contract (hypertee-furl dim-sys coil)
       (->i ([ds dim-sys?] [coil (ds) (hypertee-coil/c ds)])
-        [_ (ds) (hypertee/c ds)])
+        [_ hypertee?])
       (unguarded-hypertee-furl-orig dim-sys coil))
     hypertee-furl))
 #;
@@ -4965,18 +4965,19 @@
       ; this result.
       ;
       #/dlog 'zc9.4
-      #/hypernest-furl ds #/attenuated-hypernest-coil-hole ds
-        current-d
-        (snippet-sys-snippet-map htss truncated-shape #/fn hole tail
-          (trivial))
-        (if was-labeled
-          data
-          (dlog 'zc9.8
-          #/snippet-sys-snippet-map-selective hnss
-            recursive-result-with-selections
-          #/fn hole data
-            (trivial)))
-        truncated-shape))
+      #/unguarded-hypernest-furl ds
+        (attenuated-hypernest-coil-hole ds
+          current-d
+          (snippet-sys-snippet-map htss truncated-shape #/fn hole tail
+            (trivial))
+          (if was-labeled
+            data
+            (dlog 'zc9.8
+            #/snippet-sys-snippet-map-selective hnss
+              recursive-result-with-selections
+            #/fn hole data
+              (trivial)))
+          truncated-shape)))
   #/mat bracket (hnb-open bump-degree data)
     (expect bumps-allowed #t
       (raise-arguments-error err-name
