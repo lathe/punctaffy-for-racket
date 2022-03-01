@@ -6,7 +6,7 @@
 ; but which use Punctaffy's hyperbrackets to manage their nesting and
 ; interoperation.
 
-;   Copyright 2018-2019, 2021 The Lathe Authors
+;   Copyright 2018-2019, 2021-2022 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -24,9 +24,7 @@
 (require #/for-syntax racket/base)
 
 (require #/for-syntax #/only-in racket/extflonum extflonum?)
-(require #/for-syntax #/only-in syntax/datum datum)
-(require #/for-syntax #/only-in syntax/parse
-  ~and id nat ~optional syntax-parse)
+(require #/for-syntax #/only-in syntax/parse syntax-parse)
 
 (require #/for-syntax #/only-in lathe-comforts
   dissect expect fn mat w-)
@@ -59,13 +57,24 @@
 (require #/for-syntax #/only-in
   punctaffy/private/experimental/macro/hypernest-macro
   hn-expr-forget-nests hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx
-  hn-tag-1-box hn-tag-1-list hn-tag-1-prefab hn-tag-1-vector
-  hn-tag-2-list* hn-tag-nest parse-list*-tag s-expr-stx->hn-expr)
+  hn-tag-1-box hn-tag-1-list hn-tag-1-prefab hn-tag-1-token-of-syntax
+  hn-tag-1-vector hn-tag-2-list* hn-tag-nest parse-list*-tag
+  s-expr-stx->hn-expr)
+(require #/for-syntax #/only-in punctaffy/private/util
+  datum->syntax-with-everything prefab-key-mutability)
+(require #/for-syntax #/only-in punctaffy/syntax-object/token-of-syntax
+  list->token-of-syntax syntax->token-of-syntax
+  token-of-syntax-autoquote token-of-syntax-beginning-with-list*
+  token-of-syntax-beginning-with-syntax
+  token-of-syntax->syntax-list)
 
 (require #/only-in racket/list append*)
 
-(require #/only-in lathe-comforts expect fn w-)
+(require #/only-in lathe-comforts dissect expect fn w-)
 (require #/only-in lathe-comforts/list list-each)
+
+(require #/only-in punctaffy/private/util
+  datum->syntax-with-everything)
 
 ; NOTE DEBUGGABILITY: These are here for debugging.
 (require #/for-syntax #/only-in racket/syntax syntax-local-eval)
@@ -142,18 +151,6 @@
 ; than reinventing their structural notations every time.
 
 
-(define-for-syntax (datum->syntax-with-everything stx-example datum)
-  (w- ctxt stx-example
-  #/w- srcloc stx-example
-  #/w- prop stx-example
-  #/datum->syntax ctxt datum srcloc prop))
-
-(define (datum->syntax-with-everything stx-example datum)
-  (w- ctxt stx-example
-  #/w- srcloc stx-example
-  #/w- prop stx-example
-  #/datum->syntax ctxt datum srcloc prop))
-
 (define-for-syntax (hn-bracs-n-d ds n-d degree . brackets)
   (w- n-d (fn d #/dim-sys-morphism-sys-morph-dim n-d d)
   #/hypernest-from-brackets ds (n-d degree)
@@ -189,7 +186,7 @@
       (and (string? a) (immutable? a))
       
       ; NOTE: We check elsewhere that the atom isn't an identifier
-      ; with a `hyperbracket-notation?` transformer binding.
+      ; with a `taffy-notation?` transformer binding.
       (symbol? a))
     atom-stx
   #/if (string? a)
@@ -197,23 +194,6 @@
       (string->immutable-string a))
     (raise-syntax-error #f "value not of a recognized quasiquotable type"
       err-dsl-stx atom-stx)))
-
-(define-for-syntax (prefab-key-mutability k)
-  (syntax-parse k
-    [_:id 'known-to-be-immutable]
-    [
-      (
-        _:id
-        (~optional _:nat)
-        (~optional (_:nat _))
-        (~optional (~and v #(_:nat ...)) #:defaults ([(v 0) #()]))
-        . parent-key)
-      (if (= 0 (vector-length (datum v)))
-        (syntax-parse (datum parent-key)
-          [() 'known-to-be-immutable]
-          [_ (prefab-key-mutability (datum parent-key))])
-        'known-to-be-mutable)]
-    [_ 'not-known]))
 
 (define (splice-gen-helper-run-time . args)
   (begin
@@ -389,7 +369,19 @@
     #/dissect mutability 'known-to-be-immutable
     #/process-listlike stx-example
       (list #'make-prefab-struct #`'#,key))
-  
+  #/mat data (hn-tag-1-token-of-syntax token)
+    (w- token
+      (token-of-syntax-beginning-with-syntax #'()
+        (token-of-syntax-beginning-with-list*
+          (list->token-of-syntax #/list
+            (syntax->token-of-syntax #'singleton-gen-helper)
+            (token-of-syntax-autoquote quote-expr datum->result-id
+              token))
+          (syntax->token-of-syntax '())))
+    #/process-listlike #'() #/list
+      #`(lambda contents
+          #,@(token-of-syntax->syntax-list token
+               (hash 'contents (list #'contents)))))
   #/mat (parse-list*-tag bump-degree data tails)
     (just #/list stx-example list*-elems list*-tail tail)
     (snippet-sys-snippet-join ss

@@ -4,7 +4,7 @@
 @;
 @; Various hyperbracketed operations.
 
-@;   Copyright 2021 The Lathe Authors
+@;   Copyright 2021, 2022 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -88,7 +88,8 @@ For instance, @racket[list-taffy-map] can accommodate nested occurrences of @rac
       
       @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent.}
       
-      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
+      @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Figure out if this supports quoting identifiers that have transformer bindings that implement `prop:taffy-notation-akin-to-^<>d`, and if so, consider documenting that fact.
+      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:taffy-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. (After all, symbols exist to be used in Racket code, so even the ones that can't be found in @emph{textual} Racket code can be found in some other kind.)}
     ]
     
     Notable exclusions:
@@ -143,11 +144,8 @@ For instance, @racket[list-taffy-map] can accommodate nested occurrences of @rac
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
-  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
-  
-  Out of the hyperbracket notations this operation does support, not all of them will necessarily be preserved in the quoted output; some may be replaced with other, equivalent hyperbracket notations. In general, this operation will strive to preserve the notations that were actually used at the call site. Where it fails to do that, it will use notations exported by the @racket[punctaffy] module (e.g. the @racket[^<d] and @racket[^>d] notations).
-  
-  At the moment, there is no particular notation that this operation is committed to preserving, so users should not rely on specific outputs. Users should only use this operation to generate code for informal visualization purposes, code that will be evaluated with the entire @racket[punctaffy] module in scope, and code that they're ready to process using a parser that understands all the hyperbracket notations currently exported by the @racket[punctaffy] module.
+  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document `prop:taffy-notation-akin-to-^<>d`.
+  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:taffy-notation-akin-to-^<>d]. Other @racket[prop:taffy-notation] notations are not yet supported but may be supported in the future.
   
   For examples of using @tt{taffy-quote}, see @secref["intro"].
   
@@ -225,7 +223,8 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     @itemlist[
       @item{This operation accommodates subforms represented by @racket[string?], @racket[boolean?], @racket[flvector?], @racket[fxvector?], @racket[char?], @racket[bytes?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are representations with reader syntaxes, so they fit the description exactly.}
       
-      @item{This operation accommodates subforms represented by @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:hyperbracket-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. Symbols exist to be used in Racket code, so they do all appear there, even if they don't all appear in @emph{textual} Racket code.}
+      @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Figure out if this accommodates subforms represented by `symbol?` values that have transformer bindings that implement `prop:taffy-notation-akin-to-^<>d`, and if so, consider documenting that fact.
+      @item{This operation accommodates subforms represented by @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:taffy-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. (After all, symbols exist to be used in Racket code, so even the ones that can't be found in @emph{textual} Racket code can be found in some other kind.)}
     ]
     
     Notable exclusions:
@@ -288,9 +287,8 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
-  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:hyperbracket-notation-prefix-expander]. Other @racket[prop:hyperbracket-notation] notations are not yet supported but may be supported in the future.
-  
-  Out of the hyperbracket notations this operation does support, not all of them will necessarily be preserved as-is; some may be replaced with other, equivalent hyperbracket notations, which may be detectable using @racket[quote]. In general, this operation will strive to preserve the notations that were actually used at the call site. Where it fails to do that, it will use notations exported by the @racket[punctaffy] module (e.g. the @racket[^<d] and @racket[^>d] notations).
+  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document `prop:taffy-notation-akin-to-^<>d`.
+  This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:taffy-notation-akin-to-^<>d]. Other @racket[prop:taffy-notation] notations are not yet supported but may be supported in the future.
   
   @examples[
     #:eval (example-eval)

@@ -5,7 +5,7 @@
 @; Infrastructure for defining hyperbracket notations, for denoting
 @; hypersnippet-shaped lexical regions.
 
-@;   Copyright 2021 The Lathe Authors
+@;   Copyright 2021, 2022 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@
 @(shim-require-various-for-label)
 
 
-@title[#:tag "hyperbracket-notation"]{Defining Hyperbracket Notations for Racket}
+@title[#:tag "taffy-notation"]{Defining Hyperbracket Notations for Racket}
 
-@defmodule[punctaffy/hyperbracket]
+@defmodule[punctaffy/taffy-notation]
 
 In order to use higher-dimensional @tech{hypernests} for syntax in Racket, we supply some new notations that augment Racket's low-dimensional lexical structure. We do this not by replacing Racket's existing reader and macro system, but by letting each Racket macro that cares about higher-dimensional structure do its own parsing of that structure when it needs to. Before this parsing occurs, we represent the structure in Racket syntax in the form of what we call @deftech{hyperbrackets}.
 
@@ -45,11 +45,11 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
 
 
 @deftogether[(
-  @defproc[(hyperbracket-notation? [v any/c]) boolean?]
-  @defproc[(hyperbracket-notation-impl? [v any/c]) boolean?]
+  @defproc[(taffy-notation? [v any/c]) boolean?]
+  @defproc[(taffy-notation-impl? [v any/c]) boolean?]
   @defthing[
-    prop:hyperbracket-notation
-    (struct-type-property/c hyperbracket-notation-impl?)
+    prop:taffy-notation
+    (struct-type-property/c taffy-notation-impl?)
   ]
 )]{
   Structure type property operations for @tech{hyperbracket} notation keywords. Every macro that needs to be recognized as part of the hyperbracket notation by a hyperbracket parser should implement this property. That way, non-hyperbracket identifiers can be recognized as such, thus allowing hyperbrackets to coexist with existing Racket notations without the risk of making the user's intent ambiguous.
@@ -58,91 +58,101 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
 }
 
 @defproc[
-  (make-hyperbracket-notation-impl)
-  hyperbracket-notation-impl?
+  (make-taffy-notation-impl)
+  taffy-notation-impl?
 ]{
-  Returns something a struct can use to implement the @racket[prop:hyperbracket-notation] interface.
+  Returns something a struct can use to implement the @racket[prop:taffy-notation] interface.
 }
 
 @deftogether[(
-  @defproc[(hyperbracket-notation-prefix-expander? [v any/c]) boolean?]
-  @defproc[
-    (hyperbracket-notation-prefix-expander-impl? [v any/c])
-    boolean?
-  ]
+  @defproc[(taffy-notation-akin-to-^<>d? [v any/c]) boolean?]
+  @defproc[(taffy-notation-akin-to-^<>d-impl? [v any/c]) boolean?]
   @defthing[
-    prop:hyperbracket-notation-prefix-expander
-    (struct-type-property/c
-      hyperbracket-notation-prefix-expander-impl?)
+    prop:taffy-notation-akin-to-^<>d
+    (struct-type-property/c taffy-notation-akin-to-^<>d-impl?)
   ]
 )]{
-  Structure type property operations for @tech{hyperbracket} keywords that can desugar to more basic hyperbracket notation when invoked in prefix position.
+  Structure type property operations for @tech{hyperbracket} keywords that behave similarly to @racket[^<d], @racket[^>d], @racket[^<], or @racket[^>] when invoked in prefix position.
   
-  A structure type that implements this property should generally also implement @racket[prop:hyperbracket-notation] to signify the fact that it's a hyperbracket notation,
+  A structure type that implements this property should generally also implement @racket[prop:taffy-notation] to signify the fact that it's a hyperbracket notation.
   
   A structure type that implements this property should generally also implement @racket[prop:procedure] to display an informative error message when the notation is used in a position where a Racket expression is expected.
 }
 
 @defproc[
-  (hyperbracket-notation-prefix-expander-expand
-    [expander hyperbracket-notation-prefix-expander?]
+  (taffy-notation-akin-to-^<>d-parse
+    [op taffy-notation-akin-to-^<>d?]
     [stx syntax?])
-  syntax?
+  (and/c hash? immutable? hash-equal?
+    (hash/dc
+      [ k
+        (or/c 'context 'direction 'degree 'contents 'token-of-syntax)]
+      [ _ (k)
+        (match k
+          ['context syntax?]
+          ['direction (or/c '< '>)]
+          ['degree syntax?]
+          ['contents (listof syntax?)]
+          [ 'token-of-syntax
+            (token-of-syntax-with-free-vars<=/c
+              (set 'context 'degree 'contents))])]))
 ]{
-  Uses the given @racket[hyperbracket-notation-prefix-expander?] to expand the given syntax term. The term should be a syntax list which begins with an identifier that's bound to the given expander.
+  Uses the given @racket[taffy-notation-akin-to-^<>d?] instance to parse the given syntax term. The term should be a syntax list which begins with an identifier that's bound to the given notation.
+  
+  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Describe the pieces of the result.
+  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document `token-of-syntax-with-free-vars<=/c`.
 }
 
 @defproc[
-  (make-hyperbracket-notation-prefix-expander-impl
-    [expand
-      (-> hyperbracket-notation-prefix-expander-impl? syntax?
-        syntax?)])
-  hyperbracket-notation-prefix-expander-impl?
+  (make-taffy-notation-akin-to-^<>d-impl
+    [parse
+      (-> syntax?
+        (and/c hash? immutable? hash-equal?
+          (hash/dc
+            [ k
+              (or/c
+                'context
+                'direction
+                'degree
+                'contents
+                'token-of-syntax)]
+            [ _ (k)
+              (match k
+                ['context syntax?]
+                ['direction (or/c '< '>)]
+                ['degree syntax?]
+                ['contents (listof syntax?)]
+                [ 'token-of-syntax
+                  (token-of-syntax-with-free-vars<=/c
+                    (set 'context 'degree 'contents))])])))])
+  taffy-notation-akin-to-^<>d-impl?
 ]{
-  Given an implementation for @racket[hyperbracket-notation-prefix-expander-expand], returns something a struct can use to implement the @racket[prop:hyperbracket-notation-prefix-expander] interface.
+  Given an implementation for @racket[taffy-notation-akin-to-^<>d-parse], returns something a struct can use to implement the @racket[prop:taffy-notation-akin-to-^<>d] interface.
 }
 
 @defproc[
-  (makeshift-hyperbracket-notation-prefix-expander
-    [expand (-> syntax? syntax?)])
-  (and/c
-    procedure?
-    hyperbracket-notation?
-    hyperbracket-notation-prefix-expander?)
+  (makeshift-taffy-notation-akin-to-^<>d
+    [parse
+      (-> syntax?
+        (and/c hash? immutable? hash-equal?
+          (hash/dc
+            [ k
+              (or/c
+                'context
+                'direction
+                'degree
+                'contents
+                'token-of-syntax)]
+            [ _ (k)
+              (match k
+                ['context syntax?]
+                ['direction (or/c '< '>)]
+                ['degree syntax?]
+                ['contents (listof syntax?)]
+                [ 'token-of-syntax
+                  (token-of-syntax-with-free-vars<=/c
+                    (set 'context 'degree 'contents))])])))])
+  (and/c procedure? taffy-notation? taffy-notation-akin-to-^<>d?)
 ]{
-  Given an implementation for @racket[hyperbracket-notation-prefix-expander-expand], returns a macro implementation value that can be used with @racket[define-syntax] to define a prefix @tech{hyperbracket} notation. DSLs that parse hyperbrackets will typically parse this notation by first transforming it according to the given expander procedure and then attempting to parse the result.
-}
-
-@deftogether[(
-  @defidform[hyperbracket-open-with-degree]
-  @defform[#:link-target? #f (hyperbracket-open-with-degree)]
-  @defform[
-    #:kind "match expander"
-    #:link-target? #f
-    (hyperbracket-open-with-degree)
-  ]
-  @defproc[(hyperbracket-open-with-degree? [v any/c]) boolean?]
-)]{
-  Struct-like operations which construct and deconstruct the @racket[hyperbracket-notation?] syntax implementation corresponding to @racket[^<d]. This notation represents an opening @tech{hyperbracket} with a specified nonzero @tech{degree}.
-  
-  This structure type implements @racket[prop:procedure] for one argument so that it can behave like a syntax transformer, but invoking that behavior results in a syntax error. In the future, this error may be replaced with a more @racket[#%app]-like behavior.
-  
-  Every two @tt{hyperbracket-open-with-degree} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
-}
-
-@deftogether[(
-  @defidform[hyperbracket-close-with-degree]
-  @defform[#:link-target? #f (hyperbracket-close-with-degree)]
-  @defform[
-    #:kind "match expander"
-    #:link-target? #f
-    (hyperbracket-close-with-degree)
-  ]
-  @defproc[(hyperbracket-close-with-degree? [v any/c]) boolean?]
-)]{
-  Struct-like operations which construct and deconstruct the @racket[hyperbracket-notation?] syntax implementation corresponding to @racket[^>d]. This notation represents a closing @tech{hyperbracket} with a specified nonzero @tech{degree}.
-  
-  This structure type implements @racket[prop:procedure] for one argument so that it can behave like a syntax transformer, but invoking that behavior results in a syntax error.
-  
-  Every two @tt{hyperbracket-close-with-degree} values are @racket[equal?]. One such value is always an @racket[ok/c] match for another.
+  Given an implementation for @racket[taffy-notation-akin-to-^<>d-parse], returns a macro implementation value that can be used with @racket[define-syntax] to define a prefix @tech{hyperbracket} notation similar to @racket[^<d], @racket[^>d], @racket[^<], or @racket[^>].
 }

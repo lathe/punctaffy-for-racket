@@ -53,6 +53,7 @@
   -> ->i and/c any/c flat-contract? list/c listof none/c or/c
   rename-contract)
 (require #/only-in racket/math natural?)
+(require #/only-in racket/set set)
 (require #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
@@ -72,11 +73,6 @@
 (require punctaffy/private/shim)
 (init-shim)
 
-(require #/only-in punctaffy/hyperbracket
-  hyperbracket-close-with-degree hyperbracket-notation?
-  hyperbracket-notation-prefix-expander?
-  hyperbracket-notation-prefix-expander-expand
-  hyperbracket-open-with-degree)
 (require #/only-in punctaffy/hypersnippet/dim
   dim-sys? dim-sys-dim<? dim-sys-dim<=? dim-sys-dim=? dim-sys-dim=0?
   dim-sys-dim/c dim-sys-dim-max dim-sys-morphism-sys-morph-dim
@@ -103,6 +99,14 @@
   snippet-sys-snippet-set-degree-maybe snippet-sys-snippet-undone
   snippet-sys-snippet-with-degree=/c snippet-sys-snippet-zip-map
   unselected)
+(require #/only-in punctaffy/private/util
+  datum->syntax-with-everything)
+(require #/only-in punctaffy/syntax-object/token-of-syntax
+  syntax->token-of-syntax token-of-syntax-substitute
+  token-of-syntax->syntax-list token-of-syntax-with-free-vars<=/c)
+(require #/only-in punctaffy/taffy-notation
+  taffy-notation? taffy-notation-akin-to-^<>d?
+  taffy-notation-akin-to-^<>d-parse)
 
 (provide
   hn-tag-0-s-expr-stx)
@@ -130,6 +134,11 @@
   hn-tag-1-prefab?
   hn-tag-1-prefab-key
   hn-tag-1-prefab-stx-example)
+(provide
+  hn-tag-1-token-of-syntax)
+(provide #/own-contract-out
+  hn-tag-1-token-of-syntax?
+  hn-tag-1-token-of-syntax-token)
 (provide
   hn-tag-2-list*)
 (provide #/own-contract-out
@@ -291,12 +300,6 @@
 (define (maybe-or a get-b)
   (mat a (just a) (just a)
   #/get-b))
-
-(define (datum->syntax-with-everything stx-example datum)
-  (w- ctxt stx-example
-  #/w- srcloc stx-example
-  #/w- prop stx-example
-  #/datum->syntax ctxt datum srcloc prop))
 
 (define/own-contract (syntax-local-maybe identifier)
   (-> any/c maybe?)
@@ -474,6 +477,26 @@
   unguarded-hn-tag-1-prefab
   attenuated-hn-tag-1-prefab
   attenuated-hn-tag-1-prefab)
+(define-imitation-simple-struct
+  (hn-tag-1-token-of-syntax? hn-tag-1-token-of-syntax-token)
+  unguarded-hn-tag-1-token-of-syntax
+  'hn-tag-1-token-of-syntax (current-inspector)
+  (auto-write)
+  (auto-equal))
+(ascribe-own-contract hn-tag-1-token-of-syntax? (-> any/c boolean?))
+(ascribe-own-contract hn-tag-1-token-of-syntax-token
+  (-> hn-tag-1-token-of-syntax?
+    (token-of-syntax-with-free-vars<=/c #/set 'contents)))
+(define-match-expander-attenuated
+  attenuated-hn-tag-1-token-of-syntax
+  unguarded-hn-tag-1-token-of-syntax
+  [token (token-of-syntax-with-free-vars<=/c #/set 'contents)]
+  #t)
+(define-match-expander-from-match-and-make
+  hn-tag-1-token-of-syntax
+  unguarded-hn-tag-1-token-of-syntax
+  attenuated-hn-tag-1-token-of-syntax
+  attenuated-hn-tag-1-token-of-syntax)
 (define-imitation-simple-struct
   (hn-tag-2-list*? hn-tag-2-list*-stx-example)
   unguarded-hn-tag-2-list*
@@ -681,7 +704,8 @@
               hn-tag-1-box?
               hn-tag-1-list?
               hn-tag-1-vector?
-              hn-tag-1-prefab?)
+              hn-tag-1-prefab?
+              hn-tag-1-token-of-syntax?)
           #/if
             (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 2)
               d)
@@ -1016,8 +1040,8 @@
     (expect (dim-sys-dim=0? ds bump-degree) #t
       (error "Encountered an hn-tag-0-s-expr-stx bump with a degree other than 0")
     #/cons stx #/hn-expr->s-expr-stx-list tails)
-  #/w- process-listlike
-    (fn stx-example list->whatever
+  #/w- process-splicing-stx-listlike
+    (fn list->syntax-list
       (expect
         (dim-sys-dim=? ds (dim-sys-morphism-sys-morph-dim n-d 1)
           bump-degree)
@@ -1030,10 +1054,14 @@
         #/fn hole tail
           (trivial))
       #/dissect (hypernest-get-hole-zero-maybe tails) (just tail)
-      #/cons
-        (datum->syntax-with-everything stx-example
-          (list->whatever #/hn-expr->s-expr-stx-list elems))
+      #/append
+        (list->syntax-list #/hn-expr->s-expr-stx-list elems)
         (hn-expr->s-expr-stx-list tail)))
+  #/w- process-listlike
+    (fn stx-example list->whatever
+      (process-splicing-stx-listlike #/fn lst
+        (list #/datum->syntax-with-everything stx-example
+          (list->whatever lst))))
   #/mat data (hn-tag-1-box stx-example)
     (process-listlike stx-example #/fn lst
       (expect lst (list elem)
@@ -1047,6 +1075,10 @@
   #/mat data (hn-tag-1-prefab key stx-example)
     (process-listlike stx-example #/fn lst
       (apply make-prefab-struct key lst))
+  #/mat data (hn-tag-1-token-of-syntax token-of-syntax)
+    (process-splicing-stx-listlike #/fn lst
+      (token-of-syntax->syntax-list token-of-syntax
+        (hash 'contents lst)))
   #/mat (parse-list*-tag bump-degree data tails)
     (just #/list stx-example list*-elems list*-tail tail)
     (w- list*-elems (hn-expr->s-expr-stx-list list*-elems)
@@ -1182,7 +1214,7 @@
         #/next tail target-d
           (dim-sys-dim-max ds first-d-to-process d))))))
 
-(define (helper-for-^<d-and-^>d err-dsl-stx stx bump-value)
+(define (^<>d-expand op err-dsl-stx stx)
   (dlog 'hqq-f2
   #/w- ds en-ds
   #/w- ss (hypernest-snippet-sys (hypertee-snippet-format-sys) ds)
@@ -1190,7 +1222,7 @@
   #/w- n-d en-n-d
   #/dlog 'hqq-f3
   #/syntax-parse stx
-    [op:id
+    [_:id
       ; If this syntax transformer is used in an identifier position,
       ; we just expand as though the identifier isn't bound to a
       ; syntax transformer at all.
@@ -1199,15 +1231,22 @@
       ;
       (hn-bracs-n-d ds n-d 1 (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
       #/hnb-labeled 0 #/trivial)]
-  #/ (op:id degree-stx:exact-positive-integer interpolation ...)
+  #/ (_:id . _)
+  #/dissect (taffy-notation-akin-to-^<>d-parse op stx)
+    (hash-table
+      ['context _]
+      ['direction direction]
+      ['degree degree-stx]
+      ['contents contents]
+      ['token-of-syntax token-of-syntax])
   #/w- degree
-    (dim-sys-morphism-sys-morph-dim n-d #/syntax-e #'degree-stx)
+    (dim-sys-morphism-sys-morph-dim n-d #/syntax-e degree-stx)
   #/dlog 'hqq-f4
   #/w- interior-and-closing-brackets
     (verify-hn #/unmatched-brackets->holes degree
     #/hypernest-join-0 ds n-d 1
-    #/list-map (syntax->list #'(interpolation ...)) #/fn interpolation
-      (verify-hn #/s-expr-stx->hn-expr err-dsl-stx interpolation))
+    #/list-map contents #/fn item
+      (verify-hn #/s-expr-stx->hn-expr err-dsl-stx item))
   #/dlog 'hqq-f5
   #/w- closing-brackets
     (hypernest-shape ss interior-and-closing-brackets)
@@ -1216,7 +1255,8 @@
   #/dlog 'hqq-f7
   #/hypernest-coil-bump
     (dim-sys-morphism-sys-morph-dim n-d 1)
-    bump-value
+    (mat direction '< (hn-tag-nest)
+      (dissect direction '> (hn-tag-unmatched-closing-bracket)))
     (extended-with-top-dim-infinite)
     ; This is the syntax for the bracket itself, everything in the
     ; interior of the bump this bracket represents (noted at
@@ -1225,11 +1265,9 @@
     (dlog 'hqq-f8
     #/snippet-sys-snippet-join-selective ss
     #/hn-bracs-n-d* ds n-d (extended-with-top-dim-infinite)
-      (hnb-open 1
-        (hn-tag-1-list #/datum->syntax-with-everything stx #/list))
-      
-      (hnb-open 0 #/hn-tag-0-s-expr-stx #'op)
-      (hnb-open 0 #/hn-tag-0-s-expr-stx #'degree-stx)
+      (hnb-open 1 #/hn-tag-1-token-of-syntax
+        (token-of-syntax-substitute token-of-syntax
+          (hash 'degree (syntax->token-of-syntax degree-stx))))
       
       (hnb-labeled 1
       #/selected
@@ -1261,28 +1299,15 @@
       (hnb-labeled 0 #/unselected
         (hn-bracs-n-d ds n-d 1 #/hnb-labeled 0 #/trivial)))))
 
-(define (^<d-expand err-dsl-stx stx)
-  (dlog 'hqq-f1
-  #/helper-for-^<d-and-^>d err-dsl-stx stx
-    (hn-tag-nest)))
-
-(define (^>d-expand err-dsl-stx stx)
-  (helper-for-^<d-and-^>d err-dsl-stx stx
-    (hn-tag-unmatched-closing-bracket)))
-
 
 (define (hn-builder-syntax-maybe v)
   (if (dedicated-hn-builder-syntax? v)
     (just #/fn err-dsl-stx stx
       (dedicated-hn-builder-syntax-expand v err-dsl-stx stx))
-  #/mat v (hyperbracket-open-with-degree)
-    (just ^<d-expand)
-  #/mat v (hyperbracket-close-with-degree)
-    (just ^>d-expand)
-  #/if (hyperbracket-notation-prefix-expander? v)
+  #/if (taffy-notation-akin-to-^<>d? v)
     (just #/fn err-dsl-stx stx
-      (s-expr-stx->hn-expr err-dsl-stx
-        (hyperbracket-notation-prefix-expander-expand v stx)))
+      (dlog 'hqq-f1
+      #/^<>d-expand v err-dsl-stx stx))
     (nothing)))
 
 ; TODO: See if we'll use this.
@@ -1296,7 +1321,8 @@
 
 (define (possibly-erroneous-hn-builder-syntax-maybe op-stx v)
   (maybe-or (hn-builder-syntax-maybe v) #/fn
-  #/maybe-if (hyperbracket-notation? v) #/fn
+  #/maybe-if (taffy-notation? v) #/fn
     (fn err-dsl-stx stx
-      (raise-syntax-error #f "not a hyperbracket notation recognized by this DSL"
+      (raise-syntax-error #f
+        "not a Punctaffy notation recognized by this DSL"
         err-dsl-stx op-stx))))

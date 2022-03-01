@@ -90,7 +90,7 @@
         #,(break 'punctaffy/hypersnippet/hypernest)
         #,(break 'punctaffy/hypersnippet/hypertee)
         #,(break 'punctaffy/hypersnippet/snippet)
-        #,(break 'punctaffy/hyperbracket)
+        #,(break 'punctaffy/taffy-notation)
         #,(break 'punctaffy/quote)
         #,(break 'punctaffy/let)
         
