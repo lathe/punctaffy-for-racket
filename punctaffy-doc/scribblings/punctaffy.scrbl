@@ -5,7 +5,7 @@
 @; A library implementing and exploring hypersnippets, a
 @; higher-dimensional generalization of syntax with holes.
 
-@;   Copyright 2021 The Lathe Authors
+@;   Copyright 2021, 2022 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ For practical use, Punctaffy's main drawback is the amount of time it takes to c
 @include-section["punctaffy/intro.scrbl"]
 @include-section["punctaffy/motivation.scrbl"]
 @include-section["punctaffy/hypersnippet.scrbl"]
+@include-section["punctaffy/token-of-syntax.scrbl"]
 @include-section["punctaffy/defining-hyperbracket.scrbl"]
 @include-section["punctaffy/baseline-hyperbracket.scrbl"]
 @include-section["punctaffy/hyperbracketed-util.scrbl"]

@@ -46,8 +46,8 @@
           combine-url/relative string->url url->string)
         (only-in #,(break 'racket/contract) struct-type-property/c)
         (only-in #,(break 'racket/contract/base)
-          -> </c and/c any/c contract? flat-contract? ->i list/c
-          listof not/c or/c)
+          -> </c and/c any/c cons/c contract? flat-contract? hash/c
+          hash/dc ->i list/c listof non-empty-listof not/c or/c)
         (only-in #,(break 'racket/extflonum) extflonum?)
         (only-in #,(break 'racket/flonum) flvector?)
         (only-in #,(break 'racket/fixnum) fxvector?)
@@ -55,9 +55,12 @@
         (only-in #,(break 'racket/match)
           match-define match match/derived match-let)
         (only-in #,(break 'racket/math) natural?)
+        (only-in #,(break 'racket/set) set set-equal?)
         (only-in #,(break 'syntax/datum) datum with-datum)
         (only-in #,(break 'syntax/parse)
           ~optional prop:pattern-expander ~seq syntax-parse)
+        (only-in #,(break 'syntax/parse/define)
+          define-syntax-parse-rule)
         (only-in #,(break 'syntax/parse/experimental/template)
           define-template-metafunction)
         
@@ -90,6 +93,7 @@
         #,(break 'punctaffy/hypersnippet/hypernest)
         #,(break 'punctaffy/hypersnippet/hypertee)
         #,(break 'punctaffy/hypersnippet/snippet)
+        #,(break 'punctaffy/syntax-object/token-of-syntax)
         #,(break 'punctaffy/taffy-notation)
         #,(break 'punctaffy/quote)
         #,(break 'punctaffy/let)

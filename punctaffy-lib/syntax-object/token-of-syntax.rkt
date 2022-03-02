@@ -60,7 +60,6 @@
 (require /for-template /only-in racket/list append*)
 
 
-; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document everything here.
 (provide /own-contract-out
   token-of-syntax?
   ; TODO: Figure out if we should export this one.

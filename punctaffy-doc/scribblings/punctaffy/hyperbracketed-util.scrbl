@@ -144,7 +144,6 @@ For instance, @racket[list-taffy-map] can accommodate nested occurrences of @rac
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document `prop:taffy-notation-akin-to-^<>d`.
   This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:taffy-notation-akin-to-^<>d]. Other @racket[prop:taffy-notation] notations are not yet supported but may be supported in the future.
   
   For examples of using @tt{taffy-quote}, see @secref["intro"].
@@ -287,7 +286,6 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   
   Graph structure in the input is not necessarily preserved. If the input contains a reference cycle, this operation will not necessarily finish expanding. This situation may be accommodated better in the future, either by making sure this graph structure is preserved or by producing a more informative error message.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document `prop:taffy-notation-akin-to-^<>d`.
   This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:taffy-notation-akin-to-^<>d]. Other @racket[prop:taffy-notation] notations are not yet supported but may be supported in the future.
   
   @examples[

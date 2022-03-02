@@ -44,8 +44,7 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   
   Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Uncomment this once we've documented the replacement, `taffy-notation-akin-to-^<>d?`.
-  @; This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
+  This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
   
   For the common case where @racket[degree] is 2, see the shorthand @racket[^<], which has examples in @secref["intro"]. For a rare example of hypothetical code where @racket[degree] would be 3, see @secref["potential-use-case-ellipsis-unsyntax"].
 }
@@ -55,8 +54,7 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   
   This notation is not an expression. Using it as an expression is a syntax error.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Uncomment this once we've documented the replacement, `taffy-notation-akin-to-^<>d?`.
-  @; This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
+  This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
   
   For the common case where @racket[degree] is 1, see the shorthand @racket[^>], which has examples in @secref["intro"]. For a rare example of hypothetical code where @racket[degree] would be 2, see @secref["potential-use-case-ellipsis-unsyntax"].
 }
@@ -70,8 +68,7 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   
   Using this notation as an expression is a syntax error. In the future, this error may be replaced with @racket[#%app]-like functionality.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Uncomment this once we've documented the replacement, `taffy-notation-akin-to-^<>d?`.
-  @; This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
+  This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
   
   For examples of how to use @racket[^<] and @racket[^>], see @secref["intro"].
 }
@@ -85,8 +82,7 @@ Whether a certain notation uses Punctaffy's hyperbrackets or not, if it has a st
   
   This notation is not an expression. Using it as an expression is a syntax error.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Uncomment this once we've documented the replacement, `taffy-notation-akin-to-^<>d?`.
-  @; This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
+  This notation is an instance of @racket[taffy-notation-akin-to-^<>d?] at compile time, so a hyperbracket parser which recognizes such syntaxes will be sufficient for parsing it.
   
   For examples of how to use @racket[^<] and @racket[^>], see @secref["intro"].
 }

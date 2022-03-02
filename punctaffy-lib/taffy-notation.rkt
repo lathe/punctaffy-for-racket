@@ -46,7 +46,6 @@
   prop:taffy-notation
   make-taffy-notation-impl
   
-  ; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document everything here.
   taffy-notation-akin-to-^<>d?
   taffy-notation-akin-to-^<>d-impl?
   taffy-notation-akin-to-^<>d-parse

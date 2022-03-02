@@ -85,10 +85,10 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
     [stx syntax?])
   (and/c hash? immutable? hash-equal?
     (hash/dc
-      [ k
+      [ _k
         (or/c 'context 'direction 'degree 'contents 'token-of-syntax)]
-      [ _ (k)
-        (match k
+      [ _ (_k)
+        (match _k
           ['context syntax?]
           ['direction (or/c '< '>)]
           ['degree syntax?]
@@ -100,7 +100,6 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
   Uses the given @racket[taffy-notation-akin-to-^<>d?] instance to parse the given syntax term. The term should be a syntax list which begins with an identifier that's bound to the given notation.
   
   @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Describe the pieces of the result.
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Document `token-of-syntax-with-free-vars<=/c`.
 }
 
 @defproc[
@@ -109,15 +108,15 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
       (-> syntax?
         (and/c hash? immutable? hash-equal?
           (hash/dc
-            [ k
+            [ _k
               (or/c
                 'context
                 'direction
                 'degree
                 'contents
                 'token-of-syntax)]
-            [ _ (k)
-              (match k
+            [ _ (_k)
+              (match _k
                 ['context syntax?]
                 ['direction (or/c '< '>)]
                 ['degree syntax?]
@@ -136,15 +135,15 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
       (-> syntax?
         (and/c hash? immutable? hash-equal?
           (hash/dc
-            [ k
+            [ _k
               (or/c
                 'context
                 'direction
                 'degree
                 'contents
                 'token-of-syntax)]
-            [ _ (k)
-              (match k
+            [ _ (_k)
+              (match _k
                 ['context syntax?]
                 ['direction (or/c '< '>)]
                 ['degree syntax?]
