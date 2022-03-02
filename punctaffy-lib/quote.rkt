@@ -374,7 +374,7 @@
       (token-of-syntax-beginning-with-syntax #'()
         (token-of-syntax-beginning-with-list*
           (list->token-of-syntax #/list
-            (syntax->token-of-syntax #'singleton-gen-helper)
+            (syntax->token-of-syntax #'append*)
             (token-of-syntax-autoquote quote-expr datum->result-id
               token))
           (syntax->token-of-syntax '())))
