@@ -104,7 +104,37 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
 ]{
   Uses the given @racket[taffy-notation-akin-to-^<>d?] instance to parse the given syntax term. The term should be a syntax list which begins with an identifier that's bound to the given notation.
   
-  @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Describe the pieces of the result.
+  The result is an @racket[equal?]-based hash that represents several components parsed from the term:
+  
+  @specform['lexical-context]{
+    An identifier that may refer to certain information Punctaffy needs to keep track of about the @tech{hyperbracket}-nesting depth that this @tech{hyperbracket} interacts with. Currently, this identifier is not actually used (TODO), but we intend to use this identifier's lexical information to prevent a macro call's macro-introduced uses of hyperstacks from interacting unintentionally with the macro caller's uses of hyperbrackets. A hyperbracket-nesting depth is more than a number and will likely be represented by a @tech{hyperstack}, possibly together with information about variables that are in scope at the various depths.
+    
+    Hyperbracket notations implementing this method may differ about how they determine the @racket['lexical-context] identifier, but when the user doesn't specify it explicitly in the hyperbracket's syntax, the usual default will be an identifier whose name is the symbol @racket['#%lexical-context] and whose lexical information matches that of @racket[stx].
+  }
+  
+  @specform['direction]{
+    A representation of whether this call site of this notation represents an opening hyperbracket or a closing hyperbracket. If it's an opening hyperbracket like @racket[^<d] or @racket[^<], this is the symbol @racket['<]. Otherwise, it's a closing hyperbracket like @racket[^>d] or @racket[^>], and this is the symbol @racket['>].
+  }
+  
+  @specform['degree]{
+    A syntax object containing a @racket[natural?] number, representing the @tech{degree} of the @tech{hyperbracket}. This corresponds to the degree the user would specify explicitly when using @racket[^<d] or @racket[^>d].
+  }
+  
+  @specform['contents]{
+    A list of syntax objects. This @tech{hyperbracket} usage site only takes up some outermost part of @racket[stx], and some unconsumed region of syntax remains beyond that, which is what this represents.
+    
+    If this use site is an opening hyperbracket, this remaining syntax begins inside it, but it may contain its own closing hyperbrackets that continue into syntax that's outside again. If this use site is a closing bracket, this remaining syntax begins outside it, but it may contain closing hyperbrackets that close this one and continue into syntax that's inside again. Calling it the "contents" is somewhat of a misnomer. (TODO: Rename @racket['contents] to use a term like "tail," "rest," "beyond," or "remainder" instead, ideally referring to its role as a piece of the given @racket[stx] rather than a piece of the hyperbracket we parsed out.)
+  }
+  
+  @specform['token-of-syntax]{
+    A @tech{token of syntax} value representing the concrete syntax of the @tech{hyperbracket} usage site itself, possibly separated from the specific values of @racket['lexical-context], @racket['degree], and @racket['contents] so that these can be replaced with new values.
+    
+    The token may have free variables named @racket['lexical-context], @racket['degree], and @racket['contents]. If the token is converted to a list of trees using @racket[token-of-syntax->syntax-list], it should result in a single tree that closely resembles @racket[stx], particularly if the free variables are substituted with the corresponding information that this method call parsed out.
+    
+    Specifically, since the substitution takes lists of syntax as input, the @racket['lexical-context] and @racket['degree] parts of the parsed hash need to be wrapped in singleton lists to perform the substitution that most faithfully reproduces @racket[stx]. The @racket['contents] part of the parsed hash is already a list and can be substituted in without wrapping it.
+    
+    The reason this @racket['token-of-syntax] entry exists in the parse result is to support usage scenarios that involve parsing a program, transforming parts of it, and reconstructing it with the new parts. For instance, @racket[taffy-quote] uses this so that it can process interpolated expressions without disrupting the syntax of hyperbrackets that appear in the quoted region of code.
+  }
 }
 
 @defproc[
