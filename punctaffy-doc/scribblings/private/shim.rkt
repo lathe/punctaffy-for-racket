@@ -47,7 +47,8 @@
         (only-in #,(break 'racket/contract) struct-type-property/c)
         (only-in #,(break 'racket/contract/base)
           -> </c and/c any/c cons/c contract? flat-contract? hash/c
-          hash/dc ->i list/c listof non-empty-listof not/c or/c)
+          hash/dc ->i list/c listof non-empty-listof not/c or/c
+          syntax/c)
         (only-in #,(break 'racket/extflonum) extflonum?)
         (only-in #,(break 'racket/flonum) flvector?)
         (only-in #,(break 'racket/fixnum) fxvector?)

@@ -86,16 +86,21 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
   (and/c hash? immutable? hash-equal?
     (hash/dc
       [ _k
-        (or/c 'context 'direction 'degree 'contents 'token-of-syntax)]
+        (or/c
+          'lexical-context
+          'direction
+          'degree
+          'contents
+          'token-of-syntax)]
       [ _ (_k)
         (match _k
-          ['context syntax?]
+          ['lexical-context identifier?]
           ['direction (or/c '< '>)]
-          ['degree syntax?]
+          ['degree (syntax/c natural?)]
           ['contents (listof syntax?)]
           [ 'token-of-syntax
             (token-of-syntax-with-free-vars<=/c
-              (set 'context 'degree 'contents))])]))
+              (set 'lexical-context 'degree 'contents))])]))
 ]{
   Uses the given @racket[taffy-notation-akin-to-^<>d?] instance to parse the given syntax term. The term should be a syntax list which begins with an identifier that's bound to the given notation.
   
@@ -110,20 +115,20 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
           (hash/dc
             [ _k
               (or/c
-                'context
+                'lexical-context
                 'direction
                 'degree
                 'contents
                 'token-of-syntax)]
             [ _ (_k)
               (match _k
-                ['context syntax?]
+                ['lexical-context identifier?]
                 ['direction (or/c '< '>)]
-                ['degree syntax?]
+                ['degree (syntax/c natural?)]
                 ['contents (listof syntax?)]
                 [ 'token-of-syntax
                   (token-of-syntax-with-free-vars<=/c
-                    (set 'context 'degree 'contents))])])))])
+                    (set 'lexical-context 'degree 'contents))])])))])
   taffy-notation-akin-to-^<>d-impl?
 ]{
   Given an implementation for @racket[taffy-notation-akin-to-^<>d-parse], returns something a struct can use to implement the @racket[prop:taffy-notation-akin-to-^<>d] interface.
@@ -137,20 +142,20 @@ Note that the term "hyperbracket" could be generalized beyond our Racket-specifi
           (hash/dc
             [ _k
               (or/c
-                'context
+                'lexical-context
                 'direction
                 'degree
                 'contents
                 'token-of-syntax)]
             [ _ (_k)
               (match _k
-                ['context syntax?]
+                ['lexical-context identifier?]
                 ['direction (or/c '< '>)]
-                ['degree syntax?]
+                ['degree (syntax/c natural?)]
                 ['contents (listof syntax?)]
                 [ 'token-of-syntax
                   (token-of-syntax-with-free-vars<=/c
-                    (set 'context 'degree 'contents))])])))])
+                    (set 'lexical-context 'degree 'contents))])])))])
   (and/c procedure? taffy-notation? taffy-notation-akin-to-^<>d?)
 ]{
   Given an implementation for @racket[taffy-notation-akin-to-^<>d-parse], returns a macro implementation value that can be used with @racket[define-syntax] to define a prefix @tech{hyperbracket} notation similar to @racket[^<d], @racket[^>d], @racket[^<], or @racket[^>].

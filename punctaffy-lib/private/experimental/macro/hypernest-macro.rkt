@@ -1234,7 +1234,7 @@
   #/ (_:id . _)
   #/dissect (taffy-notation-akin-to-^<>d-parse op stx)
     (hash-table
-      ['context _]
+      ['lexical-context lexical-context-stx]
       ['direction direction]
       ['degree degree-stx]
       ['contents contents]
@@ -1267,7 +1267,12 @@
     #/hn-bracs-n-d* ds n-d (extended-with-top-dim-infinite)
       (hnb-open 1 #/hn-tag-1-token-of-syntax
         (token-of-syntax-substitute token-of-syntax
-          (hash 'degree (syntax->token-of-syntax degree-stx))))
+          (hash
+            
+            'lexical-context
+            (syntax->token-of-syntax lexical-context-stx)
+            
+            'degree (syntax->token-of-syntax degree-stx))))
       
       (hnb-labeled 1
       #/selected

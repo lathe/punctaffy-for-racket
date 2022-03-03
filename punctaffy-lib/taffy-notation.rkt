@@ -23,8 +23,9 @@
 
 (require /only-in racket/contract struct-type-property/c)
 (require /only-in racket/contract/base
-  -> and/c any/c hash/dc listof none/c or/c)
+  -> and/c any/c hash/dc listof none/c or/c syntax/c)
 (require /only-in racket/match match)
+(require /only-in racket/math natural?)
 (require /only-in racket/set set)
 
 (require /only-in lathe-comforts dissect fn)
@@ -89,20 +90,20 @@
       (hash/dc
         [ k
           (or/c
-            'context
+            'lexical-context
             'direction
             'degree
             'contents
             'token-of-syntax)]
         [ _ (k)
           (match k
-            ['context syntax?]
+            ['lexical-context identifier?]
             ['direction (or/c '< '>)]
-            ['degree syntax?]
+            ['degree (syntax/c natural?)]
             ['contents (listof syntax?)]
             ['token-of-syntax
               (token-of-syntax-with-free-vars<=/c /set
-                'context 'degree 'contents)])]))))
+                'lexical-context 'degree 'contents)])]))))
 (ascribe-own-contract prop:taffy-notation-akin-to-^<>d
   (struct-type-property/c taffy-notation-akin-to-^<>d-impl?))
 (ascribe-own-contract make-taffy-notation-akin-to-^<>d-impl
@@ -112,20 +113,20 @@
         (hash/dc
           [ k
             (or/c
-              'context
+              'lexical-context
               'direction
               'degree
               'contents
               'token-of-syntax)]
           [ _ (k)
             (match k
-              ['context syntax?]
+              ['lexical-context identifier?]
               ['direction (or/c '< '>)]
-              ['degree syntax?]
+              ['degree (syntax/c natural?)]
               ['contents (listof syntax?)]
               [ 'token-of-syntax
                 (token-of-syntax-with-free-vars<=/c /set
-                  'context 'degree 'contents)])])))
+                  'lexical-context 'degree 'contents)])])))
     taffy-notation-akin-to-^<>d-impl?))
 
 (define-imitation-simple-struct
@@ -151,20 +152,20 @@
         (hash/dc
           [ k
             (or/c
-              'context
+              'lexical-context
               'direction
               'degree
               'contents
               'token-of-syntax)]
           [ _ (k)
             (match k
-              ['context syntax?]
+              ['lexical-context identifier?]
               ['direction (or/c '< '>)]
-              ['degree syntax?]
+              ['degree (syntax/c natural?)]
               ['contents (listof syntax?)]
               ['token-of-syntax
                 (token-of-syntax-with-free-vars<=/c /set
-                  'context 'degree 'contents)])])))
+                  'lexical-context 'degree 'contents)])])))
     (and/c
       procedure?
       taffy-notation?

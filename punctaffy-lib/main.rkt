@@ -52,7 +52,7 @@
 (define-for-syntax (parse-^<>d direction stx)
   (syntax-parse stx / (op degree contents ...)
   /hash
-    'context (datum->syntax stx '#%context)
+    'lexical-context (datum->syntax stx '#%lexical-context)
     'direction direction
     'degree #'degree
     'contents (attribute contents)
@@ -77,7 +77,7 @@
 (define-for-syntax (parse-^<> direction degree stx)
   (syntax-parse stx / (op contents ...)
   /hash
-    'context (datum->syntax stx '#%context)
+    'lexical-context (datum->syntax stx '#%lexical-context)
     'direction direction
     'degree degree
     'contents (attribute contents)
