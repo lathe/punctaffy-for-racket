@@ -48,13 +48,14 @@
 (require /only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
+(require /only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/private/shim)
 (init-shim)
 
 (require /only-in punctaffy/private/util
-  datum->syntax-with-everything known-to-be-immutable-prefab-key?
-  mutability-unconfirmed-prefab-struct? prefab-key-mutability)
+  datum->syntax-with-everything immutable-prefab-struct?
+  prefab-struct-fill)
 
 (require /for-template racket/base)
 (require /for-template /only-in racket/list append*)
@@ -99,7 +100,7 @@
   token-of-syntax-beginning-with-vector)
 (provide /own-contract-out
   token-of-syntax-beginning-with-prefab-struct?
-  token-of-syntax-beginning-with-prefab-struct-key
+  token-of-syntax-beginning-with-prefab-struct-prefab-struct-example
   token-of-syntax-beginning-with-prefab-struct-elements)
 (provide
   token-of-syntax-beginning-with-prefab-struct)
@@ -418,9 +419,10 @@
   (token-of-syntax-get-free-vars elements))
 (define-token-of-syntax
   (token-of-syntax-beginning-with-prefab-struct?
-    (#:field key token-of-syntax-beginning-with-prefab-struct-key
-      "the prefab key"
-      known-to-be-immutable-prefab-key?)
+    (#:field key
+      token-of-syntax-beginning-with-prefab-struct-prefab-struct-example
+      "the prefab struct example"
+      immutable-prefab-struct?)
     (#:field elements
       token-of-syntax-beginning-with-prefab-struct-elements
       "the elements"
@@ -449,7 +451,7 @@
         syntax?
         (and/c box? immutable?)
         (and/c vector? immutable?)
-        mutability-unconfirmed-prefab-struct?
+        immutable-prefab-struct?
         pair?)))
   token-of-syntax-beginning-with-other-value
   'token-of-syntax-beginning-with-other-value
@@ -580,22 +582,13 @@
       (list-of-singular->token-of-syntax
         (for/list ([element (in-vector stx)])
           (syntax->token-of-syntax element))))
-  
-  /w- key (prefab-struct-key stx)
-  /w- key-mutability (and key (prefab-key-mutability key))
-  /if (and key (eq? 'not-known key-mutability))
-    (raise-arguments-error 'syntax->token-of-syntax
-      "encountered a prefab struct key of unknown mutability"
-      "key" key
-      "stx" stx)
-  /if (and key (eq? 'known-to-be-immutable key-mutability))
-    (token-of-syntax-beginning-with-prefab-struct key
+  /if (immutable-prefab-struct? stx)
+    (token-of-syntax-beginning-with-prefab-struct
+      (prefab-struct-fill stx /trivial)
       (list-of-singular->token-of-syntax
         (for/list
           ([element (in-list /cdr /vector->list /struct->vector stx)])
           (syntax->token-of-syntax element))))
-  /dissect (or (not key) (eq? 'known-to-be-mutable key-mutability)) #t
-  
   /if (pair? stx)
     (let-values ([(elements tail) (improper-list-split-at-end stx)])
       (token-of-syntax-beginning-with-list*
@@ -603,7 +596,6 @@
           (for/list ([element (in-list elements)])
             (syntax->token-of-syntax element)))
         (syntax->token-of-syntax tail)))
-    
     (token-of-syntax-beginning-with-other-value stx)))
 
 (module private racket/base

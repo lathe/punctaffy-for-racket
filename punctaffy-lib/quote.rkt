@@ -61,7 +61,7 @@
   hn-tag-1-vector hn-tag-2-list* hn-tag-nest parse-list*-tag
   s-expr-stx->hn-expr)
 (require #/for-syntax #/only-in punctaffy/private/util
-  datum->syntax-with-everything prefab-key-mutability)
+  datum->syntax-with-everything immutable-prefab-struct?)
 (require #/for-syntax #/only-in punctaffy/syntax-object/token-of-syntax
   list->token-of-syntax syntax->token-of-syntax
   token-of-syntax-autoquote token-of-syntax-beginning-with-list*
@@ -352,23 +352,16 @@
     (process-listlike stx-example #/list #'list)
   #/mat data (hn-tag-1-vector stx-example)
     (process-listlike stx-example #/list #'vector-immutable)
-  #/mat data (hn-tag-1-prefab key stx-example)
-    (w- mutability (prefab-key-mutability key)
+  #/mat data (hn-tag-1-prefab prefab-struct-example stx-example)
     ; TODO: See if we can procure something here that isn't an empty
     ; list like `stx-example` is. This should have the right source
     ; location, at least. We might want to change our policy so
     ; `stx-example` is the original syntax object rather than
     ; normalizing it to an empty list.
-    #/w- struct-stx stx-example
-    #/mat mutability 'known-to-be-mutable
-      (raise-syntax-error #f "cannot quote a mutable prefab struct"
-        err-dsl-stx struct-stx)
-    #/mat mutability 'not-known
-      (raise-syntax-error #f "cannot quote a prefab struct unless it's immutable"
-        err-dsl-stx struct-stx)
-    #/dissect mutability 'known-to-be-immutable
+    (w- struct-stx stx-example
     #/process-listlike stx-example
-      (list #'make-prefab-struct #`'#,key))
+      (list #'make-prefab-struct
+        #`'#,(prefab-struct-key prefab-struct-example)))
   #/mat data (hn-tag-1-token-of-syntax token)
     (w- token
       (token-of-syntax-beginning-with-syntax #'()

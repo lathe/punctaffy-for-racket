@@ -228,7 +228,7 @@ In our representation, a token of syntax can also have nodes in it that represen
   When this token is converted to a list of trees, it takes the list of trees that result from the given @racket[elements] token and wraps them as the elements of an immutable vector.
 }
 
-@; TODO DOCUMENT TOKEN-OF-SYNTAX: Export `known-to-be-immutable-prefab-key?` from somewhere, and document it.
+@; TODO DOCUMENT TOKEN-OF-SYNTAX: Export `immutable-prefab-struct?` from somewhere, and document it.
 @deftogether[(
   @defidform[token-of-syntax-beginning-with-prefab-struct]
   @defform[
@@ -236,22 +236,23 @@ In our representation, a token of syntax can also have nodes in it that represen
     (token-of-syntax-beginning-with-prefab-struct key elements)
     #:contracts
     (
-      [key known-to-be-immutable-prefab-key?]
+      [prefab-example immutable-prefab-struct?]
       [elements token-of-syntax?])
   ]
   @defform[
     #:kind "match expander"
     #:link-target? #f
-    (token-of-syntax-beginning-with-prefab-struct key elements)
+    (token-of-syntax-beginning-with-prefab-struct
+      prefab-struct-example elements)
   ]
   @defproc[
     (token-of-syntax-beginning-with-prefab-struct? [v any/c])
     boolean?
   ]
   @defproc[
-    (token-of-syntax-beginning-with-prefab-struct-key
+    (token-of-syntax-beginning-with-prefab-struct-prefab-struct-example
       [token token-of-syntax-beginning-with-prefab-struct?])
-    known-to-be-immutable-prefab-key?
+    immutable-prefab-struct?
   ]
   @defproc[
     (token-of-syntax-beginning-with-prefab-struct-elements
@@ -261,7 +262,7 @@ In our representation, a token of syntax can also have nodes in it that represen
 )]{
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which has an immutable prefab struct at its root.
   
-  When this token is converted to a list of trees, it takes the list of trees that result from the given @racket[elements] token and wraps them as the elements of an immutable prefab struct with the given key.
+  When this token is converted to a list of trees, it takes the list of trees that result from the given @racket[elements] token and wraps them as the fields of an immutable prefab struct with the same @racket[prefab-struct-key] as @racket[prefab-struct-example]. If the prefab key isn't consistent with the computed number of fields, this raises an error. For now, this error is reported in terms of an internal call to @racket[make-prefab-struct].
 }
 
 @deftogether[(
@@ -299,7 +300,7 @@ In our representation, a token of syntax can also have nodes in it that represen
   Unlike with @racket[token-of-syntax-beginning-with-splice?] nodes, we make no attempt to enforce that two @tt{token-of-syntax-beginning-with-list*?} nodes aren't nested in a way that could be combined into a single node. (TODO: Should we?)
 }
 
-@; TODO DOCUMENT TOKEN-OF-SYNTAX: Export `mutability-unconfirmed-prefab-struct?` from somewhere, and document it.
+@; TODO DOCUMENT TOKEN-OF-SYNTAX: Export `immutable-prefab-struct?` from somewhere, and document it.
 @deftogether[(
   @defidform[token-of-syntax-beginning-with-other-value]
   @defform[
@@ -313,7 +314,7 @@ In our representation, a token of syntax can also have nodes in it that represen
             syntax?
             (and/c box? immutable?)
             (and/c vector? immutable?)
-            mutability-unconfirmed-prefab-struct?
+            immutable-prefab-struct?
             pair?))])
   ]
   @defform[
@@ -333,7 +334,7 @@ In our representation, a token of syntax can also have nodes in it that represen
         syntax?
         (and/c box? immutable?)
         (and/c vector? immutable?)
-        mutability-unconfirmed-prefab-struct?
+        immutable-prefab-struct?
         pair?))
   ]
 )]{
@@ -341,7 +342,7 @@ In our representation, a token of syntax can also have nodes in it that represen
   
   When this token is converted to a list of trees, it results in just one tree, namely the given value.
   
-  The value must not be a syntax object, an immutable box, an immutable vector, or a pair. If it's a prefab struct, it must be a mutable one. This just prevents @tt{token-of-syntax-beginning-with-other-value?} values from being represented in alternative ways using the other token of syntax constructors, which would be an unnecessary source of variation between token values.
+  The value must not be a syntax object, an immutable box, an immutable vector, an immutable prefab struct, or a pair. This just prevents @tt{token-of-syntax-beginning-with-other-value?} values from being represented in alternative ways using the other token of syntax constructors, which would be an unnecessary source of variation between token values.
   
   (TODO: What if Racket's syntax supports more values in the future? In @racket[taffy-let] and our other hyperbracketed operations, we defensively disallow certain values that people might want hypersnippets to reach into someday, like @racket[hash?] and @racket[regexp?] values. Maybe we should disallow those here too. Alternatively, maybe we should just allow every type of value here, a policy which might be good for performance so that we don't traverse into certain data instances further than necessary.)
 }
@@ -380,8 +381,6 @@ In our representation, a token of syntax can also have nodes in it that represen
   Constructs a @tech{token of syntax} which has the given syntax object at its root.
   
   This is like @racket[token-of-syntax-beginning-with-other-value], but it also traverses into syntax objects, immutable boxes, immutable vectors, immutable prefab structs, and pairs to construct the appropriate token nodes.
-  
-  The one kind of value this doesn't allow is a prefab struct that this library can't determine the mutability of. This may become relevant if future versions of Racket extend @racket[prefab-key?] with new kinds of keys and this library doesn't keep up.
 }
 
 @defproc[

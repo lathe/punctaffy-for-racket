@@ -19,11 +19,10 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require /only-in racket/contract/base -> any/c or/c)
-(require /only-in syntax/datum datum)
-(require /only-in syntax/parse ~and ~optional id nat syntax-parse)
+(require /only-in racket/contract/base -> any/c)
 
-(require /only-in lathe-comforts w-)
+(require /only-in lathe-comforts w- w-loop fn)
+(require /only-in lathe-comforts/list list-length=nat?)
 
 (require punctaffy/private/shim)
 (init-shim)
@@ -31,11 +30,9 @@
 
 (provide /own-contract-out
   datum->syntax-with-everything
-  prefab-key-mutability
-  known-to-be-immutable-prefab-key?
-  known-to-be-immutable-prefab-struct?
-  mutability-unconfirmed-prefab-key?
-  mutability-unconfirmed-prefab-struct?)
+  prefab-struct?
+  immutable-prefab-struct?
+  prefab-struct-fill)
 
 
 ; TODO: Consider exporting this from Lathe Comforts.
@@ -46,48 +43,61 @@
   /w- prop stx-example
   /datum->syntax ctxt datum srcloc prop))
 
-; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (prefab-key-mutability k)
-  (-> prefab-key?
-    (or/c 'not-known 'known-to-be-immutable 'known-to-be-mutable))
-  (syntax-parse k
-    [_:id 'known-to-be-immutable]
-    [
+(define/own-contract (known-to-be-immutable-struct-type? v)
+  (-> any/c boolean?)
+  (and (struct-type? v)
+  /let next ()
+    (define-values
       (
-        _:id
-        (~optional _:nat)
-        (~optional (_:nat _))
-        (~optional (~and v #(_:nat ...)) #:defaults ([(v 0) #()]))
-        . parent-key)
-      (if (= 0 (vector-length (datum v)))
-        (syntax-parse (datum parent-key)
-          [() 'known-to-be-immutable]
-          [_ (prefab-key-mutability (datum parent-key))])
-        'known-to-be-mutable)]
-    [_ 'not-known]))
+        name
+        init-field-cnt
+        auto-field-cnt
+        accessor-proc
+        mutator-proc
+        immutable-k-list
+        super-type
+        skipped?)
+      (struct-type-info v))
+    (and
+      (not skipped?)
+      (list-length=nat? immutable-k-list init-field-cnt)
+      (or (not super-type) (next super-type)))))
+
+(define/own-contract (transparent-struct-type-constructor-arity v)
+  (-> struct-type? boolean?)
+  (w-loop next v v result 0
+    (define-values
+      (
+        name
+        init-field-cnt
+        auto-field-cnt
+        accessor-proc
+        mutator-proc
+        immutable-k-list
+        super-type
+        skipped?)
+      (struct-type-info v))
+    (when skipped?
+      (raise-arguments-error 'struct-type-constructor-arity
+        "expected the struct type to be transparent"))
+    (next super-type (+ init-field-cnt result))))
 
 ; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (known-to-be-immutable-prefab-key? v)
+(define/own-contract (prefab-struct? v)
   (-> any/c boolean?)
-  (and
-    (prefab-key? v)
-    (eq? 'known-to-be-immutable (prefab-key-mutability v))))
+  (not /not /prefab-struct-key v))
 
 ; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (mutability-unconfirmed-prefab-key? v)
+(define/own-contract (immutable-prefab-struct? v)
   (-> any/c boolean?)
-  (and
-    (prefab-key? v)
-    (not /eq? 'known-to-be-mutable (prefab-key-mutability v))))
+  (and (prefab-struct? v)
+  /w- type (struct-info v)
+  /and type (known-to-be-immutable-struct-type? type)))
 
 ; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (known-to-be-immutable-prefab-struct? v)
-  (-> any/c boolean?)
-  (w- key (prefab-struct-key v)
-  /and key (known-to-be-immutable-prefab-key? key)))
-
-; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (mutability-unconfirmed-prefab-struct? v)
-  (-> any/c boolean?)
-  (w- key (prefab-struct-key v)
-  /and key (mutability-unconfirmed-prefab-key? key)))
+(define/own-contract (prefab-struct-fill prefab-struct field-value)
+  (-> prefab-struct? any/c prefab-struct?)
+  (w- type (struct-info prefab-struct)
+  /apply (struct-type-make-constructor type)
+    (build-list (transparent-struct-type-constructor-arity type) /fn i
+      field-value)))
