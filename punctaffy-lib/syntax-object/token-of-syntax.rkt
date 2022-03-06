@@ -47,15 +47,14 @@
 (require /only-in lathe-comforts/list list-foldl)
 (require /only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
-  define-imitation-simple-struct)
+  define-imitation-simple-struct immutable-prefab-struct?)
 (require /only-in lathe-comforts/trivial trivial)
 
 (require punctaffy/private/shim)
 (init-shim)
 
 (require /only-in punctaffy/private/util
-  datum->syntax-with-everything immutable-prefab-struct?
-  prefab-struct-fill)
+  datum->syntax-with-everything prefab-struct-fill)
 
 (require /for-template racket/base)
 (require /for-template /only-in racket/list append*)

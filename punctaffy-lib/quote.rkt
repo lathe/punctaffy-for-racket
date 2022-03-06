@@ -61,7 +61,7 @@
   hn-tag-1-vector hn-tag-2-list* hn-tag-nest parse-list*-tag
   s-expr-stx->hn-expr)
 (require #/for-syntax #/only-in punctaffy/private/util
-  datum->syntax-with-everything immutable-prefab-struct?)
+  datum->syntax-with-everything)
 (require #/for-syntax #/only-in punctaffy/syntax-object/token-of-syntax
   list->token-of-syntax syntax->token-of-syntax
   token-of-syntax-autoquote token-of-syntax-beginning-with-list*

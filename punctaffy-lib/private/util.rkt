@@ -22,7 +22,7 @@
 (require /only-in racket/contract/base -> any/c)
 
 (require /only-in lathe-comforts w- w-loop fn)
-(require /only-in lathe-comforts/list list-length=nat?)
+(require /only-in lathe-comforts/struct prefab-struct?)
 
 (require punctaffy/private/shim)
 (init-shim)
@@ -30,8 +30,6 @@
 
 (provide /own-contract-out
   datum->syntax-with-everything
-  prefab-struct?
-  immutable-prefab-struct?
   prefab-struct-fill)
 
 
@@ -42,26 +40,6 @@
   /w- srcloc stx-example
   /w- prop stx-example
   /datum->syntax ctxt datum srcloc prop))
-
-(define/own-contract (known-to-be-immutable-struct-type? v)
-  (-> any/c boolean?)
-  (and (struct-type? v)
-  /let next ()
-    (define-values
-      (
-        name
-        init-field-cnt
-        auto-field-cnt
-        accessor-proc
-        mutator-proc
-        immutable-k-list
-        super-type
-        skipped?)
-      (struct-type-info v))
-    (and
-      (not skipped?)
-      (list-length=nat? immutable-k-list init-field-cnt)
-      (or (not super-type) (next super-type)))))
 
 (define/own-contract (transparent-struct-type-constructor-arity v)
   (-> struct-type? boolean?)
@@ -81,18 +59,6 @@
       (raise-arguments-error 'struct-type-constructor-arity
         "expected the struct type to be transparent"))
     (next super-type (+ init-field-cnt result))))
-
-; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (prefab-struct? v)
-  (-> any/c boolean?)
-  (not /not /prefab-struct-key v))
-
-; TODO: Consider exporting this from Lathe Comforts.
-(define/own-contract (immutable-prefab-struct? v)
-  (-> any/c boolean?)
-  (and (prefab-struct? v)
-  /w- type (struct-info v)
-  /and type (known-to-be-immutable-struct-type? type)))
 
 ; TODO: Consider exporting this from Lathe Comforts.
 (define/own-contract (prefab-struct-fill prefab-struct field-value)

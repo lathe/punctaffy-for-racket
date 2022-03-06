@@ -71,6 +71,8 @@
         (only-in #,(break 'lathe-comforts/list) list-bind)
         (only-in #,(break 'lathe-comforts/maybe)
           just? maybe? maybe/c nothing)
+        (only-in #,(break 'lathe-comforts/struct)
+          immutable-prefab-struct?)
         (only-in #,(break 'lathe-comforts/trivial) trivial?)
         (only-in #,(break 'lathe-morphisms/in-fp/category)
           category-sys? category-sys-morphism/c functor-sys?

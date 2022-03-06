@@ -228,7 +228,6 @@ In our representation, a token of syntax can also have nodes in it that represen
   When this token is converted to a list of trees, it takes the list of trees that result from the given @racket[elements] token and wraps them as the elements of an immutable vector.
 }
 
-@; TODO DOCUMENT TOKEN-OF-SYNTAX: Export `immutable-prefab-struct?` from somewhere, and document it.
 @deftogether[(
   @defidform[token-of-syntax-beginning-with-prefab-struct]
   @defform[
@@ -300,7 +299,6 @@ In our representation, a token of syntax can also have nodes in it that represen
   Unlike with @racket[token-of-syntax-beginning-with-splice?] nodes, we make no attempt to enforce that two @tt{token-of-syntax-beginning-with-list*?} nodes aren't nested in a way that could be combined into a single node. (TODO: Should we?)
 }
 
-@; TODO DOCUMENT TOKEN-OF-SYNTAX: Export `immutable-prefab-struct?` from somewhere, and document it.
 @deftogether[(
   @defidform[token-of-syntax-beginning-with-other-value]
   @defform[
