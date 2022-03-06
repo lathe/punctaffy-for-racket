@@ -787,25 +787,35 @@
       ;     syntax objects.
       ;
       (expand err-dsl-stx stx))
+  
+  ; If `stx` is shaped like `op` or `(op . args)` where `op` is bound
+  ; to a suitable syntax transformer according to
+  ; `syntax-local-value`, then we invoke it on `stx`. (Note that we
+  ; don't consider anything to be a suitable syntax transformer if
+  ; `stx` is shaped like `op`, but we do consider certain syntax
+  ; transformers to be reserving an opportunity to have behavior here
+  ; in the future, so we treat those as an error.)
+  ;
   #/mat
     (syntax-parse stx
       [ (op:id . args)
         (dlog 'hqq-b1.1 #'op
         #/w- op-stx #'op
         #/maybe-bind (syntax-local-maybe op-stx) #/fn op-val
-        #/possibly-erroneous-hn-builder-syntax-maybe op-stx op-val)]
+        #/assert-known-hn-builder-syntax-maybe
+          err-dsl-stx op-stx op-val)]
       [op:id
         (dlog 'hqq-b1.2
         #/w- op-stx #'op
         #/maybe-bind (syntax-local-maybe op-stx) #/fn op-val
-        #/possibly-erroneous-hn-builder-syntax-maybe op-stx op-val)]
+        #/begin
+          (assert-not-hn-builder-syntax err-dsl-stx op-stx op-val)
+        #/nothing)]
       [_ (nothing)])
     (just expand)
-    ; If `stx` is shaped like `op` or `(op . args)` where `op` is
-    ; bound to an `hn-builder-syntax?` syntax transformer according to
-    ; `syntax-local-value`, then we invoke it on `stx`.
     (dlog 'hqq-b1.3
     #/invoke-expand expand err-dsl-stx stx)
+  
   #/dlog 'hqq-b2
   #/w- process-list
     (fn elems
@@ -859,13 +869,20 @@
         (mat rest (cons op-stx args)
           (mat
             (maybe-bind (syntax-local-maybe op-stx) #/fn op-val
-              (possibly-erroneous-hn-builder-syntax-maybe
-                op-stx op-val))
+            #/begin
+              (assert-not-hn-builder-syntax err-dsl-stx op-stx op-val)
+            #/nothing)
             (just expand)
             (list
               rev-elems
               ; TODO: See if we should convert `rest` to be `syntax?`
-              ; here.
+              ; here. Note that at the moment, this case should be
+              ; unreachable since we the condition always returns
+              ; `nothing`. Someday, if and when there's any syntax
+              ; transformer we consider to be suitable for processing
+              ; in positions other than the first element of their
+              ; surrounding list, we might use this code.
+              ;
               (just #/invoke-expand expand err-dsl-stx rest))
             (next
               (cons (s-expr-stx->hn-expr err-dsl-stx op-stx)
@@ -1315,19 +1332,17 @@
       #/^<>d-expand v err-dsl-stx stx))
     (nothing)))
 
-; TODO: See if we'll use this.
-(define (hn-builder-syntax? v)
-  (just? #/hn-builder-syntax-maybe v))
-
-; TODO: See if we'll use this.
-(define (hn-builder-syntax-expand builder err-dsl-stx stx)
-  (dissect (hn-builder-syntax-maybe builder) (just impl)
-  #/impl err-dsl-stx stx))
-
-(define (possibly-erroneous-hn-builder-syntax-maybe op-stx v)
+(define (assert-known-hn-builder-syntax-maybe err-dsl-stx op-stx v)
   (maybe-or (hn-builder-syntax-maybe v) #/fn
   #/maybe-if (taffy-notation? v) #/fn
-    (fn err-dsl-stx stx
-      (raise-syntax-error #f
-        "not a Punctaffy notation recognized by this DSL"
-        err-dsl-stx op-stx))))
+    (raise-syntax-error #f
+      "not a Punctaffy notation recognized by this DSL"
+      err-dsl-stx op-stx)))
+
+(define (assert-not-hn-builder-syntax err-dsl-stx op-stx v)
+  (expect (assert-known-hn-builder-syntax-maybe err-dsl-stx op-stx v)
+    (nothing)
+    (raise-syntax-error #f
+      "not a Punctaffy notation this DSL permits in this location"
+      err-dsl-stx op-stx)
+  #/void))

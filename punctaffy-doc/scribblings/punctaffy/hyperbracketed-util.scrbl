@@ -88,8 +88,9 @@ For instance, @racket[list-taffy-map] can accommodate nested occurrences of @rac
       
       @item{This operation supports quoting @racket[string?] values. If the value is a mutable string, it is converted to its immutable equivalent.}
       
-      @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Figure out if this supports quoting identifiers that have transformer bindings that implement `prop:taffy-notation-akin-to-^<>d`, and if so, consider documenting that fact.
-      @item{This operation supports quoting @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:taffy-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. (After all, symbols exist to be used in Racket code, so even the ones that can't be found in @emph{textual} Racket code can be found in some other kind.)}
+      @item{This operation supports quoting interned @racket[symbol?] values that aren't bound to hyperbracket notation in the sense of @racket[prop:taffy-notation]. This exclusion of hyperbracket notation ensures that such identifiers can be given special-case meanings in the future without breaking code that expected them to be processed like non-hyperbracket syntax. Note that some uses of hyperbracket notation may appear not to be excluded the same way as others, and that's because as long as nested hyperbrackets are properly matched up, the way this operation processes them tends to have results that explicitly simulate what would have happened if the same identifiers hadn't been bound to hyperbracket notation in the first place.}
+      
+      @item{This operation supports quoting uninterned and unreadable symbols, just like it supports interned symbols. (The same exclusion of hyperbracket notation applies.) Unlike the other values supported here, uninterned and unreadable symbols don't have a reader syntax and hence don't appear in textual Racket code, but they do oftentimes appear in macro-generated and dynamically generated Racket code.}
     ]
     
     Notable exclusions:
@@ -222,8 +223,9 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     @itemlist[
       @item{This operation accommodates subforms represented by @racket[string?], @racket[boolean?], @racket[flvector?], @racket[fxvector?], @racket[char?], @racket[bytes?], @racket[keyword?], @racket[number?], and @racket[extflonum?] values. These are representations with reader syntaxes, so they fit the description exactly.}
       
-      @; TODO DOCUMENT-TOKEN-OF-SYNTAX: Figure out if this accommodates subforms represented by `symbol?` values that have transformer bindings that implement `prop:taffy-notation-akin-to-^<>d`, and if so, consider documenting that fact.
-      @item{This operation accommodates subforms represented by @racket[symbol?] values as long as they aren't hyperbracket notation (i.e. identifiers which have transformer bindings that implement @racket[prop:taffy-notation]). Only interned symbols have a reader syntax, but this operation accepts uninterned and unreadable symbols anyway. (After all, symbols exist to be used in Racket code, so even the ones that can't be found in @emph{textual} Racket code can be found in some other kind.)}
+      @item{This operation accommodates subforms represented by interned @racket[symbol?] values that aren't bound to hyperbracket notation in the sense of @racket[prop:taffy-notation]. This exclusion of hyperbracket notation ensures that such identifiers can be given special-case meanings in the future without breaking code that expected them to be processed like non-hyperbracket syntax. Note that some uses of hyperbracket notation may appear not to be excluded the same way as others, and that's because as long as nested hyperbrackets are properly matched up, the way this operation processes them tends to have results that explicitly simulate what would have happened if the same identifiers hadn't been bound to hyperbracket notation in the first place.}
+      
+      @item{This operation also accommodates subforms represented by uninterned and unreadable symbols, just like it supports interned symbols. (The same exclusion of hyperbracket notation applies.) Unlike the other values supported here, uninterned and unreadable symbols don't have a reader syntax and hence don't appear in textual Racket code, but they do oftentimes appear in macro-generated and dynamically generated Racket code.}
     ]
     
     Notable exclusions:
