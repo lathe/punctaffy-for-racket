@@ -60,7 +60,7 @@ jobs:
         env:
           SCRIPT_RACKET_CATALOGS: ${{ matrix.racket-catalogs }}
       - name: Obtain cached Racket packages, if available
-        if: {{ matrix.racket-catalogs-id == 'racksnaps' }}
+        if: ${{ matrix.racket-catalogs-id == 'racksnaps' }}
         uses: actions/cache@v2
         with:
           path: |
