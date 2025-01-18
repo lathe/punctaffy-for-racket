@@ -33,10 +33,10 @@ jobs:
               https://racksnaps.defn.io/built-snapshots/2022/03/07/catalog/
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       
       - name: Install Racket '${{ matrix.racket-version }}'
-        uses: Bogdanp/setup-racket@v1.7
+        uses: Bogdanp/setup-racket@v1.11
         with:
           architecture: x64
           distribution: full
@@ -61,7 +61,7 @@ jobs:
           SCRIPT_RACKET_CATALOGS: ${{ matrix.racket-catalogs }}
       - name: Obtain cached Racket packages, if available
         if: ${{ matrix.racket-catalogs-id == 'racksnaps' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/racket
