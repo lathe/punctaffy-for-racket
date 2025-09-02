@@ -28,7 +28,7 @@ jobs:
             racket-catalogs-id: "racksnaps"
             racket-catalogs: |
               https://download.racket-lang.org/releases/8.18/catalog/,
-              https://racksnaps.defn.io/built-snapshots/2025/09/02/catalog/
+              https://racksnaps.defn.io/built-snapshots/2025/09/03/catalog/
     steps:
       - name: Checkout
         uses: actions/checkout@v4
