@@ -5,7 +5,7 @@
 ; Data structures and syntaxes for encoding the kind of higher-order
 ; holes that occur in higher quasiquotation.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2018, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -21,10 +21,6 @@
 
 
 (require #/for-meta -1 racket/base)
-
-; NOTE: Just in case we want to switch back to `eq?` hashes, we refer
-; to `equal?` hashes more explicitly.
-(require #/only-in racket/base [hash hashequal])
 
 (require #/only-in racket/hash hash-union)
 
@@ -44,8 +40,8 @@
 
 ; ===== Helpers for this module ======================================
 
-(define (hashequal-immutable? x)
-  (and (hash? x) (hash-equal? x) (immutable? x)))
+(define (hashalw-immutable? x)
+  (and (hash? x) (hash-equal-always? x) (immutable? x)))
 
 
 ; ===== Fake nodes for printing things with higher-order holes =======
@@ -83,8 +79,8 @@
   (unless (list? tables)
     (error "Expected tables to be a list"))
   (list-each tables #/lambda (table)
-    (unless (hashequal-immutable? table)
-      (error "Expected table to be an immutable equal? hash"))
+    (unless (hashalw-immutable? table)
+      (error "Expected table to be an immutable equal-always? hash"))
     (hash-kv-each table #/lambda (k v)
       (unless (hoqq-tower-key? k)
         (error "Expected k to be a valid tower key"))))
@@ -168,7 +164,7 @@
   #/hoqq-tower
   #/list-map tables #/lambda (table)
     (hash-kv-bind table #/lambda (k v)
-      (hashequal (func k) v))))
+      (hashalw (func k) v))))
 
 (define (hoqq-tower-dkv-split-by tower func)
   (w- tower
@@ -227,7 +223,7 @@
     (hoqq-tower-key-derived found-prefix k)
     (error "Expected each key of tower to be a hoqq-tower-key-derived")
     (begin
-      (unless (equal? prefix found-prefix)
+      (unless (equal-always? prefix found-prefix)
         (error "Expected each key of tower to have a certain prefix"))
       k)))
 
@@ -235,8 +231,8 @@
   (hoqq-tower-merge-prefix 'a as 'b bs))
 
 (define (hoqq-tower-table table-of-towers)
-  (unless (hashequal-immutable? table-of-towers)
-    (error "Expected table-of-towers to be an immutable equal? hash"))
+  (unless (hashalw-immutable? table-of-towers)
+    (error "Expected table-of-towers to be an immutable equal-always? hash"))
   (w- table-of-prefixed-towers
     (hash-kv-map table-of-towers #/lambda (k v)
       (unless (hoqq-tower-key? k)
@@ -260,7 +256,7 @@
       (hoqq-tower-deprefix k #/hoqq-tower-restrict corresponding v))))
 
 (define (hoqq-tower-pair-ab as bs)
-  (dissect (hoqq-tower-table #/hashequal 'a as 'b bs)
+  (dissect (hoqq-tower-table #/hashalw 'a as 'b bs)
     (list merged de-table)
   #/list merged #/lambda (corresponding)
     (unless (hoqq-tower? corresponding)
@@ -306,7 +302,7 @@
     (error "Expected tower to be a tower")
   #/expect (exact-nonnegative-integer? degree) #t
     (error "Expected degree to be an exact nonnegative integer")
-  #/expect (nat<list-length? degree tables) #t (hashequal)
+  #/expect (nat<list-length? degree tables) #t (hashalw)
   #/list-ref tables degree))
 
 (define (hoqq-tower-ref tower degree k)
@@ -347,7 +343,7 @@
   (hoqq-tower-print sig #/lambda (subsig) #/hoqq-sig-print subsig))
 
 (define (hoqq-sig-eq? a b)
-  (equal? a b))
+  (equal-always? a b))
 
 
 ; ===== Suspended computations over higher quasiquotation spans ======

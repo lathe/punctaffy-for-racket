@@ -1,6 +1,6 @@
 #lang parendown racket
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2018, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -105,9 +105,9 @@
   [qexp (error "Expected a qexp that was a qexp-literal or a qexp-call")])
 
 (w- done monad-maybe-done bind monad-maybe-bind
-  (writeln #/equal? (qexp-done monad-maybe-done 1)
+  (writeln #/equal-always? (qexp-done monad-maybe-done 1)
     (done #/qexp-literal #/done 1))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (bind (qexp-done done 1) #/lambda (one)
     #/qexp-bind done bind
       (qexp-call (op-id) #/qexp-literal #/done one)
@@ -115,7 +115,7 @@
     #/qexp-done done #/* 2 x)
     (done #/qexp-call (op-id) #/qexp-literal #/done
     #/qexp-literal #/done 2))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (bind (qexp-done done 1) #/lambda (one)
     #/done #/qexp-map done bind
       (qexp-call (op-id) #/qexp-literal #/done one)
@@ -218,24 +218,24 @@
           #/qexp-done done #/* 2 leaf]]
         
         [op (env env2 op body)])
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-double) #/qexp-literal #/done
     #/qexp-literal #/done 3)
     (done #/qexp-literal #/done 6))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-id) #/qexp-literal #/done
     #/qexp-call (op-id) #/qexp-literal #/done #/qexp-literal #/done 1)
     (done #/ret 1))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-nest) #/qexp-literal #/done
     #/qexp-call (op-nest) #/qexp-literal #/done #/qexp-literal #/done 1)
     (done #/ret
     #/qexp-call (op-nest) #/qexp-literal #/done
     #/qexp-call (op-nest) #/qexp-literal #/done 1))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-nest)
     #/qexp-call (op-nest) #/qexp-literal #/done
@@ -246,7 +246,7 @@
     #/qexp-call (op-nest) #/qexp-literal #/done
     #/qexp-call (op-nest) #/qexp-literal #/done
     #/qexp-literal #/done 1))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-open-paren (op-nest)) #/qexp-literal #/done
     #/qexp-call (op-open-paren (op-nest)) #/qexp-literal #/done
@@ -275,7 +275,7 @@
           #/qexp-done done #/* 2 leaf]]
         
         [op (env env2 op body)])
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-double) #/qexp-literal #/list
       (qexp-literal #/done 3)
@@ -283,7 +283,7 @@
     (list
       (qexp-literal #/done 6)
       (qexp-literal #/done 8)))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-id) #/qexp-literal #/list
       (qexp-call (op-id) #/qexp-literal #/list
@@ -297,7 +297,7 @@
       (ret 2)
       (ret 3)
       (ret 4)))
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-nest) #/qexp-literal #/list
       (qexp-call (op-nest) #/qexp-literal #/list
@@ -320,7 +320,7 @@
         3
         4))
   )
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-nest)
     #/qexp-call (op-nest) #/qexp-literal #/list
@@ -380,7 +380,7 @@
           11
           12)))
   )
-  (writeln #/equal?
+  (writeln #/equal-always?
     (interpret done bind env
     #/qexp-call (op-open-paren (op-nest)) #/qexp-literal #/done
     #/qexp-call (op-open-paren (op-nest)) #/qexp-literal #/done
@@ -494,16 +494,17 @@
 
 (define sexp-example (list (list) (list)))
 
-(equal? (list->flat-qexp monad-maybe-done (dummy-eof) list-example)
+(equal-always?
+  (list->flat-qexp monad-maybe-done (dummy-eof) list-example)
   flat-example)
-(equal?
+(equal-always?
   (flat-qexp->nested-qexp monad-maybe-done monad-maybe-bind
     flat-example)
   (ret nested-example))
-(equal? (nested-qexp->lists-and-rest nested-example)
+(equal-always? (nested-qexp->lists-and-rest nested-example)
   (lists-and-rest (list sexp-example) (monad-maybe-done #/dummy-eof)))
 
-(equal?
+(equal-always?
   (nested-qexp->lists-and-rest #/ret-val
   #/flat-qexp->nested-qexp monad-maybe-done monad-maybe-bind
   #/list->flat-qexp monad-maybe-done (dummy-eof) list-example)

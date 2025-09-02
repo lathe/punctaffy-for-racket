@@ -4,7 +4,7 @@
 ;
 ; An interface for data structures that are hypersnippet-shaped.
 
-;   Copyright 2019-2022 The Lathe Authors
+;   Copyright 2019-2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -4203,10 +4203,10 @@
             "ms" ms
             "s" s
             "new-s" new-s)
-        #/expect (equal? sfs new-s-sfs) #t
+        #/expect (equal-always? sfs new-s-sfs) #t
           (raise-arguments-error
             'snippet-sys-morphism-sys-replace-source
-            "tried to replace the source with a source that had a different snippet functor system (in terms of `equal?`)"
+            "tried to replace the source with a source that had a different snippet functor system (in terms of `equal-always?`)"
             "ms" ms
             "sfs" sfs
             "new-s-sfs" new-s-sfs)
@@ -4230,10 +4230,10 @@
             "ms" ms
             "t" t
             "new-t" new-t)
-        #/expect (equal? sfs new-t-sfs) #t
+        #/expect (equal-always? sfs new-t-sfs) #t
           (raise-arguments-error
             'snippet-sys-morphism-sys-replace-target
-            "tried to replace the target with a target that had a different snippet functor system (in terms of `equal?`)"
+            "tried to replace the target with a target that had a different snippet functor system (in terms of `equal-always?`)"
             "ms" ms
             "sfs" sfs
             "new-t-sfs" new-t-sfs)

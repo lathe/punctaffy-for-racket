@@ -5,7 +5,7 @@
 ; A dimension system where the dimension numbers are the naturals and
 ; a special `omega` value that's greater than all the others.
 
-;   Copyright 2019-2021 The Lathe Authors
+;   Copyright 2019-2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@
     ; dim-sys-dim/c
     (fn ds #/or/c natural? omega?)
     ; dim-sys-dim=?
-    (fn ds a b #/equal? a b)
+    (fn ds a b #/equal-always? a b)
     ; dim-sys-dim-zero
     (fn ds 0)
     ; dim-sys-dim-max-of-two

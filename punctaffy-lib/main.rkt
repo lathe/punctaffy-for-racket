@@ -6,7 +6,7 @@
 ; have at hand. Namely, the notations for the hyperbrackets
 ; themselves.
 
-;   Copyright 2021, 2022 The Lathe Authors
+;   Copyright 2021, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@
 
 (define-for-syntax (parse-^<>d direction stx)
   (syntax-parse stx / (op degree contents ...)
-  /hash
+  /hashalw
     'lexical-context (datum->syntax stx '#%lexical-context)
     'direction direction
     'degree #'degree
@@ -76,7 +76,7 @@
 
 (define-for-syntax (parse-^<> direction degree stx)
   (syntax-parse stx / (op contents ...)
-  /hash
+  /hashalw
     'lexical-context (datum->syntax stx '#%lexical-context)
     'direction direction
     'degree degree

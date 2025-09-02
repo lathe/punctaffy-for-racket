@@ -4,7 +4,7 @@
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 
-;   Copyright 2018-2019, 2021-2022 The Lathe Authors
+;   Copyright 2018-2019, 2021-2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@
   -> ->i and/c any/c flat-contract? list/c listof none/c or/c
   rename-contract)
 (require #/only-in racket/math natural?)
-(require #/only-in racket/set set)
+(require #/only-in racket/set setalw)
 (require #/only-in syntax/parse
   exact-positive-integer id syntax-parse)
 
@@ -486,11 +486,11 @@
 (ascribe-own-contract hn-tag-1-token-of-syntax? (-> any/c boolean?))
 (ascribe-own-contract hn-tag-1-token-of-syntax-token
   (-> hn-tag-1-token-of-syntax?
-    (token-of-syntax-with-free-vars<=/c #/set 'contents)))
+    (token-of-syntax-with-free-vars<=/c #/setalw 'contents)))
 (define-match-expander-attenuated
   attenuated-hn-tag-1-token-of-syntax
   unguarded-hn-tag-1-token-of-syntax
-  [token (token-of-syntax-with-free-vars<=/c #/set 'contents)]
+  [token (token-of-syntax-with-free-vars<=/c #/setalw 'contents)]
   #t)
 (define-match-expander-from-match-and-make
   hn-tag-1-token-of-syntax
@@ -1095,7 +1095,7 @@
   #/mat data (hn-tag-1-token-of-syntax token-of-syntax)
     (process-splicing-stx-listlike #/fn lst
       (token-of-syntax->syntax-list token-of-syntax
-        (hash 'contents lst)))
+        (hashalw 'contents lst)))
   #/mat (parse-list*-tag bump-degree data tails)
     (just #/list stx-example list*-elems list*-tail tail)
     (w- list*-elems (hn-expr->s-expr-stx-list list*-elems)
@@ -1284,7 +1284,7 @@
     #/hn-bracs-n-d* ds n-d (extended-with-top-dim-infinite)
       (hnb-open 1 #/hn-tag-1-token-of-syntax
         (token-of-syntax-substitute token-of-syntax
-          (hash
+          (hashalw
             
             'lexical-context
             (syntax->token-of-syntax lexical-context-stx)

@@ -4,7 +4,7 @@
 @;
 @; Hypersnippet data structures and interfaces.
 
-@;   Copyright 2022 The Lathe Authors
+@;   Copyright 2022, 2025 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 
 Traditionally, a bracket appears as text in a text stream, and this token can be pulled out of the text stream and treated as a string. In Punctaffy, when we recognize @racket[taffy-notation?] @tech{hyperbracket} notations, we need to pull a token out of a program represented by a Racket syntax object. This results in a list of adjacent syntax objects, where each syntax object can have holes in it. Punctaffy supplies a data structure to represent this kind of data, which we call a token of syntax object tree content, or a @deftech{token of syntax} for short.
 
-The holes in a token of syntax are given mutually unique labels, and the labels are part of the token's representation. We call these labels the token's free variables. They can be arbitrary values identified by @racket[equal?], but usually, they're interned symbols.
+The holes in a token of syntax are given mutually unique labels, and the labels are part of the token's representation. We call these labels the token's free variables. They can be arbitrary values identified by @racket[equal-always?], but usually, they're interned symbols.
 
 In our representation, a token of syntax can also have nodes in it that represent assertions that they have only one subform once the holes are filled in. At the moment, these assertions are checked only when the token is converted into a list of syntax objects.
 
@@ -42,7 +42,8 @@ In our representation, a token of syntax can also have nodes in it that represen
 }
 
 @defproc[
-  (token-of-syntax-with-free-vars<=/c [free-vars-set set-equal?])
+  (token-of-syntax-with-free-vars<=/c
+    [free-vars-set set-equal-always?])
   flat-contract?
 ]{
   Returns a flat contract which recognizes any @tech{token of syntax} whose set of free variables is the same as or a subset of the given set.
@@ -140,7 +141,7 @@ In our representation, a token of syntax can also have nodes in it that represen
 )]{
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which consists of nothing but a single hole.
   
-  The hole is labeled with an arbitrary object to use as a free variable name, which will be identified using @racket[equal?].
+  The hole is labeled with an arbitrary object to use as a free variable name, which will be identified using @racket[equal-always?].
   
   When this token is converted to a list of syntax objects, the caller performing that conversion will specify some list of syntax objects to substitute for the variable, and that list will be the result. In the name of the node type, we specifically refer to this a "splicing" free variable occurrence, since the way it deals with a list of trees makes it more analogous to @racket[unquote-splicing] or @racket[unsyntax-splicing] than to @racket[unquote] or @racket[unsyntax].
 }
@@ -355,7 +356,9 @@ In our representation, a token of syntax can also have nodes in it that represen
 @defproc[
   (token-of-syntax-substitute
     [prefix token-of-syntax?]
-    [suffixes (and/c hash? hash-equal? (hash/c any/c token-of-syntax?))])
+    [ suffixes
+      (and/c hash? hash-equal-always?
+        (hash/c any/c token-of-syntax?))])
   token-of-syntax?
 ]{
   Transforms a @tech{token of syntax} by substituting other tokens of syntax for its free variables.
@@ -364,7 +367,7 @@ In our representation, a token of syntax can also have nodes in it that represen
 @defproc[
   (token-of-syntax->syntax-list
     [prefix token-of-syntax?]
-    [suffixes (and/c hash? hash-equal? (hash/c any/c list?))])
+    [suffixes (and/c hash? hash-equal-always? (hash/c any/c list?))])
   list?
 ]{
   Converts a @tech{token of syntax} into a list of syntax objects by substituting other lists of syntax objects for its free variables.

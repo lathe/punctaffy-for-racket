@@ -7,7 +7,7 @@
 ; in every respect, such as how many cons cells they generate.
 ; Instead, they err on the simpler side.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -23,10 +23,6 @@
 
 
 (require #/for-meta 1 racket/base)
-
-; NOTE: Just in case we want to switch back to `eq?` hashes, we refer
-; to `equal?` hashes more explicitly.
-(require #/for-meta 1 #/only-in racket/base [hash hashequal])
 
 (require #/for-meta 1 #/only-in lathe-comforts
   dissect dissectfn expect expectfn w-)
@@ -161,9 +157,9 @@
       (void))
   #/w- key-body 'body
   ; TODO: come up with a better value for `bracket-data`.
-  #/w- bracket-data (hashequal)
+  #/w- bracket-data (hashalw)
   #/careful-hoqq-closing-hatch (careful-hoqq-tower #/list)
-    (careful-hoqq-tower #/list #/hashequal key-body
+    (careful-hoqq-tower #/list #/hashalw key-body
     #/careful-hoqq-closing-bracket bracket-data
       (expectfn (hoqq-span-step (hoqq-tower #/list) func)
         (error "Expected a liner input that was a hoqq-span-step")
@@ -180,7 +176,7 @@
     #/careful-hoqq-closing-hatch (careful-hoqq-tower #/list)
       closing-brackets partial-span-step)
   #/careful-hoqq-span-step
-    (careful-hoqq-tower #/list #/hashequal key-body
+    (careful-hoqq-tower #/list #/hashalw key-body
     #/careful-hoqq-tower #/list)
   #/lambda (span-steps)
     (hoqq-span-step-instantiate

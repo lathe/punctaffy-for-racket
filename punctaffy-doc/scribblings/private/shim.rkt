@@ -5,7 +5,7 @@
 ; Import lists, debugging constants, and other utilities that are
 ; useful primarily for this codebase.
 
-;   Copyright 2021, 2022 The Lathe Authors
+;   Copyright 2021, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@
         (only-in #,(break 'racket/match)
           match-define match match/derived match-let)
         (only-in #,(break 'racket/math) natural?)
-        (only-in #,(break 'racket/set) set set-equal?)
+        (only-in #,(break 'racket/set) setalw set-equal-always?)
         (only-in #,(break 'syntax/datum) datum with-datum)
         (only-in #,(break 'syntax/parse)
           ~optional prop:pattern-expander ~seq syntax-parse)

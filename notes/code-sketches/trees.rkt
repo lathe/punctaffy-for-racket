@@ -5,7 +5,7 @@
 ; Data structures for encoding the kind of higher-order structure that
 ; occurs in higher quasiquotation.
 
-;   Copyright 2017-2018 The Lathe Authors
+;   Copyright 2017-2018, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -168,7 +168,8 @@
       (error "Expected degree and the degree of a to match"))
     (unless (eq? degree #/medium-degree b)
       (error "Expected degree and the degree of b to match"))
-    (unless (equal? (medium-edge-maybe a) (medium-edge-maybe b))
+    (unless
+      (equal-always? (medium-edge-maybe a) (medium-edge-maybe b))
       (error "Expected a and b to have equal adges")))
   #:other
   
@@ -185,7 +186,7 @@
     #/medium-unpacked
       (merge-asserted = degree
       #/merge-asserted = degree-a degree-b)
-      (merge-asserted equal? maybe-edge-a maybe-edge-b)
+      (merge-asserted equal-always? maybe-edge-a maybe-edge-b)
     #/lambda (maybe-content-edge content)
       (expect content (cons content-a content-b)
         (error "Expected content to be a cons cell")
@@ -238,9 +239,11 @@
     (error "Expected expected-lake-medium to be a medium"))
   (unless (= expected-degree #/tower-degree tower)
     (error "Expected tower to have degree expected-degree"))
-  (unless (equal? expected-island-medium #/tower-island-medium tower)
+  (unless
+    (equal-always? expected-island-medium #/tower-island-medium tower)
     (error "Expected tower to have island medium expected-island-medium"))
-  (unless (equal? expected-lake-medium #/tower-lake-medium tower)
+  (unless
+    (equal-always? expected-lake-medium #/tower-lake-medium tower)
     (error "Expected tower to have lake medium expected-lake-medium")))
 
 (define
@@ -249,14 +252,14 @@
   (unless (= (tower-degree tower) (medium-degree new-island-medium))
     (error "Expected tower and new-island-medium to have the same degree"))
   (unless
-    (equal?
+    (equal-always?
       (medium-edge-maybe #/tower-island-medium tower)
       (medium-edge-maybe new-island-medium))
     (error "Expected new-island-medium to have the same edge as the old one"))
   (unless (= (tower-degree tower) (medium-degree new-lake-medium))
     (error "Expected tower and new-lake-medium to have the same degree"))
   (unless
-    (equal?
+    (equal-always?
       (medium-edge-maybe #/tower-lake-medium tower)
       (medium-edge-maybe new-lake-medium))
     (error "Expected new-lake-medium to have the same edge as the old one"))
@@ -304,12 +307,12 @@
   (unless (= (tower-degree a) (tower-degree b))
     (error "Expected towers a and b to have equal degrees"))
   (unless
-    (equal?
+    (equal-always?
       (medium-edge-maybe #/tower-island-medium a)
       (medium-edge-maybe #/tower-island-medium b))
     (error "Expected towers a and b to have island mediums with the same edge"))
   (unless
-    (equal?
+    (equal-always?
       (medium-edge-maybe #/tower-lake-medium a)
       (medium-edge-maybe #/tower-lake-medium b))
     (error "Expected towers a and b to have lake mediums with the same edge"))
@@ -349,19 +352,20 @@
       (merge-asserted = degree-a degree-b)
       island-medium-consed
       lake-medium-consed
-      (merge-asserted equal? lake-sig-a lake-sig-b)
+      (merge-asserted equal-always? lake-sig-a lake-sig-b)
       (cons root-content-a root-content-b)
     #/tower-map-highest
       (tower-cons-highest tower-of-subtowers-a tower-of-subtowers-b)
-      (merge-asserted equal?
+      (merge-asserted equal-always?
         (tower-island-medium tower-of-subtowers-a)
         (tower-island-medium tower-of-subtowers-b))
       (subtower-medium
         (merge-asserted = sta-degree stb-degree)
         ; TODO: Make sure this `medium-edge` doesn't need to be a
         ; `medium-edge-maybe`.
-        (merge-asserted equal? (medium-edge lake-medium-consed)
-        #/merge-asserted equal? sta-main-medium stb-main-medium)
+        (merge-asserted equal-always? (medium-edge lake-medium-consed)
+        #/merge-asserted equal-always? sta-main-medium
+          stb-main-medium)
         ; Yes, we switch lakes and islands for the subtowers.
         lake-medium-consed
         island-medium-consed)
@@ -613,7 +617,7 @@
   #/expect
     ; TODO: This seems sloppy. There's probably something we have to
     ; do to finesse these to be equal.
-    (equal?
+    (equal-always?
       ; The `tower-of-towers` tower represents a bunch of lakes and
       ; the areas beyond, just like `hoqq-tower-content`. Thus, once
       ; we squash all the lakes out of it, we're left with only the

@@ -6,7 +6,7 @@
 ; but which use Punctaffy's hyperbrackets to manage their nesting and
 ; interoperation.
 
-;   Copyright 2018-2019, 2021-2022 The Lathe Authors
+;   Copyright 2018-2019, 2021-2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -374,7 +374,7 @@
     #/process-listlike #'() #/list
       #`(lambda contents
           #,@(token-of-syntax->syntax-list token
-               (hash 'contents (list #'contents)))))
+               (hashalw 'contents (list #'contents)))))
   #/mat (parse-list*-tag bump-degree data tails)
     (just #/list stx-example list*-elems list*-tail tail)
     (snippet-sys-snippet-join ss

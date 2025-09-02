@@ -3,10 +3,10 @@
 ; punctaffy/syntax-object/token-of-syntax
 ;
 ; A data structure to represent degree-2 hypersnippets of syntax
-; objects, with `equal?`-based names identifying the holes and
+; objects, with `equal-always?`-based names identifying the holes and
 ; indications of which holes are splicing and which are non-splicing.
 
-;   Copyright 2022 The Lathe Authors
+;   Copyright 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@
 (require /only-in racket/hash hash-union)
 (require /only-in racket/list append*)
 (require /only-in racket/match prop:match-expander)
-(require /only-in racket/set set-equal? set-member?)
+(require /only-in racket/set set-equal-always? set-member?)
 (require /only-in racket/struct make-constructor-style-printer)
 (require /only-in syntax/parse/define define-syntax-parse-rule)
 
@@ -188,7 +188,7 @@
   (-> token-of-tree-free-vars-collection? (hash/c any/c 'splicing)))
 
 (define (token-of-tree-free-vars-collection-append-zero)
-  (token-of-tree-free-vars-collection (hash) (binary-tree-empty)))
+  (token-of-tree-free-vars-collection (hashalw) (binary-tree-empty)))
 (define (token-of-tree-free-vars-collection-append-two a b)
   (dissect a (token-of-tree-free-vars-collection a-hash a-binary-tree)
   /dissect b
@@ -231,7 +231,7 @@
 
 (define/own-contract
   (token-of-syntax-with-free-vars<=/c free-vars-set)
-  (-> set-equal? flat-contract?)
+  (-> set-equal-always? flat-contract?)
   (w- name `(token-of-syntax-with-free-vars<=/c ,free-vars-set)
   /make-flat-contract #:name name
     #:first-order
@@ -383,7 +383,7 @@
   'token-of-syntax-beginning-with-splicing-free-var
   'token-of-syntax-beginning-with-splicing-free-var/syntax
   (token-of-tree-free-vars-collection
-    (hash var 'splicing)
+    (hashalw var 'splicing)
     (binary-tree-singleton var)))
 (define-token-of-syntax
   (token-of-syntax-beginning-with-syntax?
@@ -477,7 +477,8 @@
 (define/own-contract (token-of-syntax-substitute prefix suffixes)
   (->
     token-of-syntax?
-    (and/c hash? hash-equal? /hash/c any/c token-of-syntax?)
+    (and/c hash? immutable? hash-equal-always?
+      (hash/c any/c token-of-syntax?))
     token-of-syntax?)
   (mat prefix (token-of-syntax-beginning-with-splice elements)
     (list->token-of-syntax
@@ -509,7 +510,9 @@
     prefix))
 
 (define/own-contract (token-of-syntax->syntax-list prefix suffixes)
-  (-> token-of-syntax? (and/c hash? hash-equal? /hash/c any/c list?)
+  (->
+    token-of-syntax?
+    (and/c hash? immutable? hash-equal-always? /hash/c any/c list?)
     list?)
   (mat prefix (token-of-syntax-beginning-with-splice elements)
     (append* /for/list ([element (in-list elements)])

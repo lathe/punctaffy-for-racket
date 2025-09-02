@@ -5,9 +5,9 @@
 ; A dictionary-passing implementation of the monoid type class for
 ; Racket, using Racket's generic methods so that it's more
 ; straightforward to define dictiaonries that are comparable by
-; `equal?`.
+; `equal-always?`.
 
-;   Copyright 2017-2018, 2022 The Lathe Authors
+;   Copyright 2017-2018, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.

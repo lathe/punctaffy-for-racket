@@ -5,7 +5,7 @@
 ; Interfaces to represent numbers that represent the dimensionality of
 ; hypersnippets.
 
-;   Copyright 2019-2020, 2022 The Lathe Authors
+;   Copyright 2019-2020, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -738,7 +738,7 @@
     ; dim-sys-dim/c
     (fn ds natural?)
     ; dim-sys-dim=?
-    (fn ds a b #/equal? a b)
+    (fn ds a b #/equal-always? a b)
     ; dim-sys-dim-zero
     (fn ds 0)
     ; dim-sys-dim-max-of-two
@@ -1214,7 +1214,7 @@
   ; NOTE: We compare the original dimensions first, not because we
   ; have to right here but because it's consistent with other
   ; lexicographic comparisons we do with this type.
-  #/and (original-dim=? a-orig b-orig) (equal? a-i b-i)))
+  #/and (original-dim=? a-orig b-orig) (equal-always? a-i b-i)))
 (define-imitation-simple-struct
   (fin-multiplied-dim-sys?
     fin-multiplied-dim-sys-bound

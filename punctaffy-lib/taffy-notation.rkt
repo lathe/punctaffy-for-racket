@@ -6,7 +6,7 @@
 ; can parse as hyperbrackets, escape sequences, or other kinds of
 ; Punctaffy notation.
 
-;   Copyright 2021, 2022 The Lathe Authors
+;   Copyright 2021, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -26,12 +26,11 @@
   -> and/c any/c hash/dc listof none/c or/c syntax/c)
 (require /only-in racket/match match)
 (require /only-in racket/math natural?)
-(require /only-in racket/set set)
+(require /only-in racket/set setalw)
 
 (require /only-in lathe-comforts dissect fn)
 (require /only-in lathe-comforts/struct
-  auto-equal auto-write define-imitation-simple-generics
-  define-imitation-simple-struct)
+  auto-write define-imitation-simple-generics define-imitation-simple-struct)
 
 (require punctaffy/private/shim)
 (init-shim)
@@ -86,7 +85,7 @@
   (-> any/c boolean?))
 (ascribe-own-contract taffy-notation-akin-to-^<>d-parse
   (-> taffy-notation-akin-to-^<>d? syntax?
-    (and/c hash? immutable? hash-equal?
+    (and/c hash? immutable? hash-equal-always?
       (hash/dc
         [ k
           (or/c
@@ -102,14 +101,14 @@
             ['degree (syntax/c natural?)]
             ['contents (listof syntax?)]
             ['token-of-syntax
-              (token-of-syntax-with-free-vars<=/c /set
+              (token-of-syntax-with-free-vars<=/c /setalw
                 'lexical-context 'degree 'contents)])]))))
 (ascribe-own-contract prop:taffy-notation-akin-to-^<>d
   (struct-type-property/c taffy-notation-akin-to-^<>d-impl?))
 (ascribe-own-contract make-taffy-notation-akin-to-^<>d-impl
   (->
     (-> syntax?
-      (and/c hash? immutable? hash-equal?
+      (and/c hash? immutable? hash-equal-always?
         (hash/dc
           [ k
             (or/c
@@ -125,7 +124,7 @@
               ['degree (syntax/c natural?)]
               ['contents (listof syntax?)]
               [ 'token-of-syntax
-                (token-of-syntax-with-free-vars<=/c /set
+                (token-of-syntax-with-free-vars<=/c /setalw
                   'lexical-context 'degree 'contents)])])))
     taffy-notation-akin-to-^<>d-impl?))
 
@@ -148,7 +147,7 @@
 (define/own-contract (makeshift-taffy-notation-akin-to-^<>d parse)
   (->
     (-> syntax?
-      (and/c hash? immutable? hash-equal?
+      (and/c hash? immutable? hash-equal-always?
         (hash/dc
           [ k
             (or/c
@@ -164,7 +163,7 @@
               ['degree (syntax/c natural?)]
               ['contents (listof syntax?)]
               ['token-of-syntax
-                (token-of-syntax-with-free-vars<=/c /set
+                (token-of-syntax-with-free-vars<=/c /setalw
                   'lexical-context 'degree 'contents)])])))
     (and/c
       procedure?
