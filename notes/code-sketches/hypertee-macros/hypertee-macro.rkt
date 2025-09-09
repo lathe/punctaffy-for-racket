@@ -4,7 +4,7 @@
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 
-;   Copyright 2018-2019, 2021 The Lathe Authors
+;   Copyright 2018-2019, 2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -21,13 +21,14 @@
 
 (require #/only-in racket/contract/base -> any/c list/c)
 (require #/only-in racket/contract/region define/contract)
-(require #/only-in syntax/parse id syntax-parse)
+(require #/only-in syntax/parse ~not id syntax-parse)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/list list-foldr list-map)
 (require #/only-in lathe-comforts/maybe
   just maybe? maybe-bind maybe-map nothing)
 (require #/only-in lathe-comforts/struct struct-easy)
+(require #/only-in lathe-comforts/syntax ~autoptic-to)
 (require #/only-in lathe-comforts/trivial trivial)
 
 (require #/only-in punctaffy/hypersnippet/dim
@@ -159,7 +160,7 @@
 (struct-easy (ht-tag-2-prefab key stx-example) #:equal)
 (struct-easy (ht-tag-2-other val) #:equal)
 
-; This recursively converts the given Racket syntax object into an
+; This recursively converts the given Racket syntax object into a
 ; degree-omega hypertee. It performs a kind of macroexpansion on lists
 ; that begin with an identifier with an appropriate
 ; `syntax-local-value` binding. For everything else, it uses
@@ -167,11 +168,23 @@
 ; represent the other atoms, proper lists, improper lists, vectors,
 ; and prefab structs it encounters.
 ;
-(define/contract (s-expr-stx->ht-expr stx)
-  (-> syntax? hypertee?)
-  (mat
+(define/contract (s-expr-stx->ht-expr err-dsl-stx stx)
+  (-> syntax? syntax? hypertee?)
+  (w- default
+    (fn
+      ; We return a degree-omega hypertee with trivial contents in its
+      ; degree-0 hole, and with a single degree-1 hole that contains
+      ; `stx` itself (perhaps put in some kind of container so that it
+      ; can be distinguished from degree-1 holes that a user-defined
+      ; syntax introduces for a different reason).
+      (ht-bracs ds (omega) (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
+      #/htb-labeled 0 #/trivial))
+  #/syntax-parse stx #:context err-dsl-stx
+    [{~not #/~autoptic-to err-dsl-stx _} (default)]
+  #/ _
+  #/mat
     (syntax-parse stx
-      [ (op:id arg ...)
+      [ (op:id . args)
         (maybe-bind (syntax-local-maybe #'op) #/fn op
         #/maybe-map (ht-builder-syntax-maybe op) #/fn proc
         #/list op proc)]
@@ -208,10 +221,11 @@
     ; `s-expr-stx->ht-expr` reports that it has broken its own
     ; contract.
     ;
-    (proc op stx)
+    (proc op err-dsl-stx stx)
   #/w- process-list
     (fn elems
-      (list-map elems #/fn elem #/s-expr-stx->ht-expr elem))
+      (list-map elems #/fn elem
+        (s-expr-stx->ht-expr err-dsl-stx elem)))
   ; NOTE: We go to some trouble to detect improper lists here. This is
   ; so we can preserve the metadata of syntax objects occurring in
   ; tail positions partway through the list, which we would lose track
@@ -250,7 +264,7 @@
     ; Usually it'll be wrapped up as an atom. However, it could still
     ; be expanded as a identifier syntax or processed as a vector or
     ; as a prefab struct.
-    #/w- tail (s-expr-stx->ht-expr tail)
+    #/w- tail (s-expr-stx->ht-expr err-dsl-stx tail)
       ; This is like the proper list case, but this time the metadata
       ; represents an improper list operation (`list*`) rather than a
       ; proper list operation (`list`).
@@ -271,17 +285,9 @@
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
         (make-list-layer (ht-tag-2-vector stx-example) elems))]
-    
-    [_
-      ; We return a degree-omega hypertee with trivial contents in its
-      ; degree-0 hole, and with a single degree-1 hole that contains
-      ; `stx` itself (perhaps put in some kind of container so that it
-      ; can be distinguished from degree-1 holes that a user-defined
-      ; syntax introduces for a different reason).
-      (ht-bracs ds (omega) (htb-labeled 1 #/ht-tag-1-s-expr-stx stx) 0
-      #/htb-labeled 0 #/trivial)]))
+    [_ (default)]))
 
-; This recursively converts the given Racket syntax object into an
+; This recursively converts the given Racket syntax object into a
 ; degree-omega hypertee just like `s-expr-stx->ht-expr`, but it
 ; expects the outermost layer of the syntax object to be a proper
 ; list, and it does not represent that list in the result, so the
@@ -292,20 +298,20 @@
 ; reminder that ht-expressions aren't quite "expressions" so much as
 ; snippets of expression-like data.
 ;
-(define/contract (splicing-s-expr-stx->ht-expr stx)
-  (-> syntax? hypertee?)
+(define/contract (splicing-s-expr-stx->ht-expr err-dsl-stx stx)
+  (-> syntax? syntax? hypertee?)
   (hypertee-append-zero ds (omega)
   #/list-map (syntax->list stx) #/fn elem
-    (s-expr-stx->ht-expr elem)))
+    (s-expr-stx->ht-expr err-dsl-stx elem)))
 
 
 (struct-easy (simple-ht-builder-syntax impl)
   #:other
   #:property prop:ht-builder-syntax
-  (fn this stx
+  (fn this err-dsl-stx stx
     (expect this (simple-ht-builder-syntax impl)
       (error "Expected this to be a simple-ht-builder-syntax")
-    #/impl stx)))
+    #/impl err-dsl-stx stx)))
 
 (struct-easy
   (syntax-and-ht-builder-syntax syntax-impl ht-builder-syntax-impl)
@@ -320,10 +326,10 @@
     #/syntax-impl stx))
   
   #:property prop:ht-builder-syntax
-  (fn this stx
+  (fn this err-dsl-stx stx
     (expect this
       (syntax-and-ht-builder-syntax
         syntax-impl ht-builder-syntax-impl)
       (error "Expected this to be a syntax-and-ht-builder-syntax")
-    #/ht-builder-syntax-impl stx))
+    #/ht-builder-syntax-impl err-dsl-stx stx))
 )

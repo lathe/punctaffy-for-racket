@@ -4,7 +4,7 @@
 @;
 @; Discussion of Punctaffy's high-level motivations.
 
-@;   Copyright 2021 The Lathe Authors
+@;   Copyright 2021, 2025 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -140,17 +140,19 @@ However, expressions interpolated with @racket[unsyntax] don't have any ellipsis
 @RACKETBLOCK[
   (define-syntax (match-let/derived _stx)
     (syntax-parse _stx
-      [(_ _orig-stx ([_pat _val] ...) _body ...)
-       (syntax-protect
-         #`(let ()
-             #,(datum->syntax
-                 #f
-                 `(,#'match-define ,@#'(_pat _val))
-                 #'_orig-stx)
-             ...
-             (let ()
-               _body
-               ...)))]))
+      [{~autoptic-list
+         (_ _orig-stx
+           {~autoptic-list ({~autoptic-list [_pat _val]} ...)}
+           _body ...)}
+       #`(let ()
+            #,(datum->syntax
+                #f
+                `(,#'match-define ,@#'(_pat _val))
+                #'_orig-stx)
+            ...
+            (let ()
+              _body
+              ...))]))
 ]
 
 (TODO: See if we can make this a better example. The idea here is that the macro defines something like a cross between @racket[match/derived] and @racket[match-let], and it manipulates the call to @racket[match-define] to insert the source location of the given term to help with accurate error-reporting. However, we haven't tested that this manipulation would actually improve the error-reporting this way, and using the actual @racket[match/derived] would likely be a better idea than trying to make @racket[match-define] work just right.)
@@ -160,7 +162,10 @@ Incidentally, the @racket[syntax] DSL already has an experimental feature that c
 @racketblock[
   (define-syntax (match-let/derived _stx)
     (syntax-parse _stx
-      [(_ _orig-stx ([_pat _val] ...) _body ...)
+      [{~autoptic-list
+         (_ _orig-stx
+           {~autoptic-list ({~autoptic-list [_pat _val]} ...)}
+           _body ...)}
        
        (define-template-metafunction (_reattributed-match-define _stx)
          (syntax-parse _stx
@@ -170,13 +175,12 @@ Incidentally, the @racket[syntax] DSL already has an experimental feature that c
               `(,#'match-define ,@#'(_pat _val))
               #'_orig-stx)]))
        
-       (syntax-protect
-         #'(let ()
-             (_reattributed-match-define _pat _val)
-             ...
-             (let ()
-               _body
-               ...)))]))
+       #'(let ()
+           (_reattributed-match-define _pat _val)
+           ...
+           (let ()
+             _body
+             ...))]))
 ]
 
 However, using @racket[define-template-metafunction] substantially rearranges the code. That can be good in cases like this one, where the concept can be associated with a simple name and interface. On the other hand, @racket[unsyntax] comes in handy in situations where the code's navigability benefits from having some structural resemblance to the results it produces, or in situations where multiple DSLs have synergy together but haven't yet been fused into a single monolithic DSL.
@@ -190,21 +194,23 @@ Punctaffy currently defines a @racket[taffy-quote-syntax] operation, but it corr
 @racketblock[
   (define-syntax (match-let/derived _stx)
     (syntax-parse _stx
-      [(_ _orig-stx ([_pat _val] ...) _body ...)
-       (syntax-protect
-         (taffy-syntax
-           (^<d 3
+      [{~autoptic-list
+         (_ _orig-stx
+           {~autoptic-list ({~autoptic-list [_pat _val]} ...)}
+           _body ...)}
+       (taffy-syntax
+         (^<d 3
+           (let ()
+             (^>d 2
+               (list
+                 (datum->syntax
+                   #f
+                   `(,#'match-define ,@(^> (_pat _val)))
+                   #'_orig-stx)))
+             ...
              (let ()
-               (^>d 2
-                 (list
-                   (datum->syntax
-                     #f
-                     `(,#'match-define ,@(^> (_pat _val)))
-                     #'_orig-stx)))
-               ...
-               (let ()
-                 _body
-                 ...)))))]))
+               _body
+               ...))))]))
 ]
 
 This seems to be a rare example of where a degree-3 hypersnippet specifically would come in handy. Most of the things we say about hypersnippets of degree 3 aren't so specific; they would make just as much sense at degree 4, 5, etc.

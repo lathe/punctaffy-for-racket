@@ -89,6 +89,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   Struct-like operations which construct and deconstruct a @tech{token of syntax} consisting of a sequence of fewer than one or more than one syntax object or hole.
   
   The element list is a list of @racket[singular-token-of-syntax?] values. This just prevents @tt{token-of-syntax-beginning-with-splice?} values from being nested, which would otherwise be an unnecessary source of variation between token values.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -116,6 +118,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which carries an assertion that once it's used to build a list of syntax objects, that list will have a single element.
   
   This node type makes up for the fact that all compositions of tokens of syntax are splicing compositions in the sense of @racket[unquote-splicing] or @racket[unsyntax-splicing]. Using this, it's possible to assert that a certain use site actually only admits a single element, as would be the case with a non-splicing @racket[unquote] or @racket[unsyntax].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -144,6 +148,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   The hole is labeled with an arbitrary object to use as a free variable name, which will be identified using @racket[equal-always?].
   
   When this token is converted to a list of syntax objects, the caller performing that conversion will specify some list of syntax objects to substitute for the variable, and that list will be the result. In the name of the node type, we specifically refer to this a "splicing" free variable occurrence, since the way it deals with a list of trees makes it more analogous to @racket[unquote-splicing] or @racket[unsyntax-splicing] than to @racket[unquote] or @racket[unsyntax].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -176,6 +182,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which has a syntax object wrapper at its root.
   
   When this token is converted to a list of trees, it asserts that the given @racket[e] token results in a single value, and then it invokes @racket[datum->syntax] to wrap that value as a syntax object. The the lexical information, source location, and syntax properties of the wrapper are copied from the given @racket[stx-example].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -200,6 +208,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which has an immutable box at its root.
   
   When this token is converted to a list of trees, it asserts that the given @racket[element] token results in a single value, and then it wraps that value in an immutable box.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -227,6 +237,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which has an immutable vector at its root.
   
   When this token is converted to a list of trees, it takes the list of trees that result from the given @racket[elements] token and wraps them as the elements of an immutable vector.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -263,6 +275,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   Struct-like operations which construct and deconstruct a @tech{token of syntax} which has an immutable prefab struct at its root.
   
   When this token is converted to a list of trees, it takes the list of trees that result from the given @racket[elements] token and wraps them as the fields of an immutable prefab struct with the same @racket[prefab-struct-key] as @racket[prefab-struct-example]. If the prefab key isn't consistent with the computed number of fields, this raises an error. For now, this error is reported in terms of an internal call to @racket[make-prefab-struct].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -298,6 +312,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   If @racket[elements] results in a list of zero trees, the result will just be the result of @racket[tail], even if that's not a @racket[pair?].
   
   Unlike with @racket[token-of-syntax-beginning-with-splice?] nodes, we make no attempt to enforce that two @tt{token-of-syntax-beginning-with-list*?} nodes aren't nested in a way that could be combined into a single node. (TODO: Should we?)
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -344,6 +360,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   The value must not be a syntax object, an immutable box, an immutable vector, an immutable prefab struct, or a pair. This just prevents @tt{token-of-syntax-beginning-with-other-value?} values from being represented in alternative ways using the other token of syntax constructors, which would be an unnecessary source of variation between token values.
   
   (TODO: What if Racket's syntax supports more values in the future? In @racket[taffy-let] and our other hyperbracketed operations, we defensively disallow certain values that people might want hypersnippets to reach into someday, like @racket[hash?] and @racket[regexp?] values. Maybe we should disallow those here too. Alternatively, maybe we should just allow every type of value here, a policy which might be good for performance so that we don't traverse into certain data instances further than necessary.)
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[
@@ -405,7 +423,8 @@ In our representation, a token of syntax can also have nodes in it that represen
   The @racket[datum->result--id] argument should be an identifier bound to a syntax that can be used like @racket[(_datum->result _stx-example _datum-expr)] to transfer a syntax wrapper. For instance, the following syntax would create syntax wrappers that carry over the lexical information of the original syntax wrappers, but not their source locations or syntax properties:
   
   @racketblock[
-    (define-syntax-parse-rule (_datum->result _stx-example _datum)
+    (define-syntax-parse-rule/autoptic
+      (_datum->result _stx-example _datum)
       (syntax->datum (quote-syntax _stx-example #:local) _datum))
   ]
   

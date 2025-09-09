@@ -6,7 +6,7 @@
 ; but which use Punctaffy's hyperbrackets to manage their nesting and
 ; interoperation.
 
-;   Copyright 2018-2019, 2021-2022, 2025 The Lathe Authors
+;   Copyright 2018, 2019, 2021, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -73,6 +73,9 @@
 (require #/only-in lathe-comforts dissect expect fn w-)
 (require #/only-in lathe-comforts/list list-each)
 
+(require punctaffy/private/shim)
+(init-shim)
+
 (require #/only-in punctaffy/private/util
   datum->syntax-with-everything)
 
@@ -96,9 +99,13 @@
 ; package.
 ;
 (module private/lathe-debugging/placebo racket/base
+  (require punctaffy/private/shim)
+  (init-shim)
   (provide #/all-defined-out)
-  (define-syntax-rule (dlog value ... body) body)
-  (define-syntax-rule (dlogr value ... body) body))
+  (define-syntax-parse-rule/autoptic (dlog value:expr ... body:expr)
+    body)
+  (define-syntax-parse-rule/autoptic (dlogr value:expr ... body:expr)
+    body))
 (ifc debugging-with-prints
   (require #/for-syntax lathe-debugging)
   (require #/for-syntax 'private/lathe-debugging/placebo))
@@ -170,7 +177,8 @@
   (extend-with-top-dim-sys-morphism-sys #/nat-dim-sys))
 
 (define-for-syntax (adjust-atom err-dsl-stx atom-stx)
-  (w- a (syntax-e atom-stx)
+  (syntax-parse atom-stx #:context err-dsl-stx #/ {~autoptic _}
+  #/w- a (syntax-e atom-stx)
   #/if
     ; NOTE: See the `taffy-quote` documentation for commentary on why
     ; each of these types is supported and why certain other types are
@@ -205,7 +213,7 @@
 
 (define-syntax (splice-gen-helper stx)
   (syntax-protect
-  #/syntax-parse stx #/ (_ arg ...)
+  #/syntax-parse stx #/ {~autoptic-list (_ arg ...)}
   #/begin
     (list-each (syntax->list #'(arg ...)) #/fn arg
       (when (keyword? (syntax-e arg))
@@ -517,11 +525,12 @@
         root)))
 
 
-(define-syntax-rule (datum->datum stx-example datum)
+(define-syntax-parse-rule/autoptic
+  (datum->datum stx-example datum:expr)
   datum)
 
 (define-syntax (taffy-quote stx)
-  (syntax-parse stx #/ (_ quotation)
+  (syntax-parse stx #/ {~autoptic-list (_ quotation)}
   #/helper-for-quasiquote
     (fn hn
       (hn-expr-2->generator
@@ -537,10 +546,12 @@
     #'quotation))
 
 
-(define-syntax-rule (datum->quoted-syntax stx-example datum)
+(define-syntax-parse-rule/autoptic
+  (datum->quoted-syntax stx-example datum:expr)
   (datum->syntax-with-everything (quote-syntax stx-example) datum))
 
-(define-syntax-rule (datum->quoted-syntax-local stx-example datum)
+(define-syntax-parse-rule/autoptic
+  (datum->quoted-syntax-local stx-example datum:expr)
   (datum->syntax-with-everything (quote-syntax stx-example #:local)
     datum))
 
@@ -561,14 +572,12 @@
       'taffy-quote-syntax
       quotation))
   (syntax-parse stx
-    [
-      (_ quotation)
+    [ {~autoptic-list (_ quotation)}
       (helper
         (fn expr #`(quote-syntax #,expr))
         #'datum->quoted-syntax
         #'quotation)]
-    [
-      (_ #:local quotation)
+    [ {~autoptic-list (_ {~autoptic #:local} quotation)}
       (helper
         (fn expr #`(quote-syntax #,expr #:local))
         #'datum->quoted-syntax-local

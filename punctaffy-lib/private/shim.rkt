@@ -5,7 +5,7 @@
 ; Import lists, debugging constants, and other utilities that are
 ; useful primarily for this codebase.
 
-;   Copyright 2022 The Lathe Authors
+;   Copyright 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -28,8 +28,6 @@
     (only-in racket/syntax format-id)
     (only-in syntax/parse ~optional ~seq this-syntax))
   racket/base)
-
-(require /only-in syntax/parse/define define-syntax-parse-rule)
 
 (require /only-in reprovide/reprovide reprovide)
 
@@ -55,7 +53,7 @@
 ;
 (define-for-syntax activating-internal-contracts? #f)
 
-(define-syntax-parse-rule
+(define-syntax-parse-rule/autoptic
   (init-shim
     {~optional {~seq #:antecedent-land antecedent-land}
       #:defaults ([antecedent-land (datum->syntax this-syntax '())])})

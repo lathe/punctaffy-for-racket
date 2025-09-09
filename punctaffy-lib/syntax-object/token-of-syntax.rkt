@@ -243,12 +243,16 @@
         (set-member? free-vars-set var)))))
 
 
-(define-syntax-parse-rule
+(define-syntax-parse-rule/autoptic
   (define-token-of-syntax
-    (token?:id
-      (#:field field:id token-field:id field-description field/sig-c)
-      ...)
-    token
+    {~autoptic-list
+      (token?:id
+        {~autoptic-list
+          (#:field field:id token-field:id
+            field-description
+            field/sig-c)}
+        ...)}
+    token:id
     token-name
     token/syntax-name
     calculate-free-vars)
@@ -328,7 +332,7 @@
                       #:context stx
                       #:name "a first-class use")
                   token-name-result)]
-            [ (_ local-field ...)
+            [ {~autoptic-list (_ local-field ...)}
               
               {~@ #:declare local-field
                 (expr/c #'field/sig-c-result
@@ -341,7 +345,7 @@
           ; TODO: We should really use a syntax class for match
           ; patterns rather than `expr` here, but it doesn't look like
           ; one exists yet.
-          /syntax-parse stx / (_ field ...)
+          /syntax-parse stx / {~autoptic-list (_ field ...)}
             {~@ #:declare field expr}
             ...
             #'(unguarded-token _ field ...)))))

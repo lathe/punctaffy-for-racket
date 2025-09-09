@@ -4,7 +4,7 @@
 ;
 ; Unit tests corresponding to examples in the Punctaffy readme.
 
-;   Copyright 2021 The Lathe Authors
+;   Copyright 2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -19,10 +19,14 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require #/for-syntax #/only-in syntax/parse expr id)
+
 (require rackunit)
 (require #/only-in net/url
   combine-url/relative string->url url->string)
 (require #/only-in syntax/datum datum with-datum)
+
+(require #/only-in lathe-comforts define-syntax-parse-rule/autoptic)
 
 (require #/only-in punctaffy ^< ^>)
 (require #/only-in punctaffy/let list-taffy-map)
@@ -52,7 +56,8 @@
   '(a (@ (href "https://docs.racket-lang.org/punctaffy/index.html"))
      "Punctaffy docs"))
 
-(define-syntax-rule (check-make-sxml-unordered-list items body)
+(define-syntax-parse-rule/autoptic
+  (check-make-sxml-unordered-list items:id body:expr)
   (check-equal?
     (let ()
       (define (make-sxml-unordered-list items)

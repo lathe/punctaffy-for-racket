@@ -37,6 +37,9 @@
 (require /for-syntax /only-in punctaffy/taffy-notation
   makeshift-taffy-notation-akin-to-^<>d)
 
+(require punctaffy/private/shim)
+(init-shim)
+
 
 (provide
   ^<d
@@ -45,12 +48,8 @@
   ^>)
 
 
-(define-for-syntax (replace-body stx new-body)
-  (syntax-parse stx / (macro-name . _)
-  /datum->syntax stx `(,#'macro-name ,@new-body) stx stx))
-
 (define-for-syntax (parse-^<>d direction stx)
-  (syntax-parse stx / (op degree contents ...)
+  (syntax-parse stx / {~autoptic-list (op degree contents ...)}
   /hashalw
     'lexical-context (datum->syntax stx '#%lexical-context)
     'direction direction
@@ -75,7 +74,7 @@
   (parse-^<>d '> stx))
 
 (define-for-syntax (parse-^<> direction degree stx)
-  (syntax-parse stx / (op contents ...)
+  (syntax-parse stx / {~autoptic-list (op contents ...)}
   /hashalw
     'lexical-context (datum->syntax stx '#%lexical-context)
     'direction direction

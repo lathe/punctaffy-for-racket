@@ -5,7 +5,7 @@
 ; Binding and iteration operators which use Punctaffy's hyperbrackets
 ; to manage their nesting and interoperation.
 
-;   Copyright 2018-2019, 2021 The Lathe Authors
+;   Copyright 2018-2019, 2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -54,10 +54,8 @@
   hn-expr-forget-nests hn-expr->s-expr-stx-list hn-tag-0-s-expr-stx
   hn-tag-nest s-expr-stx->hn-expr)
 
-(require #/only-in racket/list append-map)
-(require #/only-in syntax/parse/define define-simple-macro)
-
-(require #/only-in lathe-comforts fn w-)
+(require punctaffy/private/shim)
+(init-shim)
 
 
 (provide
@@ -188,85 +186,59 @@
   #/list bindings body))
 
 
-; TODO: See which of these we should export. Document `taffy-let`.
-
-; TODO: Instead of using this, use something with better error
-; messages (i.e. something that passes custom arguments to
-; `helper-for-let`).
-(define-syntax (taffy-letlike stx)
-  (syntax-protect
-  #/syntax-parse stx #/ (_ letlike-call ... body-and-splices)
-    
-    #:with (([var val] ...) body)
-    (helper-for-let
-      stx
-      "s-expression"
-      "a taffy-letlike invocation"
-      'taffy-letlike
-      #'body-and-splices)
-    
-    #'(letlike-call ... ([var val] ...) body)))
-
-; TODO: See if we'll use this. It would be good for a binding time
-; annotation.
-(define-simple-macro
-  (letlike-eager letlike-call ... ([var:id val:expr] ...) body)
-  (letlike-call ... ([var (w- result val #/fn result)] ...)
+(define-syntax-parse-rule/autoptic
+  (taffy-let {~autoptic-list ({~autoptic-list [var:id val:expr]} ...)}
+    body-and-splices)
+  
+  #:with (([splice-var splice-val] ...) body)
+  (helper-for-let
+    this-syntax
+    "s-expression"
+    "a taffy-let invocation"
+    'taffy-let
+    #'body-and-splices)
+  
+  (let ([var val] ... [splice-var (fn splice-val)] ...)
     body))
 
-(define-simple-macro
-  (letlike-lazy letlike-call ... ([var:id val:expr] ...) body)
-  (letlike-call ... ([var (fn val)] ...)
-    body))
-
-(define-simple-macro
-  (letlike-merge letlike-call ...
-    ([var-1:id val-1:expr] ...)
-    ([var-2:id val-2:expr] ...)
-    body)
-  (letlike-call ... ([var-1 val-1] ... [var-2 val-2] ...)
-    body))
-
-(define-simple-macro
-  (taffy-let ([var:id val:expr] ...) body-and-splices)
-  (taffy-letlike letlike-lazy letlike-merge let ([var val] ...)
-    body-and-splices))
-
-(define-simple-macro (list-taffy-map-impl ([var:id val] ...+) body)
+(define-syntax-parse-rule/autoptic (list-taffy-map body-and-splices)
+  
+  #:with (([var val] ...) body)
+  (helper-for-let
+    this-syntax
+    "s-expression"
+    "a list-taffy-map invocation"
+    'list-taffy-map
+    #'body-and-splices)
+  
   #:declare val (expr/c #'list? #:name "an iteration subject")
   #:declare body (expr/c #'any/c #:name "a transformed list element")
   #:with (elem ...+) (generate-temporaries #'(var ...))
+  
   (map
     (lambda (elem ...)
       (let ([var (fn elem)] ...)
-        body))
+        body.c))
     val.c
     ...))
 
-(define-simple-macro (list-taffy-map body-and-splices)
-  (taffy-letlike list-taffy-map-impl body-and-splices))
-
-(define-simple-macro (list-taffy-bind-impl ([var:id val] ...+) body)
+(define-syntax-parse-rule/autoptic (list-taffy-bind body-and-splices)
+  
+  #:with (([var val] ...) body)
+  (helper-for-let
+    this-syntax
+    "s-expression"
+    "a list-taffy-bind invocation"
+    'list-taffy-bind
+    #'body-and-splices)
+  
   #:declare val (expr/c #'list? #:name "an iteration subject")
-  #:declare body (expr/c #'list? #:name "a transformed list segment")
+  #:declare body (expr/c #'any/c #:name "a transformed list element")
   #:with (elem ...+) (generate-temporaries #'(var ...))
+  
   (append-map
     (lambda (elem ...)
       (let ([var (fn elem)] ...)
-        body))
+        body.c))
     val.c
     ...))
-
-(define-simple-macro (list-taffy-bind body-and-splices)
-  (taffy-letlike list-taffy-bind-impl body-and-splices))
-
-(define-simple-macro
-  (taffy-forlike-impl forlike-call ... ([var:id seq:expr] ...) body)
-  #:with (eager-var ...) (generate-temporaries #'(var ...))
-  (forlike-call ... ([eager-var seq] ...)
-    (let ([var (fn eager-var)] ...)
-      body)))
-
-(define-simple-macro (taffy-forlike forlike-call ... body-and-splices)
-  (taffy-letlike taffy-forlike-impl forlike-call ...
-    body-and-splices))

@@ -4,7 +4,7 @@
 @;
 @; Various hyperbracketed operations.
 
-@;   Copyright 2021, 2022 The Lathe Authors
+@;   Copyright 2021, 2022, 2025 The Lathe Authors
 @;
 @;   Licensed under the Apache License, Version 2.0 (the "License");
 @;   you may not use this file except in compliance with the License.
@@ -147,6 +147,8 @@ For instance, @racket[list-taffy-map] can accommodate nested occurrences of @rac
   
   This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:taffy-notation-akin-to-^<>d]. Other @racket[prop:taffy-notation] notations are not yet supported but may be supported in the future.
   
+  This syntax must be called with @tech[#:doc lathe-comforts-doc]{autopticity}, which in this syntax's case is somewhat subtle. Uses of hyperbracket notations (such as @racket[^<], @racket[^>], @racket[^<d], and @racket[^>d]) enforce autopticity of their syntax themselves, so certain custom hyperbracket notations may eschew the autopticity requirement on some of their subforms.
+  
   For examples of using @tt{taffy-quote}, see @secref["intro"].
   
   @; TODO: Even though we can link to examples in the intro, consider putting some examples on this page as well.
@@ -201,6 +203,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   [
     (body-expr-and-splices
       atomic-form
+      non-autoptic-form
       ()
       (body-expr-and-splices . body-expr-and-splices)
       #&body-expr-and-splices
@@ -216,7 +219,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   @specsubform[atomic-form]{
     Produces itself.
     
-    The @racket[atomic-form] expression must be represented by an instance of one of a specific list of types. Generally, we intend to support exactly those representations which can appear in Racket code. Some of these values can accommodate internal s-expressions, including spliced expressions, and they're covered by the other cases of this grammar (@racket[list?], @racket[box?], @racket[pair?], @racket[vector?], and instances of immutable prefab structure types). The @racket[atomic-form] case is a catch-all for those values which are unlikely to ever accommodate internal s-expressions.
+    The @racket[atomic-form] form must be represented by an instance of one of a specific list of types. Generally, we intend to support exactly those representations which can appear in Racket code. Some of these values can accommodate internal s-expressions, including spliced expressions, and they're covered by the other cases of this grammar (@racket[list?], @racket[box?], @racket[pair?], @racket[vector?], and instances of immutable prefab structure types). The @racket[atomic-form] case is a catch-all for those values which are unlikely to ever accommodate internal s-expressions.
     
     Values supported:
     
@@ -237,6 +240,12 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
     ]
     
     (TODO: Currently, we actually let all kinds of representations through, including the ones we've listed as being excluded here. Let's fix this.)
+  }
+  
+  @specsubform[non-autoptic-form]{
+    Produces itself.
+    
+    Unlike the other cases here, the @racket[atomic-form] form must @emph{not} be @tech[#:doc lathe-comforts-doc]{autoptic} to the overall @racket[(taffy-let _...)] form. That is to say, its scopes must not be equal to or a superset of that syntax object's scopes.
   }
   
   @specsubform[()]{
@@ -290,6 +299,8 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   
   This operation parses hyperbracket notation in its own way. It supports all the individual notations currently exported by Punctaffy (including the @racket[^<d], @racket[^>d], @racket[^<], and @racket[^>] notations mentioned here), and it also supports some user-defined operations if they're defined using @racket[prop:taffy-notation-akin-to-^<>d]. Other @racket[prop:taffy-notation] notations are not yet supported but may be supported in the future.
   
+  This syntax must be called with @tech[#:doc lathe-comforts-doc]{autopticity}, which in this syntax's case is somewhat subtle. The @racket[non-autoptic-form] case is an exception to the autopticity requirement. Uses of hyperbracket notations (such as @racket[^<], @racket[^>], @racket[^<d], and @racket[^>d]) enforce autopticity of their syntax themselves, so certain custom hyperbracket notations may eschew the autopticity requirement on some of their subforms.
+  
   @examples[
     #:eval (example-eval)
     (eval:alts
@@ -313,6 +324,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   [
     (body-expr-and-splices
       atomic-form
+      non-autoptic-form
       ()
       (body-expr-and-splices . body-expr-and-splices)
       #&body-expr-and-splices
@@ -346,6 +358,7 @@ This module uses the higher-dimensional lexical structure afforded by @tech{hype
   [
     (body-expr-and-splices
       atomic-form
+      non-autoptic-form
       ()
       (body-expr-and-splices . body-expr-and-splices)
       #&body-expr-and-splices

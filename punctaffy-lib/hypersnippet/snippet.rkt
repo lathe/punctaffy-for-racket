@@ -84,9 +84,13 @@
 ; package.
 ;
 (module private/lathe-debugging/placebo racket/base
+  (require punctaffy/private/shim)
+  (init-shim)
   (provide #/all-defined-out)
-  (define-syntax-rule (dlog value ... body) body)
-  (define-syntax-rule (dlogr value ... body) body))
+  (define-syntax-parse-rule/autoptic (dlog value:expr ... body:expr)
+    body)
+  (define-syntax-parse-rule/autoptic (dlogr value:expr ... body:expr)
+    body))
 (ifc debugging-with-prints
   (require lathe-debugging)
   (require 'private/lathe-debugging/placebo))
@@ -4739,7 +4743,7 @@
   ; TODO: We should really use a syntax class for match patterns
   ; rather than `expr` here, but it doesn't look like one exists yet.
   (syntax-protect
-  #/syntax-parse stx #/ (_ ds:expr coil:expr)
+  #/syntax-parse stx #/ {~autoptic-list (_ ds:expr coil:expr)}
     #'(app
         (fn v
           (4:dlog 'hqq-i1

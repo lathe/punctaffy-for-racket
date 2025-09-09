@@ -357,6 +357,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racketmodname[lathe-morphisms/in-fp/category] category (@racket[category-sys?]) where the objects are @tech{dimension systems} and the morphisms are structure-preserving transformations between them (namely, @racket[dim-sys-morphism-sys?] values).
   
   Every two @tt{dim-sys-category-sys} values are @racket[equal-always?]. One such value is always an @racket[ok/c] match for another.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[
@@ -446,6 +448,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The @racket[dim-sys-dim/c] of a @racket[nat-dim-sys] is a flat contract.
   
   Every two @tt{nat-dim-sys} values are @racket[equal-always?]. One such value is always an @racket[ok/c] match for another.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -466,6 +470,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct an @racket[extended-with-top-dim?] value that represents one of the original @tech{dimension numbers} of a @tech{dimension system} that was extended with an infinite dimension number.
   
   Two @tt{extended-with-top-dim-finite} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -481,6 +487,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct an @racket[extended-with-top-dim?] value that represents the infinite @tech{dimension number} of a @tech{dimension system} that was extended with one.
   
   Every two @tt{extended-with-top-dim-infinite} values are @racket[equal-always?].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[(extended-with-top-dim? [v any/c]) boolean?]{
@@ -532,6 +540,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The resulting dimension system's @racket[dim-sys-dim-max] operation corresponds with the original operation on the @racket[extended-with-top-dim-finite?] dimension numbers, and it treats the @racket[extended-with-top-dim-infinite?] dimension number as being greater than the rest.
   
   Two @tt{extended-with-top-dim-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -559,6 +569,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racket[dim-sys-morphism-sys?] value where the source and target are @racket[extended-with-top-dim-sys?] values and the action on finite @tech{dimension numbers} is the given @racket[dim-sys-morphism-sys?]. In other words, this transforms @racket[extended-with-top-dim?] values by transforming their @racket[extended-with-top-dim-finite-original] values, if any.
   
   Two @tt{extended-with-top-dim-sys-morphism-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -582,6 +594,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racketmodname[lathe-morphisms/in-fp/category] @racket[functor-sys?] value where the source and target categories are both @racket[(dim-sys-category-sys)] and the action on morphisms is @racket[extended-with-top-dim-sys-morphism-sys]. In other words, this value represents the transformation-transforming functionality of @racket[extended-with-top-dim-sys-morphism-sys] together with the assurance that its meta-transformation respects the compositional laws of the object-transformations the way a functor does.
   
   Every two @tt{extended-with-top-dim-sys-morphism-sys} values are @racket[equal-always?]. One such value is always an @racket[ok/c] match for another.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -606,6 +620,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racket[dim-sys-morphism-sys?] value where the source is any @racket[dim-sys?] value and the target is a corresponding @racket[dim-sys?] made by @racket[extended-with-top-dim-sys]. The action on @tech{dimension numbers} is @racket[extended-with-top-dim-finite]. In other words, this transforms dimension numbers by transporting them to their corresponding elements in a @tech{dimension system} that has been extended with an additional number greater than all the others. (No dimension number from the source is transported to the additional number in the target.)
   
   Two @tt{extend-with-top-dim-sys-morphism-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @; TODO: See if we should implement and export a natural
@@ -637,6 +653,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   This is primarily used as the source of @racket[unextend-with-top-dim-sys], which otherwise would have to have an error-handling case if it encountered the @racket[extended-with-top-dim-infinite] value. (TODO: Consider passing an error handler to @racket[unextend-with-top-dim-sys-morphism-sys]. Perhaps that would be a better approach than this, since we would be encouraged to write errors where the error messages make the most sense, not rely indirectly on the error messages of the contracts of the behaviors we invoke. On the other hand, perhaps that error-handling should take place in a morphism (or natural transformation) from @racket[extended-with-top-dim-sys] to @racket[extended-with-top-finite-dim-sys].)
   
   Two @tt{extended-with-top-finite-dim-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @; TODO: See if we should implement and export a functor corresponding
@@ -670,6 +688,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Note that the source is an @racket[extended-with-top-finite-dim-sys?] value, not an @racket[extended-with-top-dim-sys?] value, so this operation can't encounter a @racket[extended-with-top-dim-infinite] value and get stuck.
   
   Two @tt{extend-with-top-dim-sys-morphism-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @; TODO: See if we should implement and export a natural
@@ -700,6 +720,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racket[selectable?] value that represents a value that has not been selected to be processed as part of a collection traveral.
   
   Two @tt{unselected} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -712,6 +734,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racket[selectable?] value that represents a value that has indeed been selected to be processed as part of a collection traveral.
   
   Two @tt{selected} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[(selectable? [v any/c]) boolean?]{
@@ -1614,6 +1638,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racketmodname[lathe-morphisms/in-fp/category] category (@racket[category-sys?]) where the objects are @tech{snippet systems} and the morphisms are structure-preserving transformations between them (namely, @racket[snippet-sys-morphism-sys?] values).
   
   Every two @tt{snippet-sys-category-sys} values are @racket[equal-always?]. One such value is always an @racket[ok/c] match for another.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[
@@ -1961,6 +1987,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racketmodname[lathe-morphisms/in-fp/category] category (@racket[category-sys?]) where the objects are @tech{snippet format systems} and the morphisms are structure-preserving transformations between them (namely, @racket[snippet-format-sys-morphism-sys?] values).
   
   Every two @tt{snippet-format-sys-category-sys} values are @racket[equal-always?]. One such value is always an @racket[ok/c] match for another.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @; TODO: Consider having `functor-from-snippet-format-sys-sys-apply-to-morphism`, similar to `functor-from-dim-sys-sys-apply-to-morphism`.
@@ -2029,6 +2057,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racket[hypertee-coil/c] value that represents one layer of recursion in a @tech{hypertee} of @tech{degree} 0 (in the sense of @racket[dim-sys-dim-zero]).
   
   Every two @tt{hypertee-coil-zero} values are @racket[equal-always?].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2065,6 +2095,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   A hypertee based on this kind of coil is essentially created from a @racket[snippet-sys-snippet-done] in the shape of the hole, concatenated with the tail hypertees using @racket[snippet-sys-snippet-join]. Considering this, it might be tempting to work with hypertees using only the generic @tech{snippet system} operations, but even though that interface supplies a way to put together this kind of hypertee, it doesn't supply a way to take it apart again to work with its details. Pattern-matching on the coils allows the details to be traversed.
   
   Two @tt{hypertee-coil-hole} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @; TODO: Consider having a `hypertee-coil?`.
@@ -2097,6 +2129,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The data has to be placed somewhere among the hole's brackets, and we place it at the first bracket as a stylistic choice for readability: This way, the placement of data values is comparable to the placement of @emph{section headings} in a document or @emph{prefix operators} in a Racket program.
   
   Two @tt{htb-labeled} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2115,6 +2149,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The given @racket[degree] is the @tech{degree} of the hole that's being initiated by this bracket. Even though this bracket isn't the first bracket of a hole of the hypertee, it's still the first bracket of @emph{some} hole. It could be the first bracket of a hole of a hole of the hypertee; the first bracket of a hole of a hole of a hole of the hypertee; etc.
   
   Two @tt{htb-unlabeled} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[(hypertee-bracket? [v any/c]) boolean?]{
@@ -2154,6 +2190,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Constructs or deconstructs a @tech{hypertee} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypertee-coil/c] value.
   
   Two @tech{hypertees} are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding components when seen this way are similarly equivalent. Note that this isn't the only way to understand their representation; they can also be seen as being constructed by @racket[hypertee-from-brackets].
+  
+  @enforces-autopticity[]
 }
 
 @defproc[
@@ -2240,6 +2278,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   (TODO: This isn't really a complete specification of the behavior. A complete specification might get very exhaustive or technical, but let's see if we can at least improve this description over time. Perhaps we should go through and hedge some of the ways we describe hypertees so that they specifically appeal to @tt{hypertee-snippet-sys} as the basis for their use of terms like "hypersnippet," "@tech{degree}," and "hole.")
   
   Two @tt{hypertee-snippet-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2257,6 +2297,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The shapes and snippets are related according to the same behavior as @racket[hypertee-snippet-sys]. In some sense, this is a generalization of @racket[hypertee-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypertee while leaving the rest of the structure alone.
   
   Every two @tt{hypertee-snippet-format-sys} values are @racket[equal-always?]. One such value is always an @racket[ok/c] match for another.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[
@@ -2291,6 +2333,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Struct-like operations which construct and deconstruct a @racket[hypernest-coil/c] value that represents one layer of recursion in a @tech{hypernest} of @tech{degree} 0 (in the sense of @racket[dim-sys-dim-zero]).
   
   Every two @tt{hypernest-coil-zero} values are @racket[equal-always?].
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2333,6 +2377,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   A hypernest based on this kind of coil is essentially created from a @racket[snippet-sys-snippet-done] in the shape of the hole, concatenated with the tail hypernests using @racket[snippet-sys-snippet-join].
   
   Two @tt{hypernest-coil-hole} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2375,6 +2421,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   We save ourselves some verbosity and some repetitive contract-checking by leaving out the @tech{dimension system}. If we stored a dimension system alongside the rest of the fields in a @tt{hypernest-coil-bump}, we could enforce far more precise contracts on the field values, but instead we allow any value to be stored in any of the fields and rely on @racket[hypernest-coil/c] in the contract of any operation that needs to enforce the structure. (TODO: Reconsider this choice. In most places, we pass a coil to something that associates it with a dimension system as soon as we create it, so we're effectively passing in the dimension system at the same time anyway. But for the sake of people doing a lot of computation at the coil level, perhaps enforcing contracts is too costly. We'll probably need more practical experience before we understand the tradeoffs.)
   
   Two @tt{hypernest-coil-bump} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @; TODO: Consider having a `hypernest-coil?`.
@@ -2419,6 +2467,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The data has to be placed somewhere among the bump's brackets, and we place it at the first bracket as a stylistic choice for readability: This way, the placement of data values is comparable to the placement of @emph{section headings} in a document or @emph{prefix operators} in a Racket program.
   
   Two @tt{hnb-open} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2440,6 +2490,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The data has to be placed somewhere among the hole's brackets, and we place it at the first bracket as a stylistic choice for readability: This way, the placement of data values is comparable to the placement of @emph{section headings} in a document or @emph{prefix operators} in a Racket program.
   
   Two @tt{hnb-labeled} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2466,6 +2518,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   ]
   
   Two @tt{hnb-unlabeled} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @defproc[(hypernest-bracket? [v any/c]) boolean?]{
@@ -2534,6 +2588,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   Constructs or deconstructs a @tech{hypernest} value, regarding it as being made up of a @tech{dimension system} and a @racket[hypernest-coil/c] value.
   
   Two @tech{hypernests} are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding components when seen this way are similarly equivalent. Note that this isn't the only way to understand their representation; they can also be seen as being constructed by @racket[hypernest-from-brackets].
+  
+  @enforces-autopticity[]
 }
 
 @defproc[
@@ -2725,6 +2781,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   (TODO: This isn't really a complete specification of the behavior. A complete specification might get very exhaustive or technical, but let's see if we can at least improve this description over time. Perhaps we should go through and hedge some of the ways we describe hypernests so that they specifically appeal to @tt{hypernest-snippet-sys} as the basis for their use of terms like "hypersnippet," "@tech{degree}," and "hole.")
   
   Two @tt{hypernest-snippet-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 @deftogether[(
@@ -2751,6 +2809,8 @@ A hypernest is a generalization of an s-expression or other syntax tree. In an s
   The shapes and snippets are related according to the same behavior as @racket[hypernest-snippet-sys]. In some sense, this is a generalization of @racket[hypernest-snippet-sys] which puts the choice of dimension system in the user's hands. Instead of merely generalizing by being more late-bound, this also generalizes by having slightly more functionality: The combination of @racket[functor-from-dim-sys-sys-apply-to-morphism] with @racket[snippet-format-sys-functor] allows for transforming just the @tech{degrees} of a hypernest while leaving the rest of the structure alone.
   
   Two @tt{hypernest-snippet-format-sys} values are related by @racket[equal-always?], @racket[equal?], or @racket[ok/c] if their corresponding fields are similarly related.
+  
+  @constructor-enforces-autopticity[]
 }
 
 

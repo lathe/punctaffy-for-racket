@@ -4,7 +4,7 @@
 ;
 ; An import list that's useful primarily for this codebase.
 
-;   Copyright 2022 The Lathe Authors
+;   Copyright 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -19,5 +19,17 @@
 ;   language governing permissions and limitations under the License.
 
 
+(for-syntax /only-in syntax/parse expr this-syntax)
+
+(for-syntax /only-in lathe-comforts/own-contract
+  ascribe-own-contract define/own-contract own-contract-out)
+(for-syntax /only-in lathe-comforts/syntax ~autoptic ~autoptic-list)
+
+
+(only-in racket/contract/base any/c)
+(only-in racket/list append-map)
+(only-in syntax/parse ~not)
+
+(only-in lathe-comforts define-syntax-parse-rule/autoptic fn w-)
 (only-in lathe-comforts/own-contract
   ascribe-own-contract define/own-contract own-contract-out)

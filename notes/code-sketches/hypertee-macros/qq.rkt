@@ -6,7 +6,7 @@
 ; sequences which can generalize unquotation and nested
 ; quasiquotation.
 
-;   Copyright 2018-2019, 2021 The Lathe Authors
+;   Copyright 2018-2019, 2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@
 
 
 (require #/for-syntax racket/base)
-(require #/for-syntax #/only-in syntax/parse id syntax-parse)
+(require #/for-syntax #/only-in syntax/parse
+  id syntax-parse this-syntax)
+
+(require #/only-in lathe-comforts define-syntax-parse-rule/autoptic)
 
 (provide my-quasiquote)
 
@@ -37,6 +40,7 @@
   (require #/only-in lathe-comforts dissect expect fn mat w-)
   (require #/only-in lathe-comforts/maybe just)
   (require #/only-in lathe-comforts/struct struct-easy)
+  (require #/only-in lathe-comforts/syntax ~autoptic-list)
   (require #/only-in lathe-comforts/trivial trivial)
   
   (require #/only-in "hypertee-macro.rkt"
@@ -77,7 +81,7 @@
     #:equal)
   
   (define (make-op-bracket call-stx)
-    (syntax-parse call-stx #/ (op body)
+    (syntax-parse call-stx #/ {~autoptic-list (op body)}
     #/ht-bracs ds (omega)
       (htb-labeled 2 #/ht-tag-2-list #/datum->syntax call-stx #/list)
       1
@@ -90,7 +94,7 @@
     #/htb-labeled 0 #/trivial))
   
   (define my-quasiquote-uq
-    (simple-ht-builder-syntax #/fn stx
+    (simple-ht-builder-syntax #/fn err-dsl-stx stx
       (syntax-parse stx
         [op:id
           ; If this syntax transformer is used in an identifier
@@ -103,7 +107,7 @@
             (htb-labeled 1 #/ht-tag-1-s-expr-stx stx)
             0
           #/htb-labeled 0 #/trivial)]
-      #/ (op interpolation)
+      #/ {~autoptic-list (op interpolation)}
       #/ht-bracs ds (omega)
         (htb-labeled 1
         #/ht-tag-1-other #/my-quasiquote-tag-1-unmatched-unquote
@@ -113,7 +117,7 @@
       #/htb-labeled 0 #/trivial)))
   
   (define my-quasiquote-qq
-    (simple-ht-builder-syntax #/fn stx
+    (simple-ht-builder-syntax #/fn err-dsl-stx stx
       (syntax-parse stx
         [op:id
           ; If this syntax transformer is used in an identifier
@@ -123,8 +127,8 @@
             (htb-labeled 1 #/ht-tag-1-s-expr-stx stx)
             0
           #/htb-labeled 0 #/trivial)]
-      #/ (op body)
-      #/w- body (s-expr-stx->ht-expr #'body)
+      #/ {~autoptic-list (op body)}
+      #/w- body (s-expr-stx->ht-expr err-dsl-stx #'body)
       ; We make a hypertee with a single degree-2 hole (annotated with
       ; the body of the quasiquotation) and some degree-1 holes
       ; (annotated with the `s-expr-stx->ht-expr` expansions of the
@@ -149,7 +153,7 @@
               closing-bracket interpolation)
             (hypertee-increase-degree-to (omega) hole)
           #/hypertee-done (omega)
-            (s-expr-stx->ht-expr interpolation)
+            (s-expr-stx->ht-expr err-dsl-stx interpolation)
             hole)))))
   
   (define (my-quasiquote-ht-expr->stx ht-expr)
@@ -291,8 +295,10 @@
       stx))
   
   (define (my-quasiquote-begin-fn stx)
-    (syntax-parse stx #/ (_ quotation:expr)
-    #/my-quasiquote-ht-expr->stx #/s-expr-stx->ht-expr #'quotation))
+    (syntax-parse stx #/
+      {~autoptic-list (_ err-dsl-stx quotation:expr)}
+    #/my-quasiquote-ht-expr->stx
+      (s-expr-stx->ht-expr #'err-dsl-stx #'quotation)))
   
 )
 (require #/for-syntax 'part1-private)
@@ -300,7 +306,7 @@
 
 (define-syntax my-quasiquote-begin my-quasiquote-begin-fn)
 
-(define-syntax (my-quasiquote stx)
-  (syntax-parse stx #/ (_ uq:id (qq:id body))
-    #'(let-syntax ([uq my-quasiquote-uq] [qq my-quasiquote-qq])
-      #/my-quasiquote-begin body)))
+(define-syntax-parse-rule/autoptic (my-quasiquote uq:id (qq:id body))
+  #:with err-dsl-stx this-syntax
+  (let-syntax ([uq my-quasiquote-uq] [qq my-quasiquote-qq])
+  #/my-quasiquote-begin err-dsl-stx body))

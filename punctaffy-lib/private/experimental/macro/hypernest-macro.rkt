@@ -4,7 +4,7 @@
 ;
 ; A framework for macros which take hypersnippet-shaped syntax.
 
-;   Copyright 2018-2019, 2021-2022, 2025 The Lathe Authors
+;   Copyright 2018, 2019, 2021, 2022, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -42,9 +42,13 @@
 ; package.
 ;
 (module private/lathe-debugging/placebo racket/base
+  (require punctaffy/private/shim)
+  (init-shim)
   (provide #/all-defined-out)
-  (define-syntax-rule (dlog value ... body) body)
-  (define-syntax-rule (dlogr value ... body) body))
+  (define-syntax-parse-rule/autoptic (dlog value:expr ... body:expr)
+    body)
+  (define-syntax-parse-rule/autoptic (dlogr value:expr ... body:expr)
+    body))
 (ifc debugging-with-prints
   (require lathe-debugging)
   (require 'private/lathe-debugging/placebo))
@@ -68,6 +72,7 @@
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
+(require #/only-in lathe-comforts/syntax ~autoptic-to)
 (require #/only-in lathe-comforts/trivial trivial trivial?)
 
 (require punctaffy/private/shim)
@@ -189,8 +194,8 @@
         any/c)
       hn))
   (begin
-    (define-syntax-rule (verify-ht ht) ht)
-    (define-syntax-rule (verify-hn hn) hn)))
+    (define-syntax-parse-rule/autoptic (verify-ht ht:expr) ht)
+    (define-syntax-parse-rule/autoptic (verify-hn hn:expr) hn)))
 
 
 ; We're taking this approach:
@@ -788,6 +793,20 @@
       ;
       (expand err-dsl-stx stx))
   
+  #/w- default
+    (fn
+      ; We return a degree-1 hypernest with trivial contents in its
+      ; degree-0 hole and with a single degree-0 bump that contains
+      ; `stx` itself (put in a container so that it can be
+      ; distinguished from degree-0 bumps that a user-defined syntax
+      ; introduces for a different reason).
+      (hn-bracs-n-d ds n-d 1
+        (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
+        (hnb-labeled 0 #/trivial)))
+  #/syntax-parse stx #:context err-dsl-stx
+    [{~not #/~autoptic-to err-dsl-stx _} (default)]
+  #/ _
+  
   ; If `stx` is shaped like `op` or `(op . args)` where `op` is bound
   ; to a suitable syntax transformer according to
   ; `syntax-local-value`, then we invoke it on `stx`. (Note that we
@@ -947,18 +966,9 @@
         ; metadata represents a vector operation (`vector`) rather
         ; than a proper list operation (`list`).
         (make-list-layer (hn-tag-1-vector stx-example) elems))]
-    
-    [_
-      ; We return a degree-1 hypernest with trivial contents in its
-      ; degree-0 hole and with a single degree-0 bump that contains
-      ; `stx` itself (put in a container so that it can be
-      ; distinguished from degree-0 bumps that a user-defined syntax
-      ; introduces for a different reason).
-      (hn-bracs-n-d ds n-d 1
-        (hnb-open 0 #/hn-tag-0-s-expr-stx stx)
-        (hnb-labeled 0 #/trivial))]))
+    [_ (default)]))
 
-; This recursively converts the given Racket syntax object into an
+; This recursively converts the given Racket syntax object into a
 ; degree-1 hypernest just like `s-expr-stx->hn-expr`, but it expects
 ; the outermost layer of the syntax object to be a proper list, and it
 ; does not represent that list in the result, so the result will

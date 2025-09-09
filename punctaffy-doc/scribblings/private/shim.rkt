@@ -25,18 +25,24 @@
 (require #/for-syntax #/only-in syntax/parse syntax-parse)
 
 (require #/for-syntax #/only-in lathe-comforts fn w-)
+(require #/for-syntax #/only-in lathe-comforts/syntax ~autoptic-list)
 
-(require scribble/base)
+(require scribble/manual)
+
+(require #/only-in lathe-comforts define-syntax-parse-rule/autoptic)
 
 
 (provide
   shim-require-various-for-label
-  code-block)
+  lathe-comforts-doc
+  code-block
+  enforces-autopticity
+  constructor-enforces-autopticity)
 
 
 (define-syntax (shim-require-various-for-label stx)
   (syntax-protect
-  #/syntax-parse stx #/ (_)
+  #/syntax-parse stx #/ {~autoptic-list (_)}
   #/w- break (fn id #/datum->syntax stx id)
     #`(require #/for-label
         
@@ -60,12 +66,11 @@
         (only-in #,(break 'syntax/datum) datum with-datum)
         (only-in #,(break 'syntax/parse)
           ~optional prop:pattern-expander ~seq syntax-parse)
-        (only-in #,(break 'syntax/parse/define)
-          define-syntax-parse-rule)
         (only-in #,(break 'syntax/parse/experimental/template)
           define-template-metafunction)
         
-        (only-in #,(break 'lathe-comforts) fn)
+        (only-in #,(break 'lathe-comforts)
+          define-syntax-parse-rule/autoptic fn)
         (only-in #,(break 'lathe-comforts/contract)
           flat-obstinacy obstinacy? obstinacy-contract/c)
         (only-in #,(break 'lathe-comforts/list) list-bind)
@@ -104,5 +109,19 @@
         )))
 
 
-(define-syntax-rule @code-block[args ...]
+(define lathe-comforts-doc
+  '(lib "lathe-comforts/scribblings/lathe-comforts.scrbl"))
+
+
+(define-syntax-parse-rule/autoptic @code-block[args ...]
   @nested[#:style 'code-inset]{@verbatim[args ...]})
+
+(define @enforces-autopticity[]
+  @list{
+    This syntax must be called with @tech[#:doc lathe-comforts-doc]{autopticity}.
+  })
+
+(define @constructor-enforces-autopticity[]
+  @list{
+    The constructor syntax must be called with @tech[#:doc lathe-comforts-doc]{autopticity}.
+  })
